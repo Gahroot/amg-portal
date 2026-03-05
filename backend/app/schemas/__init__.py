@@ -3,12 +3,10 @@
 from app.schemas.communication import (  # noqa: F401
     CommunicationCreate,
     CommunicationListResponse,
+    CommunicationMarkReadRequest,
     CommunicationResponse,
     SendMessageRequest,
     UnreadCountResponse,
-)
-from app.schemas.communication import (
-    CommunicationMarkReadRequest as CommMarkReadRequest,
 )
 from app.schemas.communication_template import (  # noqa: F401
     TemplateCreate,
@@ -22,12 +20,10 @@ from app.schemas.conversation import (  # noqa: F401
     AddParticipantRequest,
     ConversationCreate,
     ConversationListResponse,
+    ConversationMarkReadRequest,
     ConversationResponse,
     ConversationUpdate,
     MessageListResponse,
-)
-from app.schemas.conversation import (
-    ConversationMarkReadRequest as ConvMarkReadRequest,
 )
 from app.schemas.decision_request import (  # noqa: F401
     DecisionListResponse,
@@ -59,7 +55,4 @@ from app.schemas.report import (  # noqa: F401
     ReportMilestone,
     ReportPartner,
     ReportPendingDecision,
-)
-from app.schemas.report import (
-    AnnualReviewReport as AnnualReviewReportResponse,
 )

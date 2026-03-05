@@ -177,3 +177,127 @@ class KYCDocumentStatus(StrEnum):
     verified = "verified"
     expired = "expired"
     rejected = "rejected"
+
+
+class EscalationLevel(StrEnum):
+    """Severity levels matching the escalation hierarchy"""
+
+    task = "task"
+    milestone = "milestone"
+    program = "program"
+    client_impact = "client_impact"
+
+
+class EscalationStatus(StrEnum):
+    """Status progression for escalations"""
+
+    open = "open"
+    acknowledged = "acknowledged"
+    investigating = "investigating"
+    resolved = "resolved"
+    closed = "closed"
+
+
+class SLABreachStatus(StrEnum):
+    """SLA compliance status"""
+
+    within_sla = "within_sla"
+    approaching_breach = "approaching_breach"
+    breached = "breached"
+
+
+class CommunicationType(StrEnum):
+    """Communication types for SLA tracking"""
+
+    email = "email"
+    portal_message = "portal_message"
+    phone = "phone"
+    partner_submission = "partner_submission"
+    client_inquiry = "client_inquiry"
+
+
+class CommunicationChannel(StrEnum):
+    """Channel for sending communications"""
+
+    email = "email"
+    in_portal = "in_portal"
+    sms = "sms"
+    whatsapp = "whatsapp"
+    phone = "phone"
+    in_person = "in_person"
+    other = "other"
+
+
+class MessageStatus(StrEnum):
+    """Status for individual messages/communications"""
+
+    draft = "draft"
+    sending = "sending"
+    sent = "sent"
+    delivered = "delivered"
+    failed = "failed"
+    read = "read"
+    archived = "archived"
+
+
+class ConversationType(StrEnum):
+    """Type of conversation thread"""
+
+    rm_client = "rm_client"
+    coordinator_partner = "coordinator_partner"
+    internal = "internal"
+
+
+class TemplateType(StrEnum):
+    """Pre-defined communication template types"""
+
+    welcome = "welcome"
+    program_kickoff = "program_kickoff"
+    weekly_status = "weekly_status"
+    decision_request = "decision_request"
+    milestone_alert = "milestone_alert"
+    completion_note = "completion_note"
+    partner_dispatch = "partner_dispatch"
+    deliverable_submission = "deliverable_submission"
+    custom = "custom"
+
+
+class NotificationType(StrEnum):
+    """Types of in-portal notifications"""
+
+    communication = "communication"
+    decision_pending = "decision_pending"
+    assignment_update = "assignment_update"
+    deliverable_ready = "deliverable_ready"
+    milestone_update = "milestone_update"
+    approval_required = "approval_required"
+    system = "system"
+
+
+class DigestFrequency(StrEnum):
+    """Email digest frequency preferences"""
+
+    immediate = "immediate"
+    hourly = "hourly"
+    daily = "daily"
+    weekly = "weekly"
+    never = "never"
+
+
+class DecisionRequestStatus(StrEnum):
+    """Status of client decision requests"""
+
+    pending = "pending"
+    responded = "responded"
+    declined = "declined"
+    expired = "expired"
+    cancelled = "cancelled"
+
+
+class DecisionResponseType(StrEnum):
+    """Format of decision response"""
+
+    choice = "choice"
+    text = "text"
+    yes_no = "yes_no"
+    multi_choice = "multi_choice"

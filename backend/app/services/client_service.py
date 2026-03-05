@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -19,7 +20,7 @@ from app.services.crud_base import CRUDBase
 
 
 class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUpdate]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ClientProfile)
 
     async def create_intake(
@@ -83,7 +84,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
                 detail=f"Cannot approve profile in {profile.approval_status} state",
             )
 
-        update_data: dict = {
+        update_data: dict[str, Any] = {
             "approved_by": approver_id,
             "approved_at": datetime.now(UTC),
         }
@@ -163,7 +164,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         )
 
     async def update_intelligence_file(
-        self, db: AsyncSession, profile_id: uuid.UUID, data: dict
+        self, db: AsyncSession, profile_id: uuid.UUID, data: dict[str, Any]
     ) -> ClientProfile:
         profile = await self.get(db, profile_id)
         if not profile:

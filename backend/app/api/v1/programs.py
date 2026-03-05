@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, timedelta
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -46,7 +47,7 @@ def compute_rag_status(milestones: list[Milestone]) -> str:
     return "green"
 
 
-def build_program_response(program: Program) -> dict:
+def build_program_response(program: Program) -> dict[str, Any]:
     milestones = program.milestones or []
     milestone_count = len(milestones)
     completed_milestone_count = sum(1 for m in milestones if m.status == "completed")
@@ -61,7 +62,7 @@ def build_program_response(program: Program) -> dict:
     }
 
 
-def build_milestone_response(milestone: Milestone) -> dict:
+def build_milestone_response(milestone: Milestone) -> dict[str, Any]:
     tasks = milestone.tasks or []
     return {
         **{c.key: getattr(milestone, c.key) for c in milestone.__table__.columns},
@@ -70,7 +71,7 @@ def build_milestone_response(milestone: Milestone) -> dict:
     }
 
 
-def build_program_detail_response(program: Program) -> dict:
+def build_program_detail_response(program: Program) -> dict[str, Any]:
     milestones = program.milestones or []
     milestone_count = len(milestones)
     completed_milestone_count = sum(1 for m in milestones if m.status == "completed")
@@ -230,7 +231,7 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
             selectinload(Program.client),
             selectinload(Program.milestones).selectinload(Milestone.tasks),
         )
-        .where(Program.id == program.id)
+        .where(Program.id == program_id)
     )
     program = result.scalar_one()
     return build_program_response(program)
@@ -319,7 +320,7 @@ async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: D
     await db.refresh(milestone)
 
     result = await db.execute(
-        select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone.id)
+        select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone_id)
     )
     milestone = result.scalar_one()
     return build_milestone_response(milestone)

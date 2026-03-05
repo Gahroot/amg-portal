@@ -11,7 +11,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 
 
-async def seed_admin():
+async def seed_admin() -> None:
     password = os.environ.get("AMG_ADMIN_PASSWORD", "AdminPass123!")
 
     async with AsyncSessionLocal() as db:

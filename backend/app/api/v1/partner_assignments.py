@@ -1,6 +1,7 @@
 """Partner assignment management endpoints."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -21,7 +22,7 @@ from app.schemas.partner_assignment import (
 router = APIRouter()
 
 
-def build_assignment_response(assignment: PartnerAssignment) -> dict:
+def build_assignment_response(assignment: PartnerAssignment) -> dict[str, Any]:
     return {
         "id": assignment.id,
         "partner_id": assignment.partner_id,

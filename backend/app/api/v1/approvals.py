@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -15,7 +16,7 @@ from app.schemas.approval import ApprovalDecision, ApprovalRequest, ApprovalResp
 router = APIRouter()
 
 
-async def _build_approval_response(approval: ProgramApproval, db: AsyncSession) -> dict:
+async def _build_approval_response(approval: ProgramApproval, db: AsyncSession) -> dict[str, Any]:
     requester = (
         await db.execute(select(User).where(User.id == approval.requested_by))
     ).scalar_one()

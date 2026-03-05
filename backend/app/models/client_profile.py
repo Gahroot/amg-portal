@@ -56,7 +56,7 @@ class ClientProfile(Base):
     )
 
     # Intelligence
-    intelligence_file: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    intelligence_file: Mapped[dict[str, str] | None] = mapped_column(JSON, nullable=True)
 
     # Provisioning
     user_id: Mapped[uuid.UUID | None] = mapped_column(

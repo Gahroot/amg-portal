@@ -1,0 +1,253 @@
+export type CommunicationChannel = "email" | "in_portal" | "sms" | "whatsapp" | "phone" | "in_person" | "other";
+export type CommunicationStatus = "draft" | "sending" | "sent" | "delivered" | "failed" | "read" | "archived";
+export type ConversationType = "rm_client" | "coordinator_partner" | "internal";
+export type NotificationType = "communication" | "decision_pending" | "assignment_update" | "deliverable_ready" | "milestone_update" | "approval_required" | "system";
+export type DecisionRequestStatus = "pending" | "responded" | "declined" | "expired" | "cancelled";
+export type DigestFrequency = "immediate" | "hourly" | "daily" | "weekly" | "never";
+export type TemplateType = "welcome" | "program_kickoff" | "weekly_status" | "decision_request" | "milestone_alert" | "completion_note" | "partner_dispatch" | "deliverable_submission" | "custom";
+export type DecisionResponseType = "choice" | "text" | "yes_no" | "multi_choice";
+
+// Conversation types
+export interface ParticipantInfo {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
+export interface Conversation {
+  id: string;
+  conversation_type: ConversationType;
+  client_id?: string;
+  partner_assignment_id?: string;
+  title?: string;
+  participant_ids: string[];
+  last_activity_at?: string;
+  created_at: string;
+  updated_at: string;
+  unread_count: number;
+  participants: ParticipantInfo[];
+}
+
+export interface ConversationListResponse {
+  conversations: Conversation[];
+  total: number;
+}
+
+export interface ConversationCreateData {
+  conversation_type: ConversationType;
+  client_id?: string;
+  partner_assignment_id?: string;
+  title?: string;
+  participant_ids: string[];
+}
+
+export interface ConversationUpdateData {
+  title?: string;
+  participant_ids?: string[];
+}
+
+// Communication types
+export interface Recipient {
+  user_id: string;
+  role: string; // to, cc, bcc
+  email?: string;
+  name?: string;
+}
+
+export interface Communication {
+  id: string;
+  conversation_id?: string;
+  channel: CommunicationChannel;
+  status: CommunicationStatus;
+  sender_id?: string;
+  sender_name?: string;
+  recipients?: Record<string, unknown>;
+  subject?: string;
+  body: string;
+  attachment_ids?: string[];
+  client_id?: string;
+  program_id?: string;
+  partner_id?: string;
+  read_receipts?: Record<string, { read_at: string }>;
+  sent_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunicationListResponse {
+  communications: Communication[];
+  total: number;
+}
+
+export interface SendMessageData {
+  conversation_id?: string;
+  body: string;
+  attachment_ids?: string[];
+}
+
+export interface UnreadCountResponse {
+  total: number;
+  by_conversation: Record<string, number>;
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  user_id: string;
+  notification_type: NotificationType;
+  title: string;
+  body: string;
+  action_url?: string;
+  action_label?: string;
+  entity_type?: string;
+  entity_id?: string;
+  priority: string;
+  is_read: boolean;
+  read_at?: string;
+  email_delivered: boolean;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  total: number;
+}
+
+export interface NotificationPreference {
+  id: string;
+  user_id: string;
+  digest_enabled: boolean;
+  digest_frequency: DigestFrequency;
+  notification_type_preferences?: Record<string, string>;
+  channel_preferences?: Record<string, boolean>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationPreferenceUpdateData {
+  digest_enabled?: boolean;
+  digest_frequency?: DigestFrequency;
+  notification_type_preferences?: Record<string, string>;
+  channel_preferences?: Record<string, boolean>;
+}
+
+// Decision Request types
+export interface DecisionOption {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface DecisionRequest {
+  id: string;
+  client_id: string;
+  program_id?: string;
+  title: string;
+  prompt: string;
+  response_type: DecisionResponseType;
+  options?: DecisionOption[];
+  deadline_date?: string;
+  deadline_time?: string;
+  consequence_text?: string;
+  status: DecisionRequestStatus;
+  response?: {
+    option_id?: string;
+    text?: string;
+    responded_at?: string;
+  };
+  responded_at?: string;
+  responded_by?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DecisionListResponse {
+  decisions: DecisionRequest[];
+  total: number;
+}
+
+export interface DecisionCreateData {
+  client_id: string;
+  program_id?: string;
+  title: string;
+  prompt: string;
+  response_type: DecisionResponseType;
+  options?: DecisionOption[];
+  deadline_date?: string;
+  deadline_time?: string;
+  consequence_text?: string;
+}
+
+export interface DecisionResponseData {
+  option_id?: string;
+  text?: string;
+}
+
+// Template types
+export interface VariableDefinition {
+  type: string;
+  description: string;
+  default?: string;
+  required: boolean;
+}
+
+export interface CommunicationTemplate {
+  id: string;
+  name: string;
+  template_type: TemplateType;
+  subject?: string;
+  body: string;
+  variable_definitions?: Record<string, VariableDefinition>;
+  is_active: boolean;
+  is_system: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateListResponse {
+  templates: CommunicationTemplate[];
+  total: number;
+}
+
+export interface TemplateCreateData {
+  name: string;
+  template_type: TemplateType;
+  subject?: string;
+  body: string;
+  variable_definitions?: Record<string, VariableDefinition>;
+}
+
+export interface TemplateRenderRequest {
+  template_id: string;
+  variables: Record<string, unknown>;
+}
+
+export interface TemplateRenderResponse {
+  subject?: string;
+  body: string;
+}
+
+// WebSocket message types
+export interface WSMessage {
+  type: string;
+  data?: unknown;
+}
+
+export interface WSNotificationMessage extends WSMessage {
+  type: "notification";
+  data: Notification;
+}
+
+export interface WSTypingMessage extends WSMessage {
+  type: "typing";
+  conversation_id: string;
+  user_id: string;
+  is_typing: boolean;
+}
+
+export interface WSNewMessageMessage extends WSMessage {
+  type: "new_message";
+  data: Communication;
+}

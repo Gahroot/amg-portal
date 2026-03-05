@@ -1,6 +1,7 @@
 """Deliverable management endpoints."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -28,7 +29,7 @@ from app.services.storage import storage_service
 router = APIRouter()
 
 
-def build_deliverable_response(deliverable: Deliverable) -> dict:
+def build_deliverable_response(deliverable: Deliverable) -> dict[str, Any]:
     data = {
         "id": deliverable.id,
         "assignment_id": deliverable.assignment_id,

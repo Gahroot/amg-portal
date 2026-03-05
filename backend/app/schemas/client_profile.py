@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
@@ -58,7 +59,7 @@ class ClientProfileResponse(BaseModel):
     approved_by: UUID | None = None
     approved_at: datetime | None = None
     assigned_rm_id: UUID | None = None
-    intelligence_file: dict | None = None
+    intelligence_file: dict[str, Any] | None = None
     user_id: UUID | None = None
     welcome_email_sent: bool
     portal_access_enabled: bool

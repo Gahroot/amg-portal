@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.api.v1.router import router as v1_router
+from app.api.websocket import ws_router as websocket_router
 from app.core import audit_listener as _audit_listener  # noqa: F401
 from app.core.config import settings
 
@@ -43,6 +44,7 @@ app.add_middleware(AuditContextMiddleware)
 
 
 app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
+app.include_router(websocket_router)
 
 
 @app.get("/health")
