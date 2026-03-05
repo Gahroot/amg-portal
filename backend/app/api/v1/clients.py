@@ -4,7 +4,14 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import DB, CurrentUser, require_admin, require_compliance, require_internal, require_rm_or_above
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    require_admin,
+    require_compliance,
+    require_internal,
+    require_rm_or_above,
+)
 from app.models.client_profile import ClientProfile
 from app.schemas.client_profile import (
     ClientProfileCreate,
@@ -21,7 +28,12 @@ from app.services.client_service import client_service
 router = APIRouter()
 
 
-@router.post("/", response_model=ClientProfileResponse, status_code=201, dependencies=[Depends(require_rm_or_above)])
+@router.post(
+    "/",
+    response_model=ClientProfileResponse,
+    status_code=201,
+    dependencies=[Depends(require_rm_or_above)],
+)
 async def create_client_intake(
     data: ClientProfileCreate,
     db: DB,
@@ -57,18 +69,26 @@ async def list_client_profiles(
     return ClientProfileListResponse(profiles=profiles, total=total)
 
 
-@router.get("/my-portfolio", response_model=ClientProfileListResponse, dependencies=[Depends(require_rm_or_above)])
+@router.get(
+    "/my-portfolio",
+    response_model=ClientProfileListResponse,
+    dependencies=[Depends(require_rm_or_above)],
+)
 async def get_my_portfolio(
     db: DB,
     current_user: CurrentUser,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
-    profiles, total = await client_service.get_rm_portfolio(db, current_user.id, skip=skip, limit=limit)
+    profiles, total = await client_service.get_rm_portfolio(
+        db, current_user.id, skip=skip, limit=limit
+    )
     return ClientProfileListResponse(profiles=profiles, total=total)
 
 
-@router.get("/{profile_id}", response_model=ClientProfileResponse, dependencies=[Depends(require_internal)])
+@router.get(
+    "/{profile_id}", response_model=ClientProfileResponse, dependencies=[Depends(require_internal)]
+)
 async def get_client_profile(profile_id: uuid.UUID, db: DB):
     profile = await client_service.get(db, profile_id)
     if not profile:
@@ -76,7 +96,11 @@ async def get_client_profile(profile_id: uuid.UUID, db: DB):
     return profile
 
 
-@router.patch("/{profile_id}", response_model=ClientProfileResponse, dependencies=[Depends(require_rm_or_above)])
+@router.patch(
+    "/{profile_id}",
+    response_model=ClientProfileResponse,
+    dependencies=[Depends(require_rm_or_above)],
+)
 async def update_client_profile(
     profile_id: uuid.UUID,
     data: ClientProfileUpdate,
@@ -88,7 +112,11 @@ async def update_client_profile(
     return await client_service.update(db, db_obj=profile, obj_in=data)
 
 
-@router.patch("/{profile_id}/intelligence", response_model=ClientProfileResponse, dependencies=[Depends(require_rm_or_above)])
+@router.patch(
+    "/{profile_id}/intelligence",
+    response_model=ClientProfileResponse,
+    dependencies=[Depends(require_rm_or_above)],
+)
 async def update_intelligence_file(
     profile_id: uuid.UUID,
     data: dict,
@@ -97,7 +125,11 @@ async def update_intelligence_file(
     return await client_service.update_intelligence_file(db, profile_id, data)
 
 
-@router.post("/{profile_id}/compliance-review", response_model=ClientProfileResponse, dependencies=[Depends(require_compliance)])
+@router.post(
+    "/{profile_id}/compliance-review",
+    response_model=ClientProfileResponse,
+    dependencies=[Depends(require_compliance)],
+)
 async def submit_compliance_review(
     profile_id: uuid.UUID,
     review: ComplianceReviewRequest,
@@ -109,7 +141,11 @@ async def submit_compliance_review(
     )
 
 
-@router.get("/{profile_id}/compliance-certificate", response_model=ComplianceCertificate, dependencies=[Depends(require_internal)])
+@router.get(
+    "/{profile_id}/compliance-certificate",
+    response_model=ComplianceCertificate,
+    dependencies=[Depends(require_internal)],
+)
 async def get_compliance_certificate(
     profile_id: uuid.UUID,
     db: DB,
@@ -117,7 +153,11 @@ async def get_compliance_certificate(
     return await client_service.generate_compliance_certificate(db, profile_id)
 
 
-@router.post("/{profile_id}/md-approval", response_model=ClientProfileResponse, dependencies=[Depends(require_admin)])
+@router.post(
+    "/{profile_id}/md-approval",
+    response_model=ClientProfileResponse,
+    dependencies=[Depends(require_admin)],
+)
 async def submit_md_approval(
     profile_id: uuid.UUID,
     approval: MDApprovalRequest,
@@ -129,7 +169,11 @@ async def submit_md_approval(
     )
 
 
-@router.post("/{profile_id}/provision", response_model=ClientProfileResponse, dependencies=[Depends(require_admin)])
+@router.post(
+    "/{profile_id}/provision",
+    response_model=ClientProfileResponse,
+    dependencies=[Depends(require_admin)],
+)
 async def provision_client(
     profile_id: uuid.UUID,
     request: ClientProvisionRequest,

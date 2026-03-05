@@ -12,7 +12,9 @@ require_client = RoleChecker([UserRole.client])
 router = APIRouter()
 
 
-@router.get("/profile", response_model=ClientPortalProfileResponse, dependencies=[Depends(require_client)])
+@router.get(
+    "/profile", response_model=ClientPortalProfileResponse, dependencies=[Depends(require_client)]
+)
 async def get_my_profile(
     db: DB,
     current_user: CurrentUser,

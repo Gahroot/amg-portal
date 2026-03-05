@@ -5,13 +5,25 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.core.config import settings
 from app.db.base import Base  # noqa: F401 — ensures all models are registered
 
 # Import all models here so Alembic can detect them
-from app.models import user, client_profile, client, program, milestone, task, approval  # noqa: F401
-from app.models import partner, partner_assignment, deliverable  # noqa: F401
+from app.models import (  # noqa: F401  # noqa: F401  # noqa: F401
+    approval,
+    audit_log,
+    client,
+    client_profile,
+    deliverable,
+    document,
+    kyc_document,
+    milestone,
+    partner,
+    partner_assignment,
+    program,
+    task,
+    user,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

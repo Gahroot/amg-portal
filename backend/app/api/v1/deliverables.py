@@ -131,9 +131,7 @@ async def get_deliverable(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
 ):
-    result = await db.execute(
-        select(Deliverable).where(Deliverable.id == deliverable_id)
-    )
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
         raise HTTPException(status_code=404, detail="Deliverable not found")
@@ -148,9 +146,7 @@ async def update_deliverable(
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
 ):
-    result = await db.execute(
-        select(Deliverable).where(Deliverable.id == deliverable_id)
-    )
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
         raise HTTPException(status_code=404, detail="Deliverable not found")
@@ -169,8 +165,8 @@ async def submit_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    partner: CurrentPartner,
     file: UploadFile = File(...),
-    partner: CurrentPartner = Depends(),
 ):
     result = await db.execute(
         select(Deliverable)
@@ -215,9 +211,7 @@ async def review_deliverable(
     if data.status not in ("approved", "returned", "rejected"):
         raise HTTPException(status_code=400, detail="Invalid review status")
 
-    result = await db.execute(
-        select(Deliverable).where(Deliverable.id == deliverable_id)
-    )
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
         raise HTTPException(status_code=404, detail="Deliverable not found")
@@ -244,9 +238,7 @@ async def download_deliverable(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
 ):
-    result = await db.execute(
-        select(Deliverable).where(Deliverable.id == deliverable_id)
-    )
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
         raise HTTPException(status_code=404, detail="Deliverable not found")

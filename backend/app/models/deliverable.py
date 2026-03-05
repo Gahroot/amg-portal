@@ -13,7 +13,10 @@ class Deliverable(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     assignment_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_assignments.id"), nullable=False, index=True,
+        UUID(as_uuid=True),
+        ForeignKey("partner_assignments.id"),
+        nullable=False,
+        index=True,
     )
     title = Column(String(255), nullable=False)
     deliverable_type = Column(String(50), nullable=False, default="document")

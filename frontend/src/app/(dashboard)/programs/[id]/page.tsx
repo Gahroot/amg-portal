@@ -50,6 +50,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/programs/status-badge";
 import { RagBadge } from "@/components/programs/rag-badge";
 import { ApprovalDialog } from "@/components/programs/approval-dialog";
+import { DocumentList } from "@/components/documents/document-list";
 
 const TASK_STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "todo", label: "To Do" },
@@ -161,6 +162,7 @@ export default function ProgramDashboardPage() {
             <TabsTrigger value="milestones">Milestones</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -528,6 +530,10 @@ export default function ProgramDashboardPage() {
                 No approval records.
               </p>
             )}
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4">
+            <DocumentList entityType="program" entityId={programId} />
           </TabsContent>
         </Tabs>
       </div>

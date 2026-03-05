@@ -15,9 +15,7 @@ async def seed_admin():
     password = os.environ.get("AMG_ADMIN_PASSWORD", "AdminPass123!")
 
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(User).where(User.email == "admin@anchormillgroup.com")
-        )
+        result = await db.execute(select(User).where(User.email == "admin@anchormillgroup.com"))
         if result.scalar_one_or_none():
             print("Admin user already exists, skipping.")
             return

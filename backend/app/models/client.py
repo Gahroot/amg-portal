@@ -11,9 +11,7 @@ from app.db.base import Base
 class Client(Base):
     __tablename__ = "clients"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     client_type: Mapped[str] = mapped_column(String(50), nullable=False)
     rm_id: Mapped[uuid.UUID] = mapped_column(

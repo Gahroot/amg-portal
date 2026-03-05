@@ -39,5 +39,7 @@ class PartnerProfile(Base):
     user = relationship("User", foreign_keys=[user_id], backref="partner_profile")
     creator = relationship("User", foreign_keys=[created_by])
     assignments = relationship(
-        "PartnerAssignment", back_populates="partner", cascade="all, delete-orphan",
+        "PartnerAssignment",
+        back_populates="partner",
+        cascade="all, delete-orphan",
     )

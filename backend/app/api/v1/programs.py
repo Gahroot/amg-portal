@@ -13,7 +13,6 @@ from app.api.deps import (
     require_rm_or_above,
 )
 from app.models.client import Client  # noqa: F401
-from app.models.enums import UserRole
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -80,12 +79,14 @@ def build_program_detail_response(program: Program) -> dict:
     milestone_details = []
     for m in milestones:
         tasks = m.tasks or []
-        milestone_details.append({
-            **{c.key: getattr(m, c.key) for c in m.__table__.columns},
-            "task_count": len(tasks),
-            "completed_task_count": sum(1 for t in tasks if t.status == "done"),
-            "tasks": tasks,
-        })
+        milestone_details.append(
+            {
+                **{c.key: getattr(m, c.key) for c in m.__table__.columns},
+                "task_count": len(tasks),
+                "completed_task_count": sum(1 for t in tasks if t.status == "done"),
+                "tasks": tasks,
+            }
+        )
     return {
         **{c.key: getattr(program, c.key) for c in program.__table__.columns},
         "client_name": client_name,
@@ -167,9 +168,7 @@ async def list_programs(
         count_query = count_query.where(Program.client_id == client_id)
 
     total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(
-        query.order_by(Program.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(query.order_by(Program.created_at.desc()).offset(skip).limit(limit))
     programs = result.scalars().unique().all()
     return ProgramListResponse(
         programs=[build_program_response(p) for p in programs],
@@ -240,9 +239,7 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
 @router.get("/{program_id}/summary", response_model=ProgramSummary)
 async def get_program_summary(program_id: uuid.UUID, db: DB, current_user: CurrentUser):
     result = await db.execute(
-        select(Program)
-        .options(selectinload(Program.milestones))
-        .where(Program.id == program_id)
+        select(Program).options(selectinload(Program.milestones)).where(Program.id == program_id)
     )
     program = result.scalar_one_or_none()
     if not program:
@@ -269,6 +266,7 @@ async def get_program_summary(program_id: uuid.UUID, db: DB, current_user: Curre
 
 # --- Milestone endpoints ---
 
+
 @router.post(
     "/{program_id}/milestones",
     response_model=MilestoneResponse,
@@ -291,9 +289,7 @@ async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB):
     await db.commit()
 
     result = await db.execute(
-        select(Milestone)
-        .options(selectinload(Milestone.tasks))
-        .where(Milestone.id == milestone.id)
+        select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone.id)
     )
     milestone = result.scalar_one()
     return build_milestone_response(milestone)
@@ -306,9 +302,7 @@ async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB):
 )
 async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: DB):
     result = await db.execute(
-        select(Milestone)
-        .options(selectinload(Milestone.tasks))
-        .where(Milestone.id == milestone_id)
+        select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone_id)
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
@@ -325,9 +319,7 @@ async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: D
     await db.refresh(milestone)
 
     result = await db.execute(
-        select(Milestone)
-        .options(selectinload(Milestone.tasks))
-        .where(Milestone.id == milestone.id)
+        select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone.id)
     )
     milestone = result.scalar_one()
     return build_milestone_response(milestone)
@@ -349,6 +341,7 @@ async def delete_milestone(milestone_id: uuid.UUID, db: DB):
 
 
 # --- Task endpoints ---
+
 
 @router.post(
     "/milestones/{milestone_id}/tasks",

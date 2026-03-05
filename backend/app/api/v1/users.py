@@ -36,14 +36,10 @@ async def list_users(
     if search:
         pattern = f"%{search}%"
         query = query.where(User.email.ilike(pattern) | User.full_name.ilike(pattern))
-        count_query = count_query.where(
-            User.email.ilike(pattern) | User.full_name.ilike(pattern)
-        )
+        count_query = count_query.where(User.email.ilike(pattern) | User.full_name.ilike(pattern))
 
     total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(
-        query.order_by(User.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(query.order_by(User.created_at.desc()).offset(skip).limit(limit))
     users = result.scalars().all()
 
     return UserListResponse(users=users, total=total)

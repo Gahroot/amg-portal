@@ -43,6 +43,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { DocumentList } from "@/components/documents/document-list";
 
 const STATUS_VARIANT: Record<
   string,
@@ -231,6 +232,7 @@ export default function PartnerDetailPage() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -587,6 +589,10 @@ export default function PartnerDetailPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="documents" className="space-y-4">
+            <DocumentList entityType="partner" entityId={partnerId} />
           </TabsContent>
         </Tabs>
       </div>

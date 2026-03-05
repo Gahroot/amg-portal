@@ -64,7 +64,7 @@ async def login(data: LoginRequest, db: DB):
             detail="Account is not active",
         )
 
-    token_data = {"sub": str(user.id)}
+    token_data = {"sub": str(user.id), "email": user.email}
     return Token(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
@@ -96,7 +96,7 @@ async def refresh(data: RefreshTokenRequest, db: DB):
             detail="User not found or inactive",
         )
 
-    token_data = {"sub": str(user.id)}
+    token_data = {"sub": str(user.id), "email": user.email}
     return Token(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),

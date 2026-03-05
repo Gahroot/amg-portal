@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -20,7 +20,7 @@ router = APIRouter()
 @router.get("/profile", response_model=PartnerProfileResponse)
 async def get_my_profile(
     current_user: CurrentUser,
-    partner: CurrentPartner = Depends(),
+    partner: CurrentPartner,
 ):
     return partner
 
@@ -29,7 +29,7 @@ async def get_my_profile(
 async def get_my_assignments(
     db: DB,
     current_user: CurrentUser,
-    partner: CurrentPartner = Depends(),
+    partner: CurrentPartner,
 ):
     result = await db.execute(
         select(PartnerAssignment)
@@ -69,7 +69,7 @@ async def get_my_assignment(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    partner: CurrentPartner = Depends(),
+    partner: CurrentPartner,
 ):
     result = await db.execute(
         select(PartnerAssignment)
@@ -109,7 +109,7 @@ async def get_my_assignment(
 async def get_my_deliverables(
     db: DB,
     current_user: CurrentUser,
-    partner: CurrentPartner = Depends(),
+    partner: CurrentPartner,
 ):
     # Get all assignments for this partner, then all deliverables
     assignments_result = await db.execute(

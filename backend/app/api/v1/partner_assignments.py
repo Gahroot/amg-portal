@@ -56,9 +56,7 @@ async def create_assignment(
         raise HTTPException(status_code=404, detail="Partner not found")
 
     # Verify program exists
-    program_result = await db.execute(
-        select(Program).where(Program.id == data.program_id)
-    )
+    program_result = await db.execute(select(Program).where(Program.id == data.program_id))
     if not program_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Program not found")
 
@@ -214,7 +212,7 @@ async def accept_assignment(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    partner: CurrentPartner = Depends(),
+    partner: CurrentPartner,
 ):
     result = await db.execute(
         select(PartnerAssignment)

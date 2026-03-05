@@ -13,7 +13,10 @@ class PartnerAssignment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id"), nullable=False, index=True,
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id"),
+        nullable=False,
+        index=True,
     )
     program_id = Column(UUID(as_uuid=True), ForeignKey("programs.id"), nullable=False, index=True)
     assigned_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -36,5 +39,7 @@ class PartnerAssignment(Base):
     program = relationship("Program", backref="partner_assignments")
     assigner = relationship("User", foreign_keys=[assigned_by])
     deliverables = relationship(
-        "Deliverable", back_populates="assignment", cascade="all, delete-orphan",
+        "Deliverable",
+        back_populates="assignment",
+        cascade="all, delete-orphan",
     )

@@ -130,9 +130,50 @@ class DeliverableStatus(StrEnum):
     rejected = "rejected"
 
 
+class AuditAction(StrEnum):
+    create = "create"
+    update = "update"
+    delete = "delete"
+
+
 class DeliverableType(StrEnum):
     report = "report"
     document = "document"
     presentation = "presentation"
     spreadsheet = "spreadsheet"
     other = "other"
+
+
+class DocumentEntityType(StrEnum):
+    client = "client"
+    program = "program"
+    deliverable = "deliverable"
+    partner = "partner"
+
+
+class DocumentCategory(StrEnum):
+    general = "general"
+    contract = "contract"
+    report = "report"
+    correspondence = "correspondence"
+    compliance = "compliance"
+    financial = "financial"
+    legal = "legal"
+    other = "other"
+
+
+class KYCDocumentType(StrEnum):
+    passport = "passport"
+    national_id = "national_id"
+    proof_of_address = "proof_of_address"
+    tax_id = "tax_id"
+    bank_statement = "bank_statement"
+    source_of_wealth = "source_of_wealth"
+    other = "other"
+
+
+class KYCDocumentStatus(StrEnum):
+    pending = "pending"
+    verified = "verified"
+    expired = "expired"
+    rejected = "rejected"

@@ -67,10 +67,9 @@ async def list_partners(
     if availability:
         filters.append(PartnerProfile.availability_status == availability)
     if search:
-        search_filter = (
-            PartnerProfile.firm_name.ilike(f"%{search}%")
-            | PartnerProfile.contact_name.ilike(f"%{search}%")
-        )
+        search_filter = PartnerProfile.firm_name.ilike(
+            f"%{search}%"
+        ) | PartnerProfile.contact_name.ilike(f"%{search}%")
         filters.append(search_filter)
     # JSON array contains filters for capability and geography
     if capability:
@@ -99,9 +98,7 @@ async def get_partner(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
 ):
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -116,9 +113,7 @@ async def update_partner(
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
 ):
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -140,9 +135,7 @@ async def provision_partner(
     current_user: CurrentUser,
     _: None = Depends(require_admin),
 ):
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -180,9 +173,7 @@ async def upload_compliance_doc(
     file: UploadFile = File(...),
     _: None = Depends(require_rm_or_above),
 ):
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")

@@ -13,9 +13,7 @@ class ClientProfile(Base):
 
     __tablename__ = "client_profiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Identity
     legal_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -31,9 +29,7 @@ class ClientProfile(Base):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Preferences
-    communication_preference: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
+    communication_preference: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sensitivities: Mapped[str | None] = mapped_column(Text, nullable=True)
     special_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -41,9 +37,7 @@ class ClientProfile(Base):
     compliance_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default="pending_review"
     )
-    approval_status: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="draft"
-    )
+    approval_status: Mapped[str] = mapped_column(String(50), nullable=False, default="draft")
     compliance_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     compliance_reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
@@ -54,9 +48,7 @@ class ClientProfile(Base):
     approved_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    approved_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Assignment
     assigned_rm_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -70,12 +62,8 @@ class ClientProfile(Base):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, unique=True
     )
-    welcome_email_sent: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-    portal_access_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    welcome_email_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    portal_access_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Audit
     created_by: Mapped[uuid.UUID] = mapped_column(
@@ -95,9 +83,7 @@ class ClientProfile(Base):
     creator = relationship(
         "User", foreign_keys=[created_by], back_populates="client_profiles_created"
     )
-    user = relationship(
-        "User", foreign_keys=[user_id], back_populates="client_profile"
-    )
+    user = relationship("User", foreign_keys=[user_id], back_populates="client_profile")
     compliance_reviewer = relationship("User", foreign_keys=[compliance_reviewed_by])
     approver = relationship("User", foreign_keys=[approved_by])
     assigned_rm = relationship("User", foreign_keys=[assigned_rm_id])

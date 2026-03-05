@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime, date
+from datetime import UTC, date, datetime
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -11,9 +11,7 @@ from app.db.base import Base
 class Milestone(Base):
     __tablename__ = "milestones"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     program_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("programs.id"), nullable=False, index=True
     )

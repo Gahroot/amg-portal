@@ -46,9 +46,7 @@ async def list_clients(
         count_query = count_query.where(Client.rm_id == current_user.id)
 
     total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(
-        query.order_by(Client.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(query.order_by(Client.created_at.desc()).offset(skip).limit(limit))
     clients = result.scalars().all()
     return ClientListResponse(clients=clients, total=total)
 

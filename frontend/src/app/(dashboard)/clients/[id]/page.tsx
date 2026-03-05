@@ -18,6 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ClientProvisionDialog } from "@/components/client-provision-dialog";
+import { DocumentList } from "@/components/documents/document-list";
+import { KYCDocumentPanel } from "@/components/documents/kyc-document-panel";
 
 const COMPLIANCE_STATUS_VARIANT: Record<
   string,
@@ -42,7 +44,7 @@ const APPROVAL_STATUS_VARIANT: Record<
   draft: "outline",
 };
 
-type Tab = "overview" | "intelligence" | "compliance" | "provisioning";
+type Tab = "overview" | "intelligence" | "compliance" | "provisioning" | "documents" | "kyc";
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -76,6 +78,8 @@ export default function ClientDetailPage() {
     { key: "intelligence", label: "Intelligence" },
     { key: "compliance", label: "Compliance" },
     { key: "provisioning", label: "Provisioning" },
+    { key: "documents", label: "Documents" },
+    { key: "kyc", label: "KYC" },
   ];
 
   return (
@@ -130,6 +134,12 @@ export default function ClientDetailPage() {
           <IntelligenceTab id={id} profile={profile} />
         )}
         {activeTab === "compliance" && <ComplianceTab id={id} profile={profile} />}
+        {activeTab === "documents" && (
+          <DocumentList entityType="client" entityId={id} />
+        )}
+        {activeTab === "kyc" && (
+          <KYCDocumentPanel clientId={id} canVerify={true} />
+        )}
         {activeTab === "provisioning" && (
           <ProvisioningTab
             profile={profile}

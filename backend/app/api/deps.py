@@ -72,25 +72,31 @@ class RoleChecker:
 
 
 # Pre-built role checkers
-require_internal = RoleChecker([
-    UserRole.managing_director,
-    UserRole.relationship_manager,
-    UserRole.coordinator,
-    UserRole.finance_compliance,
-])
+require_internal = RoleChecker(
+    [
+        UserRole.managing_director,
+        UserRole.relationship_manager,
+        UserRole.coordinator,
+        UserRole.finance_compliance,
+    ]
+)
 
 require_admin = RoleChecker([UserRole.managing_director])
 
-require_rm_or_above = RoleChecker([
-    UserRole.managing_director,
-    UserRole.relationship_manager,
-])
+require_rm_or_above = RoleChecker(
+    [
+        UserRole.managing_director,
+        UserRole.relationship_manager,
+    ]
+)
 
-require_coordinator_or_above = RoleChecker([
-    UserRole.managing_director,
-    UserRole.relationship_manager,
-    UserRole.coordinator,
-])
+require_coordinator_or_above = RoleChecker(
+    [
+        UserRole.managing_director,
+        UserRole.relationship_manager,
+        UserRole.coordinator,
+    ]
+)
 
 require_compliance = RoleChecker([UserRole.finance_compliance, UserRole.managing_director])
 

@@ -11,9 +11,7 @@ from app.db.base import Base
 class ProgramApproval(Base):
     __tablename__ = "program_approvals"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     program_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("programs.id"), nullable=False, index=True
     )
@@ -26,9 +24,7 @@ class ProgramApproval(Base):
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     comments: Mapped[str | None] = mapped_column(Text, nullable=True)
-    decided_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

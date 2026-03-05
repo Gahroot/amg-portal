@@ -16,15 +16,15 @@ router = APIRouter()
 
 
 async def _build_approval_response(approval: ProgramApproval, db: AsyncSession) -> dict:
-    requester = (await db.execute(
-        select(User).where(User.id == approval.requested_by)
-    )).scalar_one()
+    requester = (
+        await db.execute(select(User).where(User.id == approval.requested_by))
+    ).scalar_one()
 
     approver_name = None
     if approval.approved_by:
-        approver = (await db.execute(
-            select(User).where(User.id == approval.approved_by)
-        )).scalar_one_or_none()
+        approver = (
+            await db.execute(select(User).where(User.id == approval.approved_by))
+        ).scalar_one_or_none()
         if approver:
             approver_name = approver.full_name
 
@@ -102,9 +102,7 @@ async def decide_approval(
     db: DB,
     current_user: CurrentUser,
 ):
-    result = await db.execute(
-        select(ProgramApproval).where(ProgramApproval.id == approval_id)
-    )
+    result = await db.execute(select(ProgramApproval).where(ProgramApproval.id == approval_id))
     approval = result.scalar_one_or_none()
     if not approval:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
