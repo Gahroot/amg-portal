@@ -1,0 +1,17 @@
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Design docs
+AMG Portal Design.docx
+AMG Portal Design.docx.md
