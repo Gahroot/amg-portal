@@ -16,15 +16,28 @@ from app.services.crud_base import CRUDBase
 class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str, Any]]):
     """Service for communication/message operations."""
 
+    async def _verify_participation(
+        self,
+        db: AsyncSession,
+        conversation_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        """Verify that user is a participant in the conversation."""
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
+        conversation = result.scalar_one_or_none()
+        return conversation is not None and user_id in conversation.participant_ids
+
     async def send_message(
         self,
         db: AsyncSession,
         sender_id: uuid.UUID,
         data: SendMessageRequest,
     ) -> Communication:
-        """Send a message to a conversation."""
-        # Get conversation to update last_activity_at
+        """Send a message to a conversation. Verifies sender is a participant."""
         if data.conversation_id:
+            if not await self._verify_participation(db, data.conversation_id, sender_id):
+                raise ValueError("User is not a participant in this conversation")
+            # Get conversation to update last_activity_at
             conv_result = await db.execute(
                 select(Conversation).where(Conversation.id == data.conversation_id)
             )
@@ -55,10 +68,13 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         self,
         db: AsyncSession,
         conversation_id: uuid.UUID,
+        user_id: uuid.UUID,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[Communication], int]:
-        """Get messages for a conversation."""
+        """Get messages for a conversation. Verifies user is a participant."""
+        if not await self._verify_participation(db, conversation_id, user_id):
+            return [], 0
         query = select(Communication).where(Communication.conversation_id == conversation_id)
         count_query = (
             select(func.count())

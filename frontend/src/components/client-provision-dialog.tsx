@@ -45,8 +45,9 @@ export function ClientProvisionDialog({
         setSuccess(false);
         setPassword("");
       }, 1500);
-    } catch {
-      setError("Failed to provision client. Please try again.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to provision client. Please try again.";
+      setError(message);
     }
   };
 

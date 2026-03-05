@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { listDocuments, uploadDocument, deleteDocument } from "@/lib/api/documents";
 
 export function useDocuments(entityType: string, entityId: string) {
@@ -31,6 +32,7 @@ export function useUploadDocument() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to upload document"),
   });
 }
 
@@ -41,5 +43,6 @@ export function useDeleteDocument() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to delete document"),
   });
 }

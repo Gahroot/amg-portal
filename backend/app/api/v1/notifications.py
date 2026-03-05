@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import DB, CurrentUser
+from app.api.deps import DB, CurrentUser, require_internal
 from app.schemas.notification import (
     CreateNotificationRequest,
     NotificationListResponse,
@@ -84,7 +84,7 @@ async def update_preferences(
     "/",
     response_model=NotificationResponse,
     status_code=201,
-    dependencies=[Depends(CurrentUser)],  # Could add require_internal here
+    dependencies=[Depends(require_internal)],
 )
 async def create_notification(
     data: CreateNotificationRequest,

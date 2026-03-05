@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useAuth } from "@/providers/auth-provider";
 import { useClientProfile, useMDApproval } from "@/hooks/use-clients";
 import { listUsers } from "@/lib/api/users";
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -42,7 +42,7 @@ export default function MDApprovalReviewPage() {
   const [approved, setApproved] = React.useState<string>("");
   const [assignedRmId, setAssignedRmId] = React.useState<string>("");
   const [notes, setNotes] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
 
   if (user?.role !== "managing_director") {
     return (
@@ -76,10 +76,10 @@ export default function MDApprovalReviewPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setValidationError(null);
 
     if (!approved) {
-      setError("Please select approve or reject.");
+      setValidationError("Please select approve or reject.");
       return;
     }
 
@@ -89,9 +89,10 @@ export default function MDApprovalReviewPage() {
         notes: notes || undefined,
         assigned_rm_id: assignedRmId || undefined,
       });
+      toast.success(approved === "approve" ? "Client approved" : "Client rejected");
       router.push("/approvals");
     } catch {
-      setError("Failed to submit approval decision.");
+      // Error is handled by the hook's onError callback
     }
   };
 
@@ -179,10 +180,8 @@ export default function MDApprovalReviewPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+              {validationError && (
+                <p className="text-sm text-destructive">{validationError}</p>
               )}
 
               <div className="space-y-2">

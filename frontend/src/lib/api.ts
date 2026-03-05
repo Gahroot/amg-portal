@@ -79,6 +79,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Extract backend error message for all errors
+    if (error.response?.data?.detail) {
+      error.message = error.response.data.detail;
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

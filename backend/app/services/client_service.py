@@ -156,6 +156,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
 
         if request.send_welcome_email:
             from app.services.email_service import send_welcome_email
+
             await send_welcome_email(
                 email=profile.primary_email,
                 name=profile.display_name or profile.legal_name,

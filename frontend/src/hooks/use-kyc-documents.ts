@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listKYCDocuments,
   uploadKYCDocument,
@@ -30,6 +31,7 @@ export function useUploadKYCDocument(clientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-documents"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to upload KYC document"),
   });
 }
 
@@ -41,6 +43,7 @@ export function useVerifyKYCDocument(clientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-documents"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to verify document"),
   });
 }
 

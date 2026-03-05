@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import DB, CurrentUser
 from app.schemas.communication import (
@@ -32,9 +32,15 @@ async def send_communication(
         attachment_ids=data.attachment_ids,
     )
 
-    message = await communication_service.send_message(
-        db, sender_id=current_user.id, data=send_data
-    )
+    try:
+        message = await communication_service.send_message(
+            db, sender_id=current_user.id, data=send_data
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        ) from None
 
     return message
 
@@ -50,7 +56,7 @@ async def list_communications(
     """List communications, optionally filtered by conversation."""
     if conversation_id:
         messages, total = await communication_service.get_messages_for_conversation(
-            db, conversation_id, skip=skip, limit=limit
+            db, conversation_id, current_user.id, skip=skip, limit=limit
         )
     else:
         # If no conversation specified, return all user's communications
@@ -90,7 +96,7 @@ async def get_conversation_communications(
 ):
     """Get all communications for a specific conversation."""
     messages, total = await communication_service.get_messages_for_conversation(
-        db, conversation_id, skip=skip, limit=limit
+        db, conversation_id, current_user.id, skip=skip, limit=limit
     )
 
     return CommunicationListResponse(communications=messages, total=total)

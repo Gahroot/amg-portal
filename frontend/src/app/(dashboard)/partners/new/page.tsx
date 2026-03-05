@@ -7,11 +7,11 @@ import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
 import { createPartner } from "@/lib/api/partners";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const CAPABILITY_OPTIONS = [
@@ -41,7 +41,6 @@ type CreatePartnerFormData = z.infer<typeof createPartnerSchema>;
 export default function NewPartnerPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
   const [selectedCapabilities, setSelectedCapabilities] = React.useState<
     string[]
   >([]);
@@ -75,7 +74,6 @@ export default function NewPartnerPage() {
   };
 
   const onSubmit = async (data: CreatePartnerFormData) => {
-    setError(null);
     try {
       const geographies = data.geographies
         ? data.geographies
@@ -92,9 +90,11 @@ export default function NewPartnerPage() {
         geographies,
         notes: data.notes || undefined,
       });
+      toast.success("Partner created successfully");
       router.push("/partners");
-    } catch {
-      setError("Failed to create partner. Please try again.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create partner. Please try again.";
+      toast.error(message);
     }
   };
 
@@ -109,12 +109,6 @@ export default function NewPartnerPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="firm_name">Firm Name</Label>
                 <Input id="firm_name" {...register("firm_name")} />

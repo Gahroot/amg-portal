@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   getPortfolioOverview,
   getProgramStatusReport,
@@ -45,28 +46,52 @@ export function useAnnualReview(year: number) {
 
 export function useExportPortfolio() {
   const exportFn = async () => {
-    await exportPortfolioOverview();
+    try {
+      await exportPortfolioOverview();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to export portfolio report";
+      toast.error(message);
+      throw error;
+    }
   };
   return { exportPortfolio: exportFn };
 }
 
 export function useExportProgramStatus() {
   const exportFn = async (programId: string) => {
-    await exportProgramStatusReport(programId);
+    try {
+      await exportProgramStatusReport(programId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to export program status report";
+      toast.error(message);
+      throw error;
+    }
   };
   return { exportProgramStatus: exportFn };
 }
 
 export function useExportCompletion() {
   const exportFn = async (programId: string) => {
-    await exportCompletionReport(programId);
+    try {
+      await exportCompletionReport(programId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to export completion report";
+      toast.error(message);
+      throw error;
+    }
   };
   return { exportCompletion: exportFn };
 }
 
 export function useExportAnnualReview() {
   const exportFn = async (year: number) => {
-    await exportAnnualReview(year);
+    try {
+      await exportAnnualReview(year);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to export annual review";
+      toast.error(message);
+      throw error;
+    }
   };
   return { exportAnnualReview: exportFn };
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   getDeliverable,
   reviewDeliverable,
@@ -29,7 +30,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const STATUS_VARIANT: Record<
   string,
@@ -53,7 +53,6 @@ export default function DeliverableDetailPage() {
     status: "approved",
     review_comments: "",
   });
-  const [error, setError] = React.useState<string | null>(null);
 
   const { data: deliverable, isLoading } = useQuery({
     queryKey: ["deliverables", deliverableId],
@@ -69,18 +68,18 @@ export default function DeliverableDetailPage() {
       });
       setReviewOpen(false);
       setReviewData({ status: "approved", review_comments: "" });
+      toast.success("Review submitted successfully");
     },
-    onError: () => {
-      setError("Failed to submit review.");
-    },
+    onError: (error: Error) => toast.error(error.message || "Failed to submit review"),
   });
 
   const handleDownload = async () => {
     try {
       const { download_url } = await getDownloadUrl(deliverableId);
       window.open(download_url, "_blank");
-    } catch {
-      setError("Failed to get download URL.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to get download URL";
+      toast.error(message);
     }
   };
 
@@ -188,12 +187,6 @@ export default function DeliverableDetailPage() {
             )}
           </div>
         </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>

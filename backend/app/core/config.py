@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6380/0"
 
     # JWT
-    SECRET_KEY: str = "change-me-in-production"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -41,6 +41,21 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str | None = None
     SMTP_FROM: str = "noreply@amg-portal.com"
     SMTP_TLS: bool = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Require SECRET_KEY to be set in non-debug environments
+        if not self.DEBUG and not self.SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY must be set in production. "
+                "Set a secure random string via the SECRET_KEY environment variable."
+            )
+        # Use a development key only in DEBUG mode
+        if not self.SECRET_KEY:
+            self.SECRET_KEY = "dev-secret-key-change-in-production-do-not-use-in-prod"
+        # Validate JWT algorithm
+        if self.ALGORITHM not in ("HS256", "HS384", "HS512"):
+            raise ValueError(f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512.")
 
 
 settings = Settings()

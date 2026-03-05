@@ -4,10 +4,10 @@ import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { useClientProfile, useComplianceReview } from "@/hooks/use-clients";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -34,7 +34,7 @@ export default function ComplianceReviewPage() {
 
   const [status, setStatus] = React.useState<string>("");
   const [notes, setNotes] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
 
   if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return (
@@ -68,14 +68,14 @@ export default function ComplianceReviewPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setValidationError(null);
 
     if (!status) {
-      setError("Please select a compliance status.");
+      setValidationError("Please select a compliance status.");
       return;
     }
     if (!notes.trim()) {
-      setError("Notes are required.");
+      setValidationError("Notes are required.");
       return;
     }
 
@@ -84,9 +84,10 @@ export default function ComplianceReviewPage() {
         status: status as "cleared" | "flagged" | "rejected",
         notes,
       });
+      toast.success("Compliance review submitted");
       router.push("/compliance");
     } catch {
-      setError("Failed to submit compliance review.");
+      // Error is handled by the hook's onError callback
     }
   };
 
@@ -151,10 +152,8 @@ export default function ComplianceReviewPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+              {validationError && (
+                <p className="text-sm text-destructive">{validationError}</p>
               )}
 
               <div className="space-y-2">

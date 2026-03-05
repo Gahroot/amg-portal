@@ -206,6 +206,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
                 for n in notifications
             ]
             from app.services.email_service import send_notification_digest
+
             await send_notification_digest(
                 email=user.email,
                 notifications=notifications_data,

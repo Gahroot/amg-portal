@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type {
   WSMessage,
   WSNotificationMessage,
@@ -58,6 +59,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
+      toast.error("WebSocket connection error. Retrying...");
     };
 
     ws.onmessage = (event) => {
@@ -98,6 +100,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         setMessages((prev) => [...prev, message]);
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
+        toast.error("Failed to parse WebSocket message");
       }
     };
 
@@ -120,6 +123,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
+    } else {
+      toast.error("WebSocket is not connected");
     }
   }, []);
 

@@ -33,8 +33,9 @@ export function LoginForm() {
     setError(null);
     try {
       await login(data);
-    } catch {
-      setError("Invalid email or password. Please try again.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Invalid email or password. Please try again.";
+      setError(message);
     }
   };
 

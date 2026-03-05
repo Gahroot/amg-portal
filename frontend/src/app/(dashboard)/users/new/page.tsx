@@ -7,10 +7,10 @@ import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
 import { createUser } from "@/lib/api/users";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -42,7 +42,6 @@ type CreateUserFormData = z.infer<typeof createUserSchema>;
 export default function NewUserPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -64,12 +63,13 @@ export default function NewUserPage() {
   }
 
   const onSubmit = async (data: CreateUserFormData) => {
-    setError(null);
     try {
       await createUser(data);
+      toast.success("User created successfully");
       router.push("/users");
-    } catch {
-      setError("Failed to create user. Please try again.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create user. Please try again.";
+      toast.error(message);
     }
   };
 
@@ -84,12 +84,6 @@ export default function NewUserPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="full_name">Full Name</Label>
                 <Input id="full_name" {...register("full_name")} />

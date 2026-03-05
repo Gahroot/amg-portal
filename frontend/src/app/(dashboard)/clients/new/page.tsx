@@ -7,11 +7,11 @@ import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
 import { useCreateClientProfile } from "@/hooks/use-clients";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -69,7 +69,6 @@ type CreateClientFormData = z.infer<typeof createClientSchema>;
 export default function NewClientPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
   const createMutation = useCreateClientProfile();
 
   const {
@@ -92,12 +91,12 @@ export default function NewClientPage() {
   }
 
   const onSubmit = async (data: CreateClientFormData) => {
-    setError(null);
     try {
       await createMutation.mutateAsync(data);
+      toast.success("Client created successfully");
       router.push("/clients");
     } catch {
-      setError("Failed to create client profile. Please try again.");
+      // Error is handled by the hook's onError callback
     }
   };
 
@@ -109,12 +108,6 @@ export default function NewClientPage() {
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <Card>

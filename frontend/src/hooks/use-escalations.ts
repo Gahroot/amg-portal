@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listEscalations,
   getEscalation,
@@ -44,6 +45,7 @@ export function useCreateEscalation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to create escalation"),
   });
 }
 
@@ -56,6 +58,7 @@ export function useUpdateEscalation() {
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
       queryClient.invalidateQueries({ queryKey: ["escalations", variables.id] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to update escalation"),
   });
 }
 
@@ -66,6 +69,7 @@ export function useAcknowledgeEscalation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to acknowledge escalation"),
   });
 }
 
@@ -77,6 +81,7 @@ export function useResolveEscalation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to resolve escalation"),
   });
 }
 
@@ -97,11 +102,13 @@ export function useTriggerRiskCheck() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to trigger risk check"),
   });
 }
 
 export function useExportEscalations() {
   return useMutation({
     mutationFn: (params?: EscalationListParams) => exportEscalationsCsv(params),
+    onError: (error: Error) => toast.error(error.message || "Failed to export escalations"),
   });
 }

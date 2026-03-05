@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/providers/providers";
+import { ErrorBoundary } from "@/components/error/error-boundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +43,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <Providers>{children}</Providers>
+          <ErrorBoundary>
+            <Providers>{children}</Providers>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

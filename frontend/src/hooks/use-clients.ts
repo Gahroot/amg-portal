@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listClientProfiles,
   getClientProfile,
@@ -45,6 +46,7 @@ export function useCreateClientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to create client"),
   });
 }
 
@@ -56,6 +58,7 @@ export function useUpdateClientProfile(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to update client"),
   });
 }
 
@@ -67,6 +70,7 @@ export function useUpdateIntelligenceFile(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients", id] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to update intelligence file"),
   });
 }
 
@@ -78,6 +82,7 @@ export function useComplianceReview(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to submit compliance review"),
   });
 }
 
@@ -88,6 +93,7 @@ export function useMDApproval(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to submit approval"),
   });
 }
 
@@ -98,6 +104,7 @@ export function useProvisionClient(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to provision client"),
   });
 }
 

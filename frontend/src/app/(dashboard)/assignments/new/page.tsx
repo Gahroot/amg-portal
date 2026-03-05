@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
+import { toast } from "sonner";
 import { listPartners } from "@/lib/api/partners";
 import { listPrograms } from "@/lib/api/programs";
 import {
@@ -17,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -41,7 +41,6 @@ type CreateAssignmentFormData = z.infer<typeof createAssignmentSchema>;
 export default function NewAssignmentPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -86,7 +85,6 @@ export default function NewAssignmentPage() {
     data: CreateAssignmentFormData,
     shouldDispatch: boolean
   ) => {
-    setError(null);
     try {
       const assignment = await createMutation.mutateAsync({
         partner_id: data.partner_id,
@@ -99,9 +97,11 @@ export default function NewAssignmentPage() {
       if (shouldDispatch) {
         await dispatchMutation.mutateAsync(assignment.id);
       }
+      toast.success(shouldDispatch ? "Assignment created and dispatched" : "Assignment saved as draft");
       router.push("/assignments");
-    } catch {
-      setError("Failed to create assignment. Please try again.");
+    } catch (err) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create assignment. Please try again.";
+      toast.error(message);
     }
   };
 
@@ -119,12 +119,6 @@ export default function NewAssignmentPage() {
               onSubmit={(e) => e.preventDefault()}
               className="space-y-4"
             >
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <div className="space-y-2">
                 <Label>Partner</Label>
                 <Select

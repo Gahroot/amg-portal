@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listNotifications,
   markNotificationRead,
@@ -30,6 +31,7 @@ export function useMarkNotificationRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to mark notification as read"),
   });
 }
 
@@ -40,6 +42,7 @@ export function useMarkAllNotificationsRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to mark all notifications as read"),
   });
 }
 
@@ -59,6 +62,7 @@ export function useUpdateNotificationPreferences() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to update notification preferences"),
   });
 }
 

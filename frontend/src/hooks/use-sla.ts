@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listSLATrackers,
   getSLABreaches,
@@ -44,6 +45,7 @@ export function useStartSLA() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sla"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to start SLA tracker"),
   });
 }
 
@@ -55,5 +57,6 @@ export function useRespondToSLA() {
       queryClient.invalidateQueries({ queryKey: ["sla"] });
       queryClient.invalidateQueries({ queryKey: ["sla", "breaches"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to respond to SLA"),
   });
 }

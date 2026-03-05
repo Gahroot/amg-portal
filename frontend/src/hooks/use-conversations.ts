@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listConversations,
   getConversation,
@@ -42,6 +43,7 @@ export function useCreateConversation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to create conversation"),
   });
 }
 
@@ -54,6 +56,7 @@ export function useUpdateConversation() {
       queryClient.invalidateQueries({ queryKey: ["conversation", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to update conversation"),
   });
 }
 
@@ -76,6 +79,7 @@ export function useSendMessage() {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to send message"),
   });
 }
 
@@ -87,6 +91,7 @@ export function useMarkConversationRead() {
       queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to mark conversation as read"),
   });
 }
 
@@ -99,6 +104,7 @@ export function useAddParticipant() {
       queryClient.invalidateQueries({ queryKey: ["conversation", variables.conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to add participant"),
   });
 }
 

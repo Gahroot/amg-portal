@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   listDecisions,
   listPendingDecisions,
@@ -50,6 +51,7 @@ export function useCreateDecision() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["decisions"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to create decision request"),
   });
 }
 
@@ -63,5 +65,6 @@ export function useRespondToDecision() {
       queryClient.invalidateQueries({ queryKey: ["decisions"] });
       queryClient.invalidateQueries({ queryKey: ["decisions", "pending"] });
     },
+    onError: (error: Error) => toast.error(error.message || "Failed to respond to decision"),
   });
 }
