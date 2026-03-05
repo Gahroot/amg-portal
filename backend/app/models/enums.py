@@ -89,3 +89,50 @@ class ClientType(StrEnum):
     uhnw_individual = "uhnw_individual"
     family_office = "family_office"
     global_executive = "global_executive"
+
+
+class PartnerStatus(StrEnum):
+    pending = "pending"
+    active = "active"
+    suspended = "suspended"
+    inactive = "inactive"
+
+
+class PartnerCapability(StrEnum):
+    investment_advisory = "investment_advisory"
+    tax_planning = "tax_planning"
+    estate_planning = "estate_planning"
+    real_estate = "real_estate"
+    art_advisory = "art_advisory"
+    philanthropy = "philanthropy"
+    legal = "legal"
+    insurance = "insurance"
+    concierge = "concierge"
+    security = "security"
+    other = "other"
+
+
+class AssignmentStatus(StrEnum):
+    draft = "draft"
+    dispatched = "dispatched"
+    accepted = "accepted"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
+
+class DeliverableStatus(StrEnum):
+    pending = "pending"
+    submitted = "submitted"
+    under_review = "under_review"
+    approved = "approved"
+    returned = "returned"
+    rejected = "rejected"
+
+
+class DeliverableType(StrEnum):
+    report = "report"
+    document = "document"
+    presentation = "presentation"
+    spreadsheet = "spreadsheet"
+    other = "other"

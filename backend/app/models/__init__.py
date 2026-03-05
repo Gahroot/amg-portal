@@ -5,3 +5,6 @@ from app.models.program import Program  # noqa: F401
 from app.models.milestone import Milestone  # noqa: F401
 from app.models.task import Task  # noqa: F401
 from app.models.approval import ProgramApproval  # noqa: F401
+from app.models.partner import PartnerProfile  # noqa: F401
+from app.models.partner_assignment import PartnerAssignment  # noqa: F401
+from app.models.deliverable import Deliverable  # noqa: F401

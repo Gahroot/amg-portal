@@ -52,7 +52,7 @@ export interface ClientProfileCreateData {
   special_instructions?: string;
 }
 
-export interface ClientProfileUpdateData extends Partial<ClientProfileCreateData> {}
+export type ClientProfileUpdateData = Partial<ClientProfileCreateData>;
 
 export interface ComplianceReviewData {
   status: "cleared" | "flagged" | "rejected";

@@ -93,3 +93,26 @@ require_coordinator_or_above = RoleChecker([
 ])
 
 require_compliance = RoleChecker([UserRole.finance_compliance, UserRole.managing_director])
+
+require_partner = RoleChecker([UserRole.partner])
+
+
+async def get_current_partner_profile(
+    current_user: CurrentUser,
+    db: DB,
+):
+    from app.models.partner import PartnerProfile
+
+    result = await db.execute(
+        select(PartnerProfile).where(PartnerProfile.user_id == current_user.id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Partner profile not found",
+        )
+    return profile
+
+
+CurrentPartner = Annotated[object, Depends(get_current_partner_profile)]

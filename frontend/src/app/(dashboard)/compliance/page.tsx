@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { useClientProfiles } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,

@@ -90,6 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (isAuthenticated && isPublicPath) {
       if (user?.role === "client") {
         router.replace("/portal/dashboard");
+      } else if (user?.role === "partner") {
+        router.replace("/partner");
       } else {
         router.replace("/");
       }
@@ -104,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       if (userData.role === "client") {
         router.replace("/portal/dashboard");
+      } else if (userData.role === "partner") {
+        router.replace("/partner");
       } else {
         router.replace("/");
       }

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { useAuth } from "@/providers/auth-provider";
 import {
   useClientProfile,
   useUpdateIntelligenceFile,
@@ -48,7 +47,6 @@ type Tab = "overview" | "intelligence" | "compliance" | "provisioning";
 export default function ClientDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const { user } = useAuth();
   const { data: profile, isLoading } = useClientProfile(id);
   const [activeTab, setActiveTab] = React.useState<Tab>("overview");
   const [provisionOpen, setProvisionOpen] = React.useState(false);
