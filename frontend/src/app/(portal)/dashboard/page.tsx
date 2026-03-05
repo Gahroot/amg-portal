@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePortalProfile } from "@/hooks/use-clients";
 import {
   Card,
@@ -7,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   approved: "Active",
@@ -77,23 +80,30 @@ export default function PortalDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Programs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
+        <Link href="/portal/reports/portfolio">
+          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Programs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">View your portfolio and program status</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-lg">Communications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Coming soon</p>
-          </CardContent>
-        </Card>
+        <Link href="/portal/reports">
+          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Access status reports, completion summaries, and annual reviews</p>
+              <Button variant="ghost" size="sm" className="mt-2 p-0 h-auto">
+                View Reports <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );
