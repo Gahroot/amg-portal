@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.client_profile import ClientProfile
 from app.models.enums import ApprovalStatus, ComplianceStatus
 from app.schemas.client_profile import (
@@ -65,7 +66,23 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         elif review.status == ComplianceStatus.rejected:
             update_data["approval_status"] = ApprovalStatus.rejected.value
 
-        return await self.update(db, db_obj=profile, obj_in=update_data)
+        updated_profile = await self.update(db, db_obj=profile, obj_in=update_data)
+
+        final_statuses = (
+            ComplianceStatus.cleared,
+            ComplianceStatus.rejected,
+            ComplianceStatus.flagged,
+        )
+        if review.status in final_statuses:
+            from app.services.email_service import send_compliance_notification
+
+            await send_compliance_notification(
+                email=updated_profile.primary_email,
+                profile_name=updated_profile.display_name or updated_profile.legal_name,
+                status=review.status.value,
+            )
+
+        return updated_profile
 
     async def submit_md_approval(
         self,
@@ -136,6 +153,15 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         profile.welcome_email_sent = request.send_welcome_email
         await db.commit()
         await db.refresh(profile)
+
+        if request.send_welcome_email:
+            from app.services.email_service import send_welcome_email
+            await send_welcome_email(
+                email=profile.primary_email,
+                name=profile.display_name or profile.legal_name,
+                portal_url=settings.FRONTEND_URL,
+            )
+
         return profile
 
     async def generate_compliance_certificate(

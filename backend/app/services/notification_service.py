@@ -7,8 +7,10 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.notification import Notification
 from app.models.notification_preference import NotificationPreference
+from app.models.user import User
 from app.schemas.notification import (
     CreateNotificationRequest,
     NotificationPreferenceUpdate,
@@ -192,7 +194,23 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
             grouped[notif.notification_type].append(notif)
 
         # Send email digest
-        # await email_service.send_digest(user_id, grouped)
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if user:
+            notifications_data = [
+                {
+                    "id": str(n.id),
+                    "notification_type": n.notification_type,
+                    "title": n.title,
+                }
+                for n in notifications
+            ]
+            from app.services.email_service import send_notification_digest
+            await send_notification_digest(
+                email=user.email,
+                notifications=notifications_data,
+                portal_url=settings.FRONTEND_URL,
+            )
 
         # Mark as email delivered
         for notif in notifications:
