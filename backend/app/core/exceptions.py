@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
 
-class AppException(Exception):
+class AppException(Exception):  # noqa: N818
     """Base exception for application-specific errors."""
 
     def __init__(
@@ -80,10 +80,10 @@ def _sanitize_error_message(message: str) -> str:
     - Internal implementation details
     """
     # Remove file paths
-    message = __import__("re").sub(r'[/\\][\w/\\.-]+\.pyw?', "<file>", message)
+    message = __import__("re").sub(r"[/\\][\w/\\.-]+\.pyw?", "<file>", message)
     # Remove database table/column details
     message = __import__("re").sub(r'relation "[\w.]+"', "relation", message)
-    message = __import__("re").sub(r'column [\w.]+', "column", message)
+    message = __import__("re").sub(r"column [\w.]+", "column", message)
     # Remove SQL query details
     message = __import__("re").sub(
         r"(SELECT|INSERT|UPDATE|DELETE).*?(FROM|INTO|VALUES)",
@@ -119,9 +119,7 @@ async def validation_exception_handler(
         sanitized_error = error.copy()
         # Remove file paths from error messages
         if "msg" in sanitized_error:
-            sanitized_error["msg"] = _sanitize_error_message(
-                str(sanitized_error["msg"])
-            )
+            sanitized_error["msg"] = _sanitize_error_message(str(sanitized_error["msg"]))
         sanitized_errors.append(sanitized_error)
 
     return JSONResponse(

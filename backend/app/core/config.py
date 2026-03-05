@@ -55,7 +55,9 @@ class Settings(BaseSettings):
             self.SECRET_KEY = "dev-secret-key-change-in-production-do-not-use-in-prod"
         # Validate JWT algorithm
         if self.ALGORITHM not in ("HS256", "HS384", "HS512"):
-            raise ValueError(f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512.")
+            raise ValueError(
+                f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512."
+            )
 
 
 settings = Settings()
