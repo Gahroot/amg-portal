@@ -4,9 +4,11 @@ from app.api.v1.approvals import router as approvals_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.client_portal import router as client_portal_router
+from app.api.v1.client_preferences import router as client_preferences_router
 from app.api.v1.clients import router as clients_router
 from app.api.v1.communications import router as communications_router
 from app.api.v1.conversations import router as conversations_router
+from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.decision_requests import router as decision_requests_router
 from app.api.v1.deliverables import router as deliverables_router
 from app.api.v1.documents import router as documents_router
@@ -15,8 +17,10 @@ from app.api.v1.kyc_documents import router as kyc_documents_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.partner_assignments import router as assignments_router
 from app.api.v1.partner_portal import router as partner_portal_router
+from app.api.v1.partner_scoring import router as partner_scoring_router
 from app.api.v1.partners import router as partners_router
 from app.api.v1.program_clients import router as program_clients_router
+from app.api.v1.program_closure import router as program_closure_router
 from app.api.v1.programs import router as programs_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.sla import router as sla_router
@@ -27,8 +31,18 @@ router.include_router(auth_router, prefix="/auth", tags=["auth"])
 router.include_router(users_router, prefix="/users", tags=["users"])
 router.include_router(clients_router, prefix="/clients", tags=["clients"])
 router.include_router(client_portal_router, prefix="/portal", tags=["portal"])
+router.include_router(
+    client_preferences_router,
+    prefix="/portal",
+    tags=["client-preferences"],
+)
 router.include_router(program_clients_router, prefix="/program-clients", tags=["program-clients"])
 router.include_router(programs_router, prefix="/programs", tags=["programs"])
+router.include_router(
+    program_closure_router,
+    prefix="/programs",
+    tags=["program-closure"],
+)
 router.include_router(approvals_router, prefix="/approvals", tags=["approvals"])
 router.include_router(partners_router, prefix="/partners", tags=["partners"])
 router.include_router(assignments_router, prefix="/assignments", tags=["assignments"])
@@ -44,3 +58,9 @@ router.include_router(communications_router, prefix="/communications", tags=["co
 router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 router.include_router(decision_requests_router, prefix="/decisions", tags=["decisions"])
 router.include_router(reports_router, prefix="/reports", tags=["reports"])
+router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+router.include_router(
+    partner_scoring_router,
+    prefix="/partner-scoring",
+    tags=["partner-scoring"],
+)

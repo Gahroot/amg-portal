@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import date, timedelta
 from typing import Any
@@ -32,6 +33,8 @@ from app.schemas.program import (
     TaskResponse,
     TaskUpdate,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -143,6 +146,19 @@ async def create_program(
         .where(Program.id == program.id)
     )
     program = result.scalar_one()
+
+    try:
+        from app.services.auto_dispatch_service import (
+            on_program_created,
+        )
+
+        await on_program_created(db, program)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch program_kickoff for %s",
+            program.id,
+        )
+
     return build_program_response(program)
 
 
@@ -213,8 +229,12 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
     )
     program = result.scalar_one_or_none()
     if not program:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program not found",
+        )
 
+    old_status = program.status
     update_data = data.model_dump(exclude_unset=True)
     if "status" in update_data and update_data["status"] is not None:
         update_data["status"] = update_data["status"].value
@@ -224,6 +244,21 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
 
     await db.commit()
     await db.refresh(program)
+
+    # Dispatch completion notification if status changed
+    new_status = program.status
+    if old_status != "completed" and new_status == "completed":
+        try:
+            from app.services.auto_dispatch_service import (
+                on_program_completed,
+            )
+
+            await on_program_completed(db, program)
+        except Exception:
+            logger.exception(
+                "Failed to dispatch completion_note for %s",
+                program.id,
+            )
 
     result = await db.execute(
         select(Program)

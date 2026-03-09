@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,11 +19,34 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Manage application startup and shutdown."""
+    from app.db.session import AsyncSessionLocal
+    from app.services.scheduler_service import (
+        start_scheduler,
+        stop_scheduler,
+    )
+    from app.services.template_seeder import (
+        seed_default_templates,
+    )
+
+    # Seed system templates before starting scheduler
+    async with AsyncSessionLocal() as db:
+        await seed_default_templates(db)
+
+    scheduler = start_scheduler()
+    yield
+    stop_scheduler(scheduler)
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     version="0.1.0",
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    lifespan=lifespan,
 )
 
 # Register exception handlers for consistent, secure error responses

@@ -1,5 +1,6 @@
 """Deliverable management endpoints."""
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -25,6 +26,8 @@ from app.schemas.deliverable import (
     DeliverableUpdate,
 )
 from app.services.storage import storage_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -198,6 +201,19 @@ async def submit_deliverable(
 
     await db.commit()
     await db.refresh(deliverable)
+
+    try:
+        from app.services.auto_dispatch_service import (
+            on_deliverable_submitted,
+        )
+
+        await on_deliverable_submitted(db, deliverable)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch deliverable_submission for %s",
+            deliverable.id,
+        )
+
     return build_deliverable_response(deliverable)
 
 

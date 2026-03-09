@@ -1,6 +1,7 @@
 """Email service for sending notifications and communications."""
 
 import logging
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
@@ -59,6 +60,75 @@ async def send_email(
         logger.info(f"Email sent successfully to {to}")
     except Exception as e:
         logger.error(f"Failed to send email to {to}: {e}")
+        raise
+
+
+async def send_email_with_attachment(
+    to: str,
+    subject: str,
+    body_html: str,
+    attachment: bytes,
+    attachment_filename: str,
+    attachment_content_type: str = "application/pdf",
+) -> None:
+    """Send an email with a file attachment.
+
+    Args:
+        to: Recipient email address
+        subject: Email subject
+        body_html: HTML body content
+        attachment: Raw attachment bytes
+        attachment_filename: Filename for the attachment
+        attachment_content_type: MIME type of the attachment
+    """
+    if settings.SMTP_HOST is None:
+        logger.info(
+            "[STUB] Email with attachment would be sent to %s: %s (file: %s)",
+            to,
+            subject,
+            attachment_filename,
+        )
+        return
+
+    message = MIMEMultipart("mixed")
+    message["From"] = settings.SMTP_FROM
+    message["To"] = to
+    message["Subject"] = subject
+
+    # HTML body
+    message.attach(MIMEText(body_html, "html", "utf-8"))
+
+    # Attachment
+    maintype, _, subtype = attachment_content_type.partition("/")
+    part = MIMEBase(maintype, subtype or "octet-stream")
+    part.set_payload(attachment)
+
+    import email.encoders
+
+    email.encoders.encode_base64(part)
+    part.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename=attachment_filename,
+    )
+    message.attach(part)
+
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            use_tls=settings.SMTP_TLS,
+        )
+        logger.info("Email with attachment sent to %s", to)
+    except Exception as e:
+        logger.error(
+            "Failed to send email with attachment to %s: %s",
+            to,
+            e,
+        )
         raise
 
 

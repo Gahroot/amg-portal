@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
@@ -25,3 +26,23 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
+
+
+async def apply_rls_context(
+    session: AsyncSession,
+    user_id: str,
+    user_role: str,
+) -> None:
+    """Set PostgreSQL session variables for row-level security.
+
+    Uses SET LOCAL so the settings are scoped to the current transaction
+    and automatically reset when the transaction ends.
+    """
+    await session.execute(
+        text("SET LOCAL app.current_user_id = :user_id"),
+        {"user_id": user_id},
+    )
+    await session.execute(
+        text("SET LOCAL app.current_user_role = :role"),
+        {"role": user_role},
+    )

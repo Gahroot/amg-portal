@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
-from app.db.session import get_db
+from app.db.session import apply_rls_context, get_db
 from app.models.enums import UserRole
 from app.models.user import User
 
@@ -122,3 +122,11 @@ async def get_current_partner_profile(
 
 
 CurrentPartner = Annotated[object, Depends(get_current_partner_profile)]
+
+
+async def with_rls(db: DB, current_user: CurrentUser) -> None:
+    """Dependency that sets RLS context on the current DB session."""
+    await apply_rls_context(db, str(current_user.id), current_user.role)
+
+
+RLSContext = Annotated[None, Depends(with_rls)]

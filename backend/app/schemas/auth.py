@@ -10,6 +10,7 @@ from app.models.enums import UserRole
 class LoginRequest(BaseModel):
     email: str
     password: str
+    mfa_code: str | None = None
 
 
 class UserCreate(BaseModel):
@@ -58,6 +59,18 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    mfa_required: bool = False
+
+
+class MFASetupResponse(BaseModel):
+    secret: str
+    provisioning_uri: str
+    qr_code_base64: str
+    backup_codes: list[str]
+
+
+class MFAVerifyRequest(BaseModel):
+    code: str
 
 
 class RefreshTokenRequest(BaseModel):

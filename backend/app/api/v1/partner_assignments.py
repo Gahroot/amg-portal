@@ -1,5 +1,6 @@
 """Partner assignment management endpoints."""
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -8,7 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentPartner, CurrentUser, require_internal, require_rm_or_above
+from app.api.deps import (
+    DB,
+    CurrentPartner,
+    CurrentUser,
+    require_internal,
+    require_rm_or_above,
+)
 from app.models.partner import PartnerProfile
 from app.models.partner_assignment import PartnerAssignment
 from app.models.program import Program
@@ -18,6 +25,8 @@ from app.schemas.partner_assignment import (
     AssignmentResponse,
     AssignmentUpdate,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -199,9 +208,24 @@ async def dispatch_assignment(
     await db.commit()
     await db.refresh(assignment)
 
+    try:
+        from app.services.auto_dispatch_service import (
+            on_assignment_dispatched,
+        )
+
+        await on_assignment_dispatched(db, assignment)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch partner_dispatch for %s",
+            assignment.id,
+        )
+
     result = await db.execute(
         select(PartnerAssignment)
-        .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
+        .options(
+            selectinload(PartnerAssignment.partner),
+            selectinload(PartnerAssignment.program),
+        )
         .where(PartnerAssignment.id == assignment.id)
     )
     assignment = result.scalar_one()

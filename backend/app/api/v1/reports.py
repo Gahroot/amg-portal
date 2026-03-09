@@ -1,26 +1,34 @@
-"""Report endpoints — client-facing reports with CSV export."""
+"""Report endpoints — client-facing reports with CSV and PDF export."""
 
 import csv
 import io
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.api.deps import (
     DB,
     CurrentUser,
+    require_internal,
 )
 from app.api.v1.client_portal import require_client
 from app.models.client import Client
+from app.models.report_schedule import ReportSchedule
 from app.schemas.report import (
     AnnualReviewReport,
     CompletionReport,
     PortfolioOverviewReport,
     ProgramStatusReport,
 )
+from app.schemas.report_schedule import (
+    ReportScheduleCreate,
+    ReportScheduleResponse,
+    ReportScheduleUpdate,
+)
+from app.services.pdf_service import pdf_service
 from app.services.report_service import report_service
 
 router = APIRouter()
@@ -505,3 +513,336 @@ async def export_annual_review_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+# ---------------------------------------------------------------------------
+# PDF export endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/portfolio/pdf", dependencies=[Depends(require_client)])
+async def export_portfolio_report_pdf(
+    db: DB,
+    current_user: CurrentUser,
+) -> StreamingResponse:
+    """Export portfolio overview as PDF."""
+    client_id = await get_client_id_from_user(db, current_user)
+    report = await report_service.get_portfolio_overview(db, client_id)
+    if not report:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found",
+        )
+
+    pdf_bytes = pdf_service.generate_portfolio_pdf(report)
+    filename = f"portfolio_overview_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+        },
+    )
+
+
+@router.get("/program-status/pdf", dependencies=[Depends(require_client)])
+async def export_program_status_report_pdf(
+    db: DB,
+    current_user: CurrentUser,
+    program_id: uuid.UUID = Query(..., description="Program ID"),
+) -> StreamingResponse:
+    """Export program status report as PDF."""
+    client_id = await get_client_id_from_user(db, current_user)
+
+    from app.models.program import Program
+
+    program_result = await db.execute(
+        select(Program).where(Program.id == program_id, Program.client_id == client_id)
+    )
+    program = program_result.scalar_one_or_none()
+    if not program:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program not found",
+        )
+
+    report = await report_service.get_program_status_report(db, program_id)
+    if not report:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program not found",
+        )
+
+    pdf_bytes = pdf_service.generate_program_status_pdf(report)
+    safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
+    filename = f"program_status_{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+        },
+    )
+
+
+@router.get(
+    "/completion/{program_id}/pdf",
+    dependencies=[Depends(require_client)],
+)
+async def export_completion_report_pdf(
+    program_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+) -> StreamingResponse:
+    """Export completion report as PDF."""
+    client_id = await get_client_id_from_user(db, current_user)
+
+    from app.models.program import Program
+
+    program_result = await db.execute(
+        select(Program).where(Program.id == program_id, Program.client_id == client_id)
+    )
+    program = program_result.scalar_one_or_none()
+    if not program:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program not found",
+        )
+
+    report = await report_service.get_completion_report(db, program_id)
+    if not report:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program not found",
+        )
+
+    pdf_bytes = pdf_service.generate_completion_pdf(report)
+    safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
+    filename = f"completion_{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+        },
+    )
+
+
+@router.get("/annual/{year}/pdf", dependencies=[Depends(require_client)])
+async def export_annual_review_pdf(
+    year: int,
+    db: DB,
+    current_user: CurrentUser,
+) -> StreamingResponse:
+    """Export annual review as PDF."""
+    client_id = await get_client_id_from_user(db, current_user)
+    report = await report_service.get_annual_review(db, client_id, year)
+    if not report:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found",
+        )
+
+    pdf_bytes = pdf_service.generate_annual_review_pdf(report)
+    filename = f"annual_review_{year}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Report scheduling endpoints
+# ---------------------------------------------------------------------------
+
+VALID_REPORT_TYPES = {
+    "portfolio",
+    "program_status",
+    "completion",
+    "annual_review",
+}
+VALID_FREQUENCIES = {"daily", "weekly", "monthly"}
+VALID_FORMATS = {"pdf", "csv"}
+
+
+def _calculate_initial_next_run(frequency: str) -> datetime:
+    """Calculate the first next_run based on frequency."""
+    now = datetime.now(UTC)
+    if frequency == "daily":
+        # Tomorrow at 06:00 UTC
+        tomorrow = now + timedelta(days=1)
+        return tomorrow.replace(hour=6, minute=0, second=0, microsecond=0)
+    elif frequency == "weekly":
+        # Next Monday at 06:00 UTC
+        days_ahead = 7 - now.weekday()  # Monday = 0
+        if days_ahead <= 0:
+            days_ahead += 7
+        next_monday = now + timedelta(days=days_ahead)
+        return next_monday.replace(hour=6, minute=0, second=0, microsecond=0)
+    elif frequency == "monthly":
+        # 1st of next month at 06:00 UTC
+        if now.month == 12:
+            return now.replace(
+                year=now.year + 1,
+                month=1,
+                day=1,
+                hour=6,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
+        return now.replace(
+            month=now.month + 1,
+            day=1,
+            hour=6,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+    # Fallback: tomorrow
+    tomorrow = now + timedelta(days=1)
+    return tomorrow.replace(hour=6, minute=0, second=0, microsecond=0)
+
+
+@router.post(
+    "/schedules",
+    response_model=ReportScheduleResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_internal)],
+)
+async def create_report_schedule(
+    body: ReportScheduleCreate,
+    db: DB,
+    current_user: CurrentUser,
+) -> ReportSchedule:
+    """Create a new report schedule."""
+    if body.report_type not in VALID_REPORT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_REPORT_TYPES))}"
+            ),
+        )
+    if body.frequency not in VALID_FREQUENCIES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"),
+        )
+    if body.format not in VALID_FORMATS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
+        )
+
+    schedule = ReportSchedule(
+        report_type=body.report_type,
+        entity_id=body.entity_id,
+        frequency=body.frequency,
+        next_run=_calculate_initial_next_run(body.frequency),
+        recipients=body.recipients,
+        format=body.format,
+        created_by=current_user.id,
+    )
+    db.add(schedule)
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+@router.get(
+    "/schedules",
+    response_model=list[ReportScheduleResponse],
+    dependencies=[Depends(require_internal)],
+)
+async def list_report_schedules(
+    db: DB,
+    current_user: CurrentUser,
+) -> list[ReportSchedule]:
+    """List all report schedules."""
+    result = await db.execute(select(ReportSchedule).order_by(ReportSchedule.created_at.desc()))
+    return list(result.scalars().all())
+
+
+@router.patch(
+    "/schedules/{schedule_id}",
+    response_model=ReportScheduleResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def update_report_schedule(
+    schedule_id: uuid.UUID,
+    body: ReportScheduleUpdate,
+    db: DB,
+    current_user: CurrentUser,
+) -> ReportSchedule:
+    """Update a report schedule."""
+    result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Schedule not found",
+        )
+
+    if body.frequency is not None:
+        if body.frequency not in VALID_FREQUENCIES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
+                ),
+            )
+        schedule.frequency = body.frequency
+        schedule.next_run = _calculate_initial_next_run(body.frequency)
+    if body.recipients is not None:
+        schedule.recipients = body.recipients
+    if body.format is not None:
+        if body.format not in VALID_FORMATS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
+            )
+        schedule.format = body.format
+    if body.is_active is not None:
+        schedule.is_active = body.is_active
+
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+@router.delete(
+    "/schedules/{schedule_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_internal)],
+)
+async def delete_report_schedule(
+    schedule_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+) -> None:
+    """Delete a report schedule."""
+    result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Schedule not found",
+        )
+
+    await db.delete(schedule)
+    await db.commit()

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Portfolio Overview</h1>
+<p><strong>Client:</strong> {{ client_name }}</p>
+
+<div style="margin: 20px 0;">
+    <div class="stat-box"><div class="stat-value">{{ total_programs }}</div><div class="stat-label">Total Programs</div></div>
+    <div class="stat-box"><div class="stat-value">{{ active_programs }}</div><div class="stat-label">Active</div></div>
+    <div class="stat-box"><div class="stat-value">{{ completed_programs }}</div><div class="stat-label">Completed</div></div>
+    <div class="stat-box"><div class="stat-value">{{ overall_milestone_progress }}%</div><div class="stat-label">Progress</div></div>
+</div>
+
+{% if total_budget %}
+<p><strong>Total Budget:</strong> ${{ "{:,.2f}".format(total_budget) }}</p>
+{% endif %}
+
+<h2>RAG Status Summary</h2>
+<table>
+    <tr><th>Status</th><th>Count</th></tr>
+    {% for status, count in rag_summary.items() %}
+    <tr><td><span class="rag-{{ status }}">{{ status | upper }}</span></td><td>{{ count }}</td></tr>
+    {% endfor %}
+</table>
+
+<h2>Programs</h2>
+<table>
+    <tr><th>Program</th><th>Status</th><th>RAG</th><th>Progress</th><th>Start</th><th>End</th></tr>
+    {% for p in programs %}
+    <tr>
+        <td>{{ p.title }}</td>
+        <td>{{ p.status | title }}</td>
+        <td><span class="rag-{{ p.rag_status }}">{{ p.rag_status | upper }}</span></td>
+        <td>
+            <div class="progress-bar"><div class="progress-fill" style="width: {{ p.milestone_progress }}%"></div></div>
+            {{ p.milestone_progress }}%
+        </td>
+        <td>{{ p.start_date or 'TBD' }}</td>
+        <td>{{ p.end_date or 'TBD' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

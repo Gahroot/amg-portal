@@ -237,3 +237,51 @@ export async function exportAnnualReview(year: number): Promise<void> {
   link.click();
   link.remove();
 }
+
+// ============================================================================
+// PDF Download Helpers
+// ============================================================================
+
+function dateStr(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function downloadBlob(data: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(new Blob([data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function downloadPortfolioPDF(): Promise<void> {
+  const response = await api.get("/api/v1/reports/portfolio/pdf", {
+    responseType: "blob",
+  });
+  downloadBlob(response.data, `portfolio_overview_${dateStr()}.pdf`);
+}
+
+export async function downloadProgramStatusPDF(programId: string): Promise<void> {
+  const response = await api.get("/api/v1/reports/program-status/pdf", {
+    params: { program_id: programId },
+    responseType: "blob",
+  });
+  downloadBlob(response.data, `program_status_${dateStr()}.pdf`);
+}
+
+export async function downloadCompletionPDF(programId: string): Promise<void> {
+  const response = await api.get(`/api/v1/reports/completion/${programId}/pdf`, {
+    responseType: "blob",
+  });
+  downloadBlob(response.data, `completion_report_${dateStr()}.pdf`);
+}
+
+export async function downloadAnnualReviewPDF(year: number): Promise<void> {
+  const response = await api.get(`/api/v1/reports/annual/${year}/pdf`, {
+    responseType: "blob",
+  });
+  downloadBlob(response.data, `annual_review_${year}_${dateStr()}.pdf`);
+}

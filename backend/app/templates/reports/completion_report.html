@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Program Completion Report</h1>
+<p><strong>Program:</strong> {{ program_title }}</p>
+<p><strong>Client:</strong> {{ client_name }}</p>
+
+<h2>Objectives &amp; Scope</h2>
+<p><strong>Objectives:</strong> {{ objectives or 'N/A' }}</p>
+<p><strong>Scope:</strong> {{ scope or 'N/A' }}</p>
+
+<h2>Timeline</h2>
+<table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Planned Start</td><td>{{ planned_start_date or 'N/A' }}</td></tr>
+    <tr><td>Planned End</td><td>{{ planned_end_date or 'N/A' }}</td></tr>
+    <tr><td>Actual Start</td><td>{{ actual_start_date or 'N/A' }}</td></tr>
+    <tr><td>Actual End</td><td>{{ actual_end_date or 'N/A' }}</td></tr>
+    <tr><td>Adherence</td><td>{{ timeline_adherence or 'N/A' }}</td></tr>
+</table>
+
+<h2>Budget</h2>
+<table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Planned Budget</td><td>{{ "$%s" | format("{:,.2f}".format(planned_budget)) if planned_budget else 'N/A' }}</td></tr>
+    <tr><td>Actual Budget</td><td>{{ "$%s" | format("{:,.2f}".format(actual_budget)) if actual_budget else 'N/A' }}</td></tr>
+</table>
+
+<h2>Milestone Timeline</h2>
+<table>
+    <tr><th>Milestone</th><th>Planned Due</th><th>Completed</th><th>Status</th><th>On Time</th></tr>
+    {% for m in milestone_timeline %}
+    <tr>
+        <td>{{ m.title }}</td>
+        <td>{{ m.planned_due_date or 'N/A' }}</td>
+        <td>{{ m.actual_completed_at or 'N/A' }}</td>
+        <td>{{ m.status | title }}</td>
+        <td>{{ 'Yes' if m.on_time else ('No' if m.on_time is not none else 'N/A') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Deliverables</h2>
+<p>Total: {{ total_deliverables }} | Approved: {{ approved_deliverables }}</p>
+<table>
+    <tr><th>Deliverable</th><th>Type</th><th>Status</th></tr>
+    {% for d in deliverables %}
+    <tr><td>{{ d.title }}</td><td>{{ d.deliverable_type }}</td><td>{{ d.status | title }}</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

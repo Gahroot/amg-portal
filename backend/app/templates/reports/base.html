@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: 'Georgia', serif; color: #2c2c2c; line-height: 1.6; font-size: 11pt; }
+        h1 { color: #8B4513; font-size: 22pt; border-bottom: 2px solid #D2691E; padding-bottom: 8px; }
+        h2 { color: #A0522D; font-size: 16pt; margin-top: 20px; }
+        h3 { color: #8B4513; font-size: 13pt; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th { background-color: #8B4513; color: white; padding: 8px 10px; text-align: left; font-size: 10pt; }
+        td { padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }
+        tr:nth-child(even) td { background-color: #faf5f0; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header .logo { font-size: 28pt; color: #8B4513; font-weight: bold; letter-spacing: 2px; }
+        .header .subtitle { color: #666; font-size: 10pt; }
+        .footer { text-align: center; color: #999; font-size: 8pt; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; }
+        .rag-green { color: #2E7D32; font-weight: bold; }
+        .rag-amber { color: #F57F17; font-weight: bold; }
+        .rag-red { color: #C62828; font-weight: bold; }
+        .stat-box { display: inline-block; width: 22%; padding: 12px; margin: 4px 1%; background: #faf5f0; border-radius: 6px; text-align: center; }
+        .stat-value { font-size: 20pt; color: #8B4513; font-weight: bold; }
+        .stat-label { font-size: 9pt; color: #666; }
+        .progress-bar { background: #e0d5c8; border-radius: 4px; height: 12px; }
+        .progress-fill { background: #8B4513; border-radius: 4px; height: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">AMG</div>
+        <div class="subtitle">Anchor Mill Group — Private Client Services</div>
+    </div>
+    {% block content %}{% endblock %}
+    <div class="footer">
+        <p>Confidential — Generated {{ generated_at[:10] if generated_at else '' }} — AMG Portal</p>
+    </div>
+</body>
+</html>

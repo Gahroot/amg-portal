@@ -9,6 +9,14 @@ import {
   type LoginCredentials,
 } from "@/lib/api/auth";
 
+export class MFARequiredError extends Error {
+  mfaRequired = true;
+  constructor() {
+    super("MFA code required");
+    this.name = "MFARequiredError";
+  }
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -17,7 +25,9 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<
+  AuthContextType | undefined
+>(undefined);
 
 const PUBLIC_PATHS = ["/login"];
 
@@ -50,7 +60,11 @@ function removeTokens(): void {
   }
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
@@ -101,6 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = React.useCallback(
     async (credentials: LoginCredentials) => {
       const response = await loginApi(credentials);
+
+      if (response.mfa_required) {
+        throw new MFARequiredError();
+      }
+
       setTokens(response.access_token, response.refresh_token);
       const userData = await getCurrentUser();
       setUser(userData);
@@ -126,13 +145,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, isAuthenticated, login, logout]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error(
+      "useAuth must be used within an AuthProvider"
+    );
   }
   return context;
 }

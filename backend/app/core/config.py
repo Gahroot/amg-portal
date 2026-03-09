@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Scheduler
+    SCHEDULER_ENABLED: bool = True
+    SLA_CHECK_INTERVAL_MINUTES: int = 5
+    MILESTONE_RISK_CHECK_INTERVAL_MINUTES: int = 15
+    DIGEST_HOUR_UTC: int = 8
+
     # SMTP / Email
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587

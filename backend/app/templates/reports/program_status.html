@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Program Status Report</h1>
+<p><strong>Program:</strong> {{ program_title }}</p>
+<p><strong>Status:</strong> {{ program_status | title }} — <span class="rag-{{ rag_status }}">{{ rag_status | upper }}</span></p>
+<p><strong>Milestone Progress:</strong> {{ milestone_progress }}%</p>
+
+<h2>Active Milestones</h2>
+<table>
+    <tr><th>Milestone</th><th>Due Date</th><th>Status</th></tr>
+    {% for m in active_milestones %}
+    <tr><td>{{ m.title }}</td><td>{{ m.due_date or 'TBD' }}</td><td>{{ m.status | title }}</td></tr>
+    {% endfor %}
+</table>
+
+<h2>Completed Deliverables</h2>
+<table>
+    <tr><th>Deliverable</th><th>Type</th><th>Status</th><th>Submitted</th></tr>
+    {% for d in completed_deliverables %}
+    <tr><td>{{ d.title }}</td><td>{{ d.deliverable_type }}</td><td>{{ d.status | title }}</td><td>{{ d.submitted_at or 'N/A' }}</td></tr>
+    {% endfor %}
+</table>
+
+{% if pending_decisions %}
+<h2>Pending Decisions</h2>
+<table>
+    <tr><th>Decision</th><th>Requested</th></tr>
+    {% for dec in pending_decisions %}
+    <tr><td>{{ dec.title }}</td><td>{{ dec.requested_at }}</td></tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if assigned_partners %}
+<h2>Assigned Partners</h2>
+<table>
+    <tr><th>Firm</th><th>Contact</th><th>Email</th></tr>
+    {% for partner in assigned_partners %}
+    <tr><td>{{ partner.firm_name }}</td><td>{{ partner.contact_name }}</td><td>{{ partner.contact_email }}</td></tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

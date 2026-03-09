@@ -34,9 +34,16 @@ dependencies = [
     "minio>=7.2.0",
     # Logging
     "structlog>=24.4.0",
+    # MFA / TOTP
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=7.4.0",
     # Utilities
     "python-dotenv>=1.0.1",
     "pytz>=2024.2",
+    # Scheduler
+    "apscheduler>=3.10.0",
+    # PDF generation
+    "weasyprint>=62.0",
 ]
 
 [project.optional-dependencies]

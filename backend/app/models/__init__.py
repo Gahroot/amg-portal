@@ -15,7 +15,10 @@ from app.models.notification import Notification  # noqa: F401
 from app.models.notification_preference import NotificationPreference  # noqa: F401
 from app.models.partner import PartnerProfile  # noqa: F401
 from app.models.partner_assignment import PartnerAssignment  # noqa: F401
+from app.models.partner_rating import PartnerRating  # noqa: F401
 from app.models.program import Program  # noqa: F401
+from app.models.program_closure import ProgramClosure  # noqa: F401
+from app.models.report_schedule import ReportSchedule  # noqa: F401
 from app.models.sla_tracker import SLATracker  # noqa: F401
 from app.models.task import Task  # noqa: F401
 from app.models.user import User  # noqa: F401

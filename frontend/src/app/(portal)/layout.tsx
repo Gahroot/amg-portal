@@ -7,11 +7,12 @@ import { AuthGuard } from "@/components/auth/auth-guard";
 import { ErrorBoundary } from "@/components/error/error-boundary";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { FileText, Home } from "lucide-react";
+import { FileText, Home, Settings } from "lucide-react";
 
 const navLinks = [
   { href: "/portal/dashboard", label: "Dashboard", icon: Home },
   { href: "/portal/reports", label: "Reports", icon: FileText },
+  { href: "/portal/settings", label: "Settings", icon: Settings },
 ];
 
 export default function PortalLayout({

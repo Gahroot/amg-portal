@@ -1,5 +1,6 @@
 """Decision request management endpoints."""
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,6 +14,8 @@ from app.schemas.decision_request import (
     DecisionRespondRequest,
 )
 from app.services.decision_service import decision_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,6 +33,19 @@ async def create_decision_request(
 ):
     """Create a new decision request for a client."""
     decision = await decision_service.create(db, obj_in=data, created_by_id=current_user.id)
+
+    try:
+        from app.services.auto_dispatch_service import (
+            on_decision_requested,
+        )
+
+        await on_decision_requested(db, decision)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch decision_request for %s",
+            decision.id,
+        )
+
     return decision
 
 
