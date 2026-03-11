@@ -10,8 +10,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { queryClient } from '@/lib/query-client';
-
-SplashScreen.preventAutoHideAsync();
+import { useNotifications } from '@/hooks/use-notifications';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -34,14 +34,26 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+ }
+
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
+  const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
     hydrate().then(() => {
       SplashScreen.hideAsync();
     });
   }, [hydrate]);
+
+  // Initialize notifications when authenticated
+  useEffect(() => {
+    if (!token) return;
+
+    // Initialize push notifications
+    const { requestPermissions } = usePushNotifications();
+    requestPermissions();
+  }, [token]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
