@@ -1,17 +1,24 @@
 import api from '@/lib/api';
 import type { User } from '@/types/user';
 
-interface LoginRequest {
+export interface LoginRequest {
   email: string;
   password: string;
   mfa_code?: string;
 }
 
-interface TokenResponse {
+export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
   mfa_required: boolean;
+}
+
+export interface MFASetupResponse {
+  secret: string;
+  provisioning_uri: string;
+  qr_code_base64: string;
+  backup_codes: string[];
 }
 
 export async function login(data: LoginRequest): Promise<TokenResponse> {
@@ -35,5 +42,25 @@ export async function verifyMFA(code: string): Promise<TokenResponse> {
 
 export async function getMe(): Promise<User> {
   const res = await api.get<User>('/auth/me');
+  return res.data;
+}
+
+export async function setupMFA(): Promise<MFASetupResponse> {
+  const res = await api.post<MFASetupResponse>('/auth/mfa/setup');
+  return res.data;
+}
+
+export async function verifyMFASetup(code: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>('/auth/mfa/verify-setup', { code });
+  return res.data;
+}
+
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>('/auth/forgot-password', { email });
+  return res.data;
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await api.post<{ message: string }>('/auth/reset-password', { token, password });
   return res.data;
 }
