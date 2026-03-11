@@ -351,3 +351,50 @@ class BudgetApprovalAction(StrEnum):
     cancelled = "cancelled"
     escalated = "escalated"
     reopened = "reopened"
+
+
+class NPSSurveyStatus(StrEnum):
+    """Status of NPS surveys"""
+
+    draft = "draft"
+    scheduled = "scheduled"
+    active = "active"
+    closed = "closed"
+    archived = "archived"
+
+
+class NPSScoreCategory(StrEnum):
+    """NPS score categories"""
+
+    detractor = "detractor"  # 0-6
+    passive = "passive"  # 7-8
+    promoter = "promoter"  # 9-10
+
+
+class NPSFollowUpStatus(StrEnum):
+    """Status of NPS follow-up actions"""
+
+    pending = "pending"
+    acknowledged = "acknowledged"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
+
+class NPSFollowUpPriority(StrEnum):
+    """Priority of NPS follow-up actions"""
+
+    low = "low"
+    medium = "medium"
+    high = "high"
+    urgent = "urgent"
+
+
+class NPSFollowUpActionType(StrEnum):
+    """Types of follow-up actions"""
+
+    personal_reach_out = "personal_reach_out"
+    escalation = "escalation"
+    service_review = "service_review"
+    management_intervention = "management_intervention"
+    process_improvement = "process_improvement"
