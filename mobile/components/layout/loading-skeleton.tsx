@@ -39,3 +39,25 @@ export function LoadingSkeleton({ width = '100%', height = 20, borderRadius = 8,
     </View>
   );
 }
+
+interface LoadingListProps {
+  count?: number;
+  className?: string;
+}
+
+export function LoadingList({ count = 3, className }: LoadingListProps) {
+  return (
+    <View className={cn('gap-3', className)}>
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} className="rounded-lg border border-border bg-card p-4">
+          <LoadingSkeleton width="60%" height={16} className="mb-2" />
+          <LoadingSkeleton width="80%" height={12} className="mb-3" />
+          <View className="flex-row gap-2">
+            <LoadingSkeleton width={60} height={24} borderRadius={12} />
+            <LoadingSkeleton width={80} height={24} borderRadius={12} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
