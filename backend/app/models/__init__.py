@@ -8,6 +8,11 @@ from app.models.budget_approval import (  # noqa: F401
     BudgetApprovalRequest,
     BudgetApprovalStep,
 )
+from app.models.clearance_certificate import (  # noqa: F401
+    CertificateTemplate,
+    ClearanceCertificate,
+    ClearanceCertificateHistory,
+)
 from app.models.client import Client  # noqa: F401
 from app.models.client_profile import ClientProfile  # noqa: F401
 from app.models.communication import Communication  # noqa: F401
