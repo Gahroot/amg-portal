@@ -1,6 +1,6 @@
 """Schemas for notification operations."""
 
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any
 from uuid import UUID
 
@@ -36,6 +36,10 @@ class NotificationPreferenceUpdate(BaseModel):
     digest_frequency: str | None = None
     notification_type_preferences: dict[str, Any] | None = None
     channel_preferences: dict[str, Any] | None = None
+    quiet_hours_enabled: bool | None = None
+    quiet_hours_start: time | None = None
+    quiet_hours_end: time | None = None
+    timezone: str | None = None
 
 
 class NotificationPreferenceResponse(BaseModel):
@@ -45,6 +49,10 @@ class NotificationPreferenceResponse(BaseModel):
     digest_frequency: str
     notification_type_preferences: dict[str, Any] | None = None
     channel_preferences: dict[str, Any] | None = None
+    quiet_hours_enabled: bool
+    quiet_hours_start: time | None = None
+    quiet_hours_end: time | None = None
+    timezone: str
     created_at: datetime
     updated_at: datetime
 

@@ -36,8 +36,8 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         )
 
         if unread_only:
-            query = query.where(not Notification.is_read)
-            count_query = count_query.where(not Notification.is_read)
+            query = query.where(Notification.is_read == False)  # noqa: E712
+            count_query = count_query.where(Notification.is_read == False)  # noqa: E712
 
         query = query.order_by(Notification.created_at.desc())
 
@@ -47,6 +47,19 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
 
         return notifications, total
 
+    async def get_unread_count(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> int:
+        """Get unread notification count for a user."""
+        count_query = (
+            select(func.count())
+            .select_from(Notification)
+            .where(Notification.user_id == user_id, Notification.is_read == False)  # noqa: E712
+        )
+        return (await db.execute(count_query)).scalar_one()
+
     async def mark_read(
         self,
         db: AsyncSession,
@@ -54,13 +67,13 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         user_id: uuid.UUID,
     ) -> Notification | None:
         """Mark a notification as read."""
-        notification = await db.execute(
+        result = await db.execute(
             select(Notification).where(
                 Notification.id == notification_id,
                 Notification.user_id == user_id,
             )
         )
-        notification = notification.scalar_one_or_none()
+        notification = result.scalar_one_or_none()
 
         if not notification:
             return None
@@ -85,7 +98,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
             update(Notification)
             .where(
                 Notification.user_id == user_id,
-                not Notification.is_read,
+                Notification.is_read == False,  # noqa: E712
             )
             .values(
                 is_read=True,
@@ -114,7 +127,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
                 digest_enabled=True,
                 digest_frequency="daily",
                 notification_type_preferences={},
-                channel_preferences={"in_portal": True, "email": True},
+                channel_preferences={"in_portal": True, "email": True, "push": True},
             )
             db.add(prefs)
             await db.commit()
@@ -145,7 +158,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         db: AsyncSession,
         data: CreateNotificationRequest,
     ) -> Notification:
-        """Create a new notification."""
+        """Create a new notification and send push/real-time notifications."""
         notification = Notification(
             user_id=data.user_id,
             notification_type=data.notification_type,
@@ -161,10 +174,65 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         await db.commit()
         await db.refresh(notification)
 
-        # Check user preferences and send email if needed
-        # await self._maybe_send_email_digest(db, notification)
+        # Get user preferences
+        prefs = await self.get_or_create_preferences(db, data.user_id)
+
+        # Send push notification
+        await self._send_push_notification(db, notification, prefs)
+
+        # Send real-time notification via WebSocket
+        await self._send_realtime_notification(notification)
 
         return notification
+
+    async def _send_push_notification(
+        self,
+        db: AsyncSession,
+        notification: Notification,
+        prefs: NotificationPreference,
+    ) -> None:
+        """Send push notification for a new notification."""
+        from app.services.push_service import push_service
+
+        channel_prefs = prefs.channel_preferences or {}
+        if not channel_prefs.get("push", True):
+            return
+
+        await push_service.send_push_notification(
+            db,
+            user_id=notification.user_id,
+            title=notification.title,
+            body=notification.body,
+            data={
+                "id": str(notification.id),
+                "type": notification.notification_type,
+                "action_url": notification.action_url,
+                "entity_type": notification.entity_type,
+                "entity_id": str(notification.entity_id) if notification.entity_id else None,
+                "priority": notification.priority,
+            },
+            preferences=prefs,
+        )
+
+    async def _send_realtime_notification(self, notification: Notification) -> None:
+        """Send real-time notification via WebSocket."""
+        from app.api.ws_connection import connection_manager
+
+        await connection_manager.broadcast_notification(
+            notification.user_id,
+            {
+                "id": str(notification.id),
+                "type": notification.notification_type,
+                "title": notification.title,
+                "body": notification.body,
+                "action_url": notification.action_url,
+                "action_label": notification.action_label,
+                "entity_type": notification.entity_type,
+                "entity_id": str(notification.entity_id) if notification.entity_id else None,
+                "priority": notification.priority,
+                "created_at": notification.created_at.isoformat(),
+            },
+        )
 
     async def send_digest(
         self,

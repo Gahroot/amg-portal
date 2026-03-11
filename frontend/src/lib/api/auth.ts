@@ -4,8 +4,10 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  phone_number?: string | null;
   role: string;
   status: string;
+  mfa_enabled: boolean;
   created_at: string;
 }
 
@@ -33,6 +35,38 @@ export interface MFAVerifyRequest {
   code: string;
 }
 
+export interface ProfileUpdateRequest {
+  full_name?: string;
+  phone_number?: string;
+}
+
+export interface UserNotificationPreferences {
+  digest_enabled: boolean;
+  digest_frequency: string;
+  notification_type_preferences: Record<string, string> | null;
+  channel_preferences: Record<string, boolean> | null;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+  timezone: string;
+}
+
+export interface UserNotificationPreferencesUpdate {
+  digest_enabled?: boolean;
+  digest_frequency?: string;
+  notification_type_preferences?: Record<string, string>;
+  channel_preferences?: Record<string, boolean>;
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  timezone?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export async function login(
   credentials: LoginCredentials
 ): Promise<AuthResponse> {
@@ -45,6 +79,11 @@ export async function login(
 
 export async function getCurrentUser(): Promise<User> {
   const response = await api.get<User>("/api/v1/auth/me");
+  return response.data;
+}
+
+export async function updateProfile(data: ProfileUpdateRequest): Promise<User> {
+  const response = await api.patch<User>("/api/v1/auth/me", data);
   return response.data;
 }
 
@@ -82,5 +121,23 @@ export async function disableMFA(
   const response = await api.post("/api/v1/auth/mfa/disable", {
     code,
   });
+  return response.data;
+}
+
+export async function changePassword(
+  data: ChangePasswordRequest
+): Promise<void> {
+  await api.post("/api/v1/auth/change-password", data);
+}
+
+export async function getNotificationPreferences(): Promise<UserNotificationPreferences> {
+  const response = await api.get<UserNotificationPreferences>("/api/v1/auth/preferences");
+  return response.data;
+}
+
+export async function updateNotificationPreferences(
+  data: UserNotificationPreferencesUpdate
+): Promise<UserNotificationPreferences> {
+  const response = await api.patch<UserNotificationPreferences>("/api/v1/auth/preferences", data);
   return response.data;
 }

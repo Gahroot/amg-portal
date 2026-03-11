@@ -12,15 +12,19 @@ from app.core.security import (
     verify_password,
 )
 from app.models.enums import UserRole
+from app.models.notification_preference import NotificationPreference
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
     MFASetupResponse,
     MFAVerifyRequest,
+    ProfileUpdateRequest,
     RefreshTokenRequest,
     Token,
     UserCreate,
+    UserNotificationPreferencesResponse,
+    UserNotificationPreferencesUpdate,
     UserResponse,
 )
 from app.services.mfa_service import (
@@ -228,3 +232,120 @@ async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB)
     current_user.mfa_backup_codes = None
     await db.commit()
     return {"message": "MFA disabled successfully"}
+
+
+# ── Profile endpoints ───────────────────────────────────────
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_profile(
+    data: ProfileUpdateRequest,
+    current_user: CurrentUser,
+    db: DB,
+):
+    """Update current user's profile."""
+    update_data = data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+# ── Notification Preferences endpoints ───────────────────────
+
+
+@router.get(
+    "/preferences",
+    response_model=UserNotificationPreferencesResponse,
+)
+async def get_notification_preferences(
+    current_user: CurrentUser,
+    db: DB,
+) -> UserNotificationPreferencesResponse:
+    """Get current user's notification preferences."""
+    result = await db.execute(
+        select(NotificationPreference).where(NotificationPreference.user_id == current_user.id)
+    )
+    pref = result.scalar_one_or_none()
+
+    if not pref:
+        # Return defaults
+        return UserNotificationPreferencesResponse(
+            digest_enabled=True,
+            digest_frequency="daily",
+            notification_type_preferences=None,
+            channel_preferences={"email": True, "in_portal": True, "push": True},
+            quiet_hours_enabled=False,
+            quiet_hours_start=None,
+            quiet_hours_end=None,
+            timezone="UTC",
+        )
+
+    return UserNotificationPreferencesResponse(
+        digest_enabled=pref.digest_enabled,
+        digest_frequency=pref.digest_frequency,
+        notification_type_preferences=pref.notification_type_preferences,
+        channel_preferences=pref.channel_preferences,
+        quiet_hours_enabled=pref.quiet_hours_enabled,
+        quiet_hours_start=(pref.quiet_hours_start.isoformat() if pref.quiet_hours_start else None),
+        quiet_hours_end=(pref.quiet_hours_end.isoformat() if pref.quiet_hours_end else None),
+        timezone=pref.timezone,
+    )
+
+
+@router.patch(
+    "/preferences",
+    response_model=UserNotificationPreferencesResponse,
+)
+async def update_notification_preferences(
+    data: UserNotificationPreferencesUpdate,
+    current_user: CurrentUser,
+    db: DB,
+) -> UserNotificationPreferencesResponse:
+    """Update current user's notification preferences."""
+    result = await db.execute(
+        select(NotificationPreference).where(NotificationPreference.user_id == current_user.id)
+    )
+    pref = result.scalar_one_or_none()
+
+    if not pref:
+        pref = NotificationPreference(
+            user_id=current_user.id,
+            digest_enabled=True,
+            digest_frequency="daily",
+            channel_preferences={"email": True, "in_portal": True, "push": True},
+            timezone="UTC",
+        )
+        db.add(pref)
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    # Handle time fields
+    if "quiet_hours_start" in update_data and update_data["quiet_hours_start"]:
+        from datetime import time
+
+        update_data["quiet_hours_start"] = time.fromisoformat(update_data["quiet_hours_start"])
+    if "quiet_hours_end" in update_data and update_data["quiet_hours_end"]:
+        from datetime import time
+
+        update_data["quiet_hours_end"] = time.fromisoformat(update_data["quiet_hours_end"])
+
+    for field, value in update_data.items():
+        setattr(pref, field, value)
+
+    await db.commit()
+    await db.refresh(pref)
+
+    return UserNotificationPreferencesResponse(
+        digest_enabled=pref.digest_enabled,
+        digest_frequency=pref.digest_frequency,
+        notification_type_preferences=pref.notification_type_preferences,
+        channel_preferences=pref.channel_preferences,
+        quiet_hours_enabled=pref.quiet_hours_enabled,
+        quiet_hours_start=(pref.quiet_hours_start.isoformat() if pref.quiet_hours_start else None),
+        quiet_hours_end=(pref.quiet_hours_end.isoformat() if pref.quiet_hours_end else None),
+        timezone=pref.timezone,
+    )

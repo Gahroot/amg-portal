@@ -38,6 +38,10 @@ export interface NotificationPreference {
   digest_frequency: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  timezone: string;
   created_at: string;
   updated_at: string;
 }
@@ -47,4 +51,24 @@ export interface NotificationPreferenceUpdateData {
   digest_frequency?: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  timezone?: string;
+}
+
+export interface PushToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: string;
+  device_name?: string;
+  is_active: boolean;
+  last_used_at?: string;
+  created_at: string;
+}
+
+export interface PushTokenListResponse {
+  tokens: PushToken[];
+  total: number;
 }

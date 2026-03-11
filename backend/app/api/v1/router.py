@@ -22,6 +22,7 @@ from app.api.v1.partners import router as partners_router
 from app.api.v1.program_clients import router as program_clients_router
 from app.api.v1.program_closure import router as program_closure_router
 from app.api.v1.programs import router as programs_router
+from app.api.v1.push_tokens import router as push_tokens_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.sla import router as sla_router
 from app.api.v1.users import router as users_router
@@ -66,3 +67,4 @@ router.include_router(
     tags=["partner-scoring"],
 )
 router.include_router(workload_router, prefix="/workload", tags=["workload"])
+router.include_router(push_tokens_router, prefix="/push-tokens", tags=["push-tokens"])

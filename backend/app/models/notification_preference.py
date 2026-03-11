@@ -1,10 +1,10 @@
 """Notification preference model for user notification settings."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,8 +26,13 @@ class NotificationPreference(Base):
     notification_type_preferences: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True
     )
-    # Channel preferences: {"in_portal": true, "email": true}
+    # Channel preferences: {"in_portal": true, "email": true, "push": true}
     channel_preferences: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Quiet hours settings
+    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    quiet_hours_start: Mapped[time | None] = mapped_column(Time, nullable=True)
+    quiet_hours_end: Mapped[time | None] = mapped_column(Time, nullable=True)
+    timezone: Mapped[str] = mapped_column(String(50), nullable=False, default="UTC")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
