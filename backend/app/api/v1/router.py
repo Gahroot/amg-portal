@@ -20,6 +20,7 @@ from app.api.v1.family_members import router as family_members_router
 from app.api.v1.intake import router as intake_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.nps_surveys import router as nps_surveys_router
 from app.api.v1.partner_assignments import router as assignments_router
 from app.api.v1.partner_capabilities import router as partner_capabilities_router
 from app.api.v1.partner_portal import router as partner_portal_router
@@ -55,7 +56,9 @@ router.include_router(
     tags=["program-closure"],
 )
 router.include_router(approvals_router, prefix="/approvals", tags=["approvals"])
-router.include_router(budget_approvals_router, prefix="/budget-approvals", tags=["budget-approvals"])
+router.include_router(
+    budget_approvals_router, prefix="/budget-approvals", tags=["budget-approvals"]
+)
 router.include_router(partners_router, prefix="/partners", tags=["partners"])
 router.include_router(
     partner_capabilities_router,
@@ -93,4 +96,9 @@ router.include_router(
     access_audits_router,
     prefix="/access-audits",
     tags=["access-audits"],
+)
+router.include_router(
+    nps_surveys_router,
+    prefix="/nps-surveys",
+    tags=["nps-surveys"],
 )

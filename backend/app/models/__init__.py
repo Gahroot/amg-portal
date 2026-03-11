@@ -1,7 +1,6 @@
 from app.models.access_audit import AccessAudit, AccessAuditFinding  # noqa: F401
 from app.models.approval import ProgramApproval  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
-from app.models.capability_review import CapabilityReview  # noqa: F401
 from app.models.budget_approval import (  # noqa: F401
     ApprovalChain,
     ApprovalChainStep,
@@ -10,6 +9,7 @@ from app.models.budget_approval import (  # noqa: F401
     BudgetApprovalRequest,
     BudgetApprovalStep,
 )
+from app.models.capability_review import CapabilityReview  # noqa: F401
 from app.models.clearance_certificate import (  # noqa: F401
     CertificateTemplate,
     ClearanceCertificate,
@@ -29,6 +29,7 @@ from app.models.kyc_document import KYCDocument  # noqa: F401
 from app.models.milestone import Milestone  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.notification_preference import NotificationPreference  # noqa: F401
+from app.models.nps_survey import NPSFollowUp, NPSResponse, NPSSurvey  # noqa: F401
 from app.models.partner import PartnerProfile  # noqa: F401
 from app.models.partner_assignment import PartnerAssignment  # noqa: F401
 from app.models.partner_capability import (  # noqa: F401
