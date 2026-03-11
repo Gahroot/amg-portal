@@ -17,7 +17,7 @@ import {
   CalendarClock,
   MessageSquare,
   Bell,
-  Lock,
+  Settings,
   Briefcase,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
@@ -193,10 +193,10 @@ export const dashboardNavConfig: PortalNavConfig = {
       label: "Settings",
       items: [
         {
-          title: "Security",
-          href: "/settings/security",
-          icon: Lock,
-          tooltip: "Security",
+          title: "Settings",
+          href: "/settings",
+          icon: Settings,
+          tooltip: "Settings",
         },
       ],
     },

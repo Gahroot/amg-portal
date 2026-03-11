@@ -48,8 +48,10 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     full_name: str
+    phone_number: str | None = None
     role: UserRole
     status: str
+    mfa_enabled: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -105,3 +107,36 @@ class ChangePasswordRequest(BaseModel):
             raise ValueError("Password must contain at least one special character")
 
         return v
+
+
+class ProfileUpdateRequest(BaseModel):
+    """Request body for updating user profile."""
+
+    full_name: str | None = None
+    phone_number: str | None = None
+
+
+class UserNotificationPreferencesResponse(BaseModel):
+    """Response body for user notification preferences."""
+
+    digest_enabled: bool
+    digest_frequency: str
+    notification_type_preferences: dict[str, str] | None = None
+    channel_preferences: dict[str, bool] | None = None
+    quiet_hours_enabled: bool
+    quiet_hours_start: str | None = None
+    quiet_hours_end: str | None = None
+    timezone: str
+
+
+class UserNotificationPreferencesUpdate(BaseModel):
+    """Request body for updating user notification preferences."""
+
+    digest_enabled: bool | None = None
+    digest_frequency: str | None = None
+    notification_type_preferences: dict[str, str] | None = None
+    channel_preferences: dict[str, bool] | None = None
+    quiet_hours_enabled: bool | None = None
+    quiet_hours_start: str | None = None
+    quiet_hours_end: str | None = None
+    timezone: str | None = None
