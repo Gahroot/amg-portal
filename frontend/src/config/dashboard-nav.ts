@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Bell,
   Lock,
+  Briefcase,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
@@ -56,6 +57,13 @@ export const dashboardNavConfig: PortalNavConfig = {
           href: "/partners",
           icon: Handshake,
           tooltip: "Partners",
+          roles: [MD, RM, COORD],
+        },
+        {
+          title: "Workload",
+          href: "/workload",
+          icon: Briefcase,
+          tooltip: "Staff Workload",
           roles: [MD, RM, COORD],
         },
         {

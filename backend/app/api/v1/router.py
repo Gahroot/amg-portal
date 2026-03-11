@@ -25,6 +25,7 @@ from app.api.v1.programs import router as programs_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.sla import router as sla_router
 from app.api.v1.users import router as users_router
+from app.api.v1.workload import router as workload_router
 
 router = APIRouter()
 router.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -64,3 +65,4 @@ router.include_router(
     prefix="/partner-scoring",
     tags=["partner-scoring"],
 )
+router.include_router(workload_router, prefix="/workload", tags=["workload"])

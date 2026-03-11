@@ -2,17 +2,27 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
-import { getEscalation } from "@/lib/api/escalations";
+import { getEscalation, updateEscalation } from "@/lib/api/escalations";
 import { EscalationStatusBadge } from "@/components/escalations/status-badge";
 import { EscalationLevelBadge } from "@/components/escalations/level-badge";
+import { ResolutionDialog } from "@/components/escalations/resolution-dialog";
+import { AcknowledgeDialog } from "@/components/escalations/acknowledge-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Clock, AlertTriangle, User } from "lucide-react";
 import { useResolveEscalation, useAcknowledgeEscalation } from "@/hooks/use-escalations";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const ALLOWED_ROLES = [
   "coordinator",
@@ -30,6 +40,14 @@ interface TimelineItem {
   risk_factors?: Record<string, unknown>;
 }
 
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  open: ["acknowledged", "investigating"],
+  acknowledged: ["investigating", "resolved"],
+  investigating: ["resolved"],
+  resolved: ["closed"],
+  closed: [],
+};
+
 export default function EscalationDetailPage({
   params,
 }: {
@@ -37,6 +55,11 @@ export default function EscalationDetailPage({
 }) {
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const [resolveOpen, setResolveOpen] = React.useState(false);
+  const [acknowledgeOpen, setAcknowledgeOpen] = React.useState(false);
+  const [statusUpdate, setStatusUpdate] = React.useState<string>("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["escalations", params.id],
@@ -47,24 +70,45 @@ export default function EscalationDetailPage({
   const resolveMutation = useResolveEscalation();
   const acknowledgeMutation = useAcknowledgeEscalation();
 
-  const handleResolve = () => {
-    const notesValue = prompt("Add resolution notes:");
-    if (notesValue !== null) {
-      resolveMutation.mutate(
-        { id: params.id, notes: notesValue },
-        {
-          onSuccess: () => toast.success("Escalation resolved"),
-          onError: () => toast.error("Failed to resolve escalation"),
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: string) =>
+      updateEscalation(params.id, { status: newStatus as "acknowledged" | "investigating" | "resolved" | "closed" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["escalations", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["escalations"] });
+      toast.success("Status updated");
+      setStatusUpdate("");
+    },
+    onError: () => toast.error("Failed to update status"),
+  });
+
+  const handleResolve = (notes: string, status: "resolved" | "closed") => {
+    resolveMutation.mutate(
+      { id: params.id, notes },
+      {
+        onSuccess: () => {
+          toast.success("Escalation resolved");
+          setResolveOpen(false);
         },
-      );
-    }
+        onError: () => toast.error("Failed to resolve escalation"),
+      },
+    );
   };
 
   const handleAcknowledge = () => {
     acknowledgeMutation.mutate(params.id, {
-      onSuccess: () => toast.success("Escalation acknowledged"),
+      onSuccess: () => {
+        toast.success("Escalation acknowledged");
+        setAcknowledgeOpen(false);
+      },
       onError: () => toast.error("Failed to acknowledge escalation"),
     });
+  };
+
+  const handleStatusUpdate = () => {
+    if (statusUpdate) {
+      statusMutation.mutate(statusUpdate);
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -89,6 +133,8 @@ export default function EscalationDetailPage({
         return <Clock className="h-4 w-4 text-blue-500" />;
       case "risk_updated":
         return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case "assigned":
+        return <User className="h-4 w-4 text-purple-500" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -121,6 +167,7 @@ export default function EscalationDetailPage({
   }
 
   const chain: TimelineItem[] = ((data.escalation_chain as unknown) as TimelineItem[]) || [];
+  const availableTransitions = STATUS_TRANSITIONS[data.status] || [];
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-8">
@@ -282,26 +329,73 @@ export default function EscalationDetailPage({
             <CardHeader>
               <CardTitle className="text-sm font-medium">Actions</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-3">
-              {data.status === "open" && (
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-3">
+                {data.status === "open" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setAcknowledgeOpen(true)}
+                    disabled={acknowledgeMutation.isPending}
+                  >
+                    Acknowledge
+                  </Button>
+                )}
                 <Button
-                  variant="outline"
-                  onClick={handleAcknowledge}
-                  disabled={acknowledgeMutation.isPending}
+                  variant="default"
+                  onClick={() => setResolveOpen(true)}
+                  disabled={resolveMutation.isPending}
                 >
-                  Acknowledge
+                  Resolve
                 </Button>
+              </div>
+
+              {availableTransitions.length > 0 && (
+                <div className="border-t pt-4">
+                  <Label className="text-sm text-muted-foreground">Quick Status Update</Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTransitions.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={handleStatusUpdate}
+                      disabled={!statusUpdate || statusMutation.isPending}
+                    >
+                      Update
+                    </Button>
+                  </div>
+                </div>
               )}
-              <Button
-                variant="default"
-                onClick={handleResolve}
-                disabled={resolveMutation.isPending}
-              >
-                Resolve
-              </Button>
             </CardContent>
           </Card>
         )}
+
+        {/* Resolution Dialog */}
+        <ResolutionDialog
+          open={resolveOpen}
+          onOpenChange={setResolveOpen}
+          onResolve={handleResolve}
+          isPending={resolveMutation.isPending}
+          escalationTitle={data.title}
+        />
+
+        {/* Acknowledge Dialog */}
+        <AcknowledgeDialog
+          open={acknowledgeOpen}
+          onOpenChange={setAcknowledgeOpen}
+          onAcknowledge={handleAcknowledge}
+          isPending={acknowledgeMutation.isPending}
+          escalationTitle={data.title}
+        />
       </div>
     </div>
   );
