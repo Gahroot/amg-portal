@@ -20,6 +20,7 @@ import {
   Settings,
   Briefcase,
   Kanban,
+  FileCheck,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
@@ -124,6 +125,13 @@ export const dashboardNavConfig: PortalNavConfig = {
           icon: ShieldCheck,
           tooltip: "Compliance",
           roles: [MD, FIN],
+        },
+        {
+          title: "Certificates",
+          href: "/certificates",
+          icon: FileCheck,
+          tooltip: "Clearance Certificates",
+          roles: [MD, FIN, RM, COORD],
         },
         {
           title: "SLA Tracking",
