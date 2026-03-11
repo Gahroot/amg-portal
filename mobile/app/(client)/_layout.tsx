@@ -1,46 +1,37 @@
 import { Tabs } from 'expo-router';
-import { Home, BookOpen, CheckSquare, Settings } from 'lucide-react-native';
-
-import { usePendingDecisionsCount } from '@/hooks/use-client-decisions';
-
-function DecisionsBadge() {
-  const { data: count } = usePendingDecisionsCount();
-  return count && count > 0 ? count : undefined;
-}
+import { BookOpen, MessageSquare, BarChart3, Settings } from 'lucide-react-native';
 
 export default function ClientLayout() {
-  const badgeCount = DecisionsBadge();
-
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
         tabBarActiveTintColor: '#eab308',
         tabBarInactiveTintColor: '#64748b',
         tabBarStyle: { backgroundColor: '#0f172a', borderTopColor: '#1e293b' },
+        headerStyle: { backgroundColor: '#0f172a' },
+        headerTintColor: '#f8fafc',
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="programs"
         options={{
           title: 'Programs',
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
         }}
       />
       <Tabs.Screen
-        name="decisions"
+        name="messages"
         options={{
-          title: 'Decisions',
-          tabBarIcon: ({ color, size }) => <CheckSquare color={color} size={size} />,
-          tabBarBadge: badgeCount,
-          tabBarBadgeStyle: badgeCount ? { backgroundColor: '#ef4444' } : undefined,
+          title: 'Messages',
+          tabBarIcon: ({ color, size }) => <MessageSquare color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: 'Reports',
+          tabBarIcon: ({ color, size }) => <BarChart3 color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -50,9 +41,6 @@ export default function ClientLayout() {
           tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
         }}
       />
-      {/* Hide these from tab bar */}
-      <Tabs.Screen name="messages" options={{ href: null }} />
-      <Tabs.Screen name="reports" options={{ href: null }} />
     </Tabs>
   );
 }

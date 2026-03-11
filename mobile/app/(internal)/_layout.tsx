@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, Users, BookOpen, Handshake, MoreHorizontal } from 'lucide-react-native';
+import { LayoutDashboard, Users, BookOpen, Handshake, MoreHorizontal, Kanban } from 'lucide-react-native';
 
 export default function InternalLayout() {
   return (
@@ -32,6 +32,13 @@ export default function InternalLayout() {
         options={{
           title: 'Programs',
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: 'Tasks',
+          tabBarIcon: ({ color, size }) => <Kanban color={color} size={size} />,
         }}
       />
       <Tabs.Screen

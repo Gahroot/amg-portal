@@ -26,16 +26,11 @@ export interface AuthUser {
 
 interface AuthState {
   token: string | null;
-  refreshToken: string | null;
   user: AuthUser | null;
   isHydrated: boolean;
-  mfaPending: boolean;
-  pendingCredentials: { email: string; password: string } | null;
-  setAuth: (token: string, refreshToken: string, user: AuthUser) => Promise<void>;
+  setAuth: (token: string, user: AuthUser) => Promise<void>;
   clearAuth: () => Promise<void>;
   hydrate: () => Promise<void>;
-  setMfaPending: (email: string, password: string) => void;
-  clearMfaPending: () => void;
   isAuthenticated: () => boolean;
   isClient: () => boolean;
   isPartner: () => boolean;
@@ -43,49 +38,34 @@ interface AuthState {
 }
 
 const TOKEN_KEY = 'amg_auth_token';
-const REFRESH_TOKEN_KEY = 'amg_refresh_token';
 const USER_KEY = 'amg_auth_user';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
-  refreshToken: null,
   user: null,
   isHydrated: false,
-  mfaPending: false,
-  pendingCredentials: null,
 
-  setAuth: async (token: string, refreshToken: string, user: AuthUser) => {
+  setAuth: async (token: string, user: AuthUser) => {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
-    set({ token, refreshToken, user, mfaPending: false, pendingCredentials: null });
+    set({ token, user });
   },
 
   clearAuth: async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
-    set({ token: null, refreshToken: null, user: null, mfaPending: false, pendingCredentials: null });
+    set({ token: null, user: null });
   },
 
   hydrate: async () => {
     try {
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      const refreshTokenVal = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       const userJson = await SecureStore.getItemAsync(USER_KEY);
       const user = userJson ? (JSON.parse(userJson) as AuthUser) : null;
-      set({ token, refreshToken: refreshTokenVal, user, isHydrated: true });
+      set({ token, user, isHydrated: true });
     } catch {
-      set({ token: null, refreshToken: null, user: null, isHydrated: true });
+      set({ token: null, user: null, isHydrated: true });
     }
-  },
-
-  setMfaPending: (email: string, password: string) => {
-    set({ mfaPending: true, pendingCredentials: { email, password } });
-  },
-
-  clearMfaPending: () => {
-    set({ mfaPending: false, pendingCredentials: null });
   },
 
   isAuthenticated: () => {
