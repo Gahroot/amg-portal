@@ -1,5 +1,29 @@
 """Schemas exports."""
 
+from app.schemas.access_audit import (  # noqa: F401
+    AccessAuditFindingListResponse,
+    AccessAuditFindingResponse,
+    AccessAuditListResponse,
+    AccessAuditResponse,
+    AccessAuditStatistics,
+    AcknowledgeFindingRequest,
+    CreateAccessAuditFindingRequest,
+    CreateAccessAuditRequest,
+    RemediateFindingRequest,
+    UpdateAccessAuditFindingRequest,
+    UpdateAccessAuditRequest,
+    WaiveFindingRequest,
+)
+from app.schemas.capability_review import (  # noqa: F401
+    CapabilityReviewFinding,
+    CapabilityReviewListResponse,
+    CapabilityReviewResponse,
+    CapabilityReviewStatistics,
+    CompleteCapabilityReviewRequest,
+    CreateCapabilityReviewRequest,
+    GenerateAnnualReviewsRequest,
+    UpdateCapabilityReviewRequest,
+)
 from app.schemas.communication import (  # noqa: F401
     CommunicationCreate,
     CommunicationListResponse,

@@ -372,6 +372,192 @@ async def _process_report_schedules_job() -> None:
         logger.exception("Error in report schedules job")
 
 
+async def _check_capability_review_reminders_job() -> None:
+    """Daily job: send reminders for upcoming capability reviews and escalate overdue ones."""
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.capability_review_service import capability_review_service
+    from app.services.notification_service import notification_service
+
+    logger.info("Running capability review reminders job")
+    try:
+        async with AsyncSessionLocal() as db:
+            # Get reviews due in the next 30 days
+            reviews_due_soon = await capability_review_service.get_reviews_due_soon(db, days=30)
+
+            for review in reviews_due_soon:
+                # Skip if reminder already sent
+                if review.reminder_sent_at:
+                    continue
+
+                # Notify reviewer if assigned
+                if review.reviewer_id:
+                    partner_name = review.partner.firm_name if review.partner else "Unknown"
+                    await notification_service.create_notification(
+                        db,
+                        CreateNotificationRequest(
+                            user_id=review.reviewer_id,
+                            notification_type="system",
+                            title=f"Upcoming Capability Review: {partner_name}",
+                            body=(
+                                f"The annual capability review for {partner_name} "
+                                f"is scheduled for {review.scheduled_date}. "
+                                "Please complete the review before this date."
+                            ),
+                            priority="high",
+                            action_url=f"/capability-reviews/{review.id}",
+                            action_label="View Review",
+                        ),
+                    )
+
+                # Mark reminder as sent
+                await capability_review_service.mark_reminder_sent(db, review.id)
+
+            # Get overdue reviews
+            overdue_reviews = await capability_review_service.get_overdue_reviews(db)
+
+            # Get managing directors for escalation
+            md_result = await db.execute(
+                select(User.id).where(
+                    User.role == "managing_director",
+                    User.status == "active",
+                )
+            )
+            md_ids = md_result.scalars().all()
+
+            for review in overdue_reviews:
+                # Escalate to MDs
+                partner_name = review.partner.firm_name if review.partner else "Unknown"
+                for md_id in md_ids:
+                    await notification_service.create_notification(
+                        db,
+                        CreateNotificationRequest(
+                            user_id=md_id,
+                            notification_type="system",
+                            title=f"Overdue Capability Review: {partner_name}",
+                            body=(
+                                f"The annual capability review for {partner_name} "
+                                f"(Year {review.review_year}) is overdue. "
+                                f"It was scheduled for {review.scheduled_date}."
+                            ),
+                            priority="urgent",
+                            action_url=f"/capability-reviews/{review.id}",
+                            action_label="View Review",
+                        ),
+                    )
+
+            logger.info(
+                "Capability review reminders complete — %d reminders sent, %d overdue escalated",
+                len(reviews_due_soon),
+                len(overdue_reviews),
+            )
+    except Exception:
+        logger.exception("Error in capability review reminders job")
+
+
+async def _quarterly_audit_reminder_job() -> None:
+    """Quarterly job: remind compliance team to conduct access audit."""
+    from datetime import UTC, datetime
+
+    from app.models.access_audit import AccessAudit
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
+
+    logger.info("Running quarterly audit reminder job")
+    try:
+        async with AsyncSessionLocal() as db:
+            now = datetime.now(UTC)
+            current_quarter = (now.month - 1) // 3 + 1
+            current_year = now.year
+
+            # Check if audit exists for current quarter
+            result = await db.execute(
+                select(AccessAudit).where(
+                    AccessAudit.quarter == current_quarter,
+                    AccessAudit.year == current_year,
+                )
+            )
+            existing_audit = result.scalar_one_or_none()
+
+            # Get compliance users
+            compliance_result = await db.execute(
+                select(User.id).where(
+                    User.role == "finance_compliance",
+                    User.status == "active",
+                )
+            )
+            compliance_ids = compliance_result.scalars().all()
+
+            # Also notify managing directors
+            md_result = await db.execute(
+                select(User.id).where(
+                    User.role == "managing_director",
+                    User.status == "active",
+                )
+            )
+            md_ids = md_result.scalars().all()
+
+            all_recipients = list(set(compliance_ids + md_ids))
+
+            if not existing_audit:
+                # No audit exists - send reminder to create one
+                for user_id in all_recipients:
+                    await notification_service.create_notification(
+                        db,
+                        CreateNotificationRequest(
+                            user_id=user_id,
+                            notification_type="system",
+                            title=f"Q{current_quarter} {current_year} Access Audit Required",
+                            body=(
+                                f"The Q{current_quarter} {current_year} quarterly access audit has not been started. "
+                                "Please initiate the audit to ensure compliance with access review policies."
+                            ),
+                            priority="high",
+                            action_url="/access-audits",
+                            action_label="Start Audit",
+                        ),
+                    )
+                logger.info(
+                    "Quarterly audit reminder sent to %d users for Q%d %d",
+                    len(all_recipients),
+                    current_quarter,
+                    current_year,
+                )
+            elif existing_audit.status == "draft":
+                # Audit started but not completed
+                for user_id in all_recipients:
+                    await notification_service.create_notification(
+                        db,
+                        CreateNotificationRequest(
+                            user_id=user_id,
+                            notification_type="system",
+                            title=f"Q{current_quarter} {current_year} Access Audit Incomplete",
+                            body=(
+                                f"The Q{current_quarter} {current_year} quarterly access audit is still in draft status. "
+                                "Please complete the audit findings and finalize the report."
+                            ),
+                            priority="normal",
+                            action_url=f"/access-audits/{existing_audit.id}",
+                            action_label="Continue Audit",
+                        ),
+                    )
+                logger.info(
+                    "Audit completion reminder sent to %d users for Q%d %d",
+                    len(all_recipients),
+                    current_quarter,
+                    current_year,
+                )
+            else:
+                logger.info(
+                    "Q%d %d audit already completed, no reminder needed",
+                    current_quarter,
+                    current_year,
+                )
+    except Exception:
+        logger.exception("Error in quarterly audit reminder job")
+
+
 async def _get_report_data(svc: object, schedule: "ReportSchedule") -> dict[str, object] | None:
     """Fetch report data based on schedule type."""
     from uuid import UUID
@@ -530,6 +716,27 @@ def start_scheduler() -> AsyncIOScheduler | None:
         minute=0,
         id="process_report_schedules",
         name="Process scheduled reports",
+        replace_existing=True,
+    )
+
+    _scheduler.add_job(
+        _check_capability_review_reminders_job,
+        "cron",
+        hour=8,
+        minute=0,
+        id="check_capability_review_reminders",
+        name="Check capability review reminders",
+        replace_existing=True,
+    )
+
+    _scheduler.add_job(
+        _quarterly_audit_reminder_job,
+        "cron",
+        day=1,
+        hour=9,
+        minute=0,
+        id="quarterly_audit_reminder",
+        name="Quarterly audit reminder",
         replace_existing=True,
     )
 

@@ -1,9 +1,11 @@
 from fastapi import APIRouter
 
+from app.api.v1.access_audits import router as access_audits_router
 from app.api.v1.approvals import router as approvals_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.budget_approvals import router as budget_approvals_router
+from app.api.v1.capability_reviews import router as capability_reviews_router
 from app.api.v1.client_portal import router as client_portal_router
 from app.api.v1.client_preferences import router as client_preferences_router
 from app.api.v1.clients import router as clients_router
@@ -82,3 +84,13 @@ router.include_router(
 router.include_router(workload_router, prefix="/workload", tags=["workload"])
 router.include_router(push_tokens_router, prefix="/push-tokens", tags=["push-tokens"])
 router.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
+router.include_router(
+    capability_reviews_router,
+    prefix="/capability-reviews",
+    tags=["capability-reviews"],
+)
+router.include_router(
+    access_audits_router,
+    prefix="/access-audits",
+    tags=["access-audits"],
+)
