@@ -19,6 +19,7 @@ from app.api.v1.intake import router as intake_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.partner_assignments import router as assignments_router
+from app.api.v1.partner_capabilities import router as partner_capabilities_router
 from app.api.v1.partner_portal import router as partner_portal_router
 from app.api.v1.partner_scoring import router as partner_scoring_router
 from app.api.v1.partners import router as partners_router
@@ -54,6 +55,11 @@ router.include_router(
 router.include_router(approvals_router, prefix="/approvals", tags=["approvals"])
 router.include_router(budget_approvals_router, prefix="/budget-approvals", tags=["budget-approvals"])
 router.include_router(partners_router, prefix="/partners", tags=["partners"])
+router.include_router(
+    partner_capabilities_router,
+    prefix="/partners",
+    tags=["partner-capabilities"],
+)
 router.include_router(assignments_router, prefix="/assignments", tags=["assignments"])
 router.include_router(deliverables_router, prefix="/deliverables", tags=["deliverables"])
 router.include_router(partner_portal_router, prefix="/partner-portal", tags=["partner-portal"])
