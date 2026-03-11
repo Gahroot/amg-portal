@@ -1,5 +1,7 @@
+from app.models.access_audit import AccessAudit, AccessAuditFinding  # noqa: F401
 from app.models.approval import ProgramApproval  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
+from app.models.capability_review import CapabilityReview  # noqa: F401
 from app.models.budget_approval import (  # noqa: F401
     ApprovalChain,
     ApprovalChainStep,
