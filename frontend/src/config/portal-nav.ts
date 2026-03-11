@@ -1,4 +1,4 @@
-import { Home, FileText, Settings } from "lucide-react";
+import { Home, FileText, Settings, MessageSquare } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
 export const portalNavConfig: PortalNavConfig = {
@@ -13,6 +13,12 @@ export const portalNavConfig: PortalNavConfig = {
           href: "/portal/dashboard",
           icon: Home,
           tooltip: "Dashboard",
+        },
+        {
+          title: "Messages",
+          href: "/portal/messages",
+          icon: MessageSquare,
+          tooltip: "Messages",
         },
         {
           title: "Reports",

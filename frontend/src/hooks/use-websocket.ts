@@ -12,10 +12,18 @@ import type {
   Notification,
 } from "@/types/communication";
 
+interface ReadReceiptData {
+  message_id: string;
+  conversation_id: string;
+  reader_id: string;
+  read_at: string;
+}
+
 interface UseWebSocketOptions {
   onNotification?: (notification: Notification) => void;
   onNewMessage?: (message: Communication) => void;
   onTyping?: (data: { conversation_id: string; user_id: string; is_typing: boolean }) => void;
+  onMessageRead?: (data: ReadReceiptData) => void;
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
@@ -57,8 +65,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       }, 5000);
     };
 
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+    ws.onerror = () => {
+      console.error("WebSocket error");
       toast.error("WebSocket connection error. Retrying...");
     };
 
@@ -95,6 +103,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               is_typing: typingMsg.is_typing,
             });
           }
+        } else if (message.type === "message_read") {
+          // Handle read receipts
+          const readData = message.data as ReadReceiptData;
+          const currentOptions = optionsRef.current;
+          if (currentOptions.onMessageRead) {
+            currentOptions.onMessageRead(readData);
+          }
+          // Invalidate messages to refresh read receipts
+          queryClient.invalidateQueries({ queryKey: ["messages", readData.conversation_id] });
         }
 
         setMessages((prev) => [...prev, message]);
@@ -108,6 +125,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [queryClient]);
 
   const connectRef = useRef(connect);
+  
+  // Update connectRef when connect changes
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

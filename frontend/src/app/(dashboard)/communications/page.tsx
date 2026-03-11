@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useConversations } from "@/hooks/use-conversations";
 import type { Conversation } from "@/types/communication";
 import { ConversationList } from "@/components/communications/conversation-list";
 import { ConversationView } from "@/components/communications/conversation-view";

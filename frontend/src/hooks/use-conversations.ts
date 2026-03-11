@@ -118,8 +118,25 @@ export function useUnreadCount() {
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       });
+      if (!response.ok) {
+        throw new Error("Failed to fetch unread count");
+      }
       return response.json();
     },
     refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 10000, // Consider data fresh for 10 seconds
   });
+}
+
+// Unread message count for navigation badges
+export function useUnreadMessageCount() {
+  const { data } = useConversations({ limit: 100 });
+  
+  // Calculate total unread from conversations
+  const totalUnread = data?.conversations.reduce(
+    (sum, conv) => sum + (conv.unread_count || 0),
+    0
+  ) ?? 0;
+  
+  return totalUnread;
 }
