@@ -19,6 +19,7 @@ import {
   Bell,
   Settings,
   Briefcase,
+  Kanban,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
@@ -83,6 +84,13 @@ export const dashboardNavConfig: PortalNavConfig = {
           href: "/programs",
           icon: FolderKanban,
           tooltip: "Programs",
+        },
+        {
+          title: "Task Board",
+          href: "/tasks",
+          icon: Kanban,
+          tooltip: "Task Board",
+          roles: [MD, RM, COORD],
         },
         {
           title: "Deliverables",

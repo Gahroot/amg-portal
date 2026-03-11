@@ -1,0 +1,66 @@
+import api from "@/lib/api";
+import type {
+  TaskBoard,
+  TaskBoardListResponse,
+  TaskCreate,
+  TaskReorder,
+  TaskUpdate,
+  AssigneeInfo,
+  ProgramInfo,
+} from "@/types/task";
+
+interface TaskFilters {
+  program_id?: string;
+  assignee_id?: string;
+  status?: string;
+  priority?: string;
+  overdue_only?: boolean;
+  skip?: number;
+  limit?: number;
+}
+
+export async function getTasks(filters?: TaskFilters): Promise<TaskBoardListResponse> {
+  const params = new URLSearchParams();
+  if (filters?.program_id) params.append("program_id", filters.program_id);
+  if (filters?.assignee_id) params.append("assignee_id", filters.assignee_id);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.priority) params.append("priority", filters.priority);
+  if (filters?.overdue_only) params.append("overdue_only", "true");
+  if (filters?.skip !== undefined) params.append("skip", String(filters.skip));
+  if (filters?.limit !== undefined) params.append("limit", String(filters.limit));
+
+  const response = await api.get<TaskBoardListResponse>(`/tasks?${params.toString()}`);
+  return response.data;
+}
+
+export async function createTask(data: TaskCreate): Promise<TaskBoard> {
+  const response = await api.post<TaskBoard>("/tasks", data);
+  return response.data;
+}
+
+export async function updateTask(taskId: string, data: TaskUpdate): Promise<TaskBoard> {
+  const response = await api.patch<TaskBoard>(`/tasks/${taskId}`, data);
+  return response.data;
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  await api.delete(`/tasks/${taskId}`);
+}
+
+export async function reorderTask(data: TaskReorder): Promise<void> {
+  await api.post("/tasks/reorder", data);
+}
+
+export async function batchReorderTasks(updates: TaskReorder[]): Promise<void> {
+  await api.post("/tasks/batch-reorder", updates);
+}
+
+export async function getProgramsForFilter(): Promise<ProgramInfo[]> {
+  const response = await api.get<ProgramInfo[]>("/tasks/programs");
+  return response.data;
+}
+
+export async function getAssigneesForFilter(): Promise<AssigneeInfo[]> {
+  const response = await api.get<AssigneeInfo[]>("/tasks/assignees");
+  return response.data;
+}
