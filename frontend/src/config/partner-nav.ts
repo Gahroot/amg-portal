@@ -1,4 +1,4 @@
-import { Home, ClipboardList, PackageCheck } from "lucide-react";
+import { Home, ClipboardList, PackageCheck, MessageSquare, FileText } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
 export const partnerNavConfig: PortalNavConfig = {
@@ -15,16 +15,28 @@ export const partnerNavConfig: PortalNavConfig = {
           tooltip: "Home",
         },
         {
-          title: "Assignments",
-          href: "/partner/assignments",
+          title: "Inbox",
+          href: "/partner/inbox",
           icon: ClipboardList,
-          tooltip: "Assignments",
+          tooltip: "Assignment Inbox",
         },
         {
           title: "Deliverables",
           href: "/partner/deliverables",
           icon: PackageCheck,
           tooltip: "Deliverables",
+        },
+        {
+          title: "Messages",
+          href: "/partner/messages",
+          icon: MessageSquare,
+          tooltip: "Messages with Coordinators",
+        },
+        {
+          title: "Documents",
+          href: "/partner/documents",
+          icon: FileText,
+          tooltip: "Brief Documents",
         },
       ],
     },
