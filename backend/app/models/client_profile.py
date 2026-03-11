@@ -87,6 +87,9 @@ class ClientProfile(Base):
     compliance_reviewer = relationship("User", foreign_keys=[compliance_reviewed_by])
     approver = relationship("User", foreign_keys=[approved_by])
     assigned_rm = relationship("User", foreign_keys=[assigned_rm_id])
+    family_members = relationship(
+        "FamilyMember", back_populates="client_profile", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<ClientProfile(id={self.id}, legal_name={self.legal_name})>"

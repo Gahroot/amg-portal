@@ -9,6 +9,7 @@ from app.models.decision_request import DecisionRequest  # noqa: F401
 from app.models.deliverable import Deliverable  # noqa: F401
 from app.models.document import Document  # noqa: F401
 from app.models.escalation import Escalation  # noqa: F401
+from app.models.family_member import FamilyMember, FamilyRelationship  # noqa: F401
 from app.models.kyc_document import KYCDocument  # noqa: F401
 from app.models.milestone import Milestone  # noqa: F401
 from app.models.notification import Notification  # noqa: F401

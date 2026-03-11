@@ -13,6 +13,8 @@ from app.api.v1.decision_requests import router as decision_requests_router
 from app.api.v1.deliverables import router as deliverables_router
 from app.api.v1.documents import router as documents_router
 from app.api.v1.escalations import router as escalations_router
+from app.api.v1.family_members import router as family_members_router
+from app.api.v1.intake import router as intake_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.partner_assignments import router as assignments_router
@@ -32,6 +34,8 @@ router = APIRouter()
 router.include_router(auth_router, prefix="/auth", tags=["auth"])
 router.include_router(users_router, prefix="/users", tags=["users"])
 router.include_router(clients_router, prefix="/clients", tags=["clients"])
+router.include_router(family_members_router, tags=["family-members"])
+router.include_router(intake_router, tags=["intake"])
 router.include_router(client_portal_router, prefix="/portal", tags=["portal"])
 router.include_router(
     client_preferences_router,
