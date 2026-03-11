@@ -1,5 +1,13 @@
 from app.models.approval import ProgramApproval  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
+from app.models.budget_approval import (  # noqa: F401
+    ApprovalChain,
+    ApprovalChainStep,
+    ApprovalThreshold,
+    BudgetApprovalHistory,
+    BudgetApprovalRequest,
+    BudgetApprovalStep,
+)
 from app.models.client import Client  # noqa: F401
 from app.models.client_profile import ClientProfile  # noqa: F401
 from app.models.communication import Communication  # noqa: F401

@@ -301,3 +301,53 @@ class DecisionResponseType(StrEnum):
     text = "text"
     yes_no = "yes_no"
     multi_choice = "multi_choice"
+
+
+class BudgetApprovalStatus(StrEnum):
+    """Status of budget approval requests"""
+
+    pending = "pending"
+    in_review = "in_review"
+    approved = "approved"
+    rejected = "rejected"
+    cancelled = "cancelled"
+    expired = "expired"
+
+
+class BudgetApprovalStepStatus(StrEnum):
+    """Status of individual approval steps"""
+
+    pending = "pending"
+    in_review = "in_review"
+    approved = "approved"
+    rejected = "rejected"
+    skipped = "skipped"
+    timeout = "timeout"
+
+
+class BudgetRequestType(StrEnum):
+    """Types of budget approval requests"""
+
+    budget_increase = "budget_increase"
+    new_expense = "new_expense"
+    vendor_payment = "vendor_payment"
+    partner_payment = "partner_payment"
+    contingency = "contingency"
+    scope_change = "scope_change"
+    emergency = "emergency"
+
+
+class BudgetApprovalAction(StrEnum):
+    """Actions recorded in approval history"""
+
+    created = "created"
+    submitted = "submitted"
+    step_approved = "step_approved"
+    step_rejected = "step_rejected"
+    step_delegated = "step_delegated"
+    step_timeout = "step_timeout"
+    final_approved = "final_approved"
+    final_rejected = "final_rejected"
+    cancelled = "cancelled"
+    escalated = "escalated"
+    reopened = "reopened"
