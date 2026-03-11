@@ -11,6 +11,21 @@ import {
 } from "@/lib/api/partners";
 import type { PartnerUpdateData } from "@/lib/api/partners";
 import { listAssignments } from "@/lib/api/assignments";
+import {
+  getCapabilityMatrix,
+  addPartnerCapability,
+  updatePartnerCapability,
+  deletePartnerCapability,
+  verifyPartnerCapability,
+  addPartnerCertification,
+  uploadCertificationDocument,
+  verifyPartnerCertification,
+  submitQualification,
+  approveQualification,
+  getPartnerOnboarding,
+  completeOnboardingStage,
+  listServiceCategories,
+} from "@/lib/api/partner-capabilities";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -44,6 +59,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { DocumentList } from "@/components/documents/document-list";
+import { CapabilityMatrix } from "@/components/partners/capability-matrix";
+import { CertificationList } from "@/components/partners/certification-list";
+import { QualificationCard } from "@/components/partners/qualification-card";
+import { Progress } from "@/components/ui/progress";
+import type { ProficiencyLevel, ApprovalStatus, CertificationStatus } from "@/types/partner-capability";
 
 const STATUS_VARIANT: Record<
   string,
@@ -230,6 +250,7 @@ export default function PartnerDetailPage() {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -479,6 +500,10 @@ export default function PartnerDetailPage() {
             )}
           </TabsContent>
 
+          <TabsContent value="capabilities" className="space-y-4">
+            <CapabilitiesTabContent partnerId={partnerId} />
+          </TabsContent>
+
           <TabsContent value="assignments" className="space-y-4">
             <div className="rounded-md border bg-white">
               <Table>
@@ -596,6 +621,248 @@ export default function PartnerDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+// Separate component for the capabilities tab to manage its own state
+function CapabilitiesTabContent({ partnerId }: { partnerId: string }) {
+  const queryClient = useQueryClient();
+
+  // Fetch capability matrix data
+  const { data: matrixData, isLoading: matrixLoading } = useQuery({
+    queryKey: ["capability-matrix", partnerId],
+    queryFn: () => getCapabilityMatrix(partnerId),
+  });
+
+  // Fetch service categories
+  const { data: categoriesData } = useQuery({
+    queryKey: ["service-categories"],
+    queryFn: () => listServiceCategories(true),
+  });
+
+  // Capability mutations
+  const addCapabilityMutation = useMutation({
+    mutationFn: (data: {
+      capability_name: string;
+      proficiency_level: ProficiencyLevel;
+      years_experience?: number;
+      notes?: string;
+    }) => addPartnerCapability(partnerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const updateCapabilityMutation = useMutation({
+    mutationFn: ({
+      capabilityId,
+      data,
+    }: {
+      capabilityId: string;
+      data: {
+        capability_name?: string;
+        proficiency_level?: ProficiencyLevel;
+        years_experience?: number;
+        notes?: string;
+      };
+    }) => updatePartnerCapability(partnerId, capabilityId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const deleteCapabilityMutation = useMutation({
+    mutationFn: (capabilityId: string) => deletePartnerCapability(partnerId, capabilityId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const verifyCapabilityMutation = useMutation({
+    mutationFn: (capabilityId: string) => verifyPartnerCapability(partnerId, capabilityId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  // Certification mutations
+  const addCertificationMutation = useMutation({
+    mutationFn: (data: {
+      name: string;
+      issuing_body: string;
+      certificate_number?: string;
+      issue_date?: string;
+      expiry_date?: string;
+      notes?: string;
+    }) => addPartnerCertification(partnerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const uploadCertDocMutation = useMutation({
+    mutationFn: ({ certId, file }: { certId: string; file: File }) =>
+      uploadCertificationDocument(partnerId, certId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const verifyCertificationMutation = useMutation({
+    mutationFn: ({
+      certId,
+      data,
+    }: {
+      certId: string;
+      data: { status: CertificationStatus; notes?: string };
+    }) => verifyPartnerCertification(partnerId, certId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  // Qualification mutations
+  const submitQualificationMutation = useMutation({
+    mutationFn: (data: {
+      category_id: string;
+      qualification_level: "qualified" | "preferred" | "expert";
+      notes?: string;
+    }) => submitQualification(partnerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  const approveQualificationMutation = useMutation({
+    mutationFn: ({
+      qualId,
+      data,
+    }: {
+      qualId: string;
+      data: { status: ApprovalStatus; notes?: string };
+    }) => approveQualification(partnerId, qualId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capability-matrix", partnerId] });
+    },
+  });
+
+  if (matrixLoading) {
+    return <p className="text-muted-foreground text-sm">Loading capabilities...</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Onboarding Progress (if applicable) */}
+      {matrixData?.onboarding && matrixData.onboarding.current_stage !== "completed" && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Onboarding Progress</CardTitle>
+              <span className="text-sm text-muted-foreground">
+                {matrixData.onboarding.progress_percentage}%
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Progress value={matrixData.onboarding.progress_percentage} className="h-2" />
+            <p className="text-sm text-muted-foreground mt-2">
+              Current Stage: {matrixData.onboarding.current_stage.replace(/_/g, " ")}
+            </p>
+            {matrixData.onboarding.coordinator_name && (
+              <p className="text-sm text-muted-foreground">
+                Coordinator: {matrixData.onboarding.coordinator_name}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Capability Matrix */}
+      <CapabilityMatrix
+        capabilities={matrixData?.capabilities ?? []}
+        onAdd={async (data) => {
+          await addCapabilityMutation.mutateAsync(data);
+        }}
+        onUpdate={async (capabilityId, data) => {
+          await updateCapabilityMutation.mutateAsync({ capabilityId, data });
+        }}
+        onDelete={async (capabilityId) => {
+          await deleteCapabilityMutation.mutateAsync(capabilityId);
+        }}
+        onVerify={async (capabilityId) => {
+          await verifyCapabilityMutation.mutateAsync(capabilityId);
+        }}
+        canEdit={true}
+        canVerify={true}
+      />
+
+      {/* Service Qualifications */}
+      <QualificationCard
+        qualifications={matrixData?.qualifications ?? []}
+        serviceCategories={categoriesData?.categories ?? []}
+        onSubmit={async (data) => {
+          await submitQualificationMutation.mutateAsync(data);
+        }}
+        onApprove={async (qualId, data) => {
+          await approveQualificationMutation.mutateAsync({ qualId, data });
+        }}
+        canEdit={true}
+        canApprove={true}
+      />
+
+      {/* Certifications */}
+      <CertificationList
+        certifications={matrixData?.certifications ?? []}
+        onAdd={async (data) => {
+          const result = await addCertificationMutation.mutateAsync(data);
+          return result;
+        }}
+        onUploadDocument={async (certId, file) => {
+          await uploadCertDocMutation.mutateAsync({ certId, file });
+        }}
+        onVerify={async (certId, data) => {
+          await verifyCertificationMutation.mutateAsync({ certId, data });
+        }}
+        canEdit={true}
+        canVerify={true}
+      />
+
+      {/* Summary Stats */}
+      {matrixData && (
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Capability Summary</p>
+              <div className="flex gap-3 mt-2">
+                {Object.entries(matrixData.capability_summary).map(([level, count]) => (
+                  <Badge key={level} variant="secondary">
+                    {level}: {count}
+                  </Badge>
+                ))}
+                {Object.keys(matrixData.capability_summary).length === 0 && (
+                  <span className="text-sm text-muted-foreground">No capabilities</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Qualification Summary</p>
+              <div className="flex gap-3 mt-2">
+                {Object.entries(matrixData.qualification_summary).map(([status, count]) => (
+                  <Badge key={status} variant="secondary">
+                    {status}: {count}
+                  </Badge>
+                ))}
+                {Object.keys(matrixData.qualification_summary).length === 0 && (
+                  <span className="text-sm text-muted-foreground">No qualifications</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
