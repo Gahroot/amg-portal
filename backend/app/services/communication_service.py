@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.ws_connection import connection_manager
 from app.models.communication import Communication
 from app.models.conversation import Conversation
 from app.schemas.communication import CommunicationCreate, SendMessageRequest
@@ -27,6 +28,15 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         conversation = result.scalar_one_or_none()
         return conversation is not None and user_id in conversation.participant_ids
 
+    async def _get_conversation(
+        self,
+        db: AsyncSession,
+        conversation_id: uuid.UUID,
+    ) -> Conversation | None:
+        """Get a conversation by ID."""
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
+        return result.scalar_one_or_none()
+
     async def send_message(
         self,
         db: AsyncSession,
@@ -34,14 +44,12 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         data: SendMessageRequest,
     ) -> Communication:
         """Send a message to a conversation. Verifies sender is a participant."""
+        conversation = None
         if data.conversation_id:
             if not await self._verify_participation(db, data.conversation_id, sender_id):
                 raise ValueError("User is not a participant in this conversation")
             # Get conversation to update last_activity_at
-            conv_result = await db.execute(
-                select(Conversation).where(Conversation.id == data.conversation_id)
-            )
-            conversation = conv_result.scalar_one_or_none()
+            conversation = await self._get_conversation(db, data.conversation_id)
             if conversation:
                 conversation.last_activity_at = datetime.now(UTC)
 
@@ -59,8 +67,9 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         await db.commit()
         await db.refresh(communication)
 
-        # TODO: Broadcast via WebSocket to all participants
-        # await broadcast_via_websocket(conversation_id, communication)
+        # Broadcast via WebSocket to all participants
+        if conversation and communication:
+            await self.broadcast_new_message(conversation, communication, sender_id)
 
         return communication
 
@@ -95,7 +104,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         db: AsyncSession,
         communication_id: uuid.UUID,
         user_id: uuid.UUID,
-    ) -> Communication:
+    ) -> Communication | None:
         """Mark a communication as read by user."""
         communication = await self.get(db, communication_id)
         if not communication:
@@ -114,7 +123,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         self,
         db: AsyncSession,
         user_id: uuid.UUID,
-    ) -> dict[str, int]:
+    ) -> dict[str, Any]:
         """Get unread message count grouped by conversation."""
         # This is a simplified version - in production you'd want a dedicated
         # unread tracking table for better performance
@@ -144,15 +153,50 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
 
         return {"total": total, "by_conversation": counts}
 
-    async def broadcast_via_websocket(
+    async def broadcast_new_message(
         self,
-        conversation_id: uuid.UUID,
+        conversation: Conversation,
         message: Communication,
+        sender_id: uuid.UUID,
     ) -> None:
-        """Broadcast message via WebSocket to all participants."""
-        # This will be implemented when we add WebSocket support
-        # Import the connection manager and send to all participants
-        pass
+        """Broadcast new message via WebSocket to all conversation participants."""
+        message_data = {
+            "id": str(message.id),
+            "conversation_id": str(message.conversation_id) if message.conversation_id else None,
+            "channel": message.channel,
+            "status": message.status,
+            "sender_id": str(message.sender_id) if message.sender_id else None,
+            "body": message.body,
+            "attachment_ids": message.attachment_ids,
+            "sent_at": message.sent_at.isoformat() if message.sent_at else None,
+            "created_at": message.created_at.isoformat() if message.created_at else None,
+        }
+        await connection_manager.broadcast_to_conversation(
+            conversation_id=conversation.id,
+            participant_ids=conversation.participant_ids,
+            message={"type": "new_message", "data": message_data},
+            exclude_user_id=sender_id,
+        )
+
+    async def broadcast_read_receipt(
+        self,
+        conversation: Conversation,
+        message: Communication,
+        reader_id: uuid.UUID,
+    ) -> None:
+        """Broadcast read receipt to conversation participants."""
+        receipt_data = {
+            "message_id": str(message.id),
+            "conversation_id": str(conversation.id),
+            "reader_id": str(reader_id),
+            "read_at": datetime.now(UTC).isoformat(),
+        }
+        # Notify the sender that their message was read
+        if message.sender_id and message.sender_id != reader_id:
+            await connection_manager.send_personal(
+                message={"type": "message_read", "data": receipt_data},
+                user_id=message.sender_id,
+            )
 
 
 communication_service = CommunicationService(Communication)

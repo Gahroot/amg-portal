@@ -3,7 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, Send, X } from "lucide-react";
+import { Toggle } from "@/components/ui/toggle";
+import {
+  Paperclip,
+  Send,
+  X,
+  Bold,
+  Italic,
+  Link as LinkIcon,
+  List,
+  ListOrdered,
+} from "lucide-react";
 
 interface MessageComposeProps {
   onSendMessage: (body: string, attachmentIds?: string[]) => void;
@@ -24,6 +34,51 @@ export function MessageCompose({ onSendMessage, isSending, onTypingChange }: Mes
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [message]);
+
+  const wrapSelection = (prefix: string, suffix: string = prefix) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = message.substring(start, end);
+    const newText = message.substring(0, start) + prefix + selectedText + suffix + message.substring(end);
+    setMessage(newText);
+
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+    }, 0);
+  };
+
+  const handleBold = () => wrapSelection("**");
+  const handleItalic = () => wrapSelection("_");
+  const handleLink = () => wrapSelection("[", "](url)");
+  const handleList = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = message.substring(start, end);
+    const lines = selectedText.split("\n");
+    const listText = lines.map((line) => `- ${line}`).join("\n");
+    const newText = message.substring(0, start) + listText + message.substring(end);
+    setMessage(newText);
+  };
+  const handleOrderedList = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = message.substring(start, end);
+    const lines = selectedText.split("\n");
+    const listText = lines.map((line, i) => `${i + 1}. ${line}`).join("\n");
+    const newText = message.substring(0, start) + listText + message.substring(end);
+    setMessage(newText);
+  };
 
   const handleSend = () => {
     if (!message.trim() && attachments.length === 0) return;
@@ -60,6 +115,26 @@ export function MessageCompose({ onSendMessage, isSending, onTypingChange }: Mes
 
   return (
     <div className="space-y-2">
+      {/* Formatting Toolbar */}
+      <div className="flex items-center gap-1 border-b pb-2">
+        <Toggle size="sm" onPressedChange={handleBold} aria-label="Bold">
+          <Bold className="h-4 w-4" />
+        </Toggle>
+        <Toggle size="sm" onPressedChange={handleItalic} aria-label="Italic">
+          <Italic className="h-4 w-4" />
+        </Toggle>
+        <Toggle size="sm" onPressedChange={handleLink} aria-label="Link">
+          <LinkIcon className="h-4 w-4" />
+        </Toggle>
+        <div className="mx-1 h-4 w-px bg-border" />
+        <Toggle size="sm" onPressedChange={handleList} aria-label="Bullet list">
+          <List className="h-4 w-4" />
+        </Toggle>
+        <Toggle size="sm" onPressedChange={handleOrderedList} aria-label="Numbered list">
+          <ListOrdered className="h-4 w-4" />
+        </Toggle>
+      </div>
+
       {/* Attachments */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -102,7 +177,7 @@ export function MessageCompose({ onSendMessage, isSending, onTypingChange }: Mes
         </Button>
         <Textarea
           ref={textareaRef}
-          placeholder="Type a message..."
+          placeholder="Type a message... (supports **bold**, _italic_, [links](url))"
           value={message}
           onChange={(e) => handleTyping(e.target.value)}
           onKeyDown={handleKeyDown}

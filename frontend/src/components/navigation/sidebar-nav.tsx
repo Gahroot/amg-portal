@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useAuth } from "@/providers/auth-provider";
+import { useUnreadMessageCount } from "@/hooks/use-conversations";
 import type { PortalNavConfig, NavItem } from "@/types/navigation";
+import { Badge } from "@/components/ui/badge";
 import {
   SidebarContent,
   SidebarGroup,
@@ -23,6 +25,10 @@ function isActive(pathname: string, href: string): boolean {
     return pathname === href;
   }
   return pathname.startsWith(href);
+}
+
+function isMessagesItem(item: NavItem): boolean {
+  return item.title === "Messages" || item.href.includes("/messages");
 }
 
 function NavItemWithSub({ item, pathname }: { item: NavItem; pathname: string }) {
@@ -58,12 +64,23 @@ function NavItemWithSub({ item, pathname }: { item: NavItem; pathname: string })
 }
 
 function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const unreadCount = useUnreadMessageCount();
+  const showBadge = isMessagesItem(item) && unreadCount > 0;
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild tooltip={item.tooltip} isActive={isActive(pathname, item.href)}>
-        <Link href={item.href}>
+        <Link href={item.href} className="relative flex items-center gap-2">
           <item.icon />
           <span>{item.title}</span>
+          {showBadge && (
+            <Badge
+              variant="destructive"
+              className="ml-auto h-5 min-w-5 rounded-full px-1.5 text-xs"
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </Badge>
+          )}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
