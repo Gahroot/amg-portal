@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1.approvals import router as approvals_router
 from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.budget_approvals import router as budget_approvals_router
 from app.api.v1.client_portal import router as client_portal_router
 from app.api.v1.client_preferences import router as client_preferences_router
 from app.api.v1.clients import router as clients_router
@@ -51,6 +52,7 @@ router.include_router(
     tags=["program-closure"],
 )
 router.include_router(approvals_router, prefix="/approvals", tags=["approvals"])
+router.include_router(budget_approvals_router, prefix="/budget-approvals", tags=["budget-approvals"])
 router.include_router(partners_router, prefix="/partners", tags=["partners"])
 router.include_router(assignments_router, prefix="/assignments", tags=["assignments"])
 router.include_router(deliverables_router, prefix="/deliverables", tags=["deliverables"])
