@@ -20,8 +20,12 @@ from app.models.report_schedule import ReportSchedule
 from app.schemas.report import (
     AnnualReviewReport,
     CompletionReport,
+    ComplianceAuditReport,
+    EscalationLogReport,
+    PartnerScorecardReport,
     PortfolioOverviewReport,
     ProgramStatusReport,
+    RMPortfolioReport,
 )
 from app.schemas.report_schedule import (
     ReportScheduleCreate,
@@ -663,6 +667,326 @@ async def export_annual_review_pdf(
         headers={
             "Content-Disposition": f"attachment; filename={filename}",
         },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Class B — Internal Operational Reports
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/partner-scorecard",
+    response_model=PartnerScorecardReport,
+    dependencies=[Depends(require_internal)],
+)
+async def get_partner_scorecard_report(
+    db: DB,
+    current_user: CurrentUser,
+    partner_id: uuid.UUID | None = Query(None, description="Filter by partner"),
+    quarter: int | None = Query(None, ge=1, le=4, description="Quarter (1-4)"),
+    year: int | None = Query(None, description="Year"),
+):
+    """Partner Performance Scorecard — aggregated partner metrics."""
+    report = await report_service.get_partner_scorecard_report(
+        db, partner_id=partner_id, quarter=quarter, year=year
+    )
+    return report
+
+
+@router.get(
+    "/partner-scorecard/export",
+    dependencies=[Depends(require_internal)],
+)
+async def export_partner_scorecard_csv(
+    db: DB,
+    current_user: CurrentUser,
+    partner_id: uuid.UUID | None = Query(None),
+    quarter: int | None = Query(None, ge=1, le=4),
+    year: int | None = Query(None),
+):
+    """Export Partner Performance Scorecard as CSV."""
+    report = await report_service.get_partner_scorecard_report(
+        db, partner_id=partner_id, quarter=quarter, year=year
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Partner Performance Scorecard"])
+    writer.writerow([f"Generated: {report['generated_at']}"])
+    writer.writerow([])
+
+    writer.writerow(
+        [
+            "Firm Name",
+            "Avg Quality",
+            "Avg Timeliness",
+            "Avg Communication",
+            "Avg Overall",
+            "Total Ratings",
+            "Total Assignments",
+            "Completed",
+            "Completion Rate (%)",
+            "SLA Breaches",
+        ]
+    )
+    for p in report["partners"]:
+        writer.writerow(
+            [
+                p["firm_name"],
+                p["avg_quality"] or "N/A",
+                p["avg_timeliness"] or "N/A",
+                p["avg_communication"] or "N/A",
+                p["avg_overall"] or "N/A",
+                p["total_ratings"],
+                p["total_assignments"],
+                p["completed_assignments"],
+                f"{p['completion_rate']}%",
+                p["sla_breach_count"],
+            ]
+        )
+
+    output.seek(0)
+    filename = f"partner_scorecard_{datetime.now().strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get(
+    "/rm-portfolio",
+    response_model=RMPortfolioReport,
+    dependencies=[Depends(require_internal)],
+)
+async def get_rm_portfolio_report(
+    db: DB,
+    current_user: CurrentUser,
+    rm_id: uuid.UUID | None = Query(None, description="Filter by RM"),
+):
+    """RM Portfolio Report — per-RM client and program metrics."""
+    report = await report_service.get_rm_portfolio_report(db, rm_id=rm_id)
+    return report
+
+
+@router.get(
+    "/rm-portfolio/export",
+    dependencies=[Depends(require_internal)],
+)
+async def export_rm_portfolio_csv(
+    db: DB,
+    current_user: CurrentUser,
+    rm_id: uuid.UUID | None = Query(None),
+):
+    """Export RM Portfolio Report as CSV."""
+    report = await report_service.get_rm_portfolio_report(db, rm_id=rm_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["RM Portfolio Report"])
+    writer.writerow([f"Generated: {report['generated_at']}"])
+    writer.writerow([])
+
+    writer.writerow(
+        [
+            "RM Name",
+            "Email",
+            "Clients",
+            "Active Programs",
+            "Completed Programs",
+            "Completion Rate (%)",
+            "Avg Program Health (%)",
+            "Revenue Pipeline",
+            "Avg NPS Score",
+        ]
+    )
+    for e in report["entries"]:
+        writer.writerow(
+            [
+                e["rm_name"],
+                e["rm_email"],
+                e["client_count"],
+                e["active_program_count"],
+                e["completed_program_count"],
+                f"{e['completion_rate']}%",
+                f"{e['avg_program_health']}%" if e["avg_program_health"] else "N/A",
+                e["revenue_pipeline"] or "N/A",
+                e["avg_nps_score"] or "N/A",
+            ]
+        )
+
+    output.seek(0)
+    filename = f"rm_portfolio_{datetime.now().strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get(
+    "/escalation-log",
+    response_model=EscalationLogReport,
+    dependencies=[Depends(require_internal)],
+)
+async def get_escalation_log_report(
+    db: DB,
+    current_user: CurrentUser,
+    status: str | None = Query(None, description="Filter by status"),
+    level: str | None = Query(None, description="Filter by level"),
+    program_id: uuid.UUID | None = Query(None, description="Filter by program"),
+):
+    """Escalation Log Report — all escalations with filters."""
+    report = await report_service.get_escalation_log_report(
+        db, status_filter=status, level_filter=level, program_id=program_id
+    )
+    return report
+
+
+@router.get(
+    "/escalation-log/export",
+    dependencies=[Depends(require_internal)],
+)
+async def export_escalation_log_csv(
+    db: DB,
+    current_user: CurrentUser,
+    status: str | None = Query(None),
+    level: str | None = Query(None),
+    program_id: uuid.UUID | None = Query(None),
+):
+    """Export Escalation Log Report as CSV."""
+    report = await report_service.get_escalation_log_report(
+        db, status_filter=status, level_filter=level, program_id=program_id
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Escalation Log Report"])
+    writer.writerow([f"Generated: {report['generated_at']}"])
+    writer.writerow([f"Total: {report['total']} | Open: {report['open_count']} | "
+                     f"Acknowledged: {report['acknowledged_count']} | "
+                     f"Resolved: {report['resolved_count']}"])
+    writer.writerow([])
+
+    writer.writerow(
+        [
+            "Title",
+            "Level",
+            "Status",
+            "Owner",
+            "Triggered At",
+            "Age (hours)",
+            "Acknowledged At",
+            "Resolved At",
+            "Resolution Notes",
+        ]
+    )
+    for e in report["escalations"]:
+        writer.writerow(
+            [
+                e["title"],
+                e["level"],
+                e["status"],
+                e["owner_name"],
+                e["triggered_at"],
+                e["age_hours"],
+                e["acknowledged_at"] or "N/A",
+                e["resolved_at"] or "N/A",
+                e["resolution_notes"] or "",
+            ]
+        )
+
+    output.seek(0)
+    filename = f"escalation_log_{datetime.now().strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get(
+    "/compliance-audit",
+    response_model=ComplianceAuditReport,
+    dependencies=[Depends(require_internal)],
+)
+async def get_compliance_audit_report(
+    db: DB,
+    current_user: CurrentUser,
+):
+    """Compliance Audit Report — KYC status + access audit summary."""
+    report = await report_service.get_compliance_audit_report(db)
+    return report
+
+
+@router.get(
+    "/compliance-audit/export",
+    dependencies=[Depends(require_internal)],
+)
+async def export_compliance_audit_csv(
+    db: DB,
+    current_user: CurrentUser,
+):
+    """Export Compliance Audit Report as CSV."""
+    report = await report_service.get_compliance_audit_report(db)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Compliance Audit Report"])
+    writer.writerow([f"Generated: {report['generated_at']}"])
+    writer.writerow([])
+
+    # KYC Summary
+    kyc = report["kyc_summary"]
+    writer.writerow(["KYC Document Status Summary"])
+    writer.writerow(["Total Documents", kyc["total_documents"]])
+    writer.writerow(["Current", kyc["current"]])
+    writer.writerow(["Expiring (30 days)", kyc["expiring_within_30_days"]])
+    writer.writerow(["Expired", kyc["expired"]])
+    writer.writerow(["Pending", kyc["pending"]])
+    writer.writerow(["Rejected", kyc["rejected"]])
+    writer.writerow([])
+
+    # KYC by Client
+    writer.writerow(["KYC Completeness by Client"])
+    writer.writerow(
+        ["Client", "Total Documents", "Current", "Expired", "Expiring Soon", "Pending"]
+    )
+    for c in report["kyc_by_client"]:
+        writer.writerow(
+            [
+                c["client_name"],
+                c["total_documents"],
+                c["current"],
+                c["expired"],
+                c["expiring_soon"],
+                c["pending"],
+            ]
+        )
+    writer.writerow([])
+
+    # Access Audit
+    aa = report["access_audit"]
+    writer.writerow(["Access Audit Summary"])
+    writer.writerow(["Audit Period", aa["audit_period"] or "N/A"])
+    writer.writerow(["Status", aa["status"] or "N/A"])
+    writer.writerow(["Users Reviewed", aa["users_reviewed"]])
+    writer.writerow(["Permissions Verified", aa["permissions_verified"]])
+    writer.writerow(["Anomalies Found", aa["anomalies_found"]])
+    writer.writerow(["Open Findings", aa["open_findings"]])
+    writer.writerow(["Total Findings", aa["total_findings"]])
+
+    output.seek(0)
+    filename = f"compliance_audit_{datetime.now().strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

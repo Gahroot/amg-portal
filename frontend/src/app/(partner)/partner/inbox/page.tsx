@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePartnerAssignments } from "@/hooks/use-partner-portal";
-import { acceptAssignment } from "@/lib/api/assignments";
+import { acceptAssignment, type Assignment } from "@/lib/api/assignments";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
   in_progress: "In Progress", completed: "Completed", cancelled: "Cancelled",
 };
 
-function filterAssignments(assignments: any[], search: string) {
+function filterAssignments(assignments: Assignment[], search: string) {
   if (!assignments) return [];
   if (!search) return assignments;
   const searchLower = search.toLowerCase();
@@ -36,7 +36,7 @@ function filterAssignments(assignments: any[], search: string) {
   );
 }
 
-function groupAssignments(assignments: any[]) {
+function groupAssignments(assignments: Assignment[]) {
   return {
     newItems: assignments.filter((a) => a.status === "dispatched"),
     activeItems: assignments.filter((a) => a.status === "accepted" || a.status === "in_progress"),
@@ -56,7 +56,7 @@ function getDueDateDisplay(dateStr: string | null) {
   return { text: date.toLocaleDateString(), color: "text-muted-foreground" };
 }
 
-function AssignmentTable({ items, onAccept, isAccepting }: { items: any[]; onAccept: (id: string) => void; isAccepting: boolean }) {
+function AssignmentTable({ items, onAccept, isAccepting }: { items: Assignment[]; onAccept: (id: string) => void; isAccepting: boolean }) {
   return (
     <Table>
       <TableHeader>

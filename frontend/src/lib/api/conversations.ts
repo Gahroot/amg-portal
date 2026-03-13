@@ -7,7 +7,6 @@ import type {
   Communication,
   CommunicationListResponse,
   SendMessageData,
-  UnreadCountResponse,
 } from "@/types/communication";
 
 export interface ConversationListParams {

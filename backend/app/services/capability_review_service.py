@@ -198,9 +198,6 @@ class CapabilityReviewService(
             return None
 
         review.status = status
-        if status == "in_progress" and not review.started_at:
-            # Track when review started (we can add this field later if needed)
-            pass
 
         await db.commit()
         await db.refresh(review)

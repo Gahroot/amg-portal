@@ -10,8 +10,6 @@ import {
   updateNotificationPreferences,
 } from "@/lib/api/notifications";
 import type {
-  Notification,
-  NotificationPreference,
   NotificationPreferenceUpdateData,
 } from "@/types/communication";
 

@@ -53,3 +53,36 @@ class AssignStaffRequest(BaseModel):
     program_id: str
     user_id: str
     role: str  # relationship_manager, coordinator, backup
+
+
+# ============================================================================
+# Capacity Planning
+# ============================================================================
+
+
+class CapacityItem(BaseModel):
+    """Capacity view for a single staff member."""
+
+    user_id: str
+    user_name: str
+    user_email: str
+    role: str
+    active_programs: int
+    open_tasks: int
+    max_programs: int
+    utilization_pct: float  # 0–100
+    is_over_capacity: bool
+    capacity_status: str  # available, at_capacity, over_capacity
+
+
+class CapacitySummary(BaseModel):
+    total_staff: int
+    available_count: int
+    at_capacity_count: int
+    over_capacity_count: int
+    avg_utilization_pct: float
+
+
+class CapacityResponse(BaseModel):
+    staff: list[CapacityItem]
+    summary: CapacitySummary

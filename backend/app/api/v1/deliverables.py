@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +14,6 @@ from app.api.deps import (
     CurrentPartner,
     CurrentUser,
     require_coordinator_or_above,
-    require_internal,
 )
 from app.models.deliverable import Deliverable
 from app.models.partner_assignment import PartnerAssignment
@@ -25,6 +24,7 @@ from app.schemas.deliverable import (
     DeliverableReview,
     DeliverableUpdate,
 )
+from app.services.audit_service import log_action, model_to_dict
 from app.services.storage import storage_service
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ async def create_deliverable(
     data: DeliverableCreate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_coordinator_or_above),
 ):
     # Verify assignment exists
@@ -87,6 +88,17 @@ async def create_deliverable(
         status="pending",
     )
     db.add(deliverable)
+    await db.flush()
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="deliverable",
+        entity_id=str(deliverable.id),
+        after_state=model_to_dict(deliverable),
+        request=request,
+    )
     await db.commit()
     await db.refresh(deliverable)
     return build_deliverable_response(deliverable)
@@ -96,7 +108,7 @@ async def create_deliverable(
 async def list_deliverables(
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     assignment_id: UUID | None = None,
@@ -133,7 +145,7 @@ async def get_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
@@ -148,6 +160,7 @@ async def update_deliverable(
     data: DeliverableUpdate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_coordinator_or_above),
 ):
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
@@ -155,10 +168,22 @@ async def update_deliverable(
     if not deliverable:
         raise HTTPException(status_code=404, detail="Deliverable not found")
 
+    before = model_to_dict(deliverable)
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(deliverable, field, value)
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="deliverable",
+        entity_id=str(deliverable_id),
+        before_state=before,
+        after_state=model_to_dict(deliverable),
+        request=request,
+    )
     await db.commit()
     await db.refresh(deliverable)
     return build_deliverable_response(deliverable)
@@ -169,6 +194,7 @@ async def submit_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     partner: CurrentPartner,
     file: UploadFile = File(...),
 ):
@@ -188,6 +214,8 @@ async def submit_deliverable(
             detail="Deliverable cannot be submitted in current status",
         )
 
+    before = model_to_dict(deliverable)
+
     object_path, file_size = await storage_service.upload_file(
         file, f"deliverables/{deliverable.assignment_id}"
     )
@@ -199,6 +227,17 @@ async def submit_deliverable(
     deliverable.submitted_by = current_user.id
     deliverable.status = "submitted"
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="submit",
+        entity_type="deliverable",
+        entity_id=str(deliverable_id),
+        before_state=before,
+        after_state=model_to_dict(deliverable),
+        request=request,
+    )
     await db.commit()
     await db.refresh(deliverable)
 
@@ -223,6 +262,7 @@ async def review_deliverable(
     data: DeliverableReview,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_coordinator_or_above),
 ):
     if data.status not in ("approved", "returned", "rejected"):
@@ -235,6 +275,8 @@ async def review_deliverable(
     if deliverable.status not in ("submitted", "under_review"):
         raise HTTPException(status_code=400, detail="Deliverable is not ready for review")
 
+    before = model_to_dict(deliverable)
+
     deliverable.status = data.status
     deliverable.review_comments = data.review_comments
     deliverable.reviewed_by = current_user.id
@@ -243,6 +285,17 @@ async def review_deliverable(
     if data.status == "approved":
         deliverable.client_visible = True
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="deliverable",
+        entity_id=str(deliverable_id),
+        before_state=before,
+        after_state=model_to_dict(deliverable),
+        request=request,
+    )
     await db.commit()
     await db.refresh(deliverable)
     return build_deliverable_response(deliverable)
@@ -253,7 +306,7 @@ async def download_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()

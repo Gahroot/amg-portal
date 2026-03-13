@@ -1,4 +1,4 @@
-import { Home, FileText, Settings, MessageSquare, User, Lock, Bell } from "lucide-react";
+import { Home, FileText, FileSignature, Settings, MessageSquare, ClipboardCheck, Briefcase, GitPullRequestArrow, Heart } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
 export const portalNavConfig: PortalNavConfig = {
@@ -15,10 +15,40 @@ export const portalNavConfig: PortalNavConfig = {
           tooltip: "Dashboard",
         },
         {
+          title: "Programs",
+          href: "/portal/programs",
+          icon: Briefcase,
+          tooltip: "Your Programs",
+        },
+        {
+          title: "Decisions",
+          href: "/portal/decisions",
+          icon: GitPullRequestArrow,
+          tooltip: "Decision Requests",
+        },
+        {
           title: "Messages",
           href: "/portal/messages",
           icon: MessageSquare,
           tooltip: "Messages",
+        },
+        {
+          title: "Documents",
+          href: "/portal/documents",
+          icon: FileSignature,
+          tooltip: "Documents & Signing",
+        },
+        {
+          title: "Preferences",
+          href: "/portal/preferences",
+          icon: Heart,
+          tooltip: "My Preferences",
+        },
+        {
+          title: "Surveys",
+          href: "/portal/surveys",
+          icon: ClipboardCheck,
+          tooltip: "Surveys",
         },
         {
           title: "Reports",

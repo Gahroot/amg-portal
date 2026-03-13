@@ -70,3 +70,21 @@ class PartnerPerformanceEntry(BaseModel):
     overall_score: int
     comments: str | None
     created_at: datetime
+
+
+class PerformanceTrendPoint(BaseModel):
+    score: int
+    date: str
+
+
+class GovernanceFlag(BaseModel):
+    title: str
+    date: str
+
+
+class PartnerGovernanceStatus(BaseModel):
+    is_probationary: bool
+    last_review_date: str | None
+    last_review_status: str | None
+    performance_trend: list[PerformanceTrendPoint]
+    governance_flags: list[GovernanceFlag]

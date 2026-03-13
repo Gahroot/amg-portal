@@ -1,13 +1,15 @@
 """Access audit endpoints for quarterly access review and compliance."""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_compliance, require_internal
+from app.api.deps import DB, require_compliance, require_internal
 from app.models.access_audit import AccessAudit, AccessAuditFinding
+from app.models.user import User
 from app.schemas.access_audit import (
     AccessAuditFindingListResponse,
     AccessAuditFindingResponse,
@@ -82,7 +84,7 @@ def _enrich_finding(finding: AccessAuditFinding) -> dict:
 @router.get("/", response_model=AccessAuditListResponse)
 async def list_access_audits(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: Annotated[User, Depends(require_internal)],
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
@@ -118,7 +120,7 @@ async def list_access_audits(
 @router.get("/statistics", response_model=AccessAuditStatistics)
 async def get_access_audit_statistics(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: Annotated[User, Depends(require_internal)],
 ) -> AccessAuditStatistics:
     """Get access audit statistics."""
     stats = await access_audit_service.get_audit_statistics(db)
@@ -128,7 +130,7 @@ async def get_access_audit_statistics(
 @router.get("/current", response_model=AccessAuditResponse | None)
 async def get_current_quarter_audit(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: Annotated[User, Depends(require_internal)],
 ) -> AccessAuditResponse | None:
     """Get the audit for the current quarter."""
     audit = await access_audit_service.get_current_quarter_audit(db)
@@ -141,7 +143,7 @@ async def get_current_quarter_audit(
 async def create_access_audit(
     data: CreateAccessAuditRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditResponse:
     """Create a new access audit."""
     # Check for existing audit for same quarter/year
@@ -170,7 +172,7 @@ async def create_access_audit(
 @router.get("/findings", response_model=AccessAuditFindingListResponse)
 async def list_all_findings(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: Annotated[User, Depends(require_internal)],
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
@@ -196,7 +198,7 @@ async def list_all_findings(
 async def get_access_audit(
     audit_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: Annotated[User, Depends(require_internal)],
 ) -> AccessAuditResponse:
     """Get a single access audit by ID with all findings."""
     audit = await access_audit_service.get_audit_with_findings(db, audit_id)
@@ -213,7 +215,7 @@ async def update_access_audit(
     audit_id: uuid.UUID,
     data: UpdateAccessAuditRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditResponse:
     """Update an access audit."""
     audit = await access_audit_service.update(db, audit_id, data)
@@ -230,7 +232,7 @@ async def update_access_audit(
 async def complete_access_audit(
     audit_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditResponse:
     """Mark an access audit as complete."""
     audit = await access_audit_service.complete_audit(db, audit_id)
@@ -252,7 +254,7 @@ async def create_audit_finding(
     audit_id: uuid.UUID,
     data: CreateAccessAuditFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditFindingResponse:
     """Add a finding to an access audit."""
     # Verify audit exists
@@ -289,7 +291,7 @@ async def update_audit_finding(
     finding_id: uuid.UUID,
     data: UpdateAccessAuditFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditFindingResponse:
     """Update an audit finding."""
     finding = await access_audit_service.update_finding(db, finding_id, data)
@@ -317,7 +319,7 @@ async def acknowledge_finding(
     finding_id: uuid.UUID,
     data: AcknowledgeFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditFindingResponse:
     """Acknowledge an audit finding."""
     finding = await access_audit_service.acknowledge_finding(db, finding_id, current_user.id)
@@ -345,7 +347,7 @@ async def remediate_finding(
     finding_id: uuid.UUID,
     data: RemediateFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditFindingResponse:
     """Mark a finding as remediated."""
     finding = await access_audit_service.remediate_finding(
@@ -375,7 +377,7 @@ async def waive_finding(
     finding_id: uuid.UUID,
     data: WaiveFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: Annotated[User, Depends(require_compliance)],
 ) -> AccessAuditFindingResponse:
     """Waive a finding with a reason."""
     finding = await access_audit_service.waive_finding(

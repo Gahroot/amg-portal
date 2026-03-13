@@ -11,6 +11,7 @@ class AssignmentCreate(BaseModel):
     brief: str
     sla_terms: str | None = None
     due_date: date | None = None
+    status: str = "draft"
 
 
 class AssignmentUpdate(BaseModel):

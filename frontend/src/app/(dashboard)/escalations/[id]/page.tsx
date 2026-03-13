@@ -82,7 +82,7 @@ export default function EscalationDetailPage({
     onError: () => toast.error("Failed to update status"),
   });
 
-  const handleResolve = (notes: string, status: "resolved" | "closed") => {
+  const handleResolve = (notes: string, _status: "resolved" | "closed") => {
     resolveMutation.mutate(
       { id: params.id, notes },
       {

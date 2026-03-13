@@ -3,6 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +31,7 @@ from app.models.user import User
 class BudgetApprovalService:
     """Service for budget-based approval routing."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> Any:
         self.db = db
 
     # === Threshold Management ===

@@ -106,7 +106,9 @@ class PartnerCertification(Base):
     issue_date = Column(Date, nullable=True)
     expiry_date = Column(Date, nullable=True)
     document_url = Column(String(500), nullable=True)
-    verification_status = Column(String(20), default="pending")  # pending, verified, expired, rejected
+    verification_status = Column(
+        String(20), default="pending"
+    )  # pending, verified, expired, rejected
     verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
@@ -129,10 +131,14 @@ class PartnerOnboarding(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id", ondelete="CASCADE"), nullable=False, unique=True
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
     current_stage = Column(String(30), default="profile_setup")
-    # Stages: profile_setup, capability_matrix, compliance_docs, certification_upload, review, completed
+    # Stages: profile_setup, capability_matrix, compliance_docs,
+    # certification_upload, review, completed
     checklist_items = Column(JSON, default=dict)  # {stage: {item: bool}}
     completed_stages = Column(JSON, default=list)  # List of completed stage names
     assigned_coordinator = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

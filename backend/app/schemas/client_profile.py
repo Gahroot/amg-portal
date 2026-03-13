@@ -60,6 +60,7 @@ class ClientProfileResponse(BaseModel):
     approved_at: datetime | None = None
     assigned_rm_id: UUID | None = None
     intelligence_file: dict[str, Any] | None = None
+    external_crm_id: str | None = None
     user_id: UUID | None = None
     welcome_email_sent: bool
     portal_access_enabled: bool

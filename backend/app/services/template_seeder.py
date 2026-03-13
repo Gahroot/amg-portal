@@ -210,6 +210,7 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
             "Program: {{ program_title }}\n"
             "Due Date: {{ due_date }}\n\n"
             "Brief:\n{{ brief }}\n\n"
+            "SLA Terms:\n{{ sla_terms }}\n\n"
             "Please review and accept the assignment "
             "in the portal."
         ),
@@ -232,6 +233,11 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
             "due_date": {
                 "type": "string",
                 "description": "Assignment due date",
+                "required": True,
+            },
+            "sla_terms": {
+                "type": "string",
+                "description": "SLA terms for the assignment",
                 "required": True,
             },
         },

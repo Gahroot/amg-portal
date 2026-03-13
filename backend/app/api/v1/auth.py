@@ -1,5 +1,7 @@
 """Auth endpoints."""
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
@@ -44,7 +46,7 @@ router = APIRouter()
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def register(data: UserCreate, db: DB):
+async def register(data: UserCreate, db: DB) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -66,7 +68,7 @@ async def register(data: UserCreate, db: DB):
 
 
 @router.post("/login", response_model=Token)
-async def login(data: LoginRequest, db: DB):
+async def login(data: LoginRequest, db: DB) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
@@ -116,7 +118,7 @@ async def login(data: LoginRequest, db: DB):
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh(data: RefreshTokenRequest, db: DB):
+async def refresh(data: RefreshTokenRequest, db: DB) -> Any:
     payload = decode_refresh_token(data.refresh_token)
     if payload is None:
         raise HTTPException(
@@ -148,7 +150,7 @@ async def refresh(data: RefreshTokenRequest, db: DB):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: CurrentUser):
+async def get_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
@@ -172,7 +174,7 @@ async def change_password(
 
 
 @router.post("/mfa/setup", response_model=MFASetupResponse)
-async def mfa_setup(current_user: CurrentUser, db: DB):
+async def mfa_setup(current_user: CurrentUser, db: DB) -> Any:
     """Generate MFA secret, QR code, and backup codes."""
     secret = generate_totp_secret()
     uri = generate_provisioning_uri(secret, current_user.email)
@@ -193,7 +195,7 @@ async def mfa_setup(current_user: CurrentUser, db: DB):
 
 
 @router.post("/mfa/verify-setup")
-async def mfa_verify_setup(data: MFAVerifyRequest, current_user: CurrentUser, db: DB):
+async def mfa_verify_setup(data: MFAVerifyRequest, current_user: CurrentUser, db: DB) -> Any:
     """Verify a TOTP code to confirm MFA setup."""
     if not current_user.mfa_secret:
         raise HTTPException(
@@ -213,7 +215,7 @@ async def mfa_verify_setup(data: MFAVerifyRequest, current_user: CurrentUser, db
 
 
 @router.post("/mfa/disable")
-async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB):
+async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB) -> Any:
     """Disable MFA after verifying a TOTP code."""
     if not current_user.mfa_enabled or not current_user.mfa_secret:
         raise HTTPException(

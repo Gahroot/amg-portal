@@ -51,3 +51,47 @@ export interface KYCVerifyData {
   rejection_reason?: string;
   notes?: string;
 }
+
+export type EnvelopeStatus =
+  | "created"
+  | "sent"
+  | "delivered"
+  | "signed"
+  | "completed"
+  | "declined"
+  | "voided"
+  | "expired";
+
+export interface EnvelopeRecipient {
+  name: string;
+  email: string;
+  status: string;
+  signed_at: string | null;
+  declined_reason: string | null;
+}
+
+export interface EnvelopeItem {
+  id: string;
+  envelope_id: string;
+  subject: string;
+  status: EnvelopeStatus;
+  sender_name: string;
+  sender_email: string;
+  recipients: EnvelopeRecipient[];
+  sent_at: string | null;
+  completed_at: string | null;
+  voided_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EnvelopeListResponse {
+  envelopes: EnvelopeItem[];
+  total: number;
+}
+
+export interface EnvelopeSigningSession {
+  signing_url: string;
+  integration_key: string;
+  sandbox: boolean;
+}

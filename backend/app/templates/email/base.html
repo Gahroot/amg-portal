@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Georgia, serif;
+            color: #2c2c2c;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f1ec;
+        }
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #D2691E;
+        }
+        .header .logo {
+            font-size: 28pt;
+            color: #8B4513;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .header .subtitle {
+            color: #666;
+            font-size: 10pt;
+        }
+        h1 { color: #8B4513; font-size: 20pt; margin-top: 0; }
+        h2 { color: #A0522D; font-size: 15pt; margin-top: 20px; }
+        h3 { color: #8B4513; font-size: 13pt; }
+        a { color: #8B4513; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+        th {
+            background-color: #8B4513;
+            color: white;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 10pt;
+        }
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 10pt;
+        }
+        tr:nth-child(even) td { background-color: #faf5f0; }
+        .btn {
+            display: inline-block;
+            background: #8B4513;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 16px;
+        }
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 8pt;
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="card">
+            <div class="header">
+                <div class="logo">AMG</div>
+                <div class="subtitle">Anchor Mill Group — Private Client Services</div>
+            </div>
+            {% block content %}{% endblock %}
+            <div class="footer">
+                <p>Confidential — AMG Portal</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

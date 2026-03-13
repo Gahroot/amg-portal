@@ -165,6 +165,8 @@ export interface CertificationListResponse {
 }
 
 // Onboarding
+export type OnboardingResponse = PartnerOnboarding;
+
 export interface PartnerOnboarding {
   id: string;
   partner_id: string;

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePartnerDeliverables, useSubmitPartnerDeliverable } from "@/hooks/use-partner-portal";
+import type { DeliverableItem } from "@/lib/api/deliverables";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -130,7 +131,7 @@ export default function PartnerDeliverablesPage() {
 }
 
 function DeliverableTable({ deliverables, uploadingId, handleFileUpload }: {
-  deliverables: any[];
+  deliverables: DeliverableItem[];
   uploadingId: string | null;
   handleFileUpload: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {

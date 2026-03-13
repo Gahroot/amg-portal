@@ -18,6 +18,7 @@ from app.models import (  # noqa: F401  # noqa: F401  # noqa: F401
     document,
     kyc_document,
     milestone,
+    notification_preference,
     partner,
     partner_assignment,
     program,

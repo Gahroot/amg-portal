@@ -9,6 +9,12 @@ from app.models.budget_approval import (  # noqa: F401
     BudgetApprovalRequest,
     BudgetApprovalStep,
 )
+from app.models.calendar import (  # noqa: F401
+    CalendarAvailability,
+    CalendarConnection,
+    CalendarEvent,
+    CalendarReminder,
+)
 from app.models.capability_review import CapabilityReview  # noqa: F401
 from app.models.clearance_certificate import (  # noqa: F401
     CertificateTemplate,
@@ -21,8 +27,10 @@ from app.models.communication import Communication  # noqa: F401
 from app.models.communication_template import CommunicationTemplate  # noqa: F401
 from app.models.conversation import Conversation  # noqa: F401
 from app.models.decision_request import DecisionRequest  # noqa: F401
+from app.models.deletion_request import DeletionRequest  # noqa: F401
 from app.models.deliverable import Deliverable  # noqa: F401
 from app.models.document import Document  # noqa: F401
+from app.models.envelope import Envelope  # noqa: F401
 from app.models.escalation import Escalation  # noqa: F401
 from app.models.family_member import FamilyMember, FamilyRelationship  # noqa: F401
 from app.models.kyc_document import KYCDocument  # noqa: F401

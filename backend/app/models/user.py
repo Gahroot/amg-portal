@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.calendar import CalendarAvailability, CalendarConnection, CalendarReminder
     from app.models.client_profile import ClientProfile
 
 
@@ -45,6 +46,15 @@ class User(Base):
     )
     client_profile: Mapped["ClientProfile | None"] = relationship(
         "ClientProfile", foreign_keys="ClientProfile.user_id", back_populates="user", uselist=False
+    )
+    calendar_connections: Mapped[list["CalendarConnection"]] = relationship(
+        "CalendarConnection", back_populates="user", cascade="all, delete-orphan"
+    )
+    calendar_reminders: Mapped[list["CalendarReminder"]] = relationship(
+        "CalendarReminder", back_populates="user", cascade="all, delete-orphan"
+    )
+    calendar_availability: Mapped[list["CalendarAvailability"]] = relationship(
+        "CalendarAvailability", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

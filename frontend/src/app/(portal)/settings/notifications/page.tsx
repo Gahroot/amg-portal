@@ -34,8 +34,9 @@ import {
 } from "@/components/ui/table";
 
 const DIGEST_FREQUENCIES = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
+  { value: "immediate", label: "Immediate" },
+  { value: "daily", label: "Daily Digest" },
+  { value: "weekly", label: "Weekly Digest" },
   { value: "never", label: "Never" },
 ];
 

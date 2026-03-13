@@ -112,3 +112,73 @@ export async function getEngagementHistory(): Promise<EngagementHistoryResponse>
   const response = await api.get<EngagementHistoryResponse>("/api/v1/portal/history");
   return response.data;
 }
+
+// ============================================================================
+// Portal Profile Preferences Types
+// ============================================================================
+
+export interface PortalProfilePreferences {
+  communication_preference: string | null;
+  sensitivities: string | null;
+  special_instructions: string | null;
+}
+
+export interface PortalProfilePreferencesUpdate {
+  communication_preference?: string | null;
+  sensitivities?: string | null;
+  special_instructions?: string | null;
+}
+
+// ============================================================================
+// Portal Intelligence Types
+// ============================================================================
+
+export interface PortalIntelligenceResponse {
+  data: Record<string, unknown>;
+}
+
+export interface PortalIntelligenceUpdate {
+  data: Record<string, unknown>;
+}
+
+// ============================================================================
+// Portal Profile Preferences API Functions
+// ============================================================================
+
+export async function getPortalProfilePreferences(): Promise<PortalProfilePreferences> {
+  const response = await api.get<PortalProfilePreferences>(
+    "/api/v1/portal/profile-preferences",
+  );
+  return response.data;
+}
+
+export async function updatePortalProfilePreferences(
+  data: PortalProfilePreferencesUpdate,
+): Promise<PortalProfilePreferences> {
+  const response = await api.patch<PortalProfilePreferences>(
+    "/api/v1/portal/profile-preferences",
+    data,
+  );
+  return response.data;
+}
+
+// ============================================================================
+// Portal Intelligence API Functions
+// ============================================================================
+
+export async function getPortalIntelligence(): Promise<PortalIntelligenceResponse> {
+  const response = await api.get<PortalIntelligenceResponse>(
+    "/api/v1/portal/intelligence",
+  );
+  return response.data;
+}
+
+export async function updatePortalIntelligence(
+  data: PortalIntelligenceUpdate,
+): Promise<PortalIntelligenceResponse> {
+  const response = await api.patch<PortalIntelligenceResponse>(
+    "/api/v1/portal/intelligence",
+    data,
+  );
+  return response.data;
+}

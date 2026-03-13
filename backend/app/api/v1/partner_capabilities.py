@@ -54,8 +54,12 @@ router = APIRouter()
 
 # Constants
 ONBOARDING_STAGES = [
-    "profile_setup", "capability_matrix", "compliance_docs",
-    "certification_upload", "review", "completed"
+    "profile_setup",
+    "capability_matrix",
+    "compliance_docs",
+    "certification_upload",
+    "review",
+    "completed",
 ]
 
 
@@ -94,11 +98,11 @@ async def create_service_category(
 ):
     """Create a new service category (admin only)."""
     # Check if name already exists
-    existing = await db.execute(
-        select(ServiceCategory).where(ServiceCategory.name == data.name)
-    )
+    existing = await db.execute(select(ServiceCategory).where(ServiceCategory.name == data.name))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Service category with this name already exists")
+        raise HTTPException(
+            status_code=400, detail="Service category with this name already exists"
+        )
 
     category = ServiceCategory(
         name=data.name,
@@ -120,9 +124,7 @@ async def update_service_category(
     _: None = require_admin,
 ):
     """Update a service category (admin only)."""
-    result = await db.execute(
-        select(ServiceCategory).where(ServiceCategory.id == category_id)
-    )
+    result = await db.execute(select(ServiceCategory).where(ServiceCategory.id == category_id))
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(status_code=404, detail="Service category not found")
@@ -162,7 +164,9 @@ async def get_partner_capabilities(
     )
 
 
-@router.post("/partners/{partner_id}/capabilities", response_model=CapabilityResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/capabilities", response_model=CapabilityResponse, status_code=201
+)
 async def add_partner_capability(
     partner_id: UUID,
     data: CapabilityCreate,
@@ -172,9 +176,7 @@ async def add_partner_capability(
 ):
     """Add a capability to a partner."""
     # Verify partner exists
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     if not partner_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Partner not found")
 
@@ -204,7 +206,9 @@ async def add_partner_capability(
     return capability
 
 
-@router.patch("/partners/{partner_id}/capabilities/{capability_id}", response_model=CapabilityResponse)
+@router.patch(
+    "/partners/{partner_id}/capabilities/{capability_id}", response_model=CapabilityResponse
+)
 async def update_partner_capability(
     partner_id: UUID,
     capability_id: UUID,
@@ -256,7 +260,9 @@ async def delete_partner_capability(
     await db.commit()
 
 
-@router.post("/partners/{partner_id}/capabilities/{capability_id}/verify", response_model=CapabilityResponse)
+@router.post(
+    "/partners/{partner_id}/capabilities/{capability_id}/verify", response_model=CapabilityResponse
+)
 async def verify_partner_capability(
     partner_id: UUID,
     capability_id: UUID,
@@ -326,7 +332,9 @@ async def get_partner_qualifications(
     return QualificationListResponse(qualifications=qual_responses, total=len(qual_responses))
 
 
-@router.post("/partners/{partner_id}/qualifications", response_model=QualificationResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/qualifications", response_model=QualificationResponse, status_code=201
+)
 async def submit_qualification(
     partner_id: UUID,
     data: QualificationCreate,
@@ -336,9 +344,7 @@ async def submit_qualification(
 ):
     """Submit a qualification request for a partner."""
     # Verify partner and category exist
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     if not partner_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Partner not found")
 
@@ -388,7 +394,10 @@ async def submit_qualification(
     )
 
 
-@router.patch("/partners/{partner_id}/qualifications/{qualification_id}", response_model=QualificationResponse)
+@router.patch(
+    "/partners/{partner_id}/qualifications/{qualification_id}",
+    response_model=QualificationResponse,
+)
 async def approve_qualification(
     partner_id: UUID,
     qualification_id: UUID,
@@ -462,8 +471,7 @@ async def get_partner_certifications(
     for c in certifications:
         is_expired = c.expiry_date is not None and c.expiry_date < today
         is_expiring_soon = (
-            c.expiry_date is not None
-            and today <= c.expiry_date <= thirty_days_from_now
+            c.expiry_date is not None and today <= c.expiry_date <= thirty_days_from_now
         )
 
         cert_responses.append(
@@ -490,7 +498,9 @@ async def get_partner_certifications(
     return CertificationListResponse(certifications=cert_responses, total=len(cert_responses))
 
 
-@router.post("/partners/{partner_id}/certifications", response_model=CertificationResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/certifications", response_model=CertificationResponse, status_code=201
+)
 async def add_partner_certification(
     partner_id: UUID,
     data: CertificationCreate,
@@ -500,17 +510,14 @@ async def add_partner_certification(
 ):
     """Add a certification for a partner."""
     # Verify partner exists
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     if not partner_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Partner not found")
 
     today = datetime.now(UTC).date()
     is_expired = data.expiry_date is not None and data.expiry_date < today
     is_expiring_soon = (
-        data.expiry_date is not None
-        and today <= data.expiry_date <= today + timedelta(days=30)
+        data.expiry_date is not None and today <= data.expiry_date <= today + timedelta(days=30)
     )
 
     certification = PartnerCertification(
@@ -547,7 +554,10 @@ async def add_partner_certification(
     )
 
 
-@router.post("/partners/{partner_id}/certifications/{certification_id}/document", response_model=CertificationResponse)
+@router.post(
+    "/partners/{partner_id}/certifications/{certification_id}/document",
+    response_model=CertificationResponse,
+)
 async def upload_certification_document(
     partner_id: UUID,
     certification_id: UUID,
@@ -601,7 +611,10 @@ async def upload_certification_document(
     )
 
 
-@router.post("/partners/{partner_id}/certifications/{certification_id}/verify", response_model=CertificationResponse)
+@router.post(
+    "/partners/{partner_id}/certifications/{certification_id}/verify",
+    response_model=CertificationResponse,
+)
 async def verify_partner_certification(
     partner_id: UUID,
     certification_id: UUID,
@@ -701,7 +714,9 @@ async def get_partner_onboarding(
     )
 
 
-@router.post("/partners/{partner_id}/onboarding", response_model=OnboardingResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/onboarding", response_model=OnboardingResponse, status_code=201
+)
 async def start_onboarding(
     partner_id: UUID,
     data: OnboardingCreate,
@@ -711,9 +726,7 @@ async def start_onboarding(
 ):
     """Start the onboarding process for a partner."""
     # Verify partner exists
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -941,9 +954,7 @@ async def get_capability_matrix(
 ):
     """Get the full capability matrix for a partner."""
     # Get partner
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -1032,8 +1043,7 @@ async def get_capability_matrix(
     for c in certifications:
         is_expired = c.expiry_date is not None and c.expiry_date < today
         is_expiring_soon = (
-            c.expiry_date is not None
-            and today <= c.expiry_date <= today + timedelta(days=30)
+            c.expiry_date is not None and today <= c.expiry_date <= today + timedelta(days=30)
         )
         cert_responses.append(
             CertificationResponse(

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -13,7 +13,7 @@ from app.api.deps import (
     DB,
     CurrentPartner,
     CurrentUser,
-    require_internal,
+    require_coordinator_or_above,
     require_rm_or_above,
 )
 from app.models.partner import PartnerProfile
@@ -25,6 +25,7 @@ from app.schemas.partner_assignment import (
     AssignmentResponse,
     AssignmentUpdate,
 )
+from app.services.audit_service import log_action, model_to_dict
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ async def create_assignment(
     data: AssignmentCreate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     # Verify partner exists
@@ -70,6 +72,8 @@ async def create_assignment(
     if not program_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Program not found")
 
+    initial_status = data.status if data.status in ("draft", "dispatched") else "draft"
+
     assignment = PartnerAssignment(
         partner_id=data.partner_id,
         program_id=data.program_id,
@@ -78,10 +82,33 @@ async def create_assignment(
         brief=data.brief,
         sla_terms=data.sla_terms,
         due_date=data.due_date,
-        status="draft",
+        status=initial_status,
     )
     db.add(assignment)
+    await db.flush()
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="partner_assignment",
+        entity_id=str(assignment.id),
+        after_state=model_to_dict(assignment),
+        request=request,
+    )
     await db.commit()
+
+    # Auto-dispatch brief if created directly in dispatched status
+    if initial_status == "dispatched":
+        try:
+            from app.services.auto_dispatch_service import on_assignment_dispatched
+
+            await on_assignment_dispatched(db, assignment)
+        except Exception:
+            logger.exception(
+                "Failed to dispatch partner_dispatch on create for %s",
+                assignment.id,
+            )
 
     result = await db.execute(
         select(PartnerAssignment)
@@ -96,7 +123,7 @@ async def create_assignment(
 async def list_assignments(
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     partner_id: UUID | None = None,
@@ -139,7 +166,7 @@ async def get_assignment(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     result = await db.execute(
         select(PartnerAssignment)
@@ -158,6 +185,7 @@ async def update_assignment(
     data: AssignmentUpdate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     result = await db.execute(
@@ -169,12 +197,37 @@ async def update_assignment(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
+    before = model_to_dict(assignment)
+    previous_status = assignment.status
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(assignment, field, value)
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner_assignment",
+        entity_id=str(assignment_id),
+        before_state=before,
+        after_state=model_to_dict(assignment),
+        request=request,
+    )
     await db.commit()
     await db.refresh(assignment)
+
+    # Auto-dispatch brief when status transitions to dispatched
+    if previous_status != "dispatched" and assignment.status == "dispatched":
+        try:
+            from app.services.auto_dispatch_service import on_assignment_dispatched
+
+            await on_assignment_dispatched(db, assignment)
+        except Exception:
+            logger.exception(
+                "Failed to dispatch partner_dispatch on update for %s",
+                assignment.id,
+            )
 
     # Re-fetch with relationships
     result = await db.execute(
@@ -191,6 +244,7 @@ async def dispatch_assignment(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     result = await db.execute(
@@ -204,7 +258,19 @@ async def dispatch_assignment(
     if assignment.status != "draft":
         raise HTTPException(status_code=400, detail="Only draft assignments can be dispatched")
 
+    before = model_to_dict(assignment)
     assignment.status = "dispatched"
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner_assignment",
+        entity_id=str(assignment_id),
+        before_state=before,
+        after_state=model_to_dict(assignment),
+        request=request,
+    )
     await db.commit()
     await db.refresh(assignment)
 
@@ -237,6 +303,7 @@ async def accept_assignment(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     partner: CurrentPartner,
 ):
     result = await db.execute(
@@ -252,8 +319,20 @@ async def accept_assignment(
     if assignment.status != "dispatched":
         raise HTTPException(status_code=400, detail="Only dispatched assignments can be accepted")
 
+    before = model_to_dict(assignment)
     assignment.status = "accepted"
     assignment.accepted_at = datetime.now(UTC)
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner_assignment",
+        entity_id=str(assignment_id),
+        before_state=before,
+        after_state=model_to_dict(assignment),
+        request=request,
+    )
     await db.commit()
     await db.refresh(assignment)
 

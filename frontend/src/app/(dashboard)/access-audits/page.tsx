@@ -11,9 +11,8 @@ import {
   getCurrentQuarterAudit,
 } from "@/lib/api/access-audits";
 import type { AccessAuditListParams, CreateAccessAuditRequest } from "@/types/access-audit";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -39,15 +38,6 @@ import {
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  draft: "secondary",
-  in_review: "default",
-  completed: "outline",
-};
-
 const PAGE_SIZE = 50;
 
 export default function AccessAuditsPage() {
@@ -55,6 +45,7 @@ export default function AccessAuditsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [filters, setFilters] = React.useState<AccessAuditListParams>({});
+  const [quarterFilter, setQuarterFilter] = React.useState<number | undefined>(undefined);
   const [page, setPage] = React.useState(0);
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
   const [newQuarter, setNewQuarter] = React.useState(1);
@@ -137,9 +128,7 @@ export default function AccessAuditsPage() {
                   {currentAudit.audit_period} - {currentAudit.anomalies_found} findings
                 </p>
               </div>
-              <Badge variant={STATUS_VARIANT[currentAudit.status] ?? "outline"}>
-                {currentAudit.status.replace("_", " ")}
-              </Badge>
+              <StatusBadge status={currentAudit.status} />
             </div>
           </div>
         )}
@@ -212,6 +201,23 @@ export default function AccessAuditsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select
+            onValueChange={(value) => {
+              setPage(0);
+              setQuarterFilter(value === "all" ? undefined : parseInt(value));
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Quarter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Quarters</SelectItem>
+              <SelectItem value="1">Q1</SelectItem>
+              <SelectItem value="2">Q2</SelectItem>
+              <SelectItem value="3">Q3</SelectItem>
+              <SelectItem value="4">Q4</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Table */}
@@ -231,7 +237,9 @@ export default function AccessAuditsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.audits.map((audit) => (
+                {data?.audits
+                  .filter((audit) => !quarterFilter || audit.quarter === quarterFilter)
+                  .map((audit) => (
                   <TableRow
                     key={audit.id}
                     className="cursor-pointer"
@@ -241,9 +249,7 @@ export default function AccessAuditsPage() {
                       {audit.audit_period}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[audit.status] ?? "outline"}>
-                        {audit.status.replace("_", " ")}
-                      </Badge>
+                      <StatusBadge status={audit.status} />
                     </TableCell>
                     <TableCell>{audit.auditor_name || "-"}</TableCell>
                     <TableCell>{audit.users_reviewed}</TableCell>
@@ -265,7 +271,7 @@ export default function AccessAuditsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {data?.audits.length === 0 && (
+                {data?.audits.filter((a) => !quarterFilter || a.quarter === quarterFilter).length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={6}

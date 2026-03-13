@@ -1,5 +1,6 @@
 """Program closure workflow service."""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -13,6 +14,8 @@ from app.models.program import Program
 from app.models.program_closure import DEFAULT_CHECKLIST, ProgramClosure
 from app.schemas.partner_rating import PartnerRatingCreate
 from app.schemas.program_closure import ChecklistItem
+
+logger = logging.getLogger(__name__)
 
 
 async def initiate_closure(
@@ -159,6 +162,18 @@ async def submit_partner_rating(
 
     await db.commit()
     await db.refresh(rating)
+
+    # Trigger governance check after rating submission
+    try:
+        from app.services.partner_governance_service import check_partner_performance
+
+        await check_partner_performance(db, rating_data.partner_id)
+    except Exception:
+        logger.exception(
+            "Failed to run governance check for partner %s",
+            rating_data.partner_id,
+        )
+
     return rating
 
 
@@ -204,4 +219,17 @@ async def complete_closure(
 
     await db.commit()
     await db.refresh(closure)
+
+    # Dispatch completion_note template notification
+    if program:
+        try:
+            from app.services.auto_dispatch_service import on_closure_completed
+
+            await on_closure_completed(db, program)
+        except Exception:
+            logger.exception(
+                "Failed to dispatch completion_note for program %s",
+                program_id,
+            )
+
     return closure

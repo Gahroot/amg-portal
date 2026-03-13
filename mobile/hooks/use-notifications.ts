@@ -5,20 +5,15 @@ import { useNotificationStore } from '@/lib/notification-store';
 import { useWebSocket } from './use-websocket';
 import { usePushNotifications } from './use-push-notifications';
 import api from '@/lib/api';
-import type { NotificationListResponse, from '@/types/notification';
+import type { NotificationListResponse } from '@/types/notification';
 
 export function useNotifications() {
   const token = useAuthStore((s) => s.token);
-  const { isConnected: isWebSocketConnected } = useWebSocket();
-  const {
-    pushToken,
-    requestPermissions,
-    setBadgeCount,
-  } = usePushNotifications();
+  const { isConnected } = useWebSocket();
+  const { pushToken, requestPermissions, setBadgeCount } =
+    usePushNotifications();
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
-  const incrementUnread = useNotificationStore((s) => s.incrementUnread);
   const decrementUnread = useNotificationStore((s) => s.decrementUnread);
-
   const setPreferences = useNotificationStore((s) => s.setPreferences);
   const preferences = useNotificationStore((s) => s.preferences);
 
@@ -29,33 +24,42 @@ export function useNotifications() {
     }
 
     try {
-      const response = await api.get<NotificationListResponse>('/notifications', {
-        params: { unread_only: true, limit: 0 },
-      });
+      const response = await api.get<NotificationListResponse>(
+        '/notifications',
+        {
+          params: { unread_only: true, limit: 0 },
+        },
+      );
       const count = response.data.total;
       setUnreadCount(count);
       setBadgeCount(count);
     } catch {
       // Ignore errors
     }
-  }, [token, setUnreadCount, });
+  }, [token, setUnreadCount, setBadgeCount]);
 
   // Mark notification as read
-  const markAsRead = useCallback(async (notificationId: string) => {
-    if (!token) {
-      return false;
-    }
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      if (!token) {
+        return false;
+      }
 
-    try {
-      await api.patch(`/notifications/${notificationId}/read`);
-      decrementUnread();
-      const newCount = Math.max(0, useNotificationStore.getState().unreadCount - 1);
-      setBadgeCount(newCount);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [token, decrementUnread, setBadgeCount]);
+      try {
+        await api.patch(`/notifications/${notificationId}/read`);
+        decrementUnread();
+        const newCount = Math.max(
+          0,
+          useNotificationStore.getState().unreadCount - 1,
+        );
+        setBadgeCount(newCount);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [token, decrementUnread, setBadgeCount],
+  );
 
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
@@ -74,28 +78,30 @@ export function useNotifications() {
   }, [token, setUnreadCount, setBadgeCount]);
 
   // Update preferences
-  const updatePreferences = useCallback(async (prefs: Record<string, unknown>) => {
-    if (!token) {
-      return false;
-    }
+  const updatePreferences = useCallback(
+    async (prefs: Record<string, unknown>) => {
+      if (!token) {
+        return false;
+      }
 
-    try {
-      const response = await api.patch('/notifications/preferences', prefs);
-      setPreferences(response.data);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [token, setPreferences]);
+      try {
+        const response = await api.patch('/notifications/preferences', prefs);
+        setPreferences(response.data);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [token, setPreferences],
+  );
 
-  // Initialize on mount
+  // Initialize on mount when authenticated
   useEffect(() => {
     if (token) {
       fetchUnreadCount();
-      // Request push notification permissions
       requestPermissions();
     }
-  }, [token, fetchUnreadCount]);
+  }, [token, fetchUnreadCount, requestPermissions]);
 
   return {
     isConnected,

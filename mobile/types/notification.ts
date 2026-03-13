@@ -9,6 +9,20 @@ export type NotificationType =
 
 export type DigestFrequency = 'immediate' | 'hourly' | 'daily' | 'weekly' | 'never';
 
+export interface QuietHours {
+  enabled: boolean;
+  start: string;
+  end: string;
+  timezone: string;
+}
+
+export interface ChannelPreferences {
+  push_enabled?: boolean;
+  email_enabled?: boolean;
+  sms_enabled?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 export interface Notification {
   id: string;
   user_id: string;
@@ -37,7 +51,7 @@ export interface NotificationPreference {
   digest_enabled: boolean;
   digest_frequency: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
-  channel_preferences?: Record<string, boolean>;
+  channel_preferences?: ChannelPreferences;
   quiet_hours_enabled: boolean;
   quiet_hours_start?: string;
   quiet_hours_end?: string;
@@ -50,7 +64,7 @@ export interface NotificationPreferenceUpdateData {
   digest_enabled?: boolean;
   digest_frequency?: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
-  channel_preferences?: Record<string, boolean>;
+  channel_preferences?: ChannelPreferences;
   quiet_hours_enabled?: boolean;
   quiet_hours_start?: string;
   quiet_hours_end?: string;

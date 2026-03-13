@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_coordinator_or_above, require_internal
+from app.api.deps import DB, CurrentUser, require_coordinator_or_above
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -84,7 +84,7 @@ async def list_tasks(
     overdue_only: bool = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     """List all tasks with filtering for the task board."""
     # Build query with joins
@@ -366,7 +366,7 @@ async def delete_task(
 @router.get("/programs", response_model=list[ProgramInfo])
 async def list_programs_for_filter(
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     """List all programs for the filter dropdown."""
     result = await db.execute(
@@ -384,7 +384,7 @@ async def list_programs_for_filter(
 @router.get("/assignees", response_model=list[AssigneeInfo])
 async def list_assignees_for_filter(
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_coordinator_or_above),
 ):
     """List all internal users for the assignee filter dropdown."""
     from app.models.enums import INTERNAL_ROLES

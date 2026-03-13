@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.models.enums import ApprovalType, UserRole
 from app.models.program import Program
 from app.models.user import User
 from app.schemas.approval import ApprovalDecision, ApprovalRequest, ApprovalResponse
+from app.services.audit_service import log_action, model_to_dict
 
 router = APIRouter()
 
@@ -45,6 +46,7 @@ async def request_approval(
     data: ApprovalRequest,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     result = await db.execute(select(Program).where(Program.id == data.program_id))
@@ -58,6 +60,17 @@ async def request_approval(
         comments=data.comments,
     )
     db.add(approval)
+    await db.flush()
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="approval",
+        entity_id=str(approval.id),
+        after_state=model_to_dict(approval),
+        request=request,
+    )
     await db.commit()
     await db.refresh(approval)
     return await _build_approval_response(approval, db)
@@ -86,7 +99,7 @@ async def list_pending_approvals(
     response_model=list[ApprovalResponse],
     dependencies=[Depends(require_internal)],
 )
-async def get_program_approvals(program_id: uuid.UUID, db: DB):
+async def get_program_approvals(program_id: uuid.UUID, db: DB) -> Any:
     result = await db.execute(
         select(ProgramApproval)
         .where(ProgramApproval.program_id == program_id)
@@ -102,6 +115,7 @@ async def decide_approval(
     data: ApprovalDecision,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
 ):
     result = await db.execute(select(ProgramApproval).where(ProgramApproval.id == approval_id))
     approval = result.scalar_one_or_none()
@@ -129,12 +143,25 @@ async def decide_approval(
             detail="Insufficient permissions for this approval type",
         )
 
+    before = model_to_dict(approval)
+
     approval.status = data.status
     approval.approved_by = current_user.id
     approval.decided_at = datetime.now(UTC)
     if data.comments:
         approval.comments = data.comments
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="approval",
+        entity_id=str(approval_id),
+        before_state=before,
+        after_state=model_to_dict(approval),
+        request=request,
+    )
     await db.commit()
     await db.refresh(approval)
     return await _build_approval_response(approval, db)

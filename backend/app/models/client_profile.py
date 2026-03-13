@@ -58,6 +58,9 @@ class ClientProfile(Base):
     # Intelligence
     intelligence_file: Mapped[dict[str, str] | None] = mapped_column(JSON, nullable=True)
 
+    # CRM Integration
+    external_crm_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+
     # Provisioning
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, unique=True

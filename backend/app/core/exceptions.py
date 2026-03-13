@@ -32,42 +32,46 @@ class AppException(Exception):  # noqa: N818
 class NotFoundException(AppException):
     """Resource not found exception."""
 
-    def __init__(self, message: str = "Resource not found", details: dict[str, Any] | None = None):
+    def __init__(
+        self, message: str = "Resource not found", details: dict[str, Any] | None = None
+    ) -> Any:
         super().__init__(message, status.HTTP_404_NOT_FOUND, details)
 
 
 class BadRequestException(AppException):
     """Bad request exception."""
 
-    def __init__(self, message: str = "Bad request", details: dict[str, Any] | None = None):
+    def __init__(self, message: str = "Bad request", details: dict[str, Any] | None = None) -> Any:
         super().__init__(message, status.HTTP_400_BAD_REQUEST, details)
 
 
 class UnauthorizedException(AppException):
     """Unauthorized exception."""
 
-    def __init__(self, message: str = "Unauthorized", details: dict[str, Any] | None = None):
+    def __init__(self, message: str = "Unauthorized", details: dict[str, Any] | None = None) -> Any:
         super().__init__(message, status.HTTP_401_UNAUTHORIZED, details)
 
 
 class ForbiddenException(AppException):
     """Forbidden exception."""
 
-    def __init__(self, message: str = "Forbidden", details: dict[str, Any] | None = None):
+    def __init__(self, message: str = "Forbidden", details: dict[str, Any] | None = None) -> Any:
         super().__init__(message, status.HTTP_403_FORBIDDEN, details)
 
 
 class ConflictException(AppException):
     """Conflict exception."""
 
-    def __init__(self, message: str = "Conflict", details: dict[str, Any] | None = None):
+    def __init__(self, message: str = "Conflict", details: dict[str, Any] | None = None) -> Any:
         super().__init__(message, status.HTTP_409_CONFLICT, details)
 
 
 class ValidationException(AppException):
     """Validation exception."""
 
-    def __init__(self, message: str = "Validation error", details: dict[str, Any] | None = None):
+    def __init__(
+        self, message: str = "Validation error", details: dict[str, Any] | None = None
+    ) -> Any:
         super().__init__(message, status.HTTP_422_UNPROCESSABLE_ENTITY, details)
 
 

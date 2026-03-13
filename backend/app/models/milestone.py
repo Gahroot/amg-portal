@@ -1,11 +1,15 @@
 import uuid
 from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.calendar import CalendarEvent, CalendarReminder
 
 
 class Milestone(Base):
@@ -32,6 +36,12 @@ class Milestone(Base):
 
     program = relationship("Program", back_populates="milestones")
     tasks = relationship("Task", back_populates="milestone", cascade="all, delete-orphan")
+    calendar_events: Mapped[list["CalendarEvent"]] = relationship(
+        "CalendarEvent", back_populates="milestone", cascade="all, delete-orphan"
+    )
+    calendar_reminders: Mapped[list["CalendarReminder"]] = relationship(
+        "CalendarReminder", back_populates="milestone", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Milestone(id={self.id}, title={self.title})>"

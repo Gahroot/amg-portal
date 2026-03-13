@@ -99,3 +99,48 @@ export interface ClientListParams {
   skip?: number;
   limit?: number;
 }
+
+// --- Portal Program Types ---
+
+export interface PortalMilestone {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  status: string;
+  position: number;
+}
+
+export interface PortalProgram {
+  id: string;
+  title: string;
+  objectives: string | null;
+  scope: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+  rag_status: string;
+  milestone_count: number;
+  completed_milestone_count: number;
+  created_at: string;
+}
+
+export interface PortalProgramListResponse {
+  programs: PortalProgram[];
+  total: number;
+}
+
+export interface PortalDeliverable {
+  id: string;
+  title: string;
+  deliverable_type: string;
+  description: string | null;
+  due_date: string | null;
+  status: string;
+  submitted_at: string | null;
+}
+
+export interface PortalProgramDetail extends PortalProgram {
+  milestones: PortalMilestone[];
+  deliverables: PortalDeliverable[];
+}

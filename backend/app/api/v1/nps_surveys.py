@@ -1,6 +1,7 @@
 """NPS Survey API endpoints."""
 
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -84,7 +85,7 @@ async def list_nps_surveys(
     response_model=NPSSurveyResponse | None,
     dependencies=[Depends(require_internal)],
 )
-async def get_active_nps_survey(db: DB):
+async def get_active_nps_survey(db: DB) -> Any:
     """Get the currently active NPS survey (if any)."""
     surveys, _ = await nps_survey_service.get_surveys(
         db,

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Scheduled Report: {{ report_title }}</h1>
+
+<p>Your scheduled <strong>{{ report_type | replace("_", " ") }}</strong> report has been
+generated and is attached to this email.</p>
+
+<table>
+    <tr><td style="font-weight:bold;">Report</td><td>{{ report_title }}</td></tr>
+    <tr><td style="font-weight:bold;">Format</td><td>{{ format | upper | default("PDF") }}</td></tr>
+    <tr><td style="font-weight:bold;">Generated</td><td>{{ generated_at }}</td></tr>
+    {% if recipient_count %}
+    <tr><td style="font-weight:bold;">Recipients</td><td>{{ recipient_count }} recipient{{ "s" if recipient_count != 1 else "" }}</td></tr>
+    {% endif %}
+</table>
+
+{% if portal_url %}
+<p style="margin-top: 20px;">
+    <a href="{{ portal_url }}/reports" class="btn">View Reports in Portal</a>
+</p>
+{% endif %}
+
+<p style="margin-top: 24px;">Best regards,<br>AMG Portal</p>
+{% endblock %}

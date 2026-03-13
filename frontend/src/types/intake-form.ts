@@ -44,7 +44,7 @@ export interface IntakeFormData
   family_members?: FamilyMemberCreate[];
 }
 
-export interface IntakeDraftData extends Partial<IntakeFormData> {}
+export type IntakeDraftData = Partial<IntakeFormData>;
 
 export interface IntakeFormResponse {
   id: string;

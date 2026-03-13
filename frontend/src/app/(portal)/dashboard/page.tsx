@@ -80,13 +80,30 @@ export default function PortalDashboardPage() {
           </CardContent>
         </Card>
 
-        <Link href="/portal/reports/portfolio">
+        <Link href="/portal/programs">
           <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader>
               <CardTitle className="font-serif text-lg">Programs</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">View your portfolio and program status</p>
+              <p className="text-sm text-muted-foreground">View your programs, milestones, and deliverables</p>
+              <Button variant="ghost" size="sm" className="mt-2 p-0 h-auto">
+                View Programs <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/portal/decisions">
+          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader>
+              <CardTitle className="font-serif text-lg">Decisions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Review and respond to pending decision requests</p>
+              <Button variant="ghost" size="sm" className="mt-2 p-0 h-auto">
+                View Decisions <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         </Link>

@@ -2,11 +2,28 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Check, ChevronRight, Clock, User, FileText, Award, Shield } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Clock,
+  User,
+  FileText,
+  Award,
+  Shield,
+  Save,
+  Send,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,9 +32,13 @@ import {
   ONBOARDING_STAGES,
   DEFAULT_CHECKLIST_ITEMS,
 } from "@/types/partner-capability";
-import { getPartnerOnboarding, completeOnboardingStage } from "@/lib/api/partner-capabilities";
+import {
+  getPartnerOnboarding,
+  completeOnboardingStage,
+  updateOnboarding,
+} from "@/lib/api/partner-capabilities";
+import { usePartnerProfile } from "@/hooks/use-partner-portal";
 
-// Stage icons
 const STAGE_ICONS: Record<OnboardingStage, React.ReactNode> = {
   profile_setup: <User className="h-5 w-5" />,
   capability_matrix: <Award className="h-5 w-5" />,
@@ -27,37 +48,58 @@ const STAGE_ICONS: Record<OnboardingStage, React.ReactNode> = {
   completed: <Check className="h-5 w-5" />,
 };
 
+const STAGE_ACTION_LINKS: Partial<
+  Record<OnboardingStage, { href: string; label: string }>
+> = {
+  profile_setup: { href: "/partner/settings", label: "Edit Profile" },
+  capability_matrix: {
+    href: "/partner/settings",
+    label: "Manage Capabilities",
+  },
+  compliance_docs: { href: "/partner/documents", label: "Upload Documents" },
+  certification_upload: {
+    href: "/partner/documents",
+    label: "Add Certifications",
+  },
+};
+
+/** Actionable stages the partner can work through (excludes review & completed) */
+const ACTIONABLE_STAGES = ONBOARDING_STAGES.filter(
+  (s) => s.id !== "completed"
+);
+
 export default function PartnerOnboardingPage() {
-  const router = useRouter();
-  const [onboarding, setOnboarding] = React.useState<PartnerOnboarding | null>(null);
+  const { data: profile, isLoading: profileLoading } = usePartnerProfile();
+  const [onboarding, setOnboarding] =
+    React.useState<PartnerOnboarding | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  // Load onboarding data once profile is available
   React.useEffect(() => {
-    loadOnboarding();
-  }, []);
+    if (profileLoading || !profile) return;
+    loadOnboarding(profile.id);
+  }, [profileLoading, profile]);
 
-  const loadOnboarding = async () => {
+  const loadOnboarding = async (partnerId: string) => {
     try {
-      // Get partner ID from the current user's profile
-      const profileResponse = await fetch("/api/v1/partner-portal/profile");
-      if (!profileResponse.ok) {
-        router.push("/login");
-        return;
-      }
-      const profile = await profileResponse.json();
-
-      const data = await getPartnerOnboarding(profile.id);
-      setOnboarding(data);
-    } catch (error) {
-      console.error("Failed to load onboarding:", error);
+      const data = await getPartnerOnboarding(partnerId);
+      setOnboarding(data as PartnerOnboarding | null);
+    } catch {
+      console.error("Failed to load onboarding");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChecklistItemToggle = async (stage: OnboardingStage, item: string, checked: boolean) => {
-    if (!onboarding) return;
+  // ---- Checklist toggle ----
+  const handleChecklistItemToggle = async (
+    stage: OnboardingStage,
+    item: string,
+    checked: boolean
+  ) => {
+    if (!onboarding || !profile) return;
 
     setIsSaving(true);
     try {
@@ -65,52 +107,76 @@ export default function PartnerOnboardingPage() {
       const stageChecklist = currentChecklist[stage] || {};
       const updatedChecklist = {
         ...currentChecklist,
-        [stage]: {
-          ...stageChecklist,
-          [item]: checked,
-        },
+        [stage]: { ...stageChecklist, [item]: checked },
       };
 
-      // Check if all items in the stage are complete
+      // Persist checklist via partial update
+      const updated = await updateOnboarding(profile.id, {
+        checklist_items: updatedChecklist,
+      });
+      setOnboarding(updated);
+
+      // Auto-complete stage when every item is checked
       const stageItems = DEFAULT_CHECKLIST_ITEMS[stage];
-      const allItemsComplete = Object.keys(stageItems).every(
+      const allDone = Object.keys(stageItems).every(
         (key) => updatedChecklist[stage]?.[key] === true
       );
-
-      if (allItemsComplete && !onboarding.completed_stages.includes(stage)) {
-        // Complete the stage
-        const updated = await completeOnboardingStage(profile.id, {
+      if (allDone && !updated.completed_stages.includes(stage)) {
+        const completed = await completeOnboardingStage(profile.id, {
           stage,
           checklist_items: updatedChecklist[stage],
         });
-        setOnboarding(updated);
-      } else {
-        // Just update the checklist locally for now
-        setOnboarding({
-          ...onboarding,
-          checklist_items: updatedChecklist,
-        });
+        setOnboarding(completed);
+        toast.success(
+          `${ONBOARDING_STAGES.find((s) => s.id === stage)?.label} completed!`
+        );
       }
-    } catch (error) {
-      console.error("Failed to update checklist:", error);
+    } catch {
+      toast.error("Failed to save progress");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const [profile, setProfile] = React.useState<{ id: string } | null>(null);
+  // ---- Save & continue later ----
+  const handleSave = async () => {
+    if (!onboarding || !profile) return;
+    setIsSaving(true);
+    try {
+      await updateOnboarding(profile.id, {
+        checklist_items: onboarding.checklist_items,
+      });
+      toast.success("Progress saved — you can continue later");
+    } catch {
+      toast.error("Failed to save progress");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  React.useEffect(() => {
-    fetch("/api/v1/partner-portal/profile")
-      .then((res) => res.json())
-      .then(setProfile)
-      .catch(console.error);
-  }, []);
+  // ---- Submit for review ----
+  const handleSubmitForReview = async () => {
+    if (!onboarding || !profile) return;
+    setIsSubmitting(true);
+    try {
+      const updated = await completeOnboardingStage(profile.id, {
+        stage: "review",
+        checklist_items: { review_submitted: true },
+      });
+      setOnboarding(updated);
+      toast.success("Onboarding submitted for coordinator review");
+    } catch {
+      toast.error("Failed to submit for review");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  if (isLoading) {
+  // ---- Loading states ----
+  if (isLoading || profileLoading) {
     return (
       <div className="mx-auto max-w-4xl py-8">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground text-sm">Loading…</p>
       </div>
     );
   }
@@ -132,20 +198,44 @@ export default function PartnerOnboardingPage() {
     );
   }
 
-  const currentStageIndex = ONBOARDING_STAGES.findIndex(
-    (s) => s.id === onboarding.current_stage
+  const isReviewStage = onboarding.current_stage === "review";
+  const isCompleted = onboarding.current_stage === "completed";
+
+  // Determine which prerequisite stages must be finished before review
+  const preReviewStages = ACTIONABLE_STAGES.filter(
+    (s) => s.id !== "review" && s.id !== "completed"
+  );
+  const allPreReviewDone = preReviewStages.every((s) =>
+    onboarding.completed_stages.includes(s.id)
   );
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       {/* Header */}
-      <div>
-        <h1 className="font-serif text-3xl font-bold tracking-tight">
-          Partner Onboarding
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Complete the following steps to activate your partner account
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-3xl font-bold tracking-tight">
+            Partner Onboarding
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Complete the following steps to activate your partner account
+          </p>
+        </div>
+        {!isCompleted && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1 h-4 w-4" />
+            )}
+            Save Progress
+          </Button>
+        )}
       </div>
 
       {/* Progress Overview */}
@@ -168,26 +258,25 @@ export default function PartnerOnboardingPage() {
         </CardContent>
       </Card>
 
-      {/* Stage Progress */}
-      <div className="flex items-center justify-between mb-6">
-        {ONBOARDING_STAGES.map((stage, index) => {
-          const isCompleted = onboarding.completed_stages.includes(stage.id);
+      {/* Stage Progress Indicator */}
+      <div className="flex items-center justify-between">
+        {ACTIONABLE_STAGES.map((stage, index) => {
+          const stageCompleted = onboarding.completed_stages.includes(stage.id);
           const isCurrent = stage.id === onboarding.current_stage;
-          const isUpcoming = index > currentStageIndex;
 
           return (
             <React.Fragment key={stage.id}>
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isCompleted
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                    stageCompleted
                       ? "bg-green-100 text-green-600"
                       : isCurrent
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {isCompleted ? (
+                  {stageCompleted ? (
                     <Check className="h-5 w-5" />
                   ) : (
                     STAGE_ICONS[stage.id]
@@ -201,106 +290,209 @@ export default function PartnerOnboardingPage() {
                   {stage.label}
                 </span>
               </div>
-              {index < ONBOARDING_STAGES.length - 1 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              {index < ACTIONABLE_STAGES.length - 1 && (
+                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               )}
             </React.Fragment>
           );
         })}
       </div>
 
-      {/* Current Stage Details */}
-      {onboarding.current_stage !== "completed" && (
-        <Card>
+      {/* Stage Cards — show all actionable stages as expandable sections */}
+      {!isCompleted &&
+        ACTIONABLE_STAGES.map((stage) => {
+          const stageCompleted = onboarding.completed_stages.includes(stage.id);
+          const isCurrent = stage.id === onboarding.current_stage;
+          const checklistEntries = Object.entries(
+            DEFAULT_CHECKLIST_ITEMS[stage.id] || {}
+          );
+          const checkedCount = checklistEntries.filter(
+            ([key]) =>
+              onboarding.checklist_items?.[stage.id]?.[key] === true
+          ).length;
+          const actionLink = STAGE_ACTION_LINKS[stage.id];
+
+          // Review stage shown separately below
+          if (stage.id === "review") return null;
+
+          return (
+            <Card
+              key={stage.id}
+              className={
+                isCurrent
+                  ? "border-primary/50"
+                  : stageCompleted
+                    ? "border-green-200 bg-green-50/30"
+                    : "opacity-70"
+              }
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        stageCompleted
+                          ? "bg-green-100 text-green-600"
+                          : isCurrent
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {stageCompleted ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        STAGE_ICONS[stage.id]
+                      )}
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{stage.label}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {stage.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={
+                      stageCompleted
+                        ? "default"
+                        : isCurrent
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
+                    {stageCompleted
+                      ? "Complete"
+                      : isCurrent
+                        ? `${checkedCount}/${checklistEntries.length}`
+                        : "Pending"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {checklistEntries.map(([key, label]) => {
+                    const isChecked =
+                      onboarding.checklist_items?.[stage.id]?.[key] === true;
+                    const disabled = stageCompleted || isSaving;
+
+                    return (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${stage.id}-${key}`}
+                          checked={isChecked}
+                          disabled={disabled}
+                          onCheckedChange={(checked) =>
+                            handleChecklistItemToggle(
+                              stage.id,
+                              key,
+                              checked as boolean
+                            )
+                          }
+                        />
+                        <label
+                          htmlFor={`${stage.id}-${key}`}
+                          className={`text-sm ${disabled ? "text-muted-foreground" : ""}`}
+                        >
+                          {label}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Action link for the stage */}
+                {actionLink && !stageCompleted && (
+                  <div className="mt-4">
+                    <Button asChild size="sm">
+                      <Link href={actionLink.href}>{actionLink.label}</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
+      {/* Review / Submit Stage */}
+      {!isCompleted && (
+        <Card
+          className={
+            isReviewStage
+              ? "border-primary/50"
+              : allPreReviewDone
+                ? "border-amber-200 bg-amber-50/30"
+                : "opacity-70"
+          }
+        >
           <CardHeader>
-            <CardTitle className="text-lg">
-              {
-                ONBOARDING_STAGES.find((s) => s.id === onboarding.current_stage)
-                  ?.label
-              }
-            </CardTitle>
-            <CardDescription>
-              {
-                ONBOARDING_STAGES.find((s) => s.id === onboarding.current_stage)
-                  ?.description
-              }
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  isReviewStage
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base">
+                  Review &amp; Approval
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Submit your completed onboarding for coordinator review
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Checklist</h4>
-              {Object.entries(DEFAULT_CHECKLIST_ITEMS[onboarding.current_stage] || {}).map(
-                ([key, label]) => {
-                  const isChecked =
-                    onboarding.checklist_items?.[onboarding.current_stage]?.[key] === true;
-                  const isDisabled = onboarding.current_stage === "review";
-
-                  return (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={key}
-                        checked={isChecked}
-                        disabled={isDisabled || isSaving}
-                        onCheckedChange={(checked) =>
-                          handleChecklistItemToggle(
-                            onboarding.current_stage,
-                            key,
-                            checked as boolean
-                          )
-                        }
-                      />
-                      <label
-                        htmlFor={key}
-                        className={`text-sm ${isDisabled ? "text-muted-foreground" : ""}`}
-                      >
-                        {label}
-                      </label>
-                    </div>
-                  );
-                }
-              )}
-            </div>
-
-            {/* Action buttons based on stage */}
-            <div className="mt-6 flex gap-3">
-              {onboarding.current_stage === "profile_setup" && (
-                <Button asChild>
-                  <Link href="/partner">Edit Profile</Link>
-                </Button>
-              )}
-              {onboarding.current_stage === "capability_matrix" && (
-                <Button asChild>
-                  <Link href="/partner/capabilities">Manage Capabilities</Link>
-                </Button>
-              )}
-              {onboarding.current_stage === "compliance_docs" && (
-                <Button asChild>
-                  <Link href="/partner/documents">Upload Documents</Link>
-                </Button>
-              )}
-              {onboarding.current_stage === "certification_upload" && (
-                <Button asChild>
-                  <Link href="/partner/certifications">Add Certifications</Link>
-                </Button>
-              )}
-              {onboarding.current_stage === "review" && (
+            {!allPreReviewDone ? (
+              <p className="text-sm text-muted-foreground">
+                Complete all previous steps before submitting for review.
+              </p>
+            ) : isReviewStage ? (
+              <div className="space-y-4">
                 <Badge variant="outline" className="py-2 px-4">
                   Awaiting Coordinator Review
                 </Badge>
-              )}
-            </div>
+                <p className="text-sm text-muted-foreground">
+                  Your onboarding has been submitted. A coordinator will review
+                  your profile, documents, and certifications.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm">
+                  All stages are complete. Submit your onboarding for final
+                  review by your assigned coordinator.
+                </p>
+                <Button
+                  onClick={handleSubmitForReview}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-1 h-4 w-4" />
+                  )}
+                  Submit for Review
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Completed State */}
-      {onboarding.current_stage === "completed" && (
+      {isCompleted && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="py-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Onboarding Complete!</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Onboarding Complete!
+            </h2>
             <p className="text-muted-foreground mb-4">
               Your partner account is now fully activated.
             </p>
@@ -311,8 +503,8 @@ export default function PartnerOnboardingPage() {
         </Card>
       )}
 
-      {/* Completed Stages Summary */}
-      {onboarding.completed_stages.length > 0 && onboarding.current_stage !== "completed" && (
+      {/* Completed Stages Summary (when still in progress) */}
+      {onboarding.completed_stages.length > 0 && !isCompleted && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Completed Steps</CardTitle>

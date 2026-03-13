@@ -28,6 +28,10 @@ def build_kyc_response(kyc: KYCDocument, include_document: bool = False) -> KYCD
     if include_document and kyc.document:
         doc_response = build_document_response(kyc.document)
 
+    client_name: str | None = None
+    if hasattr(kyc, "client") and kyc.client is not None:
+        client_name = kyc.client.name
+
     data: dict[str, object] = {
         "id": kyc.id,
         "client_id": kyc.client_id,
@@ -42,6 +46,7 @@ def build_kyc_response(kyc: KYCDocument, include_document: bool = False) -> KYCD
         "created_at": kyc.created_at,
         "updated_at": kyc.updated_at,
         "document": doc_response,
+        "client_name": client_name,
     }
     return KYCDocumentResponse.model_validate(data)
 
@@ -193,6 +198,50 @@ async def verify_kyc_document(
     await db.commit()
     await db.refresh(kyc)
     return build_kyc_response(kyc, include_document=True)
+
+
+@router.get("/kyc-documents", response_model=KYCDocumentListResponse)
+async def list_all_kyc_documents(
+    db: DB,
+    current_user: CurrentUser,
+    _: None = Depends(require_internal),
+    status: str | None = Query(None),
+    client_id: UUID | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> KYCDocumentListResponse:
+    filters = []
+    if status:
+        filters.append(KYCDocument.status == status)
+    if client_id:
+        filters.append(KYCDocument.client_id == client_id)
+    if date_from:
+        filters.append(func.date(KYCDocument.created_at) >= date_from)
+    if date_to:
+        filters.append(func.date(KYCDocument.created_at) <= date_to)
+
+    query = (
+        select(KYCDocument)
+        .options(selectinload(KYCDocument.document), selectinload(KYCDocument.client))
+        .where(*filters)
+    )
+    count_query = (
+        select(func.count()).select_from(KYCDocument).where(*filters)
+    )
+
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    query = query.offset(skip).limit(limit).order_by(KYCDocument.created_at.desc())
+    result = await db.execute(query)
+    kyc_docs = result.scalars().all()
+
+    return KYCDocumentListResponse(
+        kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],
+        total=total,
+    )
 
 
 @router.get("/kyc-documents/expiring", response_model=KYCDocumentListResponse)

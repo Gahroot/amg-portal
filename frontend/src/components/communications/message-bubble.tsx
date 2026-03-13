@@ -62,8 +62,6 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
       .slice(0, 2);
   };
 
-  const hasReadReceipt = message.read_receipts && Object.keys(message.read_receipts).length > 0;
-
   // Count how many recipients have read the message (excluding sender)
   const readCount = message.read_receipts
     ? Object.keys(message.read_receipts).filter((id) => id !== message.sender_id).length

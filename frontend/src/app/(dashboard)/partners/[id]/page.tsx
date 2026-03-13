@@ -22,8 +22,6 @@ import {
   verifyPartnerCertification,
   submitQualification,
   approveQualification,
-  getPartnerOnboarding,
-  completeOnboardingStage,
   listServiceCategories,
 } from "@/lib/api/partner-capabilities";
 import { Button } from "@/components/ui/button";

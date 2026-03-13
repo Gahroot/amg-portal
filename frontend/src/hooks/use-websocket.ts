@@ -39,108 +39,103 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     optionsRef.current = options;
   }, [options]);
 
-  const connect = useCallback(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
-
-    const ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      setIsConnected(true);
-      // Subscribe to channels
-      ws.send(JSON.stringify({
-        type: "subscribe",
-        channels: ["messages", "notifications"],
-      }));
-    };
-
-    ws.onclose = () => {
-      setIsConnected(false);
-      // Reconnect after 5 seconds
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connectRef.current?.();
-      }, 5000);
-    };
-
-    ws.onerror = () => {
-      console.error("WebSocket error");
-      toast.error("WebSocket connection error. Retrying...");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message: WSMessage = JSON.parse(event.data);
-
-        // Handle different message types
-        if (message.type === "notification") {
-          const notificationMsg = message as WSNotificationMessage;
-          const currentOptions = optionsRef.current;
-          if (currentOptions.onNotification) {
-            currentOptions.onNotification(notificationMsg.data as Notification);
-          }
-          // Invalidate notifications query
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-        } else if (message.type === "new_message") {
-          const msgMsg = message as WSNewMessageMessage;
-          const currentOptions = optionsRef.current;
-          if (currentOptions.onNewMessage) {
-            currentOptions.onNewMessage(msgMsg.data as Communication);
-          }
-          // Invalidate messages and conversations queries
-          queryClient.invalidateQueries({ queryKey: ["messages"] });
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        } else if (message.type === "typing") {
-          const typingMsg = message as WSTypingMessage;
-          const currentOptions = optionsRef.current;
-          if (currentOptions.onTyping) {
-            currentOptions.onTyping({
-              conversation_id: typingMsg.conversation_id,
-              user_id: typingMsg.user_id,
-              is_typing: typingMsg.is_typing,
-            });
-          }
-        } else if (message.type === "message_read") {
-          // Handle read receipts
-          const readData = message.data as ReadReceiptData;
-          const currentOptions = optionsRef.current;
-          if (currentOptions.onMessageRead) {
-            currentOptions.onMessageRead(readData);
-          }
-          // Invalidate messages to refresh read receipts
-          queryClient.invalidateQueries({ queryKey: ["messages", readData.conversation_id] });
-        }
-
-        setMessages((prev) => [...prev, message]);
-      } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
-        toast.error("Failed to parse WebSocket message");
-      }
-    };
-
-    wsRef.current = ws;
-  }, [queryClient]);
-
-  const connectRef = useRef(connect);
-  
-  // Update connectRef when connect changes
   useEffect(() => {
-    connectRef.current = connect;
-  }, [connect]);
+    let shouldReconnect = true;
 
-  const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
+    function createConnection() {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        setIsConnected(true);
+        ws.send(JSON.stringify({
+          type: "subscribe",
+          channels: ["messages", "notifications"],
+        }));
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        if (shouldReconnect) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            createConnection();
+          }, 5000);
+        }
+      };
+
+      ws.onerror = () => {
+        console.error("WebSocket error");
+        toast.error("WebSocket connection error. Retrying...");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message: WSMessage = JSON.parse(event.data);
+
+          if (message.type === "notification") {
+            const notificationMsg = message as WSNotificationMessage;
+            const currentOptions = optionsRef.current;
+            if (currentOptions.onNotification) {
+              currentOptions.onNotification(notificationMsg.data as Notification);
+            }
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+          } else if (message.type === "new_message") {
+            const msgMsg = message as WSNewMessageMessage;
+            const currentOptions = optionsRef.current;
+            if (currentOptions.onNewMessage) {
+              currentOptions.onNewMessage(msgMsg.data as Communication);
+            }
+            queryClient.invalidateQueries({ queryKey: ["messages"] });
+            queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          } else if (message.type === "typing") {
+            const typingMsg = message as WSTypingMessage;
+            const currentOptions = optionsRef.current;
+            if (currentOptions.onTyping) {
+              currentOptions.onTyping({
+                conversation_id: typingMsg.conversation_id,
+                user_id: typingMsg.user_id,
+                is_typing: typingMsg.is_typing,
+              });
+            }
+          } else if (message.type === "message_read") {
+            const readData = message.data as ReadReceiptData;
+            const currentOptions = optionsRef.current;
+            if (currentOptions.onMessageRead) {
+              currentOptions.onMessageRead(readData);
+            }
+            queryClient.invalidateQueries({ queryKey: ["messages", readData.conversation_id] });
+          }
+
+          setMessages((prev) => [...prev, message]);
+        } catch (error) {
+          console.error("Failed to parse WebSocket message:", error);
+          toast.error("Failed to parse WebSocket message");
+        }
+      };
+
+      wsRef.current = ws;
     }
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setIsConnected(false);
-  }, []);
+
+    createConnection();
+
+    return () => {
+      shouldReconnect = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setIsConnected(false);
+    };
+  }, [queryClient]);
 
   const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -157,13 +152,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       is_typing: isTyping,
     });
   }, [sendMessage]);
-
-  useEffect(() => {
-    connect();
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
 
   return {
     isConnected,

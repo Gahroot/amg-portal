@@ -1,7 +1,7 @@
 """Add compliance clearance certificates
 
 Revision ID: add_clearance_certificates
-Revises: 
+Revises:
 Create Date: 2025-01-11
 
 """

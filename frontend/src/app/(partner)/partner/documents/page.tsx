@@ -10,7 +10,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Search, Folder, File, FileImage, FileSpreadsheet, FileArchive } from "lucide-react";
+import type { DocumentItem } from "@/types/document";
+import { FileText, Download, Search, Folder, File, FileImage, FileSpreadsheet, FileArchive, FileSignature, CheckCircle2, Clock, Eye } from "lucide-react";
+import { usePartnerEnvelopes } from "@/hooks/use-envelopes";
+import type { EnvelopeStatus } from "@/types/document";
+
+interface DocumentWithAssignment {
+  doc: DocumentItem;
+  assignment: { id: string; title: string };
+}
 
 function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
@@ -37,10 +45,10 @@ export default function PartnerDocumentsPage() {
   const downloadMutation = useDownloadDocument();
 
   const { data: allDocuments, isLoading: docsLoading } = useQuery({
-    queryKey: ["partner-portal", "all-documents", assignmentsData?.assignments?.map((a: any) => a.id)],
+    queryKey: ["partner-portal", "all-documents", assignmentsData?.assignments?.map((a) => a.id)],
     queryFn: async () => {
       if (!assignmentsData?.assignments) return [];
-      const results: any[] = [];
+      const results: DocumentWithAssignment[] = [];
       for (const assignment of assignmentsData.assignments) {
         try {
           const response = await fetch("/api/v1/partner-portal/assignments/" + assignment.id + "/documents", {
@@ -62,23 +70,23 @@ export default function PartnerDocumentsPage() {
   const isLoading = assignmentsLoading || docsLoading;
   const docs = allDocuments ?? [];
 
-  const categories = React.useMemo(() => Array.from(new Set(docs.map((d: any) => d.doc.category))), [docs]);
+  const categories = React.useMemo(() => Array.from(new Set(docs.map((d) => d.doc.category))), [docs]);
 
   const filtered = React.useMemo(() => {
     let result = docs;
     if (search) {
       const searchLower = search.toLowerCase();
-      result = result.filter((item: any) =>
+      result = result.filter((item) =>
         item.doc.file_name.toLowerCase().includes(searchLower) ||
         item.assignment.title.toLowerCase().includes(searchLower) ||
         item.doc.description?.toLowerCase().includes(searchLower)
       );
     }
     if (categoryFilter !== "all") {
-      result = result.filter((item: any) => item.doc.category === categoryFilter);
+      result = result.filter((item) => item.doc.category === categoryFilter);
     }
     if (assignmentFilter !== "all") {
-      result = result.filter((item: any) => item.assignment.id === assignmentFilter);
+      result = result.filter((item) => item.assignment.id === assignmentFilter);
     }
     return result;
   }, [docs, search, categoryFilter, assignmentFilter]);
@@ -116,7 +124,7 @@ export default function PartnerDocumentsPage() {
           <SelectTrigger className="w-48"><SelectValue placeholder="Assignment" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Assignments</SelectItem>
-            {assignmentsData?.assignments.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>)}
+            {assignmentsData?.assignments.map((a) => <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -143,7 +151,7 @@ export default function PartnerDocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((item: any) => (
+              {filtered.map((item) => (
                 <TableRow key={item.doc.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -171,6 +179,106 @@ export default function PartnerDocumentsPage() {
       )}
 
       <p className="text-sm text-muted-foreground">{filtered.length} document{filtered.length !== 1 ? "s" : ""}{filtered.length !== docs.length && " of " + docs.length + " total"}</p>
+
+      {/* Agreements / E-Signing Section */}
+      <PartnerAgreementsSection />
+    </div>
+  );
+}
+
+const ENVELOPE_STATUS_BADGE: Record<EnvelopeStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  created: { label: "Created", variant: "outline" },
+  sent: { label: "Awaiting Signature", variant: "secondary" },
+  delivered: { label: "Delivered", variant: "secondary" },
+  signed: { label: "Signed", variant: "default" },
+  completed: { label: "Completed", variant: "default" },
+  declined: { label: "Declined", variant: "destructive" },
+  voided: { label: "Voided", variant: "destructive" },
+  expired: { label: "Expired", variant: "outline" },
+};
+
+function PartnerAgreementsSection() {
+  const { data, isLoading, error } = usePartnerEnvelopes();
+
+  // Don't show section if DocuSign is not configured (503 error)
+  if (error) return null;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-serif text-xl font-bold tracking-tight">Agreements</h2>
+          <p className="text-sm text-muted-foreground">Documents requiring your signature</p>
+        </div>
+        <p className="text-sm text-muted-foreground">Loading agreements…</p>
+      </div>
+    );
+  }
+
+  const envelopes = data?.envelopes ?? [];
+  if (envelopes.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-serif text-xl font-bold tracking-tight">Agreements</h2>
+        <p className="text-sm text-muted-foreground">Documents requiring your signature</p>
+      </div>
+
+      <div className="rounded-md border bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Subject</TableHead>
+              <TableHead>From</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {envelopes.map((envelope) => {
+              const signable = envelope.status === "sent" || envelope.status === "delivered";
+              const config = ENVELOPE_STATUS_BADGE[envelope.status] ?? ENVELOPE_STATUS_BADGE.created;
+
+              return (
+                <TableRow key={envelope.id}>
+                  <TableCell className="font-medium max-w-[250px] truncate">
+                    {envelope.subject}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {envelope.sender_name}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={config.variant} className="gap-1">
+                      {signable ? <Clock className="size-3" /> : <CheckCircle2 className="size-3" />}
+                      {config.label}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {envelope.sent_at ? new Date(envelope.sent_at).toLocaleDateString() : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant={signable ? "default" : "ghost"}
+                      asChild
+                    >
+                      <Link href={`/partner/documents/signing/${envelope.id}`}>
+                        {signable ? (
+                          <><FileSignature className="mr-1 size-3" />Sign</>
+                        ) : (
+                          <><Eye className="mr-1 size-3" />View</>
+                        )}
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

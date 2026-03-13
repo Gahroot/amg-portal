@@ -36,6 +36,9 @@ async def dispatch_template_message(
     program_id: uuid.UUID | None = None,
     client_id: uuid.UUID | None = None,
     partner_id: uuid.UUID | None = None,
+    priority: str = "normal",
+    action_url: str | None = None,
+    action_label: str | None = None,
 ) -> None:
     """Dispatch a template-based message to recipients.
 
@@ -107,9 +110,11 @@ async def dispatch_template_message(
             notification_type=template_type,
             title=subject or template.name,
             body=body,
+            action_url=action_url,
+            action_label=action_label,
             entity_type="communication",
             entity_id=comm.id,
-            priority="normal",
+            priority=priority,
         )
         await notification_service.create_notification(db, notif_request)
 
@@ -159,6 +164,130 @@ async def _send_immediate_email(
 
 
 # ---- Convenience hook functions ----
+
+
+async def on_welcome(
+    db: AsyncSession,
+    profile: ClientProfile,
+    portal_url: str,
+) -> None:
+    """Send welcome template notification after client provisioning."""
+    if not profile.user_id:
+        logger.warning(
+            "No user_id on client profile %s, skipping welcome dispatch",
+            profile.id,
+        )
+        return
+
+    client_name = profile.display_name or profile.legal_name
+
+    await dispatch_template_message(
+        db,
+        template_type="welcome",
+        recipient_user_ids=[profile.user_id],
+        variables={
+            "client_name": client_name,
+            "portal_url": portal_url,
+        },
+        client_id=profile.id,
+    )
+
+
+async def on_milestone_completed(
+    db: AsyncSession,
+    milestone: Milestone,
+) -> None:
+    """Send milestone_alert when a milestone is completed."""
+    result = await db.execute(select(Program).where(Program.id == milestone.program_id))
+    program = result.scalar_one_or_none()
+    if not program:
+        return
+
+    due_date = str(milestone.due_date) if milestone.due_date else "TBD"
+
+    await dispatch_template_message(
+        db,
+        template_type="milestone_alert",
+        recipient_user_ids=[program.created_by],
+        variables={
+            "milestone_title": milestone.title,
+            "program_title": program.title,
+            "risk_factors": "- status: completed",
+            "due_date": due_date,
+        },
+        program_id=program.id,
+        client_id=program.client_id,
+    )
+
+
+async def on_program_activated(
+    db: AsyncSession,
+    program: Program,
+) -> None:
+    """Send program_kickoff to the client user when program becomes active."""
+    result = await db.execute(select(Client).where(Client.id == program.client_id))
+    client = result.scalar_one_or_none()
+    if not client:
+        logger.warning(
+            "Client not found for program %s",
+            program.id,
+        )
+        return
+
+    start_date = str(program.start_date) if program.start_date else "TBD"
+    recipients = [client.rm_id]
+
+    # Also find the client's user_id via ClientProfile linked to the Client
+    profile_result = await db.execute(
+        select(ClientProfile).where(
+            ClientProfile.user_id.isnot(None),
+            ClientProfile.assigned_rm_id == client.rm_id,
+        )
+    )
+    client_profile = profile_result.scalars().first()
+    if client_profile and client_profile.user_id:
+        recipients.append(client_profile.user_id)
+
+    unique_recipients = list(set(recipients))
+
+    await dispatch_template_message(
+        db,
+        template_type="program_kickoff",
+        recipient_user_ids=unique_recipients,
+        variables={
+            "program_title": program.title,
+            "client_name": client.name,
+            "start_date": start_date,
+        },
+        program_id=program.id,
+        client_id=program.client_id,
+    )
+
+
+async def on_closure_completed(
+    db: AsyncSession,
+    program: Program,
+) -> None:
+    """Send completion_note when program closure is completed."""
+    result = await db.execute(select(Client).where(Client.id == program.client_id))
+    client = result.scalar_one_or_none()
+    if not client:
+        return
+
+    recipients = [program.created_by, client.rm_id]
+    unique_recipients = list(set(recipients))
+
+    await dispatch_template_message(
+        db,
+        template_type="completion_note",
+        recipient_user_ids=unique_recipients,
+        variables={
+            "program_title": program.title,
+            "client_name": client.name,
+        },
+        program_id=program.id,
+        client_id=program.client_id,
+    )
 
 
 async def on_program_created(
@@ -223,7 +352,13 @@ async def on_assignment_dispatched(
     db: AsyncSession,
     assignment: PartnerAssignment,
 ) -> None:
-    """Send partner_dispatch to the partner user."""
+    """Send scoped partner_dispatch brief to the partner user.
+
+    The notification is portal-only (no email) and includes only
+    scoped information: assignment title, brief, due date, SLA terms,
+    and program title.  Client name, client profile data, budget, and
+    other-partner details are intentionally excluded.
+    """
     result = await db.execute(
         select(PartnerProfile).where(PartnerProfile.id == assignment.partner_id)
     )
@@ -235,12 +370,13 @@ async def on_assignment_dispatched(
         )
         return
 
-    # Get program title
+    # Get program title (scoped — no client details)
     prog_result = await db.execute(select(Program).where(Program.id == assignment.program_id))
     program = prog_result.scalar_one_or_none()
     program_title = program.title if program else "Unknown"
 
     due_date = str(assignment.due_date) if assignment.due_date else "TBD"
+    sla_terms = str(assignment.sla_terms) if assignment.sla_terms else "Standard terms apply"
 
     await dispatch_template_message(
         db,
@@ -251,9 +387,13 @@ async def on_assignment_dispatched(
             "program_title": program_title,
             "brief": str(assignment.brief or ""),
             "due_date": due_date,
+            "sla_terms": sla_terms,
         },
         program_id=uuid.UUID(str(assignment.program_id)),
         partner_id=uuid.UUID(str(partner.id)),
+        priority="high",
+        action_url=f"/partner/inbox/{assignment.id}",
+        action_label="View Assignment",
     )
 
 

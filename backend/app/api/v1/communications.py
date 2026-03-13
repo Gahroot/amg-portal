@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import DB, CurrentUser
 from app.schemas.communication import (
@@ -88,9 +88,9 @@ async def mark_message_read(
 
 @router.get("/conversations", response_model=CommunicationListResponse)
 async def get_conversation_communications(
+    db: DB,
+    current_user: CurrentUser,
     conversation_id: uuid.UUID = Query(...),
-    db: DB = Depends(),
-    current_user: CurrentUser = Depends(),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):

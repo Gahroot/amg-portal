@@ -68,6 +68,29 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
 
         updated_profile = await self.update(db, db_obj=profile, obj_in=update_data)
 
+        # Auto-generate compliance clearance certificate
+        if review.status == ComplianceStatus.cleared:
+            try:
+                from app.models.user import User
+                from app.services.certificate_service import certificate_service
+
+                result = await db.execute(select(User).where(User.id == reviewer_id))
+                reviewer = result.scalar_one_or_none()
+                if reviewer:
+                    await certificate_service.auto_generate_compliance_clearance(
+                        db,
+                        profile=updated_profile,
+                        reviewer=reviewer,
+                        review_notes=review.notes,
+                    )
+            except Exception:
+                import logging
+
+                logging.getLogger(__name__).exception(
+                    "Failed to auto-generate compliance clearance certificate for profile %s",
+                    profile_id,
+                )
+
         final_statuses = (
             ComplianceStatus.cleared,
             ComplianceStatus.rejected,
@@ -77,7 +100,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
             from app.services.email_service import send_compliance_notification
 
             await send_compliance_notification(
-                email=updated_profile.primary_email,
+                email_address=updated_profile.primary_email,
                 profile_name=updated_profile.display_name or updated_profile.legal_name,
                 status=review.status.value,
             )
@@ -116,13 +139,42 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
                 profile.compliance_notes or ""
             ) + f"\nMD: {approval.notes}"
 
-        return await self.update(db, db_obj=profile, obj_in=update_data)
+        updated_profile = await self.update(db, db_obj=profile, obj_in=update_data)
+
+        # Auto-generate MD approval certificate
+        if approval.approved:
+            try:
+                from app.models.user import User
+                from app.services.certificate_service import certificate_service
+
+                result = await db.execute(select(User).where(User.id == approver_id))
+                approver = result.scalar_one_or_none()
+                if approver:
+                    await certificate_service.auto_generate_md_approval_certificate(
+                        db,
+                        profile=updated_profile,
+                        approver=approver,
+                        approval_notes=approval.notes,
+                    )
+            except Exception:
+                import logging
+
+                logging.getLogger(__name__).exception(
+                    "Failed to auto-generate MD approval certificate for profile %s",
+                    profile_id,
+                )
+
+        return updated_profile
 
     async def provision_client_user(
         self, db: AsyncSession, *, profile_id: uuid.UUID, request: ClientProvisionRequest
     ) -> ClientProfile:
+        import logging
+
         from app.core.security import hash_password
         from app.models.user import User
+
+        logger = logging.getLogger(__name__)
 
         profile = await self.get(db, profile_id)
         if not profile:
@@ -150,18 +202,49 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
 
         profile.user_id = user.id
         profile.portal_access_enabled = True
-        profile.welcome_email_sent = request.send_welcome_email
+        await db.flush()
+
+        # Send welcome communications (guarded against double-send)
+        if not profile.welcome_email_sent:
+            portal_url = settings.FRONTEND_URL + "/dashboard"
+            client_name = profile.display_name or profile.legal_name
+
+            # Mark welcome as sent before dispatching so the flag is
+            # committed atomically with the notification records
+            # (dispatch_template_message commits internally).
+            profile.welcome_email_sent = True
+            await db.flush()
+
+            # Send welcome email with login credentials
+            if request.send_welcome_email:
+                try:
+                    from app.services.email_service import send_welcome_email
+
+                    await send_welcome_email(
+                        email_address=profile.primary_email,
+                        name=client_name,
+                        portal_url=portal_url,
+                        temporary_password=password,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to send welcome email for profile %s",
+                        profile.id,
+                    )
+
+            # Dispatch in-portal welcome notification
+            try:
+                from app.services.auto_dispatch_service import on_welcome
+
+                await on_welcome(db, profile, portal_url)
+            except Exception:
+                logger.exception(
+                    "Failed to dispatch welcome notification for profile %s",
+                    profile.id,
+                )
+
         await db.commit()
         await db.refresh(profile)
-
-        if request.send_welcome_email:
-            from app.services.email_service import send_welcome_email
-
-            await send_welcome_email(
-                email=profile.primary_email,
-                name=profile.display_name or profile.legal_name,
-                portal_url=settings.FRONTEND_URL,
-            )
 
         return profile
 

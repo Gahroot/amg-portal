@@ -19,10 +19,10 @@ import type {
   FindingSeverity,
   FindingType,
 } from "@/types/access-audit";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { AuditFindingTable } from "@/components/access-audits/audit-finding-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -37,14 +37,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -53,37 +45,6 @@ import {
 } from "@/components/ui/dialog";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
-
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  draft: "secondary",
-  in_review: "default",
-  completed: "outline",
-};
-
-const FINDING_STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  open: "destructive",
-  acknowledged: "default",
-  in_progress: "default",
-  remediated: "outline",
-  waived: "secondary",
-  closed: "outline",
-};
-
-const SEVERITY_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  low: "secondary",
-  medium: "default",
-  high: "default",
-  critical: "destructive",
-};
 
 const FINDING_TYPES: FindingType[] = [
   "excessive_access",
@@ -254,9 +215,7 @@ export default function AccessAuditDetailPage() {
               Auditor: {audit.auditor_name || "Unassigned"}
             </p>
           </div>
-          <Badge variant={STATUS_VARIANT[audit.status] ?? "outline"} className="text-lg">
-            {audit.status.replace("_", " ")}
-          </Badge>
+          <StatusBadge status={audit.status} className="text-lg" />
         </div>
 
         {/* Statistics */}
@@ -325,98 +284,30 @@ export default function AccessAuditDetailPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Findings ({audit.findings.length})</CardTitle>
             {audit.status !== "completed" && (
-              <Button onClick={() => setShowFindingDialog(true)}>
-                Add Finding
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/access-audits/${auditId}/findings/new`)}
+                >
+                  Add Finding (Full Form)
+                </Button>
+                <Button onClick={() => setShowFindingDialog(true)}>
+                  Quick Add
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {audit.findings.map((finding) => (
-                    <TableRow key={finding.id}>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {finding.finding_type.replace(/_/g, " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={SEVERITY_VARIANT[finding.severity] ?? "outline"}>
-                          {finding.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={FINDING_STATUS_VARIANT[finding.status] ?? "outline"}>
-                          {finding.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{finding.user_name || finding.user_email || "-"}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {finding.description}
-                      </TableCell>
-                      <TableCell>
-                        {audit.status !== "completed" && (
-                          <div className="flex gap-1">
-                            {finding.status === "open" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAcknowledge(finding.id)}
-                              >
-                                Ack
-                              </Button>
-                            )}
-                            {(finding.status === "open" ||
-                              finding.status === "acknowledged") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRemediate(finding.id)}
-                              >
-                                Remediate
-                              </Button>
-                            )}
-                            {finding.status === "open" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedFindingId(finding.id);
-                                  setShowWaiveDialog(true);
-                                }}
-                              >
-                                Waive
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {audit.findings.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center text-muted-foreground"
-                      >
-                        No findings recorded.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <AuditFindingTable
+              findings={audit.findings}
+              isCompleted={audit.status === "completed"}
+              onAcknowledge={handleAcknowledge}
+              onRemediate={handleRemediate}
+              onWaive={(findingId) => {
+                setSelectedFindingId(findingId);
+                setShowWaiveDialog(true);
+              }}
+            />
           </CardContent>
         </Card>
 

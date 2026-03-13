@@ -1,14 +1,19 @@
 """Service for access audit operations."""
 
+import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.models.access_audit import AccessAudit, AccessAuditFinding
+from app.models.client_profile import ClientProfile
+from app.models.partner import PartnerProfile
+from app.models.user import User
 from app.schemas.access_audit import (
     CreateAccessAuditFindingRequest,
     CreateAccessAuditRequest,
@@ -16,6 +21,8 @@ from app.schemas.access_audit import (
     UpdateAccessAuditRequest,
 )
 from app.services.crud_base import CRUDBase
+
+logger = logging.getLogger(__name__)
 
 
 class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateAccessAuditRequest]):
@@ -331,6 +338,204 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         )
         findings = list(result.scalars().all())
         return findings, total
+
+
+    async def run_quarterly_access_audit(
+        self,
+        db: AsyncSession,
+    ) -> AccessAudit | None:
+        """Auto-create a quarterly access audit with findings for dormant accounts,
+        role mismatches, and orphaned accounts.
+
+        Returns the created audit, or ``None`` if an audit already exists for the
+        current quarter.
+        """
+        now = datetime.now(UTC)
+        quarter = (now.month - 1) // 3 + 1
+        year = now.year
+
+        # Check if an audit already exists for this quarter
+        existing = await db.execute(
+            select(AccessAudit).where(
+                AccessAudit.quarter == quarter,
+                AccessAudit.year == year,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            logger.info(
+                "Quarterly access audit already exists for Q%d %d — skipping",
+                quarter,
+                year,
+            )
+            return None
+
+        # Create the audit record
+        audit_period = f"Q{quarter} {year}"
+        audit = AccessAudit(
+            audit_period=audit_period,
+            quarter=quarter,
+            year=year,
+            status="in_review",
+            started_at=now,
+        )
+        db.add(audit)
+        await db.flush()  # populate audit.id
+
+        findings: list[AccessAuditFinding] = []
+
+        # --- 1. Dormant account detection ---
+        dormant_cutoff = now - timedelta(days=settings.DORMANT_ACCOUNT_DAYS)
+        dormant_result = await db.execute(
+            select(User).where(
+                User.status == "active",
+                User.updated_at < dormant_cutoff,
+            )
+        )
+        dormant_users = dormant_result.scalars().all()
+        for user in dormant_users:
+            days_inactive = (now - user.updated_at).days
+            findings.append(
+                AccessAuditFinding(
+                    audit_id=audit.id,
+                    user_id=user.id,
+                    finding_type="inactive_user",
+                    severity="medium",
+                    description=(
+                        f"User {user.email} (role: {user.role}) has had no activity "
+                        f"for {days_inactive} days (last updated: "
+                        f"{user.updated_at.strftime('%Y-%m-%d')})."
+                    ),
+                    recommendation=(
+                        "Review and deactivate if no longer needed."
+                    ),
+                    status="open",
+                )
+            )
+
+        # --- 2. Role mismatch detection ---
+        # Partners without a PartnerProfile
+        partner_users_result = await db.execute(
+            select(User).where(User.role == "partner", User.status == "active")
+        )
+        partner_users = partner_users_result.scalars().all()
+        partner_user_ids = [u.id for u in partner_users]
+
+        if partner_user_ids:
+            existing_profiles_result = await db.execute(
+                select(PartnerProfile.user_id).where(
+                    PartnerProfile.user_id.in_(partner_user_ids)
+                )
+            )
+            partner_profile_user_ids = set(existing_profiles_result.scalars().all())
+            for user in partner_users:
+                if user.id not in partner_profile_user_ids:
+                    findings.append(
+                        AccessAuditFinding(
+                            audit_id=audit.id,
+                            user_id=user.id,
+                            finding_type="role_mismatch",
+                            severity="high",
+                            description=(
+                                f"User {user.email} has role 'partner' but no "
+                                "associated PartnerProfile record."
+                            ),
+                            recommendation=(
+                                "Create a PartnerProfile or correct the user role."
+                            ),
+                            status="open",
+                        )
+                    )
+
+        # Clients without a ClientProfile
+        client_users_result = await db.execute(
+            select(User).where(User.role == "client", User.status == "active")
+        )
+        client_users = client_users_result.scalars().all()
+        client_user_ids = [u.id for u in client_users]
+
+        if client_user_ids:
+            existing_client_profiles_result = await db.execute(
+                select(ClientProfile.user_id).where(
+                    ClientProfile.user_id.in_(client_user_ids)
+                )
+            )
+            client_profile_user_ids = set(
+                existing_client_profiles_result.scalars().all()
+            )
+            for user in client_users:
+                if user.id not in client_profile_user_ids:
+                    findings.append(
+                        AccessAuditFinding(
+                            audit_id=audit.id,
+                            user_id=user.id,
+                            finding_type="role_mismatch",
+                            severity="high",
+                            description=(
+                                f"User {user.email} has role 'client' but no "
+                                "associated ClientProfile record."
+                            ),
+                            recommendation=(
+                                "Create a ClientProfile or correct the user role."
+                            ),
+                            status="open",
+                        )
+                    )
+
+        # --- 3. Orphaned accounts ---
+        # PartnerProfiles linked to deactivated users
+        orphaned_result = await db.execute(
+            select(PartnerProfile, User).join(
+                User, PartnerProfile.user_id == User.id
+            ).where(
+                PartnerProfile.user_id.isnot(None),
+                User.status != "active",
+            )
+        )
+        orphaned_rows = orphaned_result.all()
+        for partner_profile, user in orphaned_rows:
+            findings.append(
+                AccessAuditFinding(
+                    audit_id=audit.id,
+                    user_id=user.id,
+                    finding_type="orphaned_account",
+                    severity="medium",
+                    description=(
+                        f"PartnerProfile '{partner_profile.firm_name}' "
+                        f"(id: {partner_profile.id}) is linked to deactivated user "
+                        f"{user.email} (status: {user.status})."
+                    ),
+                    recommendation=(
+                        "Unlink the partner profile from the deactivated user "
+                        "or reactivate the user account."
+                    ),
+                    status="open",
+                )
+            )
+
+        # Persist all findings
+        for finding in findings:
+            db.add(finding)
+
+        # Count total users reviewed
+        total_users_result = await db.execute(
+            select(func.count()).select_from(User)
+        )
+        total_users = total_users_result.scalar_one()
+
+        audit.users_reviewed = total_users
+        audit.anomalies_found = len(findings)
+
+        await db.commit()
+        await db.refresh(audit)
+
+        logger.info(
+            "Quarterly access audit Q%d %d created — %d users reviewed, %d findings",
+            quarter,
+            year,
+            total_users,
+            len(findings),
+        )
+        return audit
 
 
 access_audit_service = AccessAuditService(AccessAudit)

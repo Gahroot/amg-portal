@@ -43,7 +43,7 @@ class CapabilityReview(Base):
     capabilities_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     certifications_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     qualifications_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    findings: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
+    findings: Mapped[list[dict[str, str]] | None] = mapped_column(JSON, nullable=True)
     # List of {type, description, severity, recommendation}
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)

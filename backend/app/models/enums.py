@@ -134,6 +134,7 @@ class AuditAction(StrEnum):
     create = "create"
     update = "update"
     delete = "delete"
+    archive = "archive"
 
 
 class DeliverableType(StrEnum):
@@ -398,3 +399,27 @@ class NPSFollowUpActionType(StrEnum):
     service_review = "service_review"
     management_intervention = "management_intervention"
     process_improvement = "process_improvement"
+
+
+class CalendarProvider(StrEnum):
+    """Supported calendar providers"""
+
+    google = "google"
+    outlook = "outlook"
+
+
+class CalendarSyncStatus(StrEnum):
+    """Status of calendar sync operations"""
+
+    pending = "pending"
+    synced = "synced"
+    error = "error"
+    cancelled = "cancelled"
+
+
+class CalendarEventStatus(StrEnum):
+    """Status of calendar events in external calendars"""
+
+    confirmed = "confirmed"
+    tentative = "tentative"
+    cancelled = "cancelled"

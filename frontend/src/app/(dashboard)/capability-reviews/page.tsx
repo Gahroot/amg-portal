@@ -9,10 +9,10 @@ import {
   getCapabilityReviewStatistics,
   generateAnnualReviews,
 } from "@/lib/api/capability-reviews";
+import { listPartners } from "@/lib/api/partners";
 import type { CapabilityReviewListParams } from "@/types/capability-review";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -43,18 +43,6 @@ const ALLOWED_ROLES = [
   "finance_compliance",
 ];
 
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  pending: "secondary",
-  scheduled: "default",
-  in_progress: "default",
-  completed: "outline",
-  overdue: "destructive",
-  waived: "secondary",
-};
-
 const PAGE_SIZE = 50;
 
 export default function CapabilityReviewsPage() {
@@ -79,6 +67,12 @@ export default function CapabilityReviewsPage() {
   const { data: stats } = useQuery({
     queryKey: ["capability-review-statistics"],
     queryFn: getCapabilityReviewStatistics,
+    enabled: !!user && ALLOWED_ROLES.includes(user.role),
+  });
+
+  const { data: partnersData } = useQuery({
+    queryKey: ["partners-list"],
+    queryFn: () => listPartners({ limit: 200 }),
     enabled: !!user && ALLOWED_ROLES.includes(user.role),
   });
 
@@ -194,6 +188,27 @@ export default function CapabilityReviewsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select
+            onValueChange={(value) => {
+              setPage(0);
+              setFilters((f) => ({
+                ...f,
+                partner_id: value === "all" ? undefined : value,
+              }));
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Partner" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Partners</SelectItem>
+              {partnersData?.profiles.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.firm_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Table */}
@@ -224,9 +239,7 @@ export default function CapabilityReviewsPage() {
                     </TableCell>
                     <TableCell>{review.review_year}</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[review.status] ?? "outline"}>
-                        {review.status.replace("_", " ")}
-                      </Badge>
+                      <StatusBadge status={review.status} />
                     </TableCell>
                     <TableCell>{review.reviewer_name || "-"}</TableCell>
                     <TableCell>

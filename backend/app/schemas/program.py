@@ -92,6 +92,15 @@ class MilestoneDetailResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RetentionInfo(BaseModel):
+    """Data-retention metadata for a program."""
+
+    is_archived: bool = False
+    retention_period_days: int = 365
+    days_until_archival: int | None = None
+    closure_completed_at: str | None = None
+
+
 class ProgramDetailResponse(BaseModel):
     id: UUID
     client_id: UUID
@@ -108,6 +117,7 @@ class ProgramDetailResponse(BaseModel):
     milestone_count: int = 0
     completed_milestone_count: int = 0
     milestones: list[MilestoneDetailResponse] = []
+    retention_info: RetentionInfo | None = None
     created_at: datetime
     updated_at: datetime
 

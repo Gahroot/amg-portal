@@ -1,9 +1,11 @@
 """Service for compliance clearance certificate generation and management."""
 
+from __future__ import annotations
+
 import io
 import logging
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from jinja2 import BaseLoader, Environment
@@ -23,6 +25,9 @@ from app.models.program import Program
 from app.models.user import User
 from app.services.pdf_service import pdf_service
 from app.services.storage import storage_service
+
+if TYPE_CHECKING:
+    from app.models.client_profile import ClientProfile
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +62,15 @@ DEFAULT_TEMPLATE = """
 <p><strong>End Date:</strong> {{ program_end_date }}</p>
 {% endif %}
 <p><strong>Milestone Completion:</strong> {{ completed_milestones }} / {{ total_milestones }}</p>
-<p><strong>Deliverables Approved:</strong> {{ approved_deliverables }} / {{ total_deliverables }}</p>
+<p><strong>Deliverables Approved:</strong>
+{{ approved_deliverables }} / {{ total_deliverables }}</p>
 {% endif %}
 
 <h2>Declaration</h2>
-<p>This certificate confirms that the above-named client{% if program_title %} and program{% endif %} have been reviewed and cleared for compliance purposes as of the issue date.</p>
+<p>This certificate confirms that the above-named
+client{% if program_title %} and program{% endif %}
+have been reviewed and cleared for compliance purposes
+as of the issue date.</p>
 
 <p><em>This certificate is issued by Anchor Mill Group and is confidential.</em></p>
 
@@ -70,6 +79,23 @@ DEFAULT_TEMPLATE = """
 <strong>Date:</strong> {{ issue_date }}
 </p>
 """
+
+_CSS_STYLES = """
+@page { size: A4; margin: 2cm; }
+body { font-family: 'Georgia', serif; color: #2c2c2c; line-height: 1.6; font-size: 11pt; }
+h1 { color: #8B4513; font-size: 22pt; border-bottom: 2px solid #D2691E; padding-bottom: 8px; }
+h2 { color: #A0522D; font-size: 16pt; margin-top: 20px; }
+h3 { color: #8B4513; font-size: 13pt; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+th { background-color: #8B4513; color: white; padding: 8px 10px; text-align: left; font-size: 10pt; }
+td { padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }
+tr:nth-child(even) td { background-color: #faf5f0; }
+.header { text-align: center; margin-bottom: 30px; }
+.header .logo { font-size: 28pt; color: #8B4513; font-weight: bold; letter-spacing: 2px; }
+.header .subtitle { color: #666; font-size: 10pt; }
+.footer { text-align: center; color: #999; font-size: 8pt; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; }
+.certificate-border { border: 3px double #8B4513; padding: 30px; margin: 20px 0; }
+"""  # noqa: E501
 
 
 class CertificateService:
@@ -94,9 +120,7 @@ class CertificateService:
         """Extract program data for certificate auto-population."""
         # Get program with client
         result = await db.execute(
-            select(Program)
-            .options(selectinload(Program.client))
-            .where(Program.id == program_id)
+            select(Program).options(selectinload(Program.client)).where(Program.id == program_id)
         )
         program = result.scalar_one_or_none()
         if not program:
@@ -108,9 +132,7 @@ class CertificateService:
         )
         milestones = milestone_result.scalars().all()
         total_milestones = len(milestones)
-        completed_milestones = sum(
-            1 for m in milestones if m.status == "completed"
-        )
+        completed_milestones = sum(1 for m in milestones if m.status == "completed")
 
         # Get partner assignments
         assignment_result = await db.execute(
@@ -130,23 +152,24 @@ class CertificateService:
 
         # Get deliverable counts
         from app.models.deliverable import Deliverable
+
         deliv_result = await db.execute(
-            select(func.count()).select_from(Deliverable).where(
-                Deliverable.program_id == program_id
-            )
+            select(func.count())
+            .select_from(Deliverable)
+            .where(Deliverable.program_id == program_id)
         )
         total_deliverables = deliv_result.scalar() or 0
 
         approved_result = await db.execute(
-            select(func.count()).select_from(Deliverable).where(
-                Deliverable.program_id == program_id,
-                Deliverable.status == "approved"
-            )
+            select(func.count())
+            .select_from(Deliverable)
+            .where(Deliverable.program_id == program_id, Deliverable.status == "approved")
         )
         approved_deliverables = approved_result.scalar() or 0
 
         # Get client profile for legal name
         from app.models.client_profile import ClientProfile
+
         profile_result = await db.execute(
             select(ClientProfile).where(ClientProfile.client_id == program.client_id)
         )
@@ -163,28 +186,35 @@ class CertificateService:
             "end_date": program.end_date,
             "objectives": program.objectives,
             "scope": program.scope,
-            "budget_envelope": float(program.budget_envelope) if program.budget_envelope else None,
+            "budget_envelope": (
+                float(program.budget_envelope)
+                if program.budget_envelope
+                else None
+            ),
             "total_milestones": total_milestones,
             "completed_milestones": completed_milestones,
             "total_deliverables": total_deliverables,
             "approved_deliverables": approved_deliverables,
             "assigned_partners": assigned_partners,
-            "completion_date": program.end_date if program.status == "completed" else None,
+            "completion_date": (
+                program.end_date
+                if program.status == "completed"
+                else None
+            ),
         }
 
     async def get_client_data_for_certificate(
         self, db: AsyncSession, client_id: UUID
     ) -> dict[str, Any]:
         """Extract client data for certificate auto-population."""
-        result = await db.execute(
-            select(Client).where(Client.id == client_id)
-        )
+        result = await db.execute(select(Client).where(Client.id == client_id))
         client = result.scalar_one_or_none()
         if not client:
             raise ValueError("Client not found")
 
         # Get client profile
         from app.models.client_profile import ClientProfile
+
         profile_result = await db.execute(
             select(ClientProfile).where(ClientProfile.client_id == client_id)
         )
@@ -192,17 +222,14 @@ class CertificateService:
 
         # Get program counts
         program_result = await db.execute(
-            select(func.count()).select_from(Program).where(
-                Program.client_id == client_id
-            )
+            select(func.count()).select_from(Program).where(Program.client_id == client_id)
         )
         total_programs = program_result.scalar() or 0
 
         completed_result = await db.execute(
-            select(func.count()).select_from(Program).where(
-                Program.client_id == client_id,
-                Program.status == "completed"
-            )
+            select(func.count())
+            .select_from(Program)
+            .where(Program.client_id == client_id, Program.status == "completed")
         )
         completed_programs = completed_result.scalar() or 0
 
@@ -212,7 +239,9 @@ class CertificateService:
             "client_legal_name": profile.legal_name if profile else None,
             "entity_type": profile.entity_type if profile else None,
             "jurisdiction": profile.jurisdiction if profile else None,
-            "compliance_status": profile.compliance_status if profile else None,
+            "compliance_status": (
+                profile.compliance_status if profile else None
+            ),
             "total_programs": total_programs,
             "completed_programs": completed_programs,
         }
@@ -263,44 +292,31 @@ class CertificateService:
         """Generate PDF for a certificate."""
         # Build data for template
         data = certificate.populated_data or {}
-        data.update({
-            "certificate_number": certificate.certificate_number,
-            "issue_date": certificate.issue_date or date.today(),
-            "expiry_date": certificate.expiry_date,
-            "certificate_type": certificate.certificate_type,
-            "title": certificate.title,
-            "issued_by": issued_by_name,
-            "generated_at": datetime.now(UTC).isoformat(),
-        })
+        data.update(
+            {
+                "certificate_number": certificate.certificate_number,
+                "issue_date": certificate.issue_date or date.today(),
+                "expiry_date": certificate.expiry_date,
+                "certificate_type": certificate.certificate_type,
+                "title": certificate.title,
+                "issued_by": issued_by_name,
+                "generated_at": datetime.now(UTC).isoformat(),
+            }
+        )
 
         # Render HTML content
         html_content = self.render_certificate_content(
-            certificate.content,
-            data
+            certificate.content, data,
         )
 
         # Wrap with base template styling
+        cert_num = certificate.certificate_number  # noqa: F841
         full_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <style>
-        @page {{ size: A4; margin: 2cm; }}
-        body {{ font-family: 'Georgia', serif; color: #2c2c2c; line-height: 1.6; font-size: 11pt; }}
-        h1 {{ color: #8B4513; font-size: 22pt; border-bottom: 2px solid #D2691E; padding-bottom: 8px; }}
-        h2 {{ color: #A0522D; font-size: 16pt; margin-top: 20px; }}
-        h3 {{ color: #8B4513; font-size: 13pt; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 12px 0; }}
-        th {{ background-color: #8B4513; color: white; padding: 8px 10px; text-align: left; font-size: 10pt; }}
-        td {{ padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }}
-        tr:nth-child(even) td {{ background-color: #faf5f0; }}
-        .header {{ text-align: center; margin-bottom: 30px; }}
-        .header .logo {{ font-size: 28pt; color: #8B4513; font-weight: bold; letter-spacing: 2px; }}
-        .header .subtitle {{ color: #666; font-size: 10pt; }}
-        .footer {{ text-align: center; color: #999; font-size: 8pt; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; }}
-        .certificate-border {{ border: 3px double #8B4513; padding: 30px; margin: 20px 0; }}
-    </style>
+    <style>{_CSS_STYLES}</style>
 </head>
 <body>
     <div class="header">
@@ -353,9 +369,7 @@ class CertificateService:
         template_content = DEFAULT_TEMPLATE
         if data.get("template_id"):
             result = await db.execute(
-                select(CertificateTemplate).where(
-                    CertificateTemplate.id == data["template_id"]
-                )
+                select(CertificateTemplate).where(CertificateTemplate.id == data["template_id"])
             )
             template = result.scalar_one_or_none()
             if template:
@@ -368,9 +382,7 @@ class CertificateService:
                 db, UUID(data["program_id"])
             )
         elif data.get("client_id"):
-            populated_data = await self.get_client_data_for_certificate(
-                db, UUID(data["client_id"])
-            )
+            populated_data = await self.get_client_data_for_certificate(db, UUID(data["client_id"]))
 
         # Render content
         content = data.get("content")
@@ -390,7 +402,8 @@ class CertificateService:
             certificate_number=certificate_number,
             template_id=data.get("template_id"),
             program_id=data.get("program_id"),
-            client_id=data["client_id"],
+            client_id=data.get("client_id"),
+            client_profile_id=data.get("client_profile_id"),
             title=data.get("title", "Compliance Clearance Certificate"),
             content=content,
             populated_data=populated_data,
@@ -507,6 +520,149 @@ class CertificateService:
         await db.commit()
         await db.refresh(certificate)
 
+        return certificate
+
+    async def auto_generate_compliance_clearance(
+        self,
+        db: AsyncSession,
+        profile: ClientProfile,
+        reviewer: User,
+        review_notes: str | None = None,
+    ) -> ClearanceCertificate:
+        """Auto-generate an issued clearance certificate when compliance clears a profile."""
+        certificate_number = self._generate_certificate_number()
+        today = date.today()
+        reviewer_name = reviewer.full_name
+
+        populated_data: dict[str, Any] = {
+            "client_profile_id": str(profile.id),
+            "client_name": profile.display_name or profile.legal_name,
+            "client_legal_name": profile.legal_name,
+            "entity_type": profile.entity_type,
+            "jurisdiction": profile.jurisdiction,
+            "compliance_status": "cleared",
+            "reviewed_by": reviewer_name,
+            "reviewed_at": datetime.now(UTC).isoformat(),
+        }
+
+        title = "Compliance Clearance Certificate"
+        render_data = {
+            **populated_data,
+            "certificate_number": certificate_number,
+            "certificate_type": "compliance_review",
+            "title": title,
+            "issue_date": today,
+            "expiry_date": None,
+            "issued_by": reviewer_name,
+        }
+        content = self.render_certificate_content(DEFAULT_TEMPLATE, render_data)
+
+        certificate = ClearanceCertificate(
+            certificate_number=certificate_number,
+            client_profile_id=profile.id,
+            title=title,
+            content=content,
+            populated_data=populated_data,
+            certificate_type="compliance_review",
+            status="issued",
+            issue_date=today,
+            reviewed_by=reviewer.id,
+            reviewed_at=datetime.now(UTC),
+            review_notes=review_notes,
+            created_by=reviewer.id,
+        )
+        db.add(certificate)
+        await db.flush()
+
+        history = ClearanceCertificateHistory(
+            certificate_id=certificate.id,
+            action="created",
+            to_status="issued",
+            actor_id=reviewer.id,
+            actor_name=reviewer_name,
+            notes="Auto-generated on compliance clearance",
+        )
+        db.add(history)
+        await db.flush()
+        await db.refresh(certificate)
+
+        logger.info(
+            "Auto-generated compliance clearance certificate %s for profile %s",
+            certificate.certificate_number,
+            profile.id,
+        )
+        return certificate
+
+    async def auto_generate_md_approval_certificate(
+        self,
+        db: AsyncSession,
+        profile: ClientProfile,
+        approver: User,
+        approval_notes: str | None = None,
+    ) -> ClearanceCertificate:
+        """Auto-generate an issued certificate when MD approves a profile."""
+        certificate_number = self._generate_certificate_number()
+        today = date.today()
+        approver_name = approver.full_name
+
+        populated_data: dict[str, Any] = {
+            "client_profile_id": str(profile.id),
+            "client_name": profile.display_name or profile.legal_name,
+            "client_legal_name": profile.legal_name,
+            "entity_type": profile.entity_type,
+            "jurisdiction": profile.jurisdiction,
+            "compliance_status": profile.compliance_status,
+            "approval_status": "approved",
+            "approved_by": approver_name,
+            "approved_at": datetime.now(UTC).isoformat(),
+        }
+
+        title = "MD Approval Certificate"
+        render_data = {
+            **populated_data,
+            "certificate_number": certificate_number,
+            "certificate_type": "md_approval",
+            "title": title,
+            "issue_date": today,
+            "expiry_date": None,
+            "issued_by": approver_name,
+        }
+        content = self.render_certificate_content(DEFAULT_TEMPLATE, render_data)
+
+        certificate = ClearanceCertificate(
+            certificate_number=certificate_number,
+            client_profile_id=profile.id,
+            title=title,
+            content=content,
+            populated_data=populated_data,
+            certificate_type="md_approval",
+            status="issued",
+            issue_date=today,
+            reviewed_by=approver.id,
+            reviewed_at=datetime.now(UTC),
+            review_notes=approval_notes,
+            created_by=approver.id,
+        )
+        db.add(certificate)
+        await db.flush()
+
+        history = ClearanceCertificateHistory(
+            certificate_id=certificate.id,
+            action="created",
+            to_status="issued",
+            actor_id=approver.id,
+            actor_name=approver_name,
+            notes="Auto-generated on MD approval",
+        )
+        db.add(history)
+        await db.flush()
+        await db.refresh(certificate)
+
+        logger.info(
+            "Auto-generated MD approval certificate %s for profile %s",
+            certificate.certificate_number,
+            profile.id,
+        )
         return certificate
 
 

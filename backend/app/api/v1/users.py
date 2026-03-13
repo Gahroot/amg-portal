@@ -1,8 +1,9 @@
 """User management endpoints (admin only)."""
 
 import uuid
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser, require_admin
@@ -11,6 +12,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.auth import UserResponse
 from app.schemas.user import UserCreateByAdmin, UserListResponse, UserUpdate
+from app.services.audit_service import log_action, model_to_dict
 
 router = APIRouter()
 
@@ -51,7 +53,9 @@ async def list_users(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin)],
 )
-async def create_user(data: UserCreateByAdmin, db: DB):
+async def create_user(
+    data: UserCreateByAdmin, db: DB, current_user: CurrentUser, request: Request
+) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -68,13 +72,24 @@ async def create_user(data: UserCreateByAdmin, db: DB):
         status="active",
     )
     db.add(user)
+    await db.flush()
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="user",
+        entity_id=str(user.id),
+        after_state=model_to_dict(user),
+        request=request,
+    )
     await db.commit()
     await db.refresh(user)
     return user
 
 
 @router.get("/{user_id}", response_model=UserResponse, dependencies=[Depends(require_admin)])
-async def get_user(user_id: uuid.UUID, db: DB):
+async def get_user(user_id: uuid.UUID, db: DB) -> Any:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -83,12 +98,15 @@ async def get_user(user_id: uuid.UUID, db: DB):
 
 
 @router.patch("/{user_id}", response_model=UserResponse, dependencies=[Depends(require_admin)])
-async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
+async def update_user(
+    user_id: uuid.UUID, data: UserUpdate, db: DB, current_user: CurrentUser, request: Request
+):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    before = model_to_dict(user)
     update_data = data.model_dump(exclude_unset=True)
     if "role" in update_data and update_data["role"] is not None:
         update_data["role"] = update_data["role"].value
@@ -96,6 +114,17 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
     for field, value in update_data.items():
         setattr(user, field, value)
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="user",
+        entity_id=str(user_id),
+        before_state=before,
+        after_state=model_to_dict(user),
+        request=request,
+    )
     await db.commit()
     await db.refresh(user)
     return user
@@ -106,7 +135,7 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_admin)],
 )
-async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB):
+async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB, request: Request):
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -118,5 +147,17 @@ async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    before = model_to_dict(user)
     user.status = "inactive"
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="delete",
+        entity_type="user",
+        entity_id=str(user_id),
+        before_state=before,
+        after_state=model_to_dict(user),
+        request=request,
+    )
     await db.commit()

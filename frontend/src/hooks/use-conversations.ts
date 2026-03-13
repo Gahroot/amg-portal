@@ -13,10 +13,8 @@ import {
   addParticipant,
 } from "@/lib/api/conversations";
 import type {
-  Conversation,
   ConversationCreateData,
   ConversationUpdateData,
-  Communication,
   SendMessageData,
 } from "@/types/communication";
 

@@ -10,11 +10,17 @@ import {
   getClientPreferences,
   updateClientPreferences,
   getEngagementHistory,
+  getPortalProfilePreferences,
+  updatePortalProfilePreferences,
+  getPortalIntelligence,
+  updatePortalIntelligence,
 } from "@/lib/api/schedules";
 import type {
   ReportScheduleCreate,
   ReportScheduleUpdate,
   ClientPreferencesUpdate,
+  PortalProfilePreferencesUpdate,
+  PortalIntelligenceUpdate,
 } from "@/lib/api/schedules";
 
 export function useReportSchedules() {
@@ -96,5 +102,52 @@ export function useEngagementHistory() {
   return useQuery({
     queryKey: ["engagement-history"],
     queryFn: getEngagementHistory,
+  });
+}
+
+export function usePortalProfilePreferences() {
+  return useQuery({
+    queryKey: ["portal-profile-preferences"],
+    queryFn: getPortalProfilePreferences,
+  });
+}
+
+export function useUpdatePortalProfilePreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: PortalProfilePreferencesUpdate) =>
+      updatePortalProfilePreferences(data),
+    onSuccess: () => {
+      toast.success("Profile preferences updated");
+      queryClient.invalidateQueries({ queryKey: ["portal-profile-preferences"] });
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update profile preferences";
+      toast.error(message);
+    },
+  });
+}
+
+export function usePortalIntelligence() {
+  return useQuery({
+    queryKey: ["portal-intelligence"],
+    queryFn: getPortalIntelligence,
+  });
+}
+
+export function useUpdatePortalIntelligence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: PortalIntelligenceUpdate) => updatePortalIntelligence(data),
+    onSuccess: () => {
+      toast.success("Intelligence profile updated");
+      queryClient.invalidateQueries({ queryKey: ["portal-intelligence"] });
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update intelligence profile";
+      toast.error(message);
+    },
   });
 }

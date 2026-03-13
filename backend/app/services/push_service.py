@@ -130,20 +130,18 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
         if not tokens:
             return False
 
-        # Check quiet hours
+        # Check quiet hours and channel preferences
         if not skip_quiet_hours and preferences:
-            if self.is_in_quiet_hours(
+            in_quiet_hours = self.is_in_quiet_hours(
                 preferences.quiet_hours_enabled,
                 preferences.quiet_hours_start,
                 preferences.quiet_hours_end,
                 preferences.timezone,
-            ):
-                # Don't send push during quiet hours
-                return False
-
-            # Check if push is enabled in channel preferences
+            )
             channel_prefs = preferences.channel_preferences or {}
-            if not channel_prefs.get("push", True):
+            push_disabled = not channel_prefs.get("push", True)
+
+            if in_quiet_hours or push_disabled:
                 return False
 
         # Prepare push messages
@@ -162,9 +160,6 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
                     "priority": "high",
                 }
             )
-
-        if not messages:
-            return False
 
         # Send to Expo
         try:

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Notification Digest</h1>
+
+<p>You have <strong>{{ total_count }}</strong> new notification{{ "s" if total_count != 1 else "" }}:</p>
+
+{% for type_name, items in grouped.items() %}
+<h2>{{ type_name | replace("_", " ") | title }}</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Notification</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>
+                {% if item.action_url %}
+                <a href="{{ portal_url }}{{ item.action_url }}">{{ item.title }}</a>
+                {% else %}
+                {{ item.title }}
+                {% endif %}
+            </td>
+            <td>{{ item.body }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endfor %}
+
+<p style="margin-top: 20px;">
+    <a href="{{ portal_url }}/notifications" class="btn">View All Notifications</a>
+</p>
+{% endblock %}

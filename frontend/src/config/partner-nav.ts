@@ -1,4 +1,4 @@
-import { Home, ClipboardList, PackageCheck, MessageSquare, FileText } from "lucide-react";
+import { Home, ClipboardList, PackageCheck, MessageSquare, FileText, BarChart3 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
 export const partnerNavConfig: PortalNavConfig = {
@@ -37,6 +37,12 @@ export const partnerNavConfig: PortalNavConfig = {
           href: "/partner/documents",
           icon: FileText,
           tooltip: "Brief Documents",
+        },
+        {
+          title: "Reports",
+          href: "/partner/reports",
+          icon: BarChart3,
+          tooltip: "Reports & Analytics",
         },
       ],
     },

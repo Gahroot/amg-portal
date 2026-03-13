@@ -1,6 +1,7 @@
 """Program closure workflow endpoints."""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
@@ -10,6 +11,7 @@ from app.api.deps import (
     require_internal,
     require_rm_or_above,
 )
+from app.models.user import User
 from app.schemas.partner_rating import (
     PartnerRatingCreate,
     PartnerRatingResponse,
@@ -54,7 +56,7 @@ async def initiate_program_closure(
 async def get_program_closure(
     program_id: uuid.UUID,
     db: DB,
-    _user: CurrentUser = Depends(require_internal),
+    _user: Annotated[User, Depends(require_internal)],
 ) -> ProgramClosureResponse:
     closure = await get_closure_status(db, program_id)
     return ProgramClosureResponse.model_validate(closure)
@@ -97,7 +99,7 @@ async def submit_program_partner_rating(
 async def list_partner_ratings(
     program_id: uuid.UUID,
     db: DB,
-    _user: CurrentUser = Depends(require_internal),
+    _user: Annotated[User, Depends(require_internal)],
 ) -> list[PartnerRatingResponse]:
     ratings = await get_partner_ratings(db, program_id)
     return [PartnerRatingResponse.model_validate(r) for r in ratings]

@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { usePortfolioOverview, useProgramStatusReport, useExportProgramStatus } from "@/hooks/use-reports";
-import { useExportPortfolio } from "@/hooks/use-reports";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ReportContainer, ReportMetric, ReportStatusBadge, ReportCard } from "@/components/reports/report-container";
 import {
   Select,
@@ -17,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PortfolioProgramSummary } from "@/lib/api/reports";
 
 export default function ProgramStatusPage() {
   const { data: portfolio, isLoading: isLoadingPortfolio } = usePortfolioOverview();

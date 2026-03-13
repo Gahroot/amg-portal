@@ -4,7 +4,7 @@ import csv
 import io
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
@@ -19,6 +19,7 @@ from app.schemas.escalation import (
     EscalationTriggerRequest,
     EscalationUpdate,
 )
+from app.services.audit_service import log_action, model_to_dict
 from app.services.escalation_service import (
     check_and_escalate_milestone_risk,
     create_escalation,
@@ -122,6 +123,7 @@ async def create_manual_escalation(
     data: EscalationCreate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
 ) -> EscalationResponse:
     """Manually create an escalation."""
     escalation = await create_escalation(
@@ -135,6 +137,18 @@ async def create_manual_escalation(
         program_id=data.program_id,
         client_id=data.client_id,
     )
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="escalation",
+        entity_id=str(escalation.id),
+        after_state=model_to_dict(escalation),
+        request=request,
+    )
+    await db.commit()
+
     # Fetch with owner info
     result = await db.execute(select(User).where(User.id == escalation.owner_id))
     owner = result.scalar_one_or_none()
@@ -230,8 +244,14 @@ async def update_escalation_endpoint(
     data: EscalationUpdate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
 ) -> EscalationResponse:
     """Update escalation status and/or notes."""
+    # Capture before state
+    pre_result = await db.execute(select(Escalation).where(Escalation.id == escalation_id))
+    pre_esc = pre_result.scalar_one_or_none()
+    before = model_to_dict(pre_esc) if pre_esc else None
+
     escalation: Escalation | None
     if data.status:
         escalation = await update_escalation_status(
@@ -252,6 +272,19 @@ async def update_escalation_endpoint(
             escalation.resolution_notes = data.resolution_notes
         await db.commit()
         await db.refresh(escalation)
+
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="escalation",
+        entity_id=str(escalation_id),
+        before_state=before,
+        after_state=model_to_dict(escalation),
+        request=request,
+    )
+    await db.commit()
 
     # Get owner info
     owner_result = await db.execute(select(User).where(User.id == escalation.owner_id))
@@ -298,14 +331,33 @@ async def acknowledge_escalation(
     escalation_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
 ) -> EscalationResponse:
     """Acknowledge an escalation."""
+    # Capture before state
+    pre_result = await db.execute(select(Escalation).where(Escalation.id == escalation_id))
+    pre_esc = pre_result.scalar_one_or_none()
+    before = model_to_dict(pre_esc) if pre_esc else None
+
     escalation = await update_escalation_status(
         db=db,
         escalation_id=escalation_id,
         new_status=EscalationStatus.acknowledged,
         user=current_user,
     )
+
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="escalation",
+        entity_id=str(escalation_id),
+        before_state=before,
+        after_state=model_to_dict(escalation),
+        request=request,
+    )
+    await db.commit()
 
     # Get owner info
     owner_result = await db.execute(select(User).where(User.id == escalation.owner_id))
@@ -352,9 +404,15 @@ async def resolve_escalation(
     escalation_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     notes: str | None = None,
 ) -> EscalationResponse:
     """Resolve an escalation."""
+    # Capture before state
+    pre_result = await db.execute(select(Escalation).where(Escalation.id == escalation_id))
+    pre_esc = pre_result.scalar_one_or_none()
+    before = model_to_dict(pre_esc) if pre_esc else None
+
     escalation = await update_escalation_status(
         db=db,
         escalation_id=escalation_id,
@@ -362,6 +420,19 @@ async def resolve_escalation(
         user=current_user,
         notes=notes,
     )
+
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="escalation",
+        entity_id=str(escalation_id),
+        before_state=before,
+        after_state=model_to_dict(escalation),
+        request=request,
+    )
+    await db.commit()
 
     # Get owner info
     owner_result = await db.execute(select(User).where(User.id == escalation.owner_id))

@@ -14,6 +14,10 @@ import {
   getMyPortfolio,
   getPortalProfile,
   getComplianceCertificate,
+  getPortalPrograms,
+  getPortalProgramDetail,
+  getPortalDecisions,
+  respondToPortalDecision,
 } from "@/lib/api/clients";
 import type {
   ClientProfileCreateData,
@@ -23,6 +27,7 @@ import type {
   ClientProvisionData,
   ClientListParams,
 } from "@/types/client";
+import type { DecisionResponseData } from "@/types/communication";
 
 export function useClientProfiles(params?: ClientListParams) {
   return useQuery({
@@ -127,5 +132,49 @@ export function useComplianceCertificate(id: string) {
     queryKey: ["clients", id, "certificate"],
     queryFn: () => getComplianceCertificate(id),
     enabled: false,
+  });
+}
+
+// --- Portal Programs ---
+
+export function usePortalPrograms() {
+  return useQuery({
+    queryKey: ["portal", "programs"],
+    queryFn: () => getPortalPrograms(),
+  });
+}
+
+export function usePortalProgramDetail(id: string) {
+  return useQuery({
+    queryKey: ["portal", "programs", id],
+    queryFn: () => getPortalProgramDetail(id),
+    enabled: !!id,
+  });
+}
+
+// --- Portal Decisions ---
+
+export function usePortalDecisions(params?: {
+  status?: string;
+  skip?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["portal", "decisions", params],
+    queryFn: () => getPortalDecisions(params),
+  });
+}
+
+export function useRespondToPortalDecision() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DecisionResponseData }) =>
+      respondToPortalDecision(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portal", "decisions"] });
+      toast.success("Response submitted successfully");
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || "Failed to submit response"),
   });
 }

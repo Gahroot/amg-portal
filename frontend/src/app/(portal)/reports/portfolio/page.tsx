@@ -1,12 +1,6 @@
 "use client";
 
 import { usePortfolioOverview, useExportPortfolio } from "@/hooks/use-reports";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ReportContainer, ReportMetric, ReportStatusBadge, ReportCard } from "@/components/reports/report-container";
 
 export default function PortfolioOverviewPage() {

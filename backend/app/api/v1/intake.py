@@ -3,7 +3,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +17,7 @@ from app.schemas.intake_form import (
     IntakeFormResponse,
     IntakeStep4Lifestyle,
 )
+from app.services.audit_service import log_action, model_to_dict
 
 router = APIRouter()
 
@@ -86,6 +87,7 @@ async def submit_intake_form(
     data: IntakeFormData,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
 ):
     """Submit a complete client intake form."""
     # Check for existing client with same email
@@ -131,6 +133,16 @@ async def submit_intake_form(
             db, profile.id, data.family_members
         )
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="client_profile",
+        entity_id=str(profile.id),
+        after_state=model_to_dict(profile),
+        request=request,
+    )
     await db.commit()
     await db.refresh(profile)
 
@@ -220,6 +232,8 @@ async def save_intake_step(
     step: int,
     data: IntakeDraftData,
     db: DB,
+    current_user: CurrentUser,
+    request: Request,
 ):
     """Save a specific step of the intake form."""
     if step < 1 or step > 5:
@@ -238,6 +252,7 @@ async def save_intake_step(
             detail="Client profile not found",
         )
 
+    before = model_to_dict(profile)
     update_data = data.model_dump(exclude_unset=True, exclude={"family_members"})
 
     # Handle lifestyle data (step 4) separately
@@ -276,6 +291,17 @@ async def save_intake_step(
         # Create new family members
         await _create_family_members(db, profile_id, data.family_members)
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="client_profile",
+        entity_id=str(profile_id),
+        before_state=before,
+        after_state=model_to_dict(profile),
+        request=request,
+    )
     await db.commit()
     await db.refresh(profile)
 
@@ -319,6 +345,8 @@ async def save_intake_step(
 async def submit_completed_intake(
     profile_id: uuid.UUID,
     db: DB,
+    current_user: CurrentUser,
+    request: Request,
 ):
     """Submit a completed intake form for compliance review."""
     result = await db.execute(
@@ -337,10 +365,23 @@ async def submit_completed_intake(
             detail="Intake form already submitted",
         )
 
+    before = model_to_dict(profile)
+
     # Update status to pending compliance
     profile.approval_status = ApprovalStatus.pending_compliance.value
     profile.compliance_status = ComplianceStatus.pending_review.value
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="submit",
+        entity_type="client_profile",
+        entity_id=str(profile_id),
+        before_state=before,
+        after_state=model_to_dict(profile),
+        request=request,
+    )
     await db.commit()
     await db.refresh(profile)
 

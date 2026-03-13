@@ -4,10 +4,15 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
-import { getWorkloadOverview, getStaffAssignments } from "@/lib/api/workload";
+import {
+  getWorkloadOverview,
+  getStaffAssignments,
+  getCapacityOverview,
+} from "@/lib/api/workload";
+import type { CapacityItem } from "@/lib/api/workload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -53,6 +58,144 @@ const ROLE_LABELS: Record<string, string> = {
   coordinator: "Coordinator",
   finance_compliance: "Finance & Compliance",
 };
+
+const CAP_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  available: "default",
+  at_capacity: "secondary",
+  over_capacity: "destructive",
+};
+
+function CapacitySection() {
+  const { data: capacity, isLoading } = useQuery({
+    queryKey: ["workload", "capacity"],
+    queryFn: () => getCapacityOverview(),
+  });
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-serif text-xl font-semibold tracking-tight">
+        Capacity Planning
+      </h2>
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading capacity...</p>
+      ) : capacity ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Avg Utilization
+                </p>
+                <p className="text-2xl font-bold">
+                  {capacity.summary.avg_utilization_pct}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">Available</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {capacity.summary.available_count}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">At Capacity</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {capacity.summary.at_capacity_count}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">Over Capacity</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {capacity.summary.over_capacity_count}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="rounded-md border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Staff Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Programs</TableHead>
+                  <TableHead>Open Tasks</TableHead>
+                  <TableHead>Utilization</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {capacity.staff.map((s: CapacityItem) => (
+                  <TableRow key={s.user_id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{s.user_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {s.user_email}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {ROLE_LABELS[s.role] ?? s.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {s.active_programs}/{s.max_programs}
+                    </TableCell>
+                    <TableCell>{s.open_tasks}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress
+                          value={Math.min(s.utilization_pct, 100)}
+                          className="w-20"
+                        />
+                        <span className="text-sm tabular-nums">
+                          {s.utilization_pct}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          CAP_VARIANT[s.capacity_status] ?? "outline"
+                        }
+                      >
+                        {s.capacity_status.replace(/_/g, " ")}
+                      </Badge>
+                      {s.is_over_capacity && (
+                        <AlertTriangle className="ml-1 inline h-3 w-3 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {capacity.staff.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground"
+                    >
+                      No staff data available.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
 
 export default function WorkloadPage() {
   const { user } = useAuth();
@@ -270,6 +413,9 @@ export default function WorkloadPage() {
             </Table>
           </div>
         )}
+
+        {/* Capacity Planning */}
+        <CapacitySection />
 
         {/* Staff Assignments Dialog */}
         <Dialog

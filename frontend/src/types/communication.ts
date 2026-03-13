@@ -120,6 +120,10 @@ export interface NotificationPreference {
   digest_frequency: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  timezone: string;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +133,10 @@ export interface NotificationPreferenceUpdateData {
   digest_frequency?: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  quiet_hours_enabled?: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  timezone?: string;
 }
 
 // Decision Request types

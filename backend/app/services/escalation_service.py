@@ -1,7 +1,7 @@
 """Escalation business logic — risk detection, owner determination, status workflows."""
 
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -15,6 +15,24 @@ from app.models.task import Task
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+# SLA response-time thresholds per escalation level (hours).
+# When an escalation at a given level exceeds this duration without adequate
+# response, it is automatically promoted to the next level.
+_LEVEL_SLA_HOURS: dict[EscalationLevel, float] = {
+    EscalationLevel.task: 1.0,        # 1 hour to acknowledge
+    EscalationLevel.milestone: 4.0,   # 4 hours to resolve
+    EscalationLevel.program: 4.0,     # 4 hours to resolve
+    # client_impact is the terminal level — no further promotion
+}
+
+# Ordered promotion path.
+_PROMOTION_ORDER: list[EscalationLevel] = [
+    EscalationLevel.task,
+    EscalationLevel.milestone,
+    EscalationLevel.program,
+    EscalationLevel.client_impact,
+]
 
 
 async def create_escalation(
@@ -255,6 +273,17 @@ async def check_and_escalate_milestone_risk(
         program_id=milestone.program_id,
     )
 
+    # Dispatch milestone_alert template notification for at-risk milestone
+    try:
+        from app.services.auto_dispatch_service import on_milestone_alert
+
+        await on_milestone_alert(db, milestone, risk_factors)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch milestone_alert for milestone %s",
+            milestone_id,
+        )
+
     return [escalation]
 
 
@@ -411,3 +440,172 @@ async def get_escalations_with_owner_info(
         escalation_data.append(esc_dict)
 
     return escalation_data, total
+
+
+def _next_level(current: EscalationLevel) -> EscalationLevel | None:
+    """Return the next level in the promotion hierarchy, or ``None`` at the top."""
+    try:
+        idx = _PROMOTION_ORDER.index(current)
+    except ValueError:
+        return None
+    if idx + 1 >= len(_PROMOTION_ORDER):
+        return None
+    return _PROMOTION_ORDER[idx + 1]
+
+
+def _level_entry_time(escalation: Escalation) -> datetime:
+    """Determine when the escalation entered its current level.
+
+    Walks *escalation_chain* backwards to find the most recent ``level_promotion``
+    entry.  Falls back to *triggered_at* for escalations that have never been
+    promoted.
+    """
+    chain: list[dict[str, object]] = escalation.escalation_chain or []
+    for entry in reversed(chain):
+        if entry.get("action") == "level_promotion":
+            promoted_at = entry.get("promoted_at")
+            if isinstance(promoted_at, str):
+                return datetime.fromisoformat(promoted_at)
+    # Never been promoted — use the original trigger time.
+    return escalation.triggered_at
+
+
+def _sla_breached(escalation: Escalation, now: datetime) -> bool:
+    """Return ``True`` if the escalation has exceeded its SLA for the current level."""
+    current_level = EscalationLevel(escalation.level)
+    sla_hours = _LEVEL_SLA_HOURS.get(current_level)
+    if sla_hours is None:
+        return False  # terminal level (client_impact)
+
+    entered_at = _level_entry_time(escalation)
+    deadline = entered_at + timedelta(hours=sla_hours)
+    return now >= deadline
+
+
+async def _promote_escalation(
+    db: AsyncSession,
+    escalation: Escalation,
+    from_level: EscalationLevel,
+    to_level: EscalationLevel,
+    now: datetime,
+) -> None:
+    """Promote an escalation to the next level, re-assign owner, and notify."""
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
+
+    # Determine new owner for the promoted level
+    new_owner_id = await determine_escalation_owner(
+        db, to_level, escalation.entity_type, escalation.entity_id
+    )
+
+    old_owner_id = escalation.owner_id
+
+    # Update the escalation record
+    escalation.level = to_level.value
+    escalation.owner_id = new_owner_id
+    # Reset status to open so the new owner must acknowledge
+    escalation.status = EscalationStatus.open.value
+
+    chain: list[dict[str, object]] = escalation.escalation_chain or []
+    chain.append(
+        {
+            "action": "level_promotion",
+            "from_level": from_level.value,
+            "to_level": to_level.value,
+            "promoted_at": now.isoformat(),
+            "reason": "SLA breach",
+            "previous_owner_id": str(old_owner_id),
+            "new_owner_id": str(new_owner_id),
+        }
+    )
+    escalation.escalation_chain = chain
+
+    await db.flush()
+
+    # Determine role label for notification context
+    if to_level == EscalationLevel.client_impact:
+        role_label = "Managing Director"
+    elif to_level == EscalationLevel.program:
+        role_label = "Relationship Manager"
+    else:
+        role_label = "Coordinator"
+
+    # Create high-priority notification for the new owner
+    await notification_service.create_notification(
+        db,
+        CreateNotificationRequest(
+            user_id=new_owner_id,
+            notification_type="system",
+            title=f"Escalation promoted to {to_level.value}: {escalation.title}",
+            body=(
+                f"Escalation #{str(escalation.id)[:8]} has been automatically "
+                f"promoted from {from_level.value} to {to_level.value} due to SLA breach. "
+                f"As {role_label}, your immediate attention is required."
+            ),
+            priority="urgent",
+            entity_type="escalation",
+            entity_id=escalation.id,
+            action_url=f"/escalations/{escalation.id}",
+            action_label="View Escalation",
+        ),
+    )
+
+    logger.info(
+        "Escalation %s promoted: %s → %s (new owner %s)",
+        escalation.id,
+        from_level.value,
+        to_level.value,
+        new_owner_id,
+    )
+
+
+async def check_escalation_promotions(db: AsyncSession) -> list[Escalation]:
+    """Check all open/acknowledged escalations and promote those that have breached SLA.
+
+    Called periodically by the scheduler.  Returns the list of escalations that
+    were promoted during this run.
+    """
+    now = datetime.now(UTC)
+
+    # Fetch non-terminal escalations that are still actionable.
+    # client_impact is the terminal level — nothing to promote.
+    result = await db.execute(
+        select(Escalation).where(
+            Escalation.status.in_(
+                [
+                    EscalationStatus.open.value,
+                    EscalationStatus.acknowledged.value,
+                    EscalationStatus.investigating.value,
+                ]
+            ),
+            Escalation.level != EscalationLevel.client_impact.value,
+        )
+    )
+    escalations = list(result.scalars().all())
+
+    promoted: list[Escalation] = []
+
+    for esc in escalations:
+        if not _sla_breached(esc, now):
+            continue
+
+        current_level = EscalationLevel(esc.level)
+        target_level = _next_level(current_level)
+        if target_level is None:
+            continue
+
+        try:
+            await _promote_escalation(db, esc, current_level, target_level, now)
+            promoted.append(esc)
+        except Exception:
+            logger.exception("Failed to promote escalation %s", esc.id)
+
+    if promoted:
+        await db.commit()
+
+    logger.info(
+        "Escalation promotion check complete — %d of %d escalations promoted",
+        len(promoted),
+        len(escalations),
+    )
+    return promoted

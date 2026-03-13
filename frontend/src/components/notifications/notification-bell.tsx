@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUnreadNotificationCount, useNotifications } from "@/hooks/use-notifications";
+import { useUnreadNotificationCount } from "@/hooks/use-notifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NotificationCenter } from "./notification-center";

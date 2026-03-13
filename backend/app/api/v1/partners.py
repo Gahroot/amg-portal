@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
@@ -16,6 +16,7 @@ from app.schemas.partner import (
     PartnerProfileUpdate,
     PartnerProvisionRequest,
 )
+from app.services.audit_service import log_action, model_to_dict
 from app.services.storage import storage_service
 
 router = APIRouter()
@@ -26,6 +27,7 @@ async def create_partner(
     data: PartnerProfileCreate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     partner = PartnerProfile(
@@ -40,6 +42,17 @@ async def create_partner(
         created_by=current_user.id,
     )
     db.add(partner)
+    await db.flush()
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="create",
+        entity_type="partner",
+        entity_id=str(partner.id),
+        after_state=model_to_dict(partner),
+        request=request,
+    )
     await db.commit()
     await db.refresh(partner)
     return partner
@@ -111,6 +124,7 @@ async def update_partner(
     data: PartnerProfileUpdate,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_rm_or_above),
 ):
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
@@ -118,10 +132,22 @@ async def update_partner(
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
 
+    before = model_to_dict(partner)
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(partner, field, value)
 
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner",
+        entity_id=str(partner_id),
+        before_state=before,
+        after_state=model_to_dict(partner),
+        request=request,
+    )
     await db.commit()
     await db.refresh(partner)
     return partner
@@ -133,6 +159,7 @@ async def provision_partner(
     data: PartnerProvisionRequest,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     _: None = Depends(require_admin),
 ):
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
@@ -141,6 +168,8 @@ async def provision_partner(
         raise HTTPException(status_code=404, detail="Partner not found")
     if partner.user_id:
         raise HTTPException(status_code=400, detail="Partner already has a user account")
+
+    before = model_to_dict(partner)
 
     import secrets
 
@@ -160,6 +189,17 @@ async def provision_partner(
 
     partner.user_id = user.id
     partner.status = "active"
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner",
+        entity_id=str(partner_id),
+        before_state=before,
+        after_state=model_to_dict(partner),
+        request=request,
+    )
     await db.commit()
     await db.refresh(partner)
     return partner
@@ -170,6 +210,7 @@ async def upload_compliance_doc(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    request: Request,
     file: UploadFile = File(...),
     _: None = Depends(require_rm_or_above),
 ):
@@ -178,8 +219,20 @@ async def upload_compliance_doc(
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
 
+    before = model_to_dict(partner)
     object_path, _ = await storage_service.upload_file(file, f"partners/{partner_id}/compliance")
     partner.compliance_doc_url = object_path
+    await log_action(
+        db,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="partner",
+        entity_id=str(partner_id),
+        before_state=before,
+        after_state=model_to_dict(partner),
+        request=request,
+    )
     await db.commit()
     await db.refresh(partner)
     return partner

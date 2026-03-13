@@ -72,3 +72,38 @@ export async function unassignStaffFromProgram(data: {
 }): Promise<void> {
   await api.post("/api/v1/workload/unassign", data);
 }
+
+// Capacity Planning
+
+export interface CapacityItem {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  role: string;
+  active_programs: number;
+  open_tasks: number;
+  max_programs: number;
+  utilization_pct: number;
+  is_over_capacity: boolean;
+  capacity_status: "available" | "at_capacity" | "over_capacity";
+}
+
+export interface CapacitySummary {
+  total_staff: number;
+  available_count: number;
+  at_capacity_count: number;
+  over_capacity_count: number;
+  avg_utilization_pct: number;
+}
+
+export interface CapacityResponse {
+  staff: CapacityItem[];
+  summary: CapacitySummary;
+}
+
+export async function getCapacityOverview(): Promise<CapacityResponse> {
+  const response = await api.get<CapacityResponse>(
+    "/api/v1/workload/capacity",
+  );
+  return response.data;
+}

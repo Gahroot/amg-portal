@@ -227,6 +227,13 @@ def build_certificate_response(
     include_download_url: bool = False,
 ) -> dict:
     """Build certificate response with related data."""
+    # Derive client_name from client or client_profile
+    client_name = ""
+    if cert.client:
+        client_name = cert.client.name
+    elif cert.client_profile:
+        client_name = cert.client_profile.display_name or cert.client_profile.legal_name
+
     data = {
         "id": cert.id,
         "certificate_number": cert.certificate_number,
@@ -235,7 +242,8 @@ def build_certificate_response(
         "program_id": cert.program_id,
         "program_title": cert.program.title if cert.program else None,
         "client_id": cert.client_id,
-        "client_name": cert.client.name if cert.client else "",
+        "client_profile_id": cert.client_profile_id,
+        "client_name": client_name,
         "title": cert.title,
         "content": cert.content,
         "populated_data": cert.populated_data,
@@ -276,10 +284,27 @@ async def create_certificate(
     _: None = Depends(require_compliance),
 ) -> ClearanceCertificateResponse:
     """Create a new clearance certificate."""
+    if not data.client_id and not data.client_profile_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Either client_id or client_profile_id is required",
+        )
+
     # Verify client exists
-    result = await db.execute(select(Client).where(Client.id == data.client_id))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Client not found")
+    if data.client_id:
+        result = await db.execute(select(Client).where(Client.id == data.client_id))
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Client not found")
+
+    # Verify client profile exists
+    if data.client_profile_id:
+        from app.models.client_profile import ClientProfile
+
+        result = await db.execute(
+            select(ClientProfile).where(ClientProfile.id == data.client_profile_id)
+        )
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Client profile not found")
 
     # Verify program if specified
     if data.program_id:
@@ -293,6 +318,7 @@ async def create_certificate(
             "template_id": data.template_id,
             "program_id": data.program_id,
             "client_id": data.client_id,
+            "client_profile_id": data.client_profile_id,
             "title": data.title,
             "content": data.content,
             "certificate_type": data.certificate_type,
@@ -323,6 +349,7 @@ async def list_certificates(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
     client_id: UUID | None = None,
+    client_profile_id: UUID | None = None,
     program_id: UUID | None = None,
     status: str | None = None,
     certificate_type: str | None = None,
@@ -334,6 +361,7 @@ async def list_certificates(
         select(ClearanceCertificate)
         .options(
             selectinload(ClearanceCertificate.client),
+            selectinload(ClearanceCertificate.client_profile),
             selectinload(ClearanceCertificate.program),
             selectinload(ClearanceCertificate.template),
             selectinload(ClearanceCertificate.creator),
@@ -344,6 +372,11 @@ async def list_certificates(
     if client_id:
         query = query.where(ClearanceCertificate.client_id == client_id)
         count_query = count_query.where(ClearanceCertificate.client_id == client_id)
+    if client_profile_id:
+        query = query.where(ClearanceCertificate.client_profile_id == client_profile_id)
+        count_query = count_query.where(
+            ClearanceCertificate.client_profile_id == client_profile_id
+        )
     if program_id:
         query = query.where(ClearanceCertificate.program_id == program_id)
         count_query = count_query.where(ClearanceCertificate.program_id == program_id)
@@ -384,6 +417,7 @@ async def get_certificate(
         select(ClearanceCertificate)
         .options(
             selectinload(ClearanceCertificate.client),
+            selectinload(ClearanceCertificate.client_profile),
             selectinload(ClearanceCertificate.program),
             selectinload(ClearanceCertificate.template),
             selectinload(ClearanceCertificate.creator),

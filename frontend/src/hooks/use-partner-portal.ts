@@ -143,3 +143,71 @@ export function useMarkPartnerConversationRead() {
     },
   });
 }
+
+// ============================================================================
+// Class C Partner Reports
+// ============================================================================
+
+export function useActiveBriefSummary() {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "active-brief"],
+    queryFn: () =>
+      import("@/lib/api/partner-portal").then((m) =>
+        m.getActiveBriefSummary(),
+      ),
+  });
+}
+
+export function useDeliverableFeedback(params?: { assignment_id?: string }) {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "deliverable-feedback", params],
+    queryFn: () =>
+      import("@/lib/api/partner-portal").then((m) =>
+        m.getDeliverableFeedback(params),
+      ),
+  });
+}
+
+export function useExportDeliverableFeedback() {
+  const exportFn = async (params?: { assignment_id?: string }) => {
+    try {
+      const mod = await import("@/lib/api/partner-portal");
+      await mod.exportDeliverableFeedback(params);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to export feedback report";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { exportFeedback: exportFn };
+}
+
+export function useEngagementHistory() {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "engagement-history"],
+    queryFn: () =>
+      import("@/lib/api/partner-portal").then((m) =>
+        m.getEngagementHistory(),
+      ),
+  });
+}
+
+export function useExportEngagementHistory() {
+  const exportFn = async () => {
+    try {
+      const mod = await import("@/lib/api/partner-portal");
+      await mod.exportEngagementHistory();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to export engagement history";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { exportHistory: exportFn };
+}

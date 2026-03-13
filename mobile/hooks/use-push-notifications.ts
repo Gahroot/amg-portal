@@ -1,94 +1,131 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
-import { router } from 'expo-router';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useNotificationStore } from '@/lib/notification-store';
 
-// Configure notification handler
+// Configure foreground notification handler — must be called at module level
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
+// Set up Android notification channel
+if (Platform.OS === 'android') {
+  Notifications.setNotificationChannelAsync('default', {
+    name: 'Default',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#0f172a',
+  });
+}
+
 export function usePushNotifications() {
-  const [pushToken, setLocalPushToken] = useState<string | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<Notifications.PermissionStatus | null>(null);
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] =
+    useState<Notifications.PermissionStatus | null>(null);
   const token = useAuthStore((s) => s.token);
   const setStorePushToken = useNotificationStore((s) => s.setPushToken);
 
   // Request permissions
   const requestPermissions = useCallback(async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    setPermissionStatus(status);
-    return status === Notifications.PermissionStatus.GRANTED;
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+
+    let finalStatus = existingStatus;
+    if (existingStatus !== Notifications.PermissionStatus.GRANTED) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    setPermissionStatus(finalStatus);
+    return finalStatus === Notifications.PermissionStatus.GRANTED;
   }, []);
 
-  // Get push token
+  // Get Expo push token
   const getPushToken = useCallback(async () => {
     if (permissionStatus !== Notifications.PermissionStatus.GRANTED) {
       return null;
     }
 
-    try {
-      const token = await Notifications.getExpoPushTokenAsync();
-      if (token) {
-        setLocalPushToken(token);
-        return token;
-      }
-    } catch {
-    return null;
+    // Push tokens only work on physical devices
+    if (!Device.isDevice) {
+      return null;
     }
-    return null;
+
+    try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+
+      const { data: tokenString } = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined,
+      );
+
+      setPushToken(tokenString);
+      return tokenString;
+    } catch {
+      return null;
+    }
   }, [permissionStatus]);
 
   // Register token with backend
-  const registerToken = useCallback(async (tokenString: string) => {
-    if (!token) {
-      return false;
-    }
+  const registerPushToken = useCallback(
+    async (tokenString: string) => {
+      if (!token) {
+        return false;
+      }
 
-    try {
-      await api.post('/push-tokens', {
-        token: tokenString,
-        platform: 'mobile', // Could detect iOS/Android
-      });
-      await setStorePushToken(tokenString);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [token, setStorePushToken]);
+      try {
+        await api.post('/push-tokens', {
+          token: tokenString,
+          platform: Platform.OS,
+        });
+        await setStorePushToken(tokenString);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [token, setStorePushToken],
+  );
 
   // Unregister token
-  const unregisterToken = useCallback(async (tokenString: string) => {
-    if (!token) {
-      return false;
-    }
+  const unregisterToken = useCallback(
+    async (tokenString: string) => {
+      if (!token) {
+        return false;
+      }
 
-    try {
-      await api.delete(`/push-tokens/${encodeURIComponent(tokenString)}`);
-      await setStorePushToken(null);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [token, setStorePushToken]);
+      try {
+        await api.delete(`/push-tokens/${encodeURIComponent(tokenString)}`);
+        await setStorePushToken(null);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [token, setStorePushToken],
+  );
 
   // Set badge count
   const setBadgeCount = useCallback(async (count: number) => {
     await Notifications.setBadgeCountAsync(count);
   }, []);
 
-  // Initialize on mount
+  // Request permissions on mount
   useEffect(() => {
     requestPermissions();
-  }, []);
+  }, [requestPermissions]);
 
   // Get token when permissions are granted
   useEffect(() => {
@@ -97,55 +134,18 @@ export function usePushNotifications() {
     }
   }, [permissionStatus, getPushToken]);
 
-  // Register token with backend when we have one
+  // Register token with backend when we have both push token and auth token
   useEffect(() => {
     if (pushToken && token) {
-      registerToken(pushToken);
+      registerPushToken(pushToken);
     }
-  }, [pushToken, token, registerToken]);
-
-  // Handle notification received (foreground)
-  useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener((notification) => {
-      // Update unread count
-      const count = useNotificationStore.getState().unreadCount + 1;
-      useNotificationStore.getState().setUnreadCount(count);
-
-      // Set badge
-      setBadgeCount(count);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [setBadgeCount]);
-
-  // Handle notification response (tap)
-  useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = response.notification.request.content.data as {
-    action_url?: string;
-    entity_type?: string;
-    entity_id?: string;
-  } | undefined;
-
-    // Navigate to the action URL if provided
-    if (data?.action_url) {
-      router.push(data.action_url);
-    }
-  });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+  }, [pushToken, token, registerPushToken]);
 
   return {
     pushToken,
     permissionStatus,
     requestPermissions,
-    getPushToken,
-    registerToken,
+    registerPushToken,
     unregisterToken,
     setBadgeCount,
   };

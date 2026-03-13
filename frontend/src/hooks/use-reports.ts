@@ -95,3 +95,47 @@ export function useExportAnnualReview() {
   };
   return { exportAnnualReview: exportFn };
 }
+
+// ============================================================================
+// Class B — Internal Operational Report Hooks
+// ============================================================================
+
+export function usePartnerScorecardReport(params?: {
+  partner_id?: string;
+  quarter?: number;
+  year?: number;
+}) {
+  return useQuery({
+    queryKey: ["reports", "partner-scorecard", params],
+    queryFn: () =>
+      import("@/lib/api/reports").then((m) => m.getPartnerScorecardReport(params)),
+  });
+}
+
+export function useRMPortfolioReport(params?: { rm_id?: string }) {
+  return useQuery({
+    queryKey: ["reports", "rm-portfolio", params],
+    queryFn: () =>
+      import("@/lib/api/reports").then((m) => m.getRMPortfolioReport(params)),
+  });
+}
+
+export function useEscalationLogReport(params?: {
+  status?: string;
+  level?: string;
+  program_id?: string;
+}) {
+  return useQuery({
+    queryKey: ["reports", "escalation-log", params],
+    queryFn: () =>
+      import("@/lib/api/reports").then((m) => m.getEscalationLogReport(params)),
+  });
+}
+
+export function useComplianceAuditReport() {
+  return useQuery({
+    queryKey: ["reports", "compliance-audit"],
+    queryFn: () =>
+      import("@/lib/api/reports").then((m) => m.getComplianceAuditReport()),
+  });
+}

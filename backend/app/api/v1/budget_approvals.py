@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
+from app.api.deps import DB, CurrentUser, require_admin, require_compliance, require_rm_or_above
 from app.models.budget_approval import (
     ApprovalChain,
     ApprovalChainStep,
@@ -187,7 +187,7 @@ async def _build_history_response(history: BudgetApprovalHistory) -> dict[str, A
 async def calculate_budget_impact(
     data: BudgetImpactRequest,
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Calculate budget impact and determine required approval chain."""
     service = BudgetApprovalService(db)
@@ -269,9 +269,9 @@ async def create_threshold(
 
 @router.get("/thresholds", response_model=list[ApprovalThresholdResponse])
 async def list_thresholds(
+    db: DB,
+    _: None = Depends(require_compliance),
     is_active: bool | None = Query(None),
-    db: DB = Depends(lambda: None),
-    _: None = Depends(require_internal),
 ):
     """List all approval thresholds."""
     service = BudgetApprovalService(db)
@@ -283,7 +283,7 @@ async def list_thresholds(
 async def get_threshold(
     threshold_id: uuid.UUID,
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Get an approval threshold by ID."""
     service = BudgetApprovalService(db)
@@ -364,9 +364,9 @@ async def create_chain(
 
 @router.get("/chains", response_model=list[ApprovalChainSummary])
 async def list_chains(
+    db: DB,
+    _: None = Depends(require_compliance),
     is_active: bool | None = Query(None),
-    db: DB = Depends(lambda: None),
-    _: None = Depends(require_internal),
 ):
     """List all approval chains."""
     service = BudgetApprovalService(db)
@@ -387,7 +387,7 @@ async def list_chains(
 async def get_chain(
     chain_id: uuid.UUID,
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Get an approval chain by ID with steps."""
     service = BudgetApprovalService(db)
@@ -521,14 +521,14 @@ async def create_request(
 
 @router.get("/requests", response_model=PaginatedBudgetApprovalRequests)
 async def list_requests(
+    db: DB,
+    _: None = Depends(require_compliance),
     status: BudgetApprovalStatus | None = Query(None),
     program_id: uuid.UUID | None = Query(None),
     request_type: BudgetRequestType | None = Query(None),
     requested_by: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: DB = Depends(lambda: None),
-    _: None = Depends(require_internal),
 ):
     """List budget approval requests with filters."""
     service = BudgetApprovalService(db)
@@ -570,7 +570,7 @@ async def list_requests(
 async def get_pending_approvals(
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Get pending approvals for the current user."""
     service = BudgetApprovalService(db)
@@ -600,7 +600,7 @@ async def get_pending_approvals(
 async def get_request(
     request_id: uuid.UUID,
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Get a budget approval request by ID."""
     service = BudgetApprovalService(db)
@@ -616,9 +616,9 @@ async def get_request(
 @router.post("/requests/{request_id}/cancel", response_model=BudgetApprovalRequestResponse)
 async def cancel_request(
     request_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
     reason: str | None = Query(None),
-    db: DB = Depends(lambda: None),
-    current_user: CurrentUser = Depends(lambda: None),
 ):
     """Cancel a budget approval request."""
     service = BudgetApprovalService(db)
@@ -645,7 +645,7 @@ async def decide_step(
     data: BudgetApprovalStepDecision,
     db: DB,
     current_user: CurrentUser,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Make a decision on an approval step."""
     service = BudgetApprovalService(db)
@@ -676,7 +676,7 @@ async def decide_step(
 async def get_request_history(
     request_id: uuid.UUID,
     db: DB,
-    _: None = Depends(require_internal),
+    _: None = Depends(require_compliance),
 ):
     """Get the full history for a budget approval request."""
     service = BudgetApprovalService(db)

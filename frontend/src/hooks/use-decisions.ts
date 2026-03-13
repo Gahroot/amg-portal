@@ -10,7 +10,6 @@ import {
   respondToDecision,
 } from "@/lib/api/decisions";
 import type {
-  DecisionRequest,
   DecisionCreateData,
   DecisionResponseData,
 } from "@/types/communication";

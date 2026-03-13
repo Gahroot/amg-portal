@@ -1,5 +1,6 @@
 """Service for notification operations."""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -16,6 +17,8 @@ from app.schemas.notification import (
     NotificationPreferenceUpdate,
 )
 from app.services.crud_base import CRUDBase
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict[str, Any]]):
@@ -158,7 +161,14 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         db: AsyncSession,
         data: CreateNotificationRequest,
     ) -> Notification:
-        """Create a new notification and send push/real-time notifications."""
+        """Create a new notification and dispatch via configured channels.
+
+        Respects the user's NotificationPreference:
+        - **in_portal**: always stored; real-time WebSocket sent if channel enabled
+        - **push**: sent immediately unless in quiet hours or channel disabled
+        - **email**: for ``immediate`` frequency, sent right away (quiet-hours
+          aware); for ``daily``/``weekly`` the scheduler digest jobs handle it
+        """
         notification = Notification(
             user_id=data.user_id,
             notification_type=data.notification_type,
@@ -176,14 +186,87 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
 
         # Get user preferences
         prefs = await self.get_or_create_preferences(db, data.user_id)
+        channel_prefs = prefs.channel_preferences or {}
+        in_quiet = self._is_in_quiet_hours(prefs)
 
-        # Send push notification
-        await self._send_push_notification(db, notification, prefs)
+        # In-portal real-time via WebSocket (only if channel enabled)
+        if channel_prefs.get("in_portal", True):
+            await self._send_realtime_notification(notification)
 
-        # Send real-time notification via WebSocket
-        await self._send_realtime_notification(notification)
+        # Push notification (push_service also checks quiet hours internally)
+        if channel_prefs.get("push", True) and not in_quiet:
+            await self._send_push_notification(db, notification, prefs)
+
+        # Immediate email delivery
+        if (
+            channel_prefs.get("email", True)
+            and prefs.digest_frequency == "immediate"
+            and not in_quiet
+        ):
+            await self._send_immediate_email(db, notification)
 
         return notification
+
+    # ------------------------------------------------------------------
+    # Quiet-hours helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_in_quiet_hours(prefs: NotificationPreference) -> bool:
+        """Return True if the current moment falls within the user's quiet hours."""
+        from zoneinfo import ZoneInfo
+
+        if (
+            not prefs.quiet_hours_enabled
+            or not prefs.quiet_hours_start
+            or not prefs.quiet_hours_end
+        ):
+            return False
+
+        try:
+            tz = ZoneInfo(prefs.timezone)
+        except Exception:
+            tz = ZoneInfo("UTC")
+
+        now = datetime.now(tz).time()
+
+        # Handle overnight ranges (e.g. 22:00 → 07:00)
+        if prefs.quiet_hours_start > prefs.quiet_hours_end:
+            return now >= prefs.quiet_hours_start or now <= prefs.quiet_hours_end
+        return prefs.quiet_hours_start <= now <= prefs.quiet_hours_end
+
+    # ------------------------------------------------------------------
+    # Immediate email
+    # ------------------------------------------------------------------
+
+    async def _send_immediate_email(
+        self,
+        db: AsyncSession,
+        notification: Notification,
+    ) -> None:
+        """Send an individual notification email right away."""
+        from app.services.email_service import send_notification_email
+
+        user_result = await db.execute(select(User).where(User.id == notification.user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            return
+
+        action_url: str | None = notification.action_url
+        if action_url and not action_url.startswith("http"):
+            action_url = f"{settings.FRONTEND_URL}{action_url}"
+
+        success = await send_notification_email(
+            email_address=user.email,
+            title=notification.title,
+            body=notification.body,
+            action_url=action_url,
+            action_label=notification.action_label,
+        )
+
+        if success:
+            notification.email_delivered = True
+            await db.commit()
 
     async def _send_push_notification(
         self,
@@ -239,47 +322,66 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         db: AsyncSession,
         user_id: uuid.UUID,
     ) -> None:
-        """Send email digest for a user based on their preferences."""
+        """Send email digest for a user based on their preferences.
+
+        Only includes notifications that have **not** already been emailed
+        (``email_delivered == False``), so immediate-mode emails are not
+        duplicated in digests.
+        """
         # Get user preferences
         prefs = await self.get_or_create_preferences(db, user_id)
 
         if not prefs.digest_enabled or prefs.digest_frequency == "never":
             return
 
-        # Get unread notifications
-        notifications, _ = await self.get_notifications_for_user(
-            db, user_id, unread_only=True, limit=100
+        # Check channel preferences – skip digest if email channel is off
+        channel_prefs = prefs.channel_preferences or {}
+        if not channel_prefs.get("email", True):
+            return
+
+        # Fetch unread, not-yet-emailed notifications
+        query = (
+            select(Notification)
+            .where(
+                Notification.user_id == user_id,
+                Notification.email_delivered == False,  # noqa: E712
+            )
+            .order_by(Notification.created_at.desc())
+            .limit(100)
         )
+        result = await db.execute(query)
+        notifications = list(result.scalars().all())
 
         if not notifications:
             return
 
-        # Group notifications by type
-        grouped: dict[str, list[Notification]] = {}
-        for notif in notifications:
-            if notif.notification_type not in grouped:
-                grouped[notif.notification_type] = []
-            grouped[notif.notification_type].append(notif)
-
         # Send email digest
         user_result = await db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
-        if user:
-            notifications_data = [
-                {
-                    "id": str(n.id),
-                    "notification_type": n.notification_type,
-                    "title": n.title,
-                }
-                for n in notifications
-            ]
-            from app.services.email_service import send_notification_digest
+        if not user:
+            return
 
-            await send_notification_digest(
-                email=user.email,
-                notifications=notifications_data,
-                portal_url=settings.FRONTEND_URL,
-            )
+        notifications_data = [
+            {
+                "id": str(n.id),
+                "notification_type": n.notification_type,
+                "title": n.title,
+                "body": n.body,
+                "action_url": n.action_url,
+            }
+            for n in notifications
+        ]
+
+        from app.services.email_service import send_notification_digest
+
+        success = await send_notification_digest(
+            email_address=user.email,
+            notifications=notifications_data,
+            portal_url=settings.FRONTEND_URL,
+        )
+
+        if not success:
+            return
 
         # Mark as email delivered
         for notif in notifications:

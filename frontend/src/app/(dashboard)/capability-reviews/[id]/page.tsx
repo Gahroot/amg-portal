@@ -10,10 +10,10 @@ import {
   completeCapabilityReview,
 } from "@/lib/api/capability-reviews";
 import type { UpdateCapabilityReviewRequest, CompleteCapabilityReviewRequest } from "@/types/capability-review";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -34,18 +34,6 @@ const ALLOWED_ROLES = [
   "coordinator",
   "finance_compliance",
 ];
-
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  pending: "secondary",
-  scheduled: "default",
-  in_progress: "default",
-  completed: "outline",
-  overdue: "destructive",
-  waived: "secondary",
-};
 
 export default function CapabilityReviewDetailPage() {
   const { user } = useAuth();
@@ -152,9 +140,7 @@ export default function CapabilityReviewDetailPage() {
               {review.partner_name} - {review.review_year}
             </p>
           </div>
-          <Badge variant={STATUS_VARIANT[review.status] ?? "outline"} className="text-lg">
-            {review.status.replace("_", " ")}
-          </Badge>
+          <StatusBadge status={review.status} className="text-lg" />
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">

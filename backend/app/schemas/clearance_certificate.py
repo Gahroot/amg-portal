@@ -54,7 +54,8 @@ class CertificateTemplateListResponse(BaseModel):
 class ClearanceCertificateCreate(BaseModel):
     template_id: UUID | None = None
     program_id: UUID | None = None
-    client_id: UUID
+    client_id: UUID | None = None
+    client_profile_id: UUID | None = None
     title: str = Field(..., min_length=1, max_length=255)
     content: str | None = None  # If not provided, will be generated from template
     certificate_type: str = Field(..., min_length=1, max_length=50)
@@ -101,7 +102,8 @@ class ClearanceCertificateResponse(BaseModel):
     template_name: str | None = None
     program_id: UUID | None
     program_title: str | None = None
-    client_id: UUID
+    client_id: UUID | None = None
+    client_profile_id: UUID | None = None
     client_name: str = ""
     title: str
     content: str

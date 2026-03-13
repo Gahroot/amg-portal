@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -17,7 +18,7 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_rm_or_above)],
 )
-async def create_client(data: ClientCreate, db: DB):
+async def create_client(data: ClientCreate, db: DB) -> Any:
     client = Client(
         name=data.name,
         client_type=data.client_type.value,
@@ -56,7 +57,7 @@ async def list_clients(
     response_model=ClientResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_client(client_id: uuid.UUID, db: DB):
+async def get_client(client_id: uuid.UUID, db: DB) -> Any:
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
@@ -69,7 +70,7 @@ async def get_client(client_id: uuid.UUID, db: DB):
     response_model=ClientResponse,
     dependencies=[Depends(require_rm_or_above)],
 )
-async def update_client(client_id: uuid.UUID, data: ClientUpdate, db: DB):
+async def update_client(client_id: uuid.UUID, data: ClientUpdate, db: DB) -> Any:
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:

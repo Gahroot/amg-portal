@@ -21,7 +21,7 @@ import {
   createCertificate,
   type CertificateTemplate,
 } from "@/lib/api/clearance-certificates";
-import { listClients, type Client } from "@/lib/api/clients";
+import { listClientProfiles, type ClientProfile } from "@/lib/api/clients";
 import { listPrograms, type Program } from "@/lib/api/programs";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
@@ -37,7 +37,7 @@ export default function NewCertificatePage() {
   const router = useRouter();
   const { user } = useAuth();
   const [templates, setTemplates] = React.useState<CertificateTemplate[]>([]);
-  const [clients, setClients] = React.useState<Client[]>([]);
+  const [clients, setClients] = React.useState<ClientProfile[]>([]);
   const [programs, setPrograms] = React.useState<Program[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
@@ -56,10 +56,10 @@ export default function NewCertificatePage() {
       try {
         const [templatesRes, clientsRes] = await Promise.all([
           listTemplates({ is_active: true }),
-          listClients({ limit: 100 }),
+          listClientProfiles({ limit: 100 }),
         ]);
         setTemplates(templatesRes.templates);
-        setClients(clientsRes.clients);
+        setClients(clientsRes.profiles);
       } catch (error) {
         console.error("Failed to load data:", error);
       }
@@ -190,7 +190,7 @@ export default function NewCertificatePage() {
                     <SelectContent>
                       {clients.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.name}
+                          {c.display_name || c.legal_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -297,7 +297,7 @@ export default function NewCertificatePage() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-96 text-muted-foreground border rounded-lg">
-                  Select a client and click "Preview Content" to see a preview
+                  Select a client and click &quot;Preview Content&quot; to see a preview
                 </div>
               )}
             </CardContent>

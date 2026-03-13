@@ -1,6 +1,18 @@
-"""API dependencies — auth + RBAC."""
+"""API dependencies — auth + RBAC.
 
-from typing import Annotated
+Role checkers mapped to the AMG Portal Design Doc (Section 02) permission matrix:
+
+  require_admin             → Managing Director only (full access, no restrictions)
+  require_rm_or_above       → Managing Director + Relationship Manager
+  require_coordinator_or_above → MD + RM + Coordinator (program execution layer)
+  require_compliance        → Finance & Compliance + Managing Director (billing, invoicing,
+                              audit logs — no program execution tools)
+  require_internal          → All four internal roles (catch-all for read-only views shared
+                              across the internal team)
+  require_partner           → Partner tier only (scoped to their own assignments)
+"""
+
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -56,7 +68,7 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 class RoleChecker:
     """Callable dependency that checks user role against allowed roles."""
 
-    def __init__(self, allowed_roles: list[UserRole]):
+    def __init__(self, allowed_roles: list[UserRole]) -> Any:
         self.allowed_roles = [r.value for r in allowed_roles]
 
     async def __call__(
