@@ -15,6 +15,7 @@ export interface ReportSchedule {
   created_by: string;
   is_active: boolean;
   last_run: string | null;
+  last_generated_document_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +91,11 @@ export async function updateReportSchedule(
 
 export async function deleteReportSchedule(id: string): Promise<void> {
   await api.delete(`/api/v1/reports/schedules/${id}`);
+}
+
+export async function executeSchedule(id: string): Promise<ReportSchedule> {
+  const response = await api.post<ReportSchedule>(`/api/v1/reports/schedules/${id}/execute`);
+  return response.data;
 }
 
 // ============================================================================

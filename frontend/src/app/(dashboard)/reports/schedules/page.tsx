@@ -7,6 +7,7 @@ import {
   useCreateReportSchedule,
   useUpdateReportSchedule,
   useDeleteReportSchedule,
+  useExecuteSchedule,
 } from "@/hooks/use-schedules";
 import type { ReportScheduleCreate } from "@/lib/api/schedules";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ export default function ReportSchedulesPage() {
   const createMutation = useCreateReportSchedule();
   const updateMutation = useUpdateReportSchedule();
   const deleteMutation = useDeleteReportSchedule();
+  const executeMutation = useExecuteSchedule();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [formData, setFormData] = React.useState<ReportScheduleCreate>({
@@ -311,6 +313,7 @@ export default function ReportSchedulesPage() {
                   <TableHead>Format</TableHead>
                   <TableHead>Next Run</TableHead>
                   <TableHead>Last Run</TableHead>
+                  <TableHead>Last Document</TableHead>
                   <TableHead>Recipients</TableHead>
                   <TableHead>Active</TableHead>
                   <TableHead>Actions</TableHead>
@@ -327,6 +330,11 @@ export default function ReportSchedulesPage() {
                     <TableCell className="text-sm">{formatDate(schedule.next_run)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(schedule.last_run)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">
+                      {schedule.last_generated_document_id
+                        ? schedule.last_generated_document_id.slice(0, 8) + "…"
+                        : "None"}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -351,20 +359,30 @@ export default function ReportSchedulesPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(schedule.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        Delete
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => executeMutation.mutate(schedule.id)}
+                          disabled={executeMutation.isPending}
+                        >
+                          {executeMutation.isPending ? "Running…" : "Execute Now"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(schedule.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!schedules || schedules.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground">
                       No report schedules found. Create one to get started.
                     </TableCell>
                   </TableRow>

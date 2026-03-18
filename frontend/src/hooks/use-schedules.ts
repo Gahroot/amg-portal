@@ -7,6 +7,7 @@ import {
   createReportSchedule,
   updateReportSchedule,
   deleteReportSchedule,
+  executeSchedule,
   getClientPreferences,
   updateClientPreferences,
   getEngagementHistory,
@@ -65,6 +66,21 @@ export function useDeleteReportSchedule() {
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Failed to delete schedule";
+      toast.error(message);
+    },
+  });
+}
+
+export function useExecuteSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => executeSchedule(id),
+    onSuccess: () => {
+      toast.success("Report generated successfully");
+      queryClient.invalidateQueries({ queryKey: ["report-schedules"] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Failed to execute schedule";
       toast.error(message);
     },
   });

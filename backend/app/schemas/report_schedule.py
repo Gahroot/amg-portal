@@ -41,6 +41,7 @@ class ReportScheduleResponse(BaseModel):
     created_by: UUID
     is_active: bool
     last_run: datetime | None
+    last_generated_document_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,9 +1,11 @@
 """Report endpoints — client-facing reports with CSV and PDF export."""
 
+import contextlib
 import csv
 import io
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -12,16 +14,22 @@ from sqlalchemy import select
 from app.api.deps import (
     DB,
     CurrentUser,
+    require_compliance,
     require_internal,
+    require_rm_or_above,
 )
 from app.api.v1.client_portal import require_client
 from app.models.client import Client
+from app.models.enums import UserRole
 from app.models.report_schedule import ReportSchedule
 from app.schemas.report import (
     AnnualReviewReport,
     CompletionReport,
+    ComplianceAuditReport,
+    EscalationLogReport,
     PortfolioOverviewReport,
     ProgramStatusReport,
+    RMPortfolioReport,
 )
 from app.schemas.report_schedule import (
     ReportScheduleCreate,
@@ -733,19 +741,19 @@ async def create_report_schedule(
     """Create a new report schedule."""
     if body.report_type not in VALID_REPORT_TYPES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
                 f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_REPORT_TYPES))}"
             ),
         )
     if body.frequency not in VALID_FREQUENCIES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"),
         )
     if body.format not in VALID_FORMATS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
         )
 
@@ -801,7 +809,7 @@ async def update_report_schedule(
     if body.frequency is not None:
         if body.frequency not in VALID_FREQUENCIES:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
                 ),
@@ -813,7 +821,7 @@ async def update_report_schedule(
     if body.format is not None:
         if body.format not in VALID_FORMATS:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
             )
         schedule.format = body.format
@@ -846,3 +854,158 @@ async def delete_report_schedule(
 
     await db.delete(schedule)
     await db.commit()
+
+
+@router.post(
+    "/schedules/{schedule_id}/execute",
+    response_model=ReportScheduleResponse,
+    dependencies=[Depends(require_rm_or_above)],
+)
+async def execute_report_schedule(
+    schedule_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+) -> ReportSchedule:
+    """Manually trigger execution of a report schedule."""
+    from app.services.email_service import send_email_with_attachment
+    from app.services.report_generator_service import (
+        _generate_attachment_bytes,
+        _get_report_data,
+        generate_report_for_schedule,
+    )
+
+    result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Schedule not found",
+        )
+
+    doc = await generate_report_for_schedule(db, schedule)
+    if doc is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Could not generate report — no data available for this schedule.",
+        )
+
+    now = datetime.now(UTC)
+    schedule.last_run = now
+    schedule.last_generated_document_id = doc.id
+    await db.commit()
+    await db.refresh(schedule)
+
+    # Email the report to recipients in background (best-effort)
+    report_data = await _get_report_data(schedule, db)
+    if report_data:
+        attachment_bytes = _generate_attachment_bytes(schedule, report_data)
+        ext = schedule.format or "pdf"
+        content_type = "application/pdf" if ext == "pdf" else "text/csv"
+        subject = (
+            f"AMG Portal — Scheduled Report: "
+            f"{schedule.report_type.replace('_', ' ').title()}"
+        )
+        body_html = (
+            "<html><body>"
+            "<h2>Scheduled Report</h2>"
+            "<p>Please find your scheduled "
+            f"{schedule.report_type.replace('_', ' ')} "
+            "report attached.</p>"
+            "<p>Best regards,<br>AMG Portal</p>"
+            "</body></html>"
+        )
+        recipients: list[str] = schedule.recipients or []
+        for recipient in recipients:
+            with contextlib.suppress(Exception):
+                await send_email_with_attachment(
+                    to=recipient,
+                    subject=subject,
+                    body_html=body_html,
+                    attachment=attachment_bytes,
+                    attachment_filename=str(doc.file_name),
+                    attachment_content_type=content_type,
+                )
+
+    return schedule
+
+
+# ---------------------------------------------------------------------------
+# Class B — Internal operational reports
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/rm-portfolio",
+    response_model=RMPortfolioReport,
+    dependencies=[Depends(require_rm_or_above)],
+)
+async def get_rm_portfolio_report_endpoint(
+    db: DB,
+    current_user: CurrentUser,
+    rm_id: uuid.UUID | None = Query(None, description="RM User ID (MD only; omit to use own)"),
+) -> dict[str, Any]:
+    """
+    RM portfolio report for MD review.
+
+    RMs always see their own portfolio. MDs may pass rm_id to view any RM's portfolio.
+    """
+    if current_user.role == UserRole.relationship_manager.value:
+        effective_rm_id = current_user.id
+    elif rm_id is not None:
+        effective_rm_id = rm_id
+    else:
+        effective_rm_id = current_user.id
+
+    report = await report_service.get_rm_portfolio_report(db, effective_rm_id)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="RM not found",
+        )
+    return report
+
+
+@router.get(
+    "/escalation-log",
+    response_model=EscalationLogReport,
+    dependencies=[Depends(require_internal)],
+)
+async def get_escalation_log_report_endpoint(
+    db: DB,
+    current_user: CurrentUser,
+    program_id: uuid.UUID | None = Query(None, description="Filter by program"),
+    client_id: uuid.UUID | None = Query(None, description="Filter by client"),
+    level: str | None = Query(None, description="Filter by escalation level"),
+    esc_status: str | None = Query(None, alias="status", description="Filter by status"),
+) -> dict[str, Any]:
+    """
+    Escalation log report with age, owner, and resolution metrics.
+
+    Filterable by program, client, level, and status.
+    """
+    report = await report_service.get_escalation_log_report(
+        db,
+        program_id=program_id,
+        client_id=client_id,
+        level=level,
+        status_filter=esc_status,
+    )
+    return report
+
+
+@router.get(
+    "/compliance",
+    response_model=ComplianceAuditReport,
+    dependencies=[Depends(require_compliance)],
+)
+async def get_compliance_audit_report_endpoint(
+    db: DB,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """
+    Compliance audit report covering KYC status, access anomalies, and user accounts.
+
+    Accessible by finance_compliance and managing_director roles only.
+    """
+    report = await report_service.get_compliance_audit_report(db)
+    return report

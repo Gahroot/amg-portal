@@ -34,6 +34,11 @@ class ReportSchedule(Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     last_run: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_generated_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
@@ -47,6 +52,7 @@ class ReportSchedule(Base):
     )
 
     creator = relationship("User", foreign_keys=[created_by])
+    last_generated_document = relationship("Document", foreign_keys=[last_generated_document_id])
 
     def __repr__(self) -> str:
         return f"<ReportSchedule(id={self.id}, type={self.report_type}, freq={self.frequency})>"

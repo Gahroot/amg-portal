@@ -21,7 +21,11 @@ _scheduler: AsyncIOScheduler | None = None
 
 
 async def _check_sla_breaches_job() -> None:
-    """Periodic job: check and update SLA breach statuses."""
+    """Periodic job: check and update SLA breach statuses, then notify on new breaches."""
+    from app.models.enums import SLABreachStatus
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
     from app.services.sla_service import check_sla_breaches
 
     logger.info("Running SLA breach check job")
@@ -32,35 +36,232 @@ async def _check_sla_breaches_job() -> None:
                 "SLA breach check complete — %d trackers updated",
                 len(updated),
             )
+
+            # Notify assigned user and managing directors for trackers that just breached
+            newly_breached = [
+                t for t in updated if t.breach_status == SLABreachStatus.breached.value
+            ]
+            if not newly_breached:
+                return
+
+            # Fetch managing directors once
+            md_result = await db.execute(
+                select(User.id).where(
+                    User.role == "managing_director",
+                    User.status == "active",
+                )
+            )
+            md_ids = list(md_result.scalars().all())
+
+            for tracker in newly_breached:
+                entity_label = f"{tracker.entity_type} {tracker.entity_id}"
+
+                # Notify the assigned user
+                await notification_service.create_notification(
+                    db,
+                    CreateNotificationRequest(
+                        user_id=tracker.assigned_to,
+                        notification_type="system",
+                        title="SLA Breached — response overdue",
+                        body=(
+                            f"The {tracker.sla_hours}h response SLA for a "
+                            f"{tracker.communication_type.replace('_', ' ')} "
+                            f"on {entity_label} has been breached. "
+                            "Please respond immediately."
+                        ),
+                        priority="urgent",
+                    ),
+                )
+
+                # Notify managing directors (skip if they happen to be the assignee)
+                for md_id in md_ids:
+                    if md_id == tracker.assigned_to:
+                        continue
+                    await notification_service.create_notification(
+                        db,
+                        CreateNotificationRequest(
+                            user_id=md_id,
+                            notification_type="system",
+                            title=f"SLA Breach Alert — {tracker.communication_type}",
+                            body=(
+                                f"A {tracker.sla_hours}h SLA for a "
+                                f"{tracker.communication_type.replace('_', ' ')} "
+                                f"on {entity_label} has been breached. "
+                                f"Assigned to user {tracker.assigned_to}."
+                            ),
+                            priority="high",
+                        ),
+                    )
+
+            logger.info(
+                "SLA breach notifications sent for %d newly breached tracker(s)",
+                len(newly_breached),
+            )
     except Exception:
         logger.exception("Error in SLA breach check job")
 
 
 async def _check_milestone_risks_job() -> None:
-    """Periodic job: check milestones for risk and escalate."""
-    from app.services.escalation_service import (
-        check_and_escalate_milestone_risk,
-    )
+    """Periodic job: check milestones for risk and escalate.
+
+    Targets milestones that are at risk:
+    - due_date is within 48 hours and not completed (approaching)
+    - due_date is past and not completed (overdue)
+
+    Escalation levels:
+    - Approaching or < 7 days overdue: task level (Coordinator)
+    - >= 7 days overdue: milestone level (RM)
+
+    Per design doc Section 03 Phase 3 Step 15 and Section 05 Steps 21-22:
+    - Escalation workflows trigger automatically when milestones are at risk
+    - RM alerted within the portal
+    """
+    from datetime import date, timedelta
+
+    from sqlalchemy.orm import selectinload
+
+    from app.models.enums import EscalationLevel, EscalationStatus
+    from app.models.escalation import Escalation
+    from app.models.program import Program
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.escalation_service import create_escalation
+    from app.services.notification_service import notification_service
 
     logger.info("Running milestone risk check job")
     try:
+        today = date.today()
+        approaching_cutoff = today + timedelta(days=2)  # 48 hours
+
         async with AsyncSessionLocal() as db:
+            # Query milestones that are at risk (approaching or overdue)
+            # with related program and client for RM lookup
             result = await db.execute(
-                select(Milestone.id).where(Milestone.status.notin_(["completed", "cancelled"]))
+                select(Milestone)
+                .options(
+                    selectinload(Milestone.program).selectinload(Program.client),
+                )
+                .where(
+                    Milestone.status.notin_(["completed", "cancelled"]),
+                    Milestone.due_date.isnot(None),
+                    Milestone.due_date <= approaching_cutoff,
+                )
             )
-            milestone_ids = result.scalars().all()
+            milestones = result.scalars().all()
 
-        for milestone_id in milestone_ids:
-            try:
-                async with AsyncSessionLocal() as db:
-                    await check_and_escalate_milestone_risk(db, milestone_id)
-            except Exception:
-                logger.exception("Error escalating milestone %s", milestone_id)
+            # Get system user once for all escalations
+            system_user_result = await db.execute(
+                select(User).where(User.email == "system@amg.portal").limit(1)
+            )
+            system_user = system_user_result.scalar_one_or_none()
+            if system_user is None:
+                fallback_result = await db.execute(select(User).limit(1))
+                system_user = fallback_result.scalar_one_or_none()
 
-        logger.info(
-            "Milestone risk check complete — %d milestones checked",
-            len(milestone_ids),
-        )
+            if system_user is None:
+                logger.error("No users found — cannot create escalations")
+                return
+
+            escalations_created = 0
+            notifications_sent = 0
+
+            for milestone in milestones:
+                try:
+                    # Calculate risk metrics
+                    days_until_due = (milestone.due_date - today).days
+                    is_overdue = days_until_due < 0
+                    is_severely_overdue = days_until_due < -7
+
+                    # Determine escalation level per requirements
+                    if is_severely_overdue:
+                        level = EscalationLevel.milestone
+                    else:
+                        level = EscalationLevel.task
+
+                    # Check for existing active escalation (deduplication)
+                    existing_result = await db.execute(
+                        select(Escalation).where(
+                            Escalation.entity_type == "milestone",
+                            Escalation.entity_id == str(milestone.id),
+                            Escalation.status.in_([
+                                EscalationStatus.open.value,
+                                EscalationStatus.acknowledged.value,
+                            ]),
+                        )
+                    )
+                    if existing_result.scalar_one_or_none() is not None:
+                        continue  # Skip — active escalation already exists
+
+                    # Create escalation record
+                    level_label = "severely overdue" if is_severely_overdue else ("overdue" if is_overdue else "at risk")
+                    escalation = await create_escalation(
+                        db=db,
+                        entity_type="milestone",
+                        entity_id=str(milestone.id),
+                        level=level,
+                        triggered_by=system_user,
+                        title=f"Milestone {level_label}: {milestone.title}",
+                        description=(
+                            f"Milestone '{milestone.title}' is {level_label}. "
+                            f"Due date: {milestone.due_date}"
+                        ),
+                        risk_factors={
+                            "days_until_due": days_until_due,
+                            "overdue": is_overdue,
+                            "severely_overdue": is_severely_overdue,
+                        },
+                        program_id=milestone.program_id,
+                    )
+                    escalations_created += 1
+
+                    # Dispatch in-portal notification to RM
+                    rm_id: uuid.UUID | None = None
+                    if milestone.program and milestone.program.client:
+                        rm_id = milestone.program.client.rm_id
+
+                    if rm_id:
+                        due_label = "overdue" if is_overdue else f"due {milestone.due_date}"
+                        await notification_service.create_notification(
+                            db,
+                            CreateNotificationRequest(
+                                user_id=rm_id,
+                                notification_type="milestone_update",
+                                title=f"Milestone at risk: {milestone.title}",
+                                body=(
+                                    f"Milestone '{milestone.title}' is {due_label}. "
+                                    f"An escalation has been raised (ref: {escalation.id}). "
+                                    "Please review and take action."
+                                ),
+                                priority="high",
+                                entity_type="milestone",
+                                entity_id=milestone.id,
+                            ),
+                        )
+                        notifications_sent += 1
+                    else:
+                        logger.warning(
+                            "No RM found for milestone %s — notification skipped",
+                            milestone.id,
+                        )
+
+                    logger.info(
+                        "Created %s level escalation %s for milestone %s (%s)",
+                        level.value,
+                        escalation.id,
+                        milestone.id,
+                        level_label,
+                    )
+
+                except Exception:
+                    logger.exception("Error escalating milestone %s", milestone.id)
+
+            logger.info(
+                "Milestone risk check complete — %d milestones checked, "
+                "%d escalations created, %d notifications sent",
+                len(milestones),
+                escalations_created,
+                notifications_sent,
+            )
     except Exception:
         logger.exception("Error in milestone risk check job")
 
@@ -279,11 +480,13 @@ async def _check_partner_threshold_alerts_job() -> None:
 
 
 async def _process_report_schedules_job() -> None:
-    """Daily job: process scheduled reports and email them."""
+    """Daily job: process scheduled reports, store in MinIO, and email them."""
     from app.models.report_schedule import ReportSchedule
     from app.services.email_service import send_email_with_attachment
-    from app.services.pdf_service import pdf_service
-    from app.services.report_service import report_service
+    from app.services.report_generator_service import (
+        _generate_attachment_bytes,
+        generate_report_for_schedule,
+    )
 
     logger.info("Running report schedules job")
     try:
@@ -306,16 +509,38 @@ async def _process_report_schedules_job() -> None:
 
         for schedule in schedules:
             try:
-                report_data = await _get_report_data(report_service, schedule)
-                if report_data is None:
-                    logger.warning("No data for schedule %s", schedule.id)
-                    continue
+                async with AsyncSessionLocal() as db:
+                    # Re-fetch schedule within this session
+                    sched_result = await db.execute(
+                        select(ReportSchedule).where(ReportSchedule.id == schedule.id)
+                    )
+                    sched = sched_result.scalar_one()
 
-                attachment_bytes = _generate_report_attachment(pdf_service, schedule, report_data)
-                ext = schedule.format or "pdf"
-                content_type = "application/pdf" if ext == "pdf" else "text/csv"
-                filename = f"{schedule.report_type}_{now.strftime('%Y%m%d')}.{ext}"
+                    doc = await generate_report_for_schedule(db, sched)
+                    if doc is None:
+                        continue
 
+                    # Read the attachment bytes for emailing
+                    from app.services.report_generator_service import _get_report_data
+
+                    report_data = await _get_report_data(sched, db)
+                    attachment_bytes = (
+                        _generate_attachment_bytes(sched, report_data)
+                        if report_data
+                        else b""
+                    )
+
+                    ext = sched.format or "pdf"
+                    content_type = "application/pdf" if ext == "pdf" else "text/csv"
+                    filename = str(doc.file_name)
+
+                    # Update schedule fields
+                    sched.last_run = now
+                    sched.next_run = _calculate_next_run(sched.frequency, now)
+                    sched.last_generated_document_id = doc.id
+                    await db.commit()
+
+                # Email the attachment to recipients
                 subject = (
                     f"AMG Portal — Scheduled Report: "
                     f"{schedule.report_type.replace('_', ' ').title()}"
@@ -347,16 +572,6 @@ async def _process_report_schedules_job() -> None:
                             recipient,
                             schedule.id,
                         )
-
-                # Update last_run and next_run
-                async with AsyncSessionLocal() as db:
-                    result = await db.execute(
-                        select(ReportSchedule).where(ReportSchedule.id == schedule.id)
-                    )
-                    sched = result.scalar_one()
-                    sched.last_run = now
-                    sched.next_run = _calculate_next_run(schedule.frequency, now)
-                    await db.commit()
 
             except Exception:
                 logger.exception(
@@ -462,6 +677,7 @@ async def _quarterly_audit_reminder_job() -> None:
     from app.models.access_audit import AccessAudit
     from app.models.user import User
     from app.schemas.notification import CreateNotificationRequest
+    from app.services.access_audit_service import access_audit_service
     from app.services.notification_service import notification_service
 
     logger.info("Running quarterly audit reminder job")
@@ -479,6 +695,16 @@ async def _quarterly_audit_reminder_job() -> None:
                 )
             )
             existing_audit = result.scalar_one_or_none()
+
+            # Count dormant accounts to include in notifications
+            dormant_users = await access_audit_service.detect_dormant_accounts(db)
+            dormant_count = len(dormant_users)
+            dormant_suffix = (
+                f" There are currently {dormant_count} dormant account(s) "
+                "that require review."
+                if dormant_count > 0
+                else ""
+            )
 
             # Get compliance users
             compliance_result = await db.execute(
@@ -498,7 +724,7 @@ async def _quarterly_audit_reminder_job() -> None:
             )
             md_ids = md_result.scalars().all()
 
-            all_recipients = list(set(compliance_ids + md_ids))
+            all_recipients = list(set(list(compliance_ids) + list(md_ids)))
 
             if not existing_audit:
                 # No audit exists - send reminder to create one
@@ -508,10 +734,16 @@ async def _quarterly_audit_reminder_job() -> None:
                         CreateNotificationRequest(
                             user_id=user_id,
                             notification_type="system",
-                            title=f"Q{current_quarter} {current_year} Access Audit Required",
+                            title=(
+                                f"Q{current_quarter} {current_year}"
+                                " Access Audit Required"
+                            ),
                             body=(
-                                f"The Q{current_quarter} {current_year} quarterly access audit has not been started. "
-                                "Please initiate the audit to ensure compliance with access review policies."
+                                f"The Q{current_quarter} {current_year}"
+                                " quarterly access audit has not been"
+                                " started. Please initiate the audit to"
+                                " ensure compliance with access review"
+                                f" policies.{dormant_suffix}"
                             ),
                             priority="high",
                             action_url="/access-audits",
@@ -519,10 +751,12 @@ async def _quarterly_audit_reminder_job() -> None:
                         ),
                     )
                 logger.info(
-                    "Quarterly audit reminder sent to %d users for Q%d %d",
+                    "Quarterly audit reminder sent to %d users for Q%d %d "
+                    "(%d dormant accounts detected)",
                     len(all_recipients),
                     current_quarter,
                     current_year,
+                    dormant_count,
                 )
             elif existing_audit.status == "draft":
                 # Audit started but not completed
@@ -532,10 +766,16 @@ async def _quarterly_audit_reminder_job() -> None:
                         CreateNotificationRequest(
                             user_id=user_id,
                             notification_type="system",
-                            title=f"Q{current_quarter} {current_year} Access Audit Incomplete",
+                            title=(
+                                f"Q{current_quarter} {current_year}"
+                                " Access Audit Incomplete"
+                            ),
                             body=(
-                                f"The Q{current_quarter} {current_year} quarterly access audit is still in draft status. "
-                                "Please complete the audit findings and finalize the report."
+                                f"The Q{current_quarter} {current_year}"
+                                " quarterly access audit is still in"
+                                " draft status. Please complete the"
+                                " audit findings and finalize the"
+                                f" report.{dormant_suffix}"
                             ),
                             priority="normal",
                             action_url=f"/access-audits/{existing_audit.id}",
@@ -543,10 +783,12 @@ async def _quarterly_audit_reminder_job() -> None:
                         ),
                     )
                 logger.info(
-                    "Audit completion reminder sent to %d users for Q%d %d",
+                    "Audit completion reminder sent to %d users for Q%d %d "
+                    "(%d dormant accounts detected)",
                     len(all_recipients),
                     current_quarter,
                     current_year,
+                    dormant_count,
                 )
             else:
                 logger.info(
@@ -556,6 +798,272 @@ async def _quarterly_audit_reminder_job() -> None:
                 )
     except Exception:
         logger.exception("Error in quarterly audit reminder job")
+
+
+async def _check_data_retention_job() -> None:
+    """Daily job: notify compliance team of programs eligible for archival.
+
+    If AUTO_ARCHIVE_PROGRAMS is enabled, automatically archives eligible
+    programs up to ARCHIVE_BATCH_SIZE per run.  Otherwise, sends an
+    in-portal notification so the compliance team can review and manually
+    trigger archival via POST /api/v1/programs/{id}/archive.
+    """
+    from app.models.enums import UserRole
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.archival_service import archive_program, get_archival_candidates
+    from app.services.notification_service import notification_service
+
+    logger.info("Running data retention / archival check job")
+    try:
+        async with AsyncSessionLocal() as db:
+            candidate_list = await get_archival_candidates(db)
+
+        if not candidate_list.candidates:
+            logger.info("Data retention check: no programs eligible for archival")
+            return
+
+        logger.info(
+            "Data retention check: %d program(s) eligible for archival",
+            candidate_list.total,
+        )
+
+        if settings.AUTO_ARCHIVE_PROGRAMS:
+            # Auto-archive each eligible program
+            for candidate in candidate_list.candidates:
+                try:
+                    async with AsyncSessionLocal() as db:
+                        await archive_program(db, candidate.program_id)
+                    logger.info(
+                        "Auto-archived program %s ('%s')",
+                        candidate.program_id,
+                        candidate.title,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Error auto-archiving program %s",
+                        candidate.program_id,
+                    )
+        else:
+            # Notify compliance users and MDs to review
+            async with AsyncSessionLocal() as db:
+                compliance_result = await db.execute(
+                    select(User.id).where(
+                        User.role.in_(
+                            [UserRole.finance_compliance.value, UserRole.managing_director.value]
+                        ),
+                        User.status == "active",
+                    )
+                )
+                recipient_ids = compliance_result.scalars().all()
+
+            program_titles = ", ".join(
+                f"'{c.title}'" for c in candidate_list.candidates[:5]
+            )
+            if candidate_list.total > 5:
+                program_titles += f" and {candidate_list.total - 5} more"
+
+            for user_id in recipient_ids:
+                try:
+                    async with AsyncSessionLocal() as db:
+                        await notification_service.create_notification(
+                            db,
+                            CreateNotificationRequest(
+                                user_id=user_id,
+                                notification_type="system",
+                                title=(
+                                    f"Data Retention: {candidate_list.total} program(s) "
+                                    "eligible for archival"
+                                ),
+                                body=(
+                                    f"{candidate_list.total} closed program(s) have exceeded "
+                                    f"the {settings.DATA_RETENTION_DAYS}-day retention period "
+                                    f"and are ready to be archived: {program_titles}. "
+                                    "Review and archive via the Archival Candidates page."
+                                ),
+                                priority="normal",
+                                action_url="/programs/archival-candidates",
+                                action_label="Review Candidates",
+                            ),
+                        )
+                except Exception:
+                    logger.exception(
+                        "Error sending archival notification to user %s",
+                        user_id,
+                    )
+
+            logger.info(
+                "Data retention check: notified %d user(s) about %d eligible program(s)",
+                len(recipient_ids),
+                candidate_list.total,
+            )
+    except Exception:
+        logger.exception("Error in data retention check job")
+
+
+async def _check_kyc_expiry_job() -> None:
+    """Daily job: check KYC documents for expiry and notify relevant users.
+
+    Per design doc Section 08: "Monthly compliance review: KYC expiry dates,
+    document completeness, access anomaly reports."
+
+    Creates alerts for:
+    - Documents expiring within 30 days → "warning" alert
+    - Documents expiring within 7 days → "urgent" alert
+    - Already expired documents → "expired" alert
+
+    Notifications go to the assigned RM and Finance & Compliance users.
+    """
+    from datetime import date, timedelta
+
+    from sqlalchemy.orm import selectinload
+
+    from app.models.client import Client
+    from app.models.enums import UserRole
+    from app.models.kyc_document import KYCDocument
+    from app.models.notification import Notification
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
+
+    logger.info("Running KYC expiry check job")
+    try:
+        today = date.today()
+        warning_cutoff = today + timedelta(days=30)
+        urgent_cutoff = today + timedelta(days=7)
+
+        async with AsyncSessionLocal() as db:
+            # Query verified KYC documents with expiry dates within 30 days or already expired
+            result = await db.execute(
+                select(KYCDocument)
+                .options(
+                    selectinload(KYCDocument.client).selectinload(Client.rm),
+                )
+                .where(
+                    KYCDocument.expiry_date.isnot(None),
+                    KYCDocument.expiry_date <= warning_cutoff,
+                    KYCDocument.status == "verified",
+                )
+            )
+            kyc_docs = result.scalars().all()
+
+            if not kyc_docs:
+                logger.info("KYC expiry check: no documents expiring within 30 days")
+                return
+
+            # Get Finance & Compliance users
+            fc_result = await db.execute(
+                select(User.id).where(
+                    User.role == UserRole.finance_compliance.value,
+                    User.status == "active",
+                )
+            )
+            fc_user_ids = list(fc_result.scalars().all())
+
+            warning_count = 0
+            urgent_count = 0
+            expired_count = 0
+            notifications_sent = 0
+
+            for kyc_doc in kyc_docs:
+                try:
+                    expiry_date = kyc_doc.expiry_date
+                    if expiry_date is None:
+                        continue
+
+                    days_until_expiry = (expiry_date - today).days
+                    client_name = kyc_doc.client.name if kyc_doc.client else "Unknown client"
+
+                    # Determine alert category and priority
+                    if days_until_expiry <= 0:
+                        alert_category = "expired"
+                        priority = "urgent"
+                        expiry_label = "has expired"
+                        expired_count += 1
+                    elif days_until_expiry <= 7:
+                        alert_category = "urgent"
+                        priority = "urgent"
+                        expiry_label = f"expires in {days_until_expiry} day(s)"
+                        urgent_count += 1
+                    else:
+                        alert_category = "warning"
+                        priority = "high"
+                        expiry_label = f"expires in {days_until_expiry} day(s)"
+                        warning_count += 1
+
+                    # Check for existing notification to avoid duplicates
+                    # Look for notification with same entity and category within last 7 days
+                    existing_result = await db.execute(
+                        select(Notification).where(
+                            Notification.entity_type == "kyc_document",
+                            Notification.entity_id == kyc_doc.id,
+                            Notification.title.contains(client_name),
+                            Notification.created_at
+                            >= datetime.now() - timedelta(days=7),
+                        )
+                    )
+                    if existing_result.scalar_one_or_none() is not None:
+                        logger.debug(
+                            "Skipping duplicate KYC expiry notification for doc %s",
+                            kyc_doc.id,
+                        )
+                        continue
+
+                    # Build notification content
+                    title = f"KYC Document Expiry: {kyc_doc.document_type.replace('_', ' ').title()} ({client_name})"
+                    body = (
+                        f"The KYC document '{kyc_doc.document_type.replace('_', ' ').title()}' "
+                        f"for client {client_name} {expiry_label} "
+                        f"(expiry date: {expiry_date}). "
+                        f"Please take appropriate action to ensure compliance."
+                    )
+
+                    # Collect recipient IDs: RM + Finance & Compliance users
+                    recipient_ids: set = set(fc_user_ids)
+                    if kyc_doc.client and kyc_doc.client.rm_id:
+                        recipient_ids.add(kyc_doc.client.rm_id)
+
+                    for user_id in recipient_ids:
+                        await notification_service.create_notification(
+                            db,
+                            CreateNotificationRequest(
+                                user_id=user_id,
+                                notification_type="kyc_expiry",
+                                title=title,
+                                body=body,
+                                priority=priority,
+                                entity_type="kyc_document",
+                                entity_id=kyc_doc.id,
+                                action_url=f"/kyc/verifications/{kyc_doc.id}?client={kyc_doc.client_id}",
+                                action_label="View Document",
+                            ),
+                        )
+                        notifications_sent += 1
+
+                    logger.info(
+                        "Created %s KYC expiry alert for doc %s (client: %s, expires: %s)",
+                        alert_category,
+                        kyc_doc.id,
+                        client_name,
+                        expiry_date,
+                    )
+
+                except Exception:
+                    logger.exception(
+                        "Error processing KYC expiry for document %s",
+                        kyc_doc.id,
+                    )
+
+            logger.info(
+                "KYC expiry check complete — %d warning, %d urgent, %d expired, "
+                "%d notifications sent",
+                warning_count,
+                urgent_count,
+                expired_count,
+                notifications_sent,
+            )
+    except Exception:
+        logger.exception("Error in KYC expiry check job")
 
 
 async def _get_report_data(svc: object, schedule: "ReportSchedule") -> dict[str, object] | None:
@@ -637,6 +1145,75 @@ def _calculate_next_run(
     elif frequency == "monthly":
         return from_time + timedelta(days=30)
     return from_time + timedelta(days=1)
+
+
+async def _run_predictive_alerts_job() -> None:
+    """Periodic job: run predictive risk scoring and notify RMs of at-risk milestones."""
+    from app.models.program import Program
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
+    from app.services.predictive_service import get_at_risk_milestones
+
+    logger.info("Running predictive alerts job")
+    try:
+        async with AsyncSessionLocal() as db:
+            at_risk = await get_at_risk_milestones(db)
+            if not at_risk:
+                logger.info("No at-risk milestones found by predictive alerts")
+                return
+
+            logger.info("Predictive alerts found %d at-risk milestones", len(at_risk))
+
+            # Group by program to send consolidated notifications
+            programs_notified: set[str] = set()
+
+            for risk in at_risk:
+                program_key = str(risk.program_id)
+                if program_key in programs_notified:
+                    continue
+                programs_notified.add(program_key)
+
+                # Find the RM for this program's client
+                program = await db.get(Program, risk.program_id)
+                if not program:
+                    continue
+
+                from sqlalchemy.orm import selectinload
+
+                from app.models.client import Client
+
+                result = await db.execute(
+                    select(Client)
+                    .options(selectinload(Client.rm))
+                    .where(Client.id == program.client_id)
+                )
+                client = result.scalar_one_or_none()
+                if not client or not client.rm_id:
+                    continue
+
+                await notification_service.create_notification(
+                    db,
+                    CreateNotificationRequest(
+                        user_id=client.rm_id,
+                        notification_type="milestone_risk",
+                        title="Predictive Alert: At-Risk Milestone",
+                        body=(
+                            f"Program '{risk.program_title}' has milestone "
+                            f"'{risk.milestone_title}' with risk score {risk.risk_score}. "
+                            f"Risk factors: {', '.join(risk.risk_factors)}"
+                        ),
+                        priority="high" if risk.risk_score >= 85 else "medium",
+                        action_url=f"/programs/{risk.program_id}",
+                        action_label="View Program",
+                    ),
+                )
+
+            await db.commit()
+            logger.info(
+                "Predictive alerts sent for %d programs", len(programs_notified)
+            )
+    except Exception:
+        logger.exception("Error running predictive alerts job")
 
 
 def start_scheduler() -> AsyncIOScheduler | None:
@@ -737,6 +1314,37 @@ def start_scheduler() -> AsyncIOScheduler | None:
         minute=0,
         id="quarterly_audit_reminder",
         name="Quarterly audit reminder",
+        replace_existing=True,
+    )
+
+    _scheduler.add_job(
+        _check_data_retention_job,
+        "cron",
+        hour=7,
+        minute=0,
+        id="check_data_retention",
+        name="Check data retention / archival",
+        replace_existing=True,
+    )
+
+    _scheduler.add_job(
+        _check_kyc_expiry_job,
+        "cron",
+        hour=6,
+        minute=30,
+        id="check_kyc_expiry",
+        name="Check KYC document expiry",
+        replace_existing=True,
+    )
+
+    # Add predictive alerts job - runs daily at 7:00 AM
+    _scheduler.add_job(
+        _run_predictive_alerts_job,
+        "cron",
+        hour=7,
+        minute=0,
+        id="run_predictive_alerts",
+        name="Run predictive alerts",
         replace_existing=True,
     )
 
