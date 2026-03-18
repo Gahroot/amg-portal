@@ -53,6 +53,7 @@ class ProgramStatus(StrEnum):
 class MilestoneStatus(StrEnum):
     pending = "pending"
     in_progress = "in_progress"
+    at_risk = "at_risk"
     completed = "completed"
     cancelled = "cancelled"
 
@@ -240,6 +241,16 @@ class MessageStatus(StrEnum):
     archived = "archived"
 
 
+class CommunicationApprovalStatus(StrEnum):
+    """Approval workflow status for communications"""
+
+    draft = "draft"
+    pending_review = "pending_review"
+    approved = "approved"
+    rejected = "rejected"
+    sent = "sent"
+
+
 class ConversationType(StrEnum):
     """Type of conversation thread"""
 
@@ -398,3 +409,35 @@ class NPSFollowUpActionType(StrEnum):
     service_review = "service_review"
     management_intervention = "management_intervention"
     process_improvement = "process_improvement"
+
+
+class SecurityProfileLevel(StrEnum):
+    """Security profile level for client profiles.
+
+    Governs access to security & intelligence feed data:
+      - standard:  No security feed integration.
+      - elevated:  Basic threat monitoring; travel advisories available.
+      - executive: Full intelligence feed; discreet threat monitoring for
+                   program planning (Phase 2 integration).
+    """
+
+    standard = "standard"
+    elevated = "elevated"
+    executive = "executive"
+
+
+class CommunicationLogChannel(StrEnum):
+    """Channel type for communication logs"""
+
+    email = "email"
+    phone = "phone"
+    video_call = "video_call"
+    in_person = "in_person"
+    letter = "letter"
+
+
+class CommunicationLogDirection(StrEnum):
+    """Direction of communication"""
+
+    inbound = "inbound"
+    outbound = "outbound"
