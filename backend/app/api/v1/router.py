@@ -8,9 +8,11 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.budget_approvals import router as budget_approvals_router
 from app.api.v1.capability_reviews import router as capability_reviews_router
 from app.api.v1.clearance_certificates import router as clearance_certificates_router
+from app.api.v1.client_communication_preferences import router as client_comm_prefs_router
 from app.api.v1.client_portal import router as client_portal_router
 from app.api.v1.client_preferences import router as client_preferences_router
 from app.api.v1.clients import router as clients_router
+from app.api.v1.communication_audit import router as communication_audit_router
 from app.api.v1.communication_logs import router as communication_logs_router
 from app.api.v1.communication_templates import router as communication_templates_router
 from app.api.v1.communications import router as communications_router
@@ -24,10 +26,12 @@ from app.api.v1.escalations import router as escalations_router
 from app.api.v1.family_members import router as family_members_router
 from app.api.v1.intake import router as intake_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
+from app.api.v1.messaging import router as messaging_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.nps_surveys import router as nps_surveys_router
 from app.api.v1.partner_assignments import router as assignments_router
 from app.api.v1.partner_capabilities import router as partner_capabilities_router
+from app.api.v1.partner_governance import router as partner_governance_router
 from app.api.v1.partner_portal import router as partner_portal_router
 from app.api.v1.partner_scoring import router as partner_scoring_router
 from app.api.v1.partners import router as partners_router
@@ -37,6 +41,7 @@ from app.api.v1.program_closure import router as program_closure_router
 from app.api.v1.programs import router as programs_router
 from app.api.v1.push_tokens import router as push_tokens_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.scheduling import router as scheduling_router
 from app.api.v1.security_intelligence import router as security_intelligence_router
 from app.api.v1.sla import router as sla_router
 from app.api.v1.tasks import router as tasks_router
@@ -49,6 +54,11 @@ router = APIRouter()
 router.include_router(auth_router, prefix="/auth", tags=["auth"])
 router.include_router(users_router, prefix="/users", tags=["users"])
 router.include_router(clients_router, prefix="/clients", tags=["clients"])
+router.include_router(
+    client_comm_prefs_router,
+    prefix="/clients",
+    tags=["client-communication-preferences"],
+)
 router.include_router(family_members_router, tags=["family-members"])
 router.include_router(intake_router, tags=["intake"])
 router.include_router(client_portal_router, prefix="/portal", tags=["portal"])
@@ -94,6 +104,11 @@ router.include_router(escalations_router, prefix="/escalations", tags=["escalati
 router.include_router(sla_router, prefix="/sla", tags=["sla"])
 router.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
 router.include_router(communications_router, prefix="/communications", tags=["communications"])
+router.include_router(
+    communication_audit_router,
+    prefix="/audit-trail",
+    tags=["communication-audit"],
+)
 router.include_router(
     communication_logs_router,
     prefix="/communication-logs",
@@ -141,10 +156,21 @@ router.include_router(
     prefix="/performance-notices",
     tags=["performance-notices"],
 )
+router.include_router(
+    partner_governance_router,
+    prefix="/partner-governance",
+    tags=["partner-governance"],
+)
+router.include_router(messaging_router, prefix="/messaging", tags=["messaging"])
 router.include_router(travel_router, prefix="/programs", tags=["travel"])
 router.include_router(travel_webhook_router, tags=["travel-webhooks"])
 router.include_router(
     security_intelligence_router,
     prefix="/clients",
     tags=["security-intelligence"],
+)
+router.include_router(
+    scheduling_router,
+    prefix="/scheduling",
+    tags=["scheduling"],
 )

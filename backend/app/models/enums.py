@@ -199,6 +199,16 @@ class EscalationStatus(StrEnum):
     closed = "closed"
 
 
+class EscalationTriggerType(StrEnum):
+    """Trigger types for auto-escalation rules"""
+
+    sla_breach = "sla_breach"
+    milestone_overdue = "milestone_overdue"
+    budget_exceeded = "budget_exceeded"
+    task_overdue = "task_overdue"
+    manual = "manual"
+
+
 class SLABreachStatus(StrEnum):
     """SLA compliance status"""
 
@@ -441,3 +451,70 @@ class CommunicationLogDirection(StrEnum):
 
     inbound = "inbound"
     outbound = "outbound"
+
+
+class VaultStatus(StrEnum):
+    """Evidence vault document status"""
+
+    active = "active"
+    archived = "archived"
+    sealed = "sealed"
+
+
+class DeliveryMethod(StrEnum):
+    """Document delivery methods"""
+
+    portal = "portal"
+    email = "email"
+    secure_link = "secure_link"
+
+
+class EventType(StrEnum):
+    """Types of scheduled events"""
+
+    meeting = "meeting"
+    call = "call"
+    site_visit = "site_visit"
+    review = "review"
+    deadline = "deadline"
+
+
+class EventStatus(StrEnum):
+    """Status of scheduled events"""
+
+    scheduled = "scheduled"
+    confirmed = "confirmed"
+    cancelled = "cancelled"
+    completed = "completed"
+
+
+class CommunicationAuditAction(StrEnum):
+    """Actions tracked in communication audit trail"""
+
+    created = "created"
+    sent = "sent"
+    viewed = "viewed"
+    replied = "replied"
+    forwarded = "forwarded"
+    archived = "archived"
+    deleted = "deleted"
+    status_changed = "status_changed"
+
+
+class PreferredChannel(StrEnum):
+    """Preferred communication channels for clients"""
+
+    email = "email"
+    phone = "phone"
+    portal = "portal"
+    sms = "sms"
+
+
+class GovernanceAction(StrEnum):
+    """Partner governance actions"""
+
+    warning = "warning"
+    probation = "probation"
+    suspension = "suspension"
+    termination = "termination"
+    reinstatement = "reinstatement"

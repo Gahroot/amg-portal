@@ -9,8 +9,21 @@ import {
   provisionPartner,
   uploadComplianceDoc,
 } from "@/lib/api/partners";
-import type { PartnerUpdateData } from "@/lib/api/partners";
+import type { PartnerUpdateData } from "@/types/partner";
 import { listAssignments } from "@/lib/api/assignments";
+import {
+  listPartnerNotices,
+  type PerformanceNotice,
+} from "@/lib/api/performance-notices";
+import { useAuth } from "@/providers/auth-provider";
+import { PerformanceNoticeDialog } from "@/components/partners/performance-notice-dialog";
+import { PartnerScoreCard } from "@/components/partners/partner-score-card";
+import { GovernanceActionForm } from "@/components/partners/governance-action-form";
+import {
+  getCompositeScore,
+  getGovernanceHistory,
+} from "@/lib/api/partner-governance";
+import type { GovernanceAction as GovernanceActionType } from "@/types/partner-governance";
 import {
   getCapabilityMatrix,
   addPartnerCapability,
@@ -56,7 +69,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { DocumentList } from "@/components/documents/document-list";
 import { CapabilityMatrix } from "@/components/partners/capability-matrix";
@@ -91,12 +105,15 @@ export default function PartnerDetailPage() {
   const params = useParams();
   const partnerId = params.id as string;
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isMD = user?.role === "managing_director";
 
   const [editing, setEditing] = React.useState(false);
   const [editData, setEditData] = React.useState<PartnerUpdateData>({});
   const [provisionOpen, setProvisionOpen] = React.useState(false);
   const [provisionPassword, setProvisionPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
+  const [noticeDialogOpen, setNoticeDialogOpen] = React.useState(false);
 
   const { data: partner, isLoading } = useQuery({
     queryKey: ["partners", partnerId],
@@ -106,6 +123,12 @@ export default function PartnerDetailPage() {
   const { data: assignmentsData } = useQuery({
     queryKey: ["assignments", { partner_id: partnerId }],
     queryFn: () => listAssignments({ partner_id: partnerId }),
+    enabled: !!partnerId,
+  });
+
+  const { data: noticesData } = useQuery({
+    queryKey: ["performance-notices", partnerId],
+    queryFn: () => listPartnerNotices(partnerId),
     enabled: !!partnerId,
   });
 
@@ -201,9 +224,26 @@ export default function PartnerDetailPage() {
             <Badge variant={STATUS_VARIANT[partner.status] ?? "outline"}>
               {partner.status.replace(/_/g, " ")}
             </Badge>
+            {partner.is_on_probation && (
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-800 gap-1"
+              >
+                <ShieldAlert className="h-3 w-3" />
+                Probationary
+              </Badge>
+            )}
             {!editing && (
               <Button variant="outline" onClick={startEditing}>
                 Edit
+              </Button>
+            )}
+            {isMD && (
+              <Button
+                variant="destructive"
+                onClick={() => setNoticeDialogOpen(true)}
+              >
+                Issue Performance Notice
               </Button>
             )}
             {!partner.user_id && (
@@ -247,6 +287,20 @@ export default function PartnerDetailPage() {
           </Alert>
         )}
 
+        {partner.is_on_probation && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-900">Probationary Partner</AlertTitle>
+            <AlertDescription className="text-amber-800">
+              This partner is under enhanced oversight for their first three engagements.{" "}
+              <span className="font-semibold">
+                {partner.completed_assignments} of 3 qualifying engagements completed.
+              </span>{" "}
+              Apply additional review steps to all deliverables and communications.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -254,6 +308,15 @@ export default function PartnerDetailPage() {
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="governance">Governance</TabsTrigger>
+            <TabsTrigger value="notices" className="relative">
+              Performance Notices
+              {noticesData && noticesData.unacknowledged_count > 0 && (
+                <span className="ml-1.5 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+                  {noticesData.unacknowledged_count}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -619,8 +682,37 @@ export default function PartnerDetailPage() {
           <TabsContent value="documents" className="space-y-4">
             <DocumentList entityType="partner" entityId={partnerId} />
           </TabsContent>
+
+          <TabsContent value="governance" className="space-y-4">
+            <GovernanceTabContent partnerId={partnerId} partnerName={partner.firm_name} isMD={isMD} />
+          </TabsContent>
+
+          <TabsContent value="notices" className="space-y-4">
+            <PerformanceNoticesTabContent
+              notices={noticesData?.notices ?? []}
+              total={noticesData?.total ?? 0}
+              unacknowledgedCount={noticesData?.unacknowledged_count ?? 0}
+              isMD={isMD}
+              onIssueNotice={() => setNoticeDialogOpen(true)}
+            />
+          </TabsContent>
         </Tabs>
       </div>
+
+      <PerformanceNoticeDialog
+        open={noticeDialogOpen}
+        onOpenChange={setNoticeDialogOpen}
+        partnerId={partnerId}
+        partnerName={partner.firm_name}
+        programs={
+          assignmentsData?.assignments
+            .filter((a) => a.program_id && a.program_title)
+            .map((a) => ({
+              program_id: a.program_id,
+              program_title: a.program_title,
+            })) ?? []
+        }
+      />
     </div>
   );
 }
@@ -861,6 +953,260 @@ function CapabilitiesTabContent({ partnerId }: { partnerId: string }) {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const GOVERNANCE_ACTION_LABELS: Record<string, string> = {
+  warning: "Warning",
+  probation: "Probation",
+  suspension: "Suspension",
+  termination: "Termination",
+  reinstatement: "Reinstatement",
+};
+
+const GOVERNANCE_ACTION_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  warning: "secondary",
+  probation: "outline",
+  suspension: "destructive",
+  termination: "destructive",
+  reinstatement: "default",
+};
+
+function GovernanceTabContent({
+  partnerId,
+  partnerName,
+  isMD,
+}: {
+  partnerId: string;
+  partnerName: string;
+  isMD: boolean;
+}) {
+  const [govDialogOpen, setGovDialogOpen] = React.useState(false);
+
+  const { data: compositeScore, isLoading: scoreLoading } = useQuery({
+    queryKey: ["composite-score", partnerId],
+    queryFn: () => getCompositeScore(partnerId),
+  });
+
+  const { data: governanceHistory, isLoading: historyLoading } = useQuery({
+    queryKey: ["governance-history", partnerId],
+    queryFn: () => getGovernanceHistory(partnerId),
+  });
+
+  if (scoreLoading || historyLoading) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Loading governance data...
+      </p>
+    );
+  }
+
+  const actions = governanceHistory?.actions ?? [];
+
+  return (
+    <div className="space-y-4">
+      {compositeScore && <PartnerScoreCard data={compositeScore} />}
+
+      <div className="flex items-center justify-between">
+        <h3 className="font-serif text-lg font-semibold">
+          Governance History
+        </h3>
+        {isMD && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setGovDialogOpen(true)}
+          >
+            Apply Governance Action
+          </Button>
+        )}
+      </div>
+
+      {actions.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              No governance actions on record for this partner.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {actions.map((action: GovernanceActionType) => (
+            <Card key={action.id}>
+              <CardContent className="pt-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        GOVERNANCE_ACTION_VARIANT[action.action] ?? "outline"
+                      }
+                    >
+                      {GOVERNANCE_ACTION_LABELS[action.action] ??
+                        action.action}
+                    </Badge>
+                    {action.expiry_date && (
+                      <span className="text-xs text-muted-foreground">
+                        Expires{" "}
+                        {new Date(action.expiry_date).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(action.effective_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {action.reason}
+                </p>
+                <div className="text-xs text-muted-foreground pt-1 border-t">
+                  Issued by {action.issuer_name ?? "Managing Director"}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <GovernanceActionForm
+        partnerId={partnerId}
+        partnerName={partnerName}
+        open={govDialogOpen}
+        onOpenChange={setGovDialogOpen}
+      />
+    </div>
+  );
+}
+
+const NOTICE_TYPE_LABELS: Record<string, string> = {
+  sla_breach: "SLA Breach",
+  quality_issue: "Quality Issue",
+  general_performance: "General Performance",
+};
+
+const SEVERITY_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  warning: "secondary",
+  formal_notice: "default",
+  final_notice: "destructive",
+};
+
+function PerformanceNoticesTabContent({
+  notices,
+  total,
+  unacknowledgedCount,
+  isMD,
+  onIssueNotice,
+}: {
+  notices: PerformanceNotice[];
+  total: number;
+  unacknowledgedCount: number;
+  isMD: boolean;
+  onIssueNotice: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {total} notice{total !== 1 ? "s" : ""} on record
+            {unacknowledgedCount > 0 && (
+              <span className="ml-2 text-destructive font-medium">
+                · {unacknowledgedCount} unacknowledged
+              </span>
+            )}
+          </p>
+        </div>
+        {isMD && (
+          <Button variant="destructive" size="sm" onClick={onIssueNotice}>
+            Issue Performance Notice
+          </Button>
+        )}
+      </div>
+
+      {notices.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              No performance notices on record for this partner.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {notices.map((notice) => (
+            <Card
+              key={notice.id}
+              className={
+                notice.status === "open"
+                  ? "border-destructive/40 bg-destructive/5"
+                  : ""
+              }
+            >
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant={SEVERITY_VARIANT[notice.severity] ?? "outline"}>
+                      {notice.severity.replace(/_/g, " ")}
+                    </Badge>
+                    <Badge variant="outline">
+                      {NOTICE_TYPE_LABELS[notice.notice_type] ?? notice.notice_type}
+                    </Badge>
+                    {notice.status === "open" ? (
+                      <Badge variant="destructive">Unacknowledged</Badge>
+                    ) : (
+                      <Badge variant="secondary">Acknowledged</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(notice.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-medium text-sm">{notice.title}</p>
+                  {notice.program_title && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Program: {notice.program_title}
+                    </p>
+                  )}
+                </div>
+
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {notice.description}
+                </p>
+
+                {notice.required_action && (
+                  <div className="rounded-md bg-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                      Required Action
+                    </p>
+                    <p className="text-sm">{notice.required_action}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                  <span>
+                    Issued by {notice.issuer_name ?? "Managing Director"}
+                  </span>
+                  {notice.acknowledged_at && (
+                    <span>
+                      Acknowledged{" "}
+                      {new Date(notice.acknowledged_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

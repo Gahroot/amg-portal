@@ -1,6 +1,7 @@
 """Partner scoring service — aggregates partner ratings and rankings."""
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import case, func, select
@@ -8,7 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.partner import PartnerProfile
 from app.models.partner_assignment import PartnerAssignment
+from app.models.partner_governance import PartnerGovernance
 from app.models.partner_rating import PartnerRating
+from app.models.performance_notice import PerformanceNotice
+from app.models.sla_tracker import SLATracker
 
 
 async def calculate_partner_score(
@@ -173,3 +177,236 @@ async def get_partner_performance_history(
         }
         for r in ratings
     ]
+
+
+async def get_current_governance_status(
+    db: AsyncSession,
+    partner_id: uuid.UUID,
+) -> str:
+    """Get the current governance status for a partner (latest non-expired action)."""
+    now = datetime.now(UTC)
+    result = await db.execute(
+        select(PartnerGovernance)
+        .where(
+            PartnerGovernance.partner_id == partner_id,
+            (PartnerGovernance.expiry_date.is_(None)) | (PartnerGovernance.expiry_date > now),
+        )
+        .order_by(PartnerGovernance.created_at.desc())
+        .limit(1)
+    )
+    latest = result.scalar_one_or_none()
+    if latest is None:
+        return "good_standing"
+    return str(latest.action)
+
+
+async def calculate_composite_score(
+    db: AsyncSession,
+    partner_id: uuid.UUID,
+) -> dict[str, Any]:
+    """Calculate composite score combining ratings and SLA compliance."""
+    # Get partner profile
+    partner_result = await db.execute(
+        select(PartnerProfile).where(PartnerProfile.id == partner_id)
+    )
+    partner = partner_result.scalar_one_or_none()
+    if not partner:
+        return {}
+
+    # Rating component
+    scores = await calculate_partner_score(db, partner_id)
+    avg_overall = scores["avg_overall"]
+    total_ratings = scores["total_ratings"]
+
+    # SLA component — join through PartnerProfile.user_id to SLATracker.assigned_to
+    total_sla_tracked = 0
+    total_sla_breached = 0
+    sla_compliance_rate: float | None = None
+
+    if partner.user_id:
+        sla_result = await db.execute(
+            select(
+                func.count(SLATracker.id).label("total"),
+                func.count(
+                    case((SLATracker.breach_status == "breached", SLATracker.id))
+                ).label("breached"),
+            ).where(SLATracker.assigned_to == partner.user_id)
+        )
+        sla_row = sla_result.one()
+        total_sla_tracked = sla_row.total
+        total_sla_breached = sla_row.breached
+        if total_sla_tracked > 0:
+            sla_compliance_rate = round((1 - total_sla_breached / total_sla_tracked) * 100, 2)
+        else:
+            sla_compliance_rate = 100.0
+
+    # Composite: 60% rating + 40% SLA
+    rating_component = (avg_overall * 20) if avg_overall else None  # scale 1-5 → 0-100
+    sla_component = sla_compliance_rate
+
+    composite_score: float | None = None
+    if rating_component is not None and sla_component is not None:
+        composite_score = round(0.6 * rating_component + 0.4 * sla_component, 2)
+    elif rating_component is not None:
+        composite_score = round(rating_component, 2)
+    elif sla_component is not None:
+        composite_score = round(sla_component, 2)
+
+    # Get current governance status
+    current_status = await get_current_governance_status(db, partner_id)
+
+    # Determine recommended action
+    recommended = evaluate_recommended_action(composite_score, current_status)
+
+    return {
+        "partner_id": partner.id,
+        "firm_name": partner.firm_name,
+        "avg_rating_score": avg_overall,
+        "sla_compliance_rate": sla_compliance_rate,
+        "composite_score": composite_score,
+        "total_ratings": total_ratings,
+        "total_sla_tracked": total_sla_tracked,
+        "total_sla_breached": total_sla_breached,
+        "recommended_action": recommended,
+        "current_governance_status": current_status,
+    }
+
+
+def evaluate_recommended_action(
+    composite_score: float | None,
+    current_status: str,
+) -> str | None:
+    """Determine recommended governance action based on composite score."""
+    if composite_score is None:
+        return None
+    if composite_score < 20 and current_status not in ("suspension", "termination"):
+        return "suspension"
+    if composite_score < 40 and current_status not in ("probation", "suspension", "termination"):
+        return "probation"
+    if composite_score < 60 and current_status not in (
+        "warning",
+        "probation",
+        "suspension",
+        "termination",
+    ):
+        return "warning"
+    return None
+
+
+async def apply_governance_action(
+    db: AsyncSession,
+    partner_id: uuid.UUID,
+    action: str,
+    reason: str,
+    issued_by: uuid.UUID,
+    evidence: dict[str, Any] | None = None,
+    expiry_date: datetime | None = None,
+    effective_date: datetime | None = None,
+) -> PartnerGovernance:
+    """Create a governance action record and update partner status if needed."""
+    record = PartnerGovernance(
+        partner_id=partner_id,
+        action=action,
+        reason=reason,
+        evidence=evidence,
+        effective_date=effective_date or datetime.now(UTC),
+        expiry_date=expiry_date,
+        issued_by=issued_by,
+    )
+    db.add(record)
+
+    # Update partner profile status for severe actions
+    partner_result = await db.execute(
+        select(PartnerProfile).where(PartnerProfile.id == partner_id)
+    )
+    partner = partner_result.scalar_one_or_none()
+    if partner:
+        if action in ("suspension", "termination"):
+            partner.status = "suspended"  # type: ignore[assignment]
+        elif action == "reinstatement":
+            partner.status = "active"  # type: ignore[assignment]
+
+    await db.commit()
+    await db.refresh(record)
+    return record
+
+
+async def get_governance_history(
+    db: AsyncSession,
+    partner_id: uuid.UUID,
+) -> list[PartnerGovernance]:
+    """Get all governance actions for a partner, newest first."""
+    result = await db.execute(
+        select(PartnerGovernance)
+        .where(PartnerGovernance.partner_id == partner_id)
+        .order_by(PartnerGovernance.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def get_governance_dashboard(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 50,
+) -> tuple[list[dict[str, Any]], int]:
+    """Get governance dashboard with all partners, their scores, and status."""
+    # Total partner count
+    count_result = await db.execute(select(func.count(PartnerProfile.id)))
+    total = count_result.scalar_one()
+
+    # Get all partners
+    partner_result = await db.execute(
+        select(PartnerProfile).order_by(PartnerProfile.firm_name).offset(skip).limit(limit)
+    )
+    partners = partner_result.scalars().all()
+
+    entries: list[dict[str, Any]] = []
+    for partner in partners:
+        # Composite score (lightweight calculation)
+        pid = uuid.UUID(str(partner.id))
+        score_data = await calculate_composite_score(db, pid)
+
+        # Latest governance action
+        gov_result = await db.execute(
+            select(PartnerGovernance)
+            .where(PartnerGovernance.partner_id == partner.id)
+            .order_by(PartnerGovernance.created_at.desc())
+            .limit(1)
+        )
+        latest_gov = gov_result.scalar_one_or_none()
+
+        # SLA breach count
+        sla_breach_count = 0
+        if partner.user_id:
+            breach_result = await db.execute(
+                select(func.count(SLATracker.id)).where(
+                    SLATracker.assigned_to == partner.user_id,
+                    SLATracker.breach_status == "breached",
+                )
+            )
+            sla_breach_count = breach_result.scalar_one()
+
+        # Notice count
+        notice_result = await db.execute(
+            select(func.count(PerformanceNotice.id)).where(
+                PerformanceNotice.partner_id == partner.id
+            )
+        )
+        notice_count = notice_result.scalar_one()
+
+        entries.append(
+            {
+                "partner_id": partner.id,
+                "firm_name": partner.firm_name,
+                "composite_score": score_data.get("composite_score"),
+                "current_action": latest_gov.action if latest_gov else None,
+                "current_action_date": (
+                    latest_gov.effective_date.isoformat() if latest_gov else None
+                ),
+                "sla_breach_count": sla_breach_count,
+                "avg_rating": score_data.get("avg_rating_score"),
+                "notice_count": notice_count,
+            }
+        )
+
+    return entries, total
