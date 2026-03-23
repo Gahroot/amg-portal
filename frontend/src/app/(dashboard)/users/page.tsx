@@ -15,15 +15,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROLE_LABELS } from "@/lib/constants";
+import { DataTableExport } from "@/components/ui/data-table-export";
+import type { ExportColumn } from "@/lib/export-utils";
+import type { User } from "@/types/user";
 
-const ROLE_LABELS: Record<string, string> = {
-  managing_director: "Managing Director",
-  relationship_manager: "Relationship Manager",
-  coordinator: "Coordinator",
-  finance_compliance: "Finance & Compliance",
-  client: "Client",
-  partner: "Partner",
-};
+const EXPORT_COLUMNS: ExportColumn<User>[] = [
+  { header: "Full Name", accessor: "full_name" },
+  { header: "Email", accessor: "email" },
+  { header: "Role", accessor: (r) => ROLE_LABELS[r.role] ?? r.role },
+  { header: "Status", accessor: "status" },
+  { header: "MFA Enabled", accessor: (r) => (r.mfa_enabled ? "Yes" : "No") },
+  { header: "Created", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+];
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
@@ -57,9 +61,16 @@ export default function UsersPage() {
           <h1 className="font-serif text-3xl font-bold tracking-tight">
             User Management
           </h1>
-          <Button asChild>
-            <Link href="/users/new">Add User</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <DataTableExport
+              visibleRows={data?.users ?? []}
+              columns={EXPORT_COLUMNS}
+              fileName="users"
+            />
+            <Button asChild>
+              <Link href="/users/new">Add User</Link>
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (

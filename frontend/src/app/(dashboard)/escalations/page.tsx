@@ -1,16 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import {
   listEscalations,
-  exportEscalationsCsv,
   acknowledgeEscalation,
 } from "@/lib/api/escalations";
 import type { EscalationListParams } from "@/lib/api/escalations";
+import type { Escalation } from "@/types/escalation";
 import { useResolveEscalation } from "@/hooks/use-escalations";
+import { useDebounce } from "@/hooks/use-debounce";
 import { EscalationStatusBadge } from "@/components/escalations/status-badge";
 import { EscalationLevelBadge } from "@/components/escalations/level-badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,24 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { Search } from "lucide-react";
+import { EscalationRuleList } from "@/components/escalations/escalation-rule-list";
+import { EscalationRuleForm } from "@/components/escalations/escalation-rule-form";
+import type { EscalationRule } from "@/types/escalation-rule";
+import { DataTableExport } from "@/components/ui/data-table-export";
+import type { ExportColumn } from "@/lib/export-utils";
+
+const EXPORT_COLUMNS: ExportColumn<Escalation>[] = [
+  { header: "Title", accessor: "title" },
+  { header: "Level", accessor: "level" },
+  { header: "Status", accessor: "status" },
+  { header: "Entity Type", accessor: "entity_type" },
+  { header: "Owner", accessor: (r) => r.owner_name ?? r.owner_email ?? "" },
+  { header: "Triggered By", accessor: (r) => r.triggered_by_name ?? r.triggered_by_email ?? "" },
+  { header: "Triggered At", accessor: (r) => new Date(r.triggered_at).toLocaleDateString() },
+  { header: "Resolved At", accessor: (r) => r.resolved_at ? new Date(r.resolved_at).toLocaleDateString() : "" },
+  { header: "Resolution Notes", accessor: (r) => r.resolution_notes ?? "" },
+];
 
 const ALLOWED_ROLES = [
   "coordinator",
@@ -57,14 +77,51 @@ const ESCALATION_STATUSES = [
 
 const PAGE_SIZE = 50;
 
-export default function EscalationsPage() {
+function EscalationsPageContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const [filters, setFilters] = React.useState<EscalationListParams>({});
-  const [page, setPage] = React.useState(0);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const queryParams = { ...filters, skip: page * PAGE_SIZE, limit: PAGE_SIZE };
+  // Read initial filter values from URL
+  const [searchInput, setSearchInput] = React.useState(
+    searchParams.get("search") ?? ""
+  );
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  const levelParam = searchParams.get("level") ?? "all";
+  const statusParam = searchParams.get("status") ?? "all";
+  const [page, setPage] = React.useState(0);
+  const [ruleFormOpen, setRuleFormOpen] = React.useState(false);
+  const [editingRule, setEditingRule] = React.useState<EscalationRule | null>(null);
+
+  const updateParam = React.useCallback(
+    (key: string, value: string | undefined) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value && value !== "all") {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      router.replace(`${pathname}?${params.toString()}`);
+      setPage(0);
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Sync debounced search to URL
+  React.useEffect(() => {
+    updateParam("search", debouncedSearch || undefined);
+  }, [debouncedSearch, updateParam]);
+
+  const queryParams: EscalationListParams = {
+    level: levelParam !== "all" ? levelParam : undefined,
+    status: statusParam !== "all" ? statusParam : undefined,
+    search: debouncedSearch || undefined,
+    skip: page * PAGE_SIZE,
+    limit: PAGE_SIZE,
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["escalations", queryParams],
@@ -81,21 +138,6 @@ export default function EscalationsPage() {
     },
     onError: () => toast.error("Failed to acknowledge escalation"),
   });
-
-  const handleExport = async () => {
-    try {
-      const blob = await exportEscalationsCsv(filters);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "escalations.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Escalations exported successfully");
-    } catch {
-      toast.error("Failed to export escalations");
-    }
-  };
 
   const handleResolve = (id: string, title: string) => {
     const notes = prompt(`Add resolution notes for "${title}":`);
@@ -142,20 +184,26 @@ export default function EscalationsPage() {
           <h1 className="font-serif text-3xl font-bold tracking-tight">
             Escalations
           </h1>
-          <Button onClick={handleExport} variant="outline">
-            Export CSV
-          </Button>
+          <DataTableExport
+            visibleRows={data?.escalations ?? []}
+            columns={EXPORT_COLUMNS}
+            fileName="escalations"
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by title..."
+              className="pl-9"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </div>
           <Select
-            onValueChange={(value) => {
-              setPage(0);
-              setFilters((f) => ({
-                ...f,
-                level: value === "all" ? undefined : value,
-              }));
-            }}
+            value={levelParam}
+            onValueChange={(value) => updateParam("level", value)}
           >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Level" />
@@ -171,13 +219,8 @@ export default function EscalationsPage() {
           </Select>
 
           <Select
-            onValueChange={(value) => {
-              setPage(0);
-              setFilters((f) => ({
-                ...f,
-                status: value === "all" ? undefined : value,
-              }));
-            }}
+            value={statusParam}
+            onValueChange={(value) => updateParam("status", value)}
           >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Status" />
@@ -191,12 +234,6 @@ export default function EscalationsPage() {
               ))}
             </SelectContent>
           </Select>
-
-          <Input
-            placeholder="Search by title..."
-            className="max-w-xs"
-            readOnly
-          />
         </div>
 
         {isLoading ? (
@@ -314,7 +351,35 @@ export default function EscalationsPage() {
             </div>
           )}
         </div>
+
+        {/* Auto-Trigger Rules section */}
+        <div className="mt-8 border-t pt-8">
+          <EscalationRuleList
+            onEdit={(rule) => {
+              setEditingRule(rule);
+              setRuleFormOpen(true);
+            }}
+            onCreate={() => {
+              setEditingRule(null);
+              setRuleFormOpen(true);
+            }}
+          />
+        </div>
+
+        <EscalationRuleForm
+          open={ruleFormOpen}
+          onOpenChange={setRuleFormOpen}
+          editingRule={editingRule}
+        />
       </div>
     </div>
+  );
+}
+
+export default function EscalationsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-muted-foreground text-sm">Loading...</div>}>
+      <EscalationsPageContent />
+    </Suspense>
   );
 }
