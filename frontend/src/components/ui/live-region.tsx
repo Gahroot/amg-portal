@@ -66,7 +66,7 @@ export function LiveRegion({
 }
 
 export interface StatusMessageProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "role"> {
   /** The status message to announce */
   message: string;
   /** Whether to announce assertively */

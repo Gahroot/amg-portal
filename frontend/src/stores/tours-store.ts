@@ -5,6 +5,7 @@
  */
 
 import { create } from "zustand";
+import { useShallow } from "zustand/shallow";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { TourState, TourCategory } from "@/lib/tours/config";
 
@@ -171,6 +172,7 @@ export const useToursStore = create<ToursStore>()(
 
       resetTour: (tourId) => {
         set((state) => {
+           
           const { [tourId]: _, ...remainingTours } = state.tours;
           return {
             tours: remainingTours,
@@ -204,7 +206,8 @@ export const useToursStore = create<ToursStore>()(
       getCompletedTourIds: () => {
         const state = get();
         return Object.entries(state.tours)
-          .filter(([_, tourState]) => tourState.completed)
+           
+          .filter(([_id, tourState]) => tourState.completed)
           .map(([id]) => id);
       },
 
@@ -273,10 +276,13 @@ export function useTourProgress(tourId: string) {
  * Get all completed tour IDs
  */
 export function useCompletedTourIds() {
-  return useToursStore((state) =>
-    Object.entries(state.tours)
-      .filter(([_, t]) => t.completed)
-      .map(([id]) => id)
+  return useToursStore(
+    useShallow((state) =>
+      Object.entries(state.tours)
+         
+        .filter(([_id, t]) => t.completed)
+        .map(([id]) => id)
+    )
   );
 }
 

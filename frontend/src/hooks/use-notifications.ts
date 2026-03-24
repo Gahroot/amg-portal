@@ -14,8 +14,6 @@ import {
   listSnoozedNotifications,
 } from "@/lib/api/notifications";
 import type {
-  Notification,
-  NotificationPreference,
   NotificationPreferenceUpdateData,
   SnoozeDurationPreset,
 } from "@/types/communication";

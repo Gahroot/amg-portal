@@ -79,7 +79,8 @@ export function QuickTaskDialog({
   const { data: milestones = [] } = useTaskMilestones(selectedProgramId || null);
 
   const form = useForm<QuickTaskFormData>({
-    resolver: zodResolver(quickTaskSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(quickTaskSchema) as any,
     defaultValues: {
       title: "",
       description: "",

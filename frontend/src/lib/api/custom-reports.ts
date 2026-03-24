@@ -114,7 +114,7 @@ export async function deleteCustomReport(id: string): Promise<void> {
 
 export function buildExportUrl(
   reportId: string,
-  format: ExportFormat,
+  _format: ExportFormat,
 ): string {
   // Returns URL for triggering a download via browser
   return `/api/v1/custom-reports/${reportId}/export`;

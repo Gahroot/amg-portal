@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import type { UserRole } from "@/types/user";
 import type { LucideIcon } from "lucide-react";
+import { FolderPlus, UserPlus, Building2, CheckSquare, Mail, AlertTriangle, FileSpreadsheet, FileText, ClipboardList, FolderOpen, Briefcase } from "lucide-react";
 
 /**
  * Quick action definition
@@ -155,10 +156,7 @@ export function getDefaultActionsForContext(
         id: "new-program",
         label: "New Program",
         description: "Create a new program",
-        icon: (() => {
-          const Icon = require("lucide-react").FolderPlus;
-          return Icon;
-        })(),
+        icon: FolderPlus,
         category: "create",
         shortcut: "n",
         shortcutMetaKey: false,
@@ -175,10 +173,7 @@ export function getDefaultActionsForContext(
         id: "new-client",
         label: "New Client",
         description: "Add a new client",
-        icon: (() => {
-          const Icon = require("lucide-react").UserPlus;
-          return Icon;
-        })(),
+        icon: UserPlus,
         category: "create",
         handler: () => {
           window.location.href = "/clients/new";
@@ -193,10 +188,7 @@ export function getDefaultActionsForContext(
         id: "new-partner",
         label: "New Partner",
         description: "Add a new partner",
-        icon: (() => {
-          const Icon = require("lucide-react").Building2;
-          return Icon;
-        })(),
+        icon: Building2,
         category: "create",
         handler: () => {
           window.location.href = "/partners/new";
@@ -210,10 +202,7 @@ export function getDefaultActionsForContext(
       id: "new-task",
       label: "New Task",
       description: "Create a quick task",
-      icon: (() => {
-        const Icon = require("lucide-react").CheckSquare;
-        return Icon;
-      })(),
+      icon: CheckSquare,
       category: "create",
       shortcut: "t",
       shortcutMetaKey: false,
@@ -231,10 +220,7 @@ export function getDefaultActionsForContext(
       id: "new-communication",
       label: "New Communication",
       description: "Log a communication",
-      icon: (() => {
-        const Icon = require("lucide-react").Mail;
-        return Icon;
-      })(),
+      icon: Mail,
       category: "communication",
       handler: () => {
         window.location.href = "/communications/new";
@@ -246,10 +232,7 @@ export function getDefaultActionsForContext(
       id: "new-escalation",
       label: "New Escalation",
       description: "Create an escalation",
-      icon: (() => {
-        const Icon = require("lucide-react").AlertTriangle;
-        return Icon;
-      })(),
+      icon: AlertTriangle,
       category: "communication",
       handler: () => {
         window.location.href = "/escalations/new";
@@ -264,10 +247,7 @@ export function getDefaultActionsForContext(
       id: "export-csv",
       label: "Export CSV",
       description: "Export current view as CSV",
-      icon: (() => {
-        const Icon = require("lucide-react").FileSpreadsheet;
-        return Icon;
-      })(),
+      icon: FileSpreadsheet,
       category: "export",
       shortcut: "e",
       shortcutMetaKey: false,
@@ -281,10 +261,7 @@ export function getDefaultActionsForContext(
       id: "export-pdf",
       label: "Export PDF",
       description: "Export current view as PDF",
-      icon: (() => {
-        const Icon = require("lucide-react").FileText;
-        return Icon;
-      })(),
+      icon: FileText,
       category: "export",
       handler: () => {
         window.dispatchEvent(new CustomEvent("quick-actions:export-pdf"));
@@ -299,10 +276,7 @@ export function getDefaultActionsForContext(
       id: "review-pending",
       label: "Review Pending",
       description: "View pending approvals",
-      icon: (() => {
-        const Icon = require("lucide-react").ClipboardList;
-        return Icon;
-      })(),
+      icon: ClipboardList,
       category: "common",
       handler: () => {
         window.location.href = "/approvals";
@@ -317,10 +291,7 @@ export function getDefaultActionsForContext(
       id: "view-programs",
       label: "My Programs",
       description: "View your programs",
-      icon: (() => {
-        const Icon = require("lucide-react").FolderOpen;
-        return Icon;
-      })(),
+      icon: FolderOpen,
       category: "navigation",
       handler: () => {
         window.location.href = "/portal/programs";
@@ -332,10 +303,7 @@ export function getDefaultActionsForContext(
       id: "view-documents",
       label: "My Documents",
       description: "View your documents",
-      icon: (() => {
-        const Icon = require("lucide-react").FileText;
-        return Icon;
-      })(),
+      icon: FileText,
       category: "navigation",
       handler: () => {
         window.location.href = "/portal/documents";
@@ -350,10 +318,7 @@ export function getDefaultActionsForContext(
       id: "view-assignments",
       label: "My Assignments",
       description: "View your assignments",
-      icon: (() => {
-        const Icon = require("lucide-react").Briefcase;
-        return Icon;
-      })(),
+      icon: Briefcase,
       category: "navigation",
       handler: () => {
         window.location.href = "/partner/assignments";
@@ -458,7 +423,6 @@ function saveState(state: QuickActionsState): void {
  */
 export function useQuickActions(): UseQuickActionsReturn {
   const pathname = usePathname();
-  const router = useRouter();
   const { user } = useAuth();
 
   const [state, setState] = React.useState<QuickActionsState>(loadState);

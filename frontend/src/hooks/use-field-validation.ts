@@ -179,7 +179,10 @@ async function validateValue(
   if (rules.pattern) {
     const pattern = extractValue(rules.pattern);
     if (pattern && !pattern.test(stringValue)) {
-      return extractMessage(rules.pattern, DEFAULT_MESSAGES.pattern);
+      if (typeof rules.pattern === "object" && "message" in rules.pattern) {
+        return rules.pattern.message;
+      }
+      return DEFAULT_MESSAGES.pattern;
     }
   }
 

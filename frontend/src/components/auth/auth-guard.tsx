@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 
@@ -8,10 +9,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   // Redirect to login if not authenticated (after initial load completes)
-  // This runs during render to avoid a blank flash before useEffect fires
-  if (!isLoading && !isAuthenticated) {
-    router.replace("/login");
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   // Show loading skeleton while loading OR during redirect to prevent flash
   if (isLoading || !isAuthenticated) {

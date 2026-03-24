@@ -4,7 +4,6 @@ import type {
   LoginCredentials,
   AuthResponse,
   MFASetupResponse,
-  MFAVerifyRequest,
   ProfileUpdateRequest,
   UserNotificationPreferences,
   UserNotificationPreferencesUpdate,

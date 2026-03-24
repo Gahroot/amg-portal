@@ -394,7 +394,6 @@ function TourRunner() {
     <TourProvider
       steps={steps}
       startAt={tourState?.lastStep ?? 0}
-      scrollOptions={{ block: "center", behavior: "smooth" }}
       styles={tourStyles}
       padding={10}
       showBadge={false}

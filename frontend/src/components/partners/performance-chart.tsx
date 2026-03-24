@@ -230,10 +230,7 @@ export function PerformanceChart({
   async function handleExport() {
     if (!chartRef.current) return;
     try {
-      const { default: html2canvas } = await import(
-        // @ts-expect-error — html2canvas may not have types in all setups
-        "html2canvas"
-      );
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(chartRef.current, { backgroundColor: "#ffffff" });
       const link = document.createElement("a");
       link.download = `partner-performance-${dateRange}d.png`;

@@ -39,7 +39,7 @@ interface AccessibleDataTableProps<TData, TValue> {
 
 interface TableContextValue {
   navigateMode: "row" | "cell";
-  onRowClick?: (row: Row<unknown>) => void;
+  onRowClick?: (row: Row<any>) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 const TableContext = React.createContext<TableContextValue>({
@@ -82,7 +82,7 @@ export function AccessibleDataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getRowId: getRowId ? (row) => getRowId(row.original as TData) : undefined,
+    getRowId: getRowId ? (row: TData) => getRowId(row) : undefined,
     state: {
       rowSelection: selectedRows,
     },
@@ -164,7 +164,7 @@ export function AccessibleDataTable<TData, TValue>({
         case "Enter":
           if (onRowClick && focusedRowIndex >= 0 && focusedRowIndex < totalRows) {
             event.preventDefault();
-            onRowClick(rows[focusedRowIndex] as Row<unknown>);
+            onRowClick(rows[focusedRowIndex] as Row<any>); // eslint-disable-line @typescript-eslint/no-explicit-any
           }
           break;
         case "a":
@@ -269,7 +269,7 @@ export function AccessibleDataTable<TData, TValue>({
 }
 
 interface TableHeaderProps {
-  headerGroups: ReturnType<ReturnType<typeof useReactTable>["getHeaderGroups"]>;
+  headerGroups: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   selectable: boolean;
 }
 
@@ -288,7 +288,8 @@ function TableHeader({ headerGroups, selectable }: TableHeaderProps) {
               <VisuallyHidden>Select row</VisuallyHidden>
             </th>
           )}
-          {headerGroup.headers.map((header, index) => (
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {headerGroup.headers.map((header: any, index: number) => (
             <th
               key={header.id}
               role="columnheader"
@@ -310,8 +311,8 @@ function TableHeader({ headerGroups, selectable }: TableHeaderProps) {
   );
 }
 
-interface TableBodyProps<TData> {
-  rows: Row<TData>[];
+interface TableBodyProps {
+  rows: Row<any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   selectable: boolean;
   emptyMessage: string;
   focusedRowIndex: number;
@@ -319,14 +320,14 @@ interface TableBodyProps<TData> {
   columnsLength: number;
 }
 
-function TableBody<TData>({
+function TableBody({
   rows,
   selectable,
   emptyMessage,
   focusedRowIndex,
   focusedCellIndex,
   columnsLength,
-}: TableBodyProps<TData>) {
+}: TableBodyProps) {
   if (rows.length === 0) {
     return (
       <tbody>

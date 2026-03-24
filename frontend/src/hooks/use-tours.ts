@@ -27,7 +27,7 @@ import { useAuth } from "@/providers/auth-provider";
  */
 export function useTours() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  useAuth();
   const isNewUser = useIsNewUser();
   const activeTourId = useActiveTourId();
   const completedTourIds = useCompletedTourIds();

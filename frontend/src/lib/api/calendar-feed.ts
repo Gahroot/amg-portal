@@ -5,7 +5,6 @@
 import api from "@/lib/api";
 import type {
   CalendarFeedStatus,
-  CalendarFeedToken,
   CalendarFeedTokenCreated,
   CalendarFeedTokenCreateRequest,
 } from "@/types/calendar-feed";

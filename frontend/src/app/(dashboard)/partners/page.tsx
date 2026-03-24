@@ -56,7 +56,7 @@ const EXPORT_COLUMNS: ExportColumn<PartnerProfile>[] = [
   { header: "Capabilities", accessor: (r) => r.capabilities.join(", ") },
   { header: "Geographies", accessor: (r) => r.geographies.join(", ") },
   { header: "Availability", accessor: (r) => r.availability_status.replace(/_/g, " ") },
-  { header: "Rating", accessor: (r) => r.performance_rating != null ? r.performance_rating.toFixed(1) : "" },
+  { header: "Rating", accessor: (r) => r.performance_rating != null ? Number(r.performance_rating).toFixed(1) : "" },
   { header: "Status", accessor: (r) => r.status.replace(/_/g, " ") },
   { header: "Probationary", accessor: (r) => r.is_on_probation ? "Yes" : "No" },
 ];
@@ -570,7 +570,7 @@ function PartnersPageContent() {
                     </TableCell>
                     <TableCell>
                       {partner.performance_rating != null
-                        ? partner.performance_rating.toFixed(1)
+                        ? Number(partner.performance_rating).toFixed(1)
                         : "-"}
                     </TableCell>
                     <TableCell>

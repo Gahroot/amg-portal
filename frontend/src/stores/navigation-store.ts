@@ -131,6 +131,7 @@ export const useNavigationStore = create<NavigationStore>()(
       clearState: (route) => {
         const normalizedRoute = normalizeRoute(route);
         set((prev) => {
+           
           const { [normalizedRoute]: _, ...remaining } = prev.routeStates;
           return { routeStates: remaining };
         });
@@ -154,6 +155,7 @@ export const useNavigationStore = create<NavigationStore>()(
       clearPendingRestore: (route) => {
         const normalizedRoute = normalizeRoute(route);
         set((prev) => {
+           
           const { [normalizedRoute]: _, ...remaining } = prev.pendingRestores;
           return { pendingRestores: remaining };
         });

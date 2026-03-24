@@ -35,14 +35,6 @@ const tourStyles: StylesObj = {
 };
 
 /**
- * Scroll behavior options
- */
-const scrollOptions = {
-  block: "center" as const,
-  behavior: "smooth" as const,
-};
-
-/**
  * Props for the GuidedTour component
  */
 interface GuidedTourProps {
@@ -236,7 +228,6 @@ export function GuidedTour({
     <TourProvider
       steps={steps}
       startAt={startAt}
-      scrollOptions={scrollOptions}
       styles={tourStyles}
       padding={10}
       showBadge={false}
