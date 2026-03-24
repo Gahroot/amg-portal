@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search } from "lucide-react";
 import { DataTableExport } from "@/components/ui/data-table-export";
 import type { ExportColumn } from "@/lib/export-utils";
+import { API_BASE_URL } from "@/lib/constants";
 
 const EXPORT_COLUMNS: ExportColumn<DeliverableItem>[] = [
   { header: "Title", accessor: "title" },
@@ -278,6 +279,13 @@ function DeliverablesPageContent() {
             visibleRows={allData?.deliverables ?? []}
             columns={EXPORT_COLUMNS}
             fileName="deliverables"
+            exportAllUrl={(() => {
+              const params = new URLSearchParams();
+              if (statusParam !== "all") params.set("status", statusParam);
+              if (debouncedSearch) params.set("search", debouncedSearch);
+              const qs = params.toString();
+              return `${API_BASE_URL}/api/v1/export/deliverables${qs ? `?${qs}` : ""}`;
+            })()}
           />
         </div>
 

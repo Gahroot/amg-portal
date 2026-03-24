@@ -1,17 +1,18 @@
 """Communication model for individual messages."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
+from app.models.enums import CommunicationApprovalStatus, CommunicationChannel, MessageStatus
 
 
-class Communication(Base):
+class Communication(Base, TimestampMixin):
     """Individual message or communication record."""
 
     __tablename__ = "communications"
@@ -20,8 +21,12 @@ class Communication(Base):
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True
     )
-    channel: Mapped[str] = mapped_column(String(50), nullable=False, default="in_portal")
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="draft")
+    channel: Mapped[CommunicationChannel] = mapped_column(
+        String(50), nullable=False, default=CommunicationChannel.in_portal
+    )
+    status: Mapped[MessageStatus] = mapped_column(
+        String(50), nullable=False, default=MessageStatus.draft
+    )
     sender_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -42,20 +47,23 @@ class Communication(Base):
     )
     # Read receipts per user: {"user_id": {"read_at": "2024-01-01T00:00:00Z"}}
     read_receipts: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Template provenance: {"template_id": "...", "template_type": "...", "variables": {...}}
+    template_context: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Approval workflow fields
+    approval_status: Mapped[CommunicationApprovalStatus] = mapped_column(
+        String(50), nullable=False, default=CommunicationApprovalStatus.draft
+    )
+    reviewer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewer_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     # Relationships
     conversation = relationship("Conversation", back_populates="communications")
     sender = relationship("User", foreign_keys=[sender_id])
+    reviewer = relationship("User", foreign_keys=[reviewer_id])
     client = relationship("ClientProfile", foreign_keys=[client_id])
     program = relationship("Program", foreign_keys=[program_id])
     partner = relationship("PartnerProfile", foreign_keys=[partner_id])

@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { useFormContext } from "react-hook-form";
 import { Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FamilyMemberDialog } from "./family-member-dialog";
 import { FamilyMemberList } from "./family-member-list";
+import type { IntakeFormData } from "@/lib/validations/client";
 import type { FamilyMemberCreate, FamilyMember } from "@/types/family-member";
 
 interface IntakeStepFamilyProps {
@@ -12,27 +14,37 @@ interface IntakeStepFamilyProps {
 }
 
 export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps) {
-  const [familyMembers, setFamilyMembers] = React.useState<FamilyMemberCreate[]>(
-    initialMembers.map((m) => ({
-      name: m.name,
-      relationship_type: m.relationship_type,
-      date_of_birth: m.date_of_birth || undefined,
-      occupation: m.occupation || undefined,
-      notes: m.notes || undefined,
-      is_primary_contact: m.is_primary_contact,
-    }))
-  );
+  const { setValue, watch } = useFormContext<IntakeFormData>();
+  const familyMembers = watch("family_members") ?? [];
+
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+
+  // Initialize family_members from initialMembers if empty and initialMembers provided
+  React.useEffect(() => {
+    if (familyMembers.length === 0 && initialMembers.length > 0) {
+      setValue(
+        "family_members",
+        initialMembers.map((m) => ({
+          name: m.name,
+          relationship_type: m.relationship_type,
+          date_of_birth: m.date_of_birth || undefined,
+          occupation: m.occupation || undefined,
+          notes: m.notes || undefined,
+          is_primary_contact: m.is_primary_contact,
+        }))
+      );
+    }
+  }, [initialMembers, familyMembers.length, setValue]);
 
   const handleAddMember = (data: FamilyMemberCreate) => {
     if (editingIndex !== null) {
       const updated = [...familyMembers];
       updated[editingIndex] = data;
-      setFamilyMembers(updated);
+      setValue("family_members", updated);
       setEditingIndex(null);
     } else {
-      setFamilyMembers([...familyMembers, data]);
+      setValue("family_members", [...familyMembers, data]);
     }
     setDialogOpen(false);
   };
@@ -43,7 +55,10 @@ export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps)
   };
 
   const handleDeleteMember = (index: number) => {
-    setFamilyMembers(familyMembers.filter((_, i) => i !== index));
+    setValue(
+      "family_members",
+      familyMembers.filter((_, i) => i !== index)
+    );
   };
 
   const editingMember =

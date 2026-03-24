@@ -1,0 +1,76 @@
+{
+  "name": "AMG Portal - New Assignment to Email",
+  "description": "Sends an email when a new assignment is created in AMG Portal",
+  "blueprint": {
+    "name": "AMG Portal - New Assignment Notification",
+    "modules": [
+      {
+        "id": 1,
+        "module": "http:ActionGet",
+        "version": 1,
+        "parameters": {
+          "url": "{{apiUrl}}/api/v1/public/poll/assignments",
+          "headers": [
+            {
+              "key": "X-API-Key",
+              "value": "{{apiKey}}"
+            }
+          ],
+          "method": "GET"
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "module": "email:ActionSendEmail",
+        "version": 1,
+        "parameters": {
+          "to": "{{recipientEmail}}",
+          "subject": "New Assignment: {{1.title}}",
+          "content": "A new assignment has been created:\n\nTitle: {{1.title}}\nStatus: {{1.status}}\nDue Date: {{1.due_date}}\nProgram ID: {{1.program_id}}\n\nPlease log in to AMG Portal to view details."
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 300,
+            "y": 0
+          }
+        }
+      }
+    ],
+    "paths": [
+      {
+        "id": 1,
+        "sourceModuleId": 1,
+        "targetModuleId": 2
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "apiUrl",
+      "type": "text",
+      "label": "AMG Portal API URL",
+      "default": "https://api.amg-portal.com",
+      "required": true
+    },
+    {
+      "name": "apiKey",
+      "type": "password",
+      "label": "API Key",
+      "required": true
+    },
+    {
+      "name": "recipientEmail",
+      "type": "email",
+      "label": "Recipient Email",
+      "required": true
+    }
+  ]
+}

@@ -154,6 +154,52 @@ async def send_welcome_email(email: str, name: str, portal_url: str | None = Non
     await send_email(to=email, subject=subject, body_html=body_html)
 
 
+async def send_password_reset_email(
+    email: str,
+    name: str,
+    reset_token: str,
+    frontend_url: str,
+) -> None:
+    """Send password reset email with reset link."""
+    subject = "Reset Your AMG Portal Password"
+
+    reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+    body_html = f"""
+    <html>
+        <body>
+            <h2>Reset Your Password</h2>
+            <p>Dear {name},</p>
+            <p>We received a request to reset your password for the AMG Portal.</p>
+            <p>Click the link below to set a new password:</p>
+            <p><a href="{reset_link}">Reset Password</a></p>
+            <p>This link will expire in 15 minutes.</p>
+            <p>If you did not request a password reset, you can safely ignore this email.</p>
+            <p>Best regards,<br>AMG Team</p>
+        </body>
+    </html>
+    """
+
+    body_text = f"""
+Reset Your Password
+
+Dear {name},
+
+We received a request to reset your password for the AMG Portal.
+
+Click the link below to set a new password:
+{reset_link}
+
+This link will expire in 15 minutes.
+
+If you did not request a password reset, you can safely ignore this email.
+
+Best regards,
+AMG Team
+"""
+
+    await send_email(to=email, subject=subject, body_html=body_html, body_text=body_text)
+
+
 async def send_compliance_notification(
     email: str,
     profile_name: str,

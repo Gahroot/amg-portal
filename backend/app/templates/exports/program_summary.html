@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Program Summary: {{ program_title }}</h1>
+
+<div class="summary-box">
+    <h3>Program Overview</h3>
+    <div class="stat-row">
+        <span class="stat-label">Status:</span>
+        <span class="stat-value">{{ program_status | title }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">RAG Status:</span>
+        <span class="stat-value rag-{{ rag_status | lower }}">{{ rag_status | upper }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Client:</span>
+        <span class="stat-value">{{ client_name }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Relationship Manager:</span>
+        <span class="stat-value">{{ rm_name or 'N/A' }}</span>
+    </div>
+</div>
+
+<h2>Timeline</h2>
+<table>
+    <tr>
+        <th>Metric</th>
+        <th>Date</th>
+    </tr>
+    <tr>
+        <td>Start Date</td>
+        <td>{{ start_date or 'TBD' }}</td>
+    </tr>
+    <tr>
+        <td>Target End Date</td>
+        <td>{{ end_date or 'TBD' }}</td>
+    </tr>
+    <tr>
+        <td>Created</td>
+        <td>{{ created_at or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Last Updated</td>
+        <td>{{ updated_at or 'N/A' }}</td>
+    </tr>
+</table>
+
+<h2>Budget</h2>
+<table>
+    <tr>
+        <th>Metric</th>
+        <th class="currency">Amount</th>
+    </tr>
+    <tr>
+        <td>Budget Envelope</td>
+        <td class="currency">{{ "${:,.2f}".format(budget_envelope) if budget_envelope else 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Spent to Date</td>
+        <td class="currency">{{ "${:,.2f}".format(spent_to_date) if spent_to_date else 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Remaining Budget</td>
+        <td class="currency">{{ "${:,.2f}".format(remaining_budget) if remaining_budget else 'N/A' }}</td>
+    </tr>
+</table>
+
+<h2>Milestone Progress</h2>
+{% if milestone_progress is not none %}
+<div style="margin: 10px 0;">
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ milestone_progress }}%;"></div>
+    </div>
+    <span style="margin-left: 8px;">{{ milestone_progress }}% Complete</span>
+</div>
+{% endif %}
+
+{% if milestones %}
+<table>
+    <tr>
+        <th>Milestone</th>
+        <th>Status</th>
+        <th>Due Date</th>
+        <th>Completed</th>
+    </tr>
+    {% for m in milestones %}
+    <tr>
+        <td>{{ m.title }}</td>
+        <td>{{ m.status | title }}</td>
+        <td>{{ m.due_date or 'TBD' }}</td>
+        <td>{{ m.completed_at or 'N/A' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if deliverables %}
+<h2>Deliverables</h2>
+<table>
+    <tr>
+        <th>Deliverable</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Due Date</th>
+    </tr>
+    {% for d in deliverables %}
+    <tr>
+        <td>{{ d.title }}</td>
+        <td>{{ d.deliverable_type }}</td>
+        <td>{{ d.status | title }}</td>
+        <td>{{ d.due_date or 'TBD' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if assigned_partners %}
+<h2>Assigned Partners</h2>
+<table>
+    <tr>
+        <th>Firm</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Status</th>
+    </tr>
+    {% for p in assigned_partners %}
+    <tr>
+        <td>{{ p.firm_name }}</td>
+        <td>{{ p.contact_name }}</td>
+        <td>{{ p.contact_email }}</td>
+        <td>{{ p.status | title }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if objectives or scope %}
+<h2>Objectives &amp; Scope</h2>
+{% if objectives %}
+<p><strong>Objectives:</strong> {{ objectives }}</p>
+{% endif %}
+{% if scope %}
+<p><strong>Scope:</strong> {{ scope }}</p>
+{% endif %}
+{% endif %}
+
+{% if notes %}
+<h2>Notes</h2>
+<p>{{ notes }}</p>
+{% endif %}
+{% endblock %}

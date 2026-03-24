@@ -46,9 +46,8 @@ export function IntelligenceNotesEditor({
       await onSave(data);
       setHasChanges(false);
       toast.success("Notes saved successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to save notes");
-      console.error(error);
     } finally {
       setSaving(false);
     }

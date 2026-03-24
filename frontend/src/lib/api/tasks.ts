@@ -2,10 +2,13 @@ import api from "@/lib/api";
 import type {
   TaskBoard,
   TaskBoardListResponse,
+  TaskBulkUpdatePayload,
+  TaskBulkUpdateResult,
   TaskCreate,
   TaskReorder,
   TaskUpdate,
   AssigneeInfo,
+  MilestoneInfo,
   ProgramInfo,
 } from "@/types/task";
 
@@ -55,6 +58,13 @@ export async function batchReorderTasks(updates: TaskReorder[]): Promise<void> {
   await api.post("/tasks/batch-reorder", updates);
 }
 
+export async function bulkUpdateTasks(
+  payload: TaskBulkUpdatePayload,
+): Promise<TaskBulkUpdateResult> {
+  const response = await api.post<TaskBulkUpdateResult>("/tasks/bulk-update", payload);
+  return response.data;
+}
+
 export async function getProgramsForFilter(): Promise<ProgramInfo[]> {
   const response = await api.get<ProgramInfo[]>("/tasks/programs");
   return response.data;
@@ -63,4 +73,30 @@ export async function getProgramsForFilter(): Promise<ProgramInfo[]> {
 export async function getAssigneesForFilter(): Promise<AssigneeInfo[]> {
   const response = await api.get<AssigneeInfo[]>("/tasks/assignees");
   return response.data;
+}
+
+export async function updateTaskDependencies(
+  taskId: string,
+  dependsOn: string[],
+): Promise<TaskBoard> {
+  const response = await api.put<TaskBoard>(`/tasks/${taskId}/dependencies`, {
+    depends_on: dependsOn,
+  });
+  return response.data;
+}
+
+export async function getMilestonesForProgram(programId: string): Promise<MilestoneInfo[]> {
+  // Fetch a small set of tasks for the program and extract unique milestones from them.
+  // This reuses the existing tasks endpoint (which already joins milestones) without
+  // requiring a dedicated milestones listing endpoint.
+  const response = await api.get<TaskBoardListResponse>(
+    `/tasks?program_id=${programId}&limit=200`,
+  );
+  const milestoneMap = new Map<string, MilestoneInfo>();
+  for (const task of response.data.tasks) {
+    if (task.milestone && !milestoneMap.has(task.milestone.id)) {
+      milestoneMap.set(task.milestone.id, task.milestone);
+    }
+  }
+  return Array.from(milestoneMap.values());
 }

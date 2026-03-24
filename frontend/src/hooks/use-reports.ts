@@ -1,16 +1,21 @@
-"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   getPortfolioOverview,
   getProgramStatusReport,
+  getPortalProgramStatuses,
+  getPortalProgramStatus,
   getCompletionReport,
   getAnnualReview,
   exportPortfolioOverview,
   exportProgramStatusReport,
   exportCompletionReport,
   exportAnnualReview,
+  downloadPortfolioPDF,
+  downloadProgramStatusPDF,
+  downloadCompletionPDF,
+  downloadAnnualReviewPDF,
 } from "@/lib/api/reports";
 
 export function usePortfolioOverview() {
@@ -94,4 +99,71 @@ export function useExportAnnualReview() {
     }
   };
   return { exportAnnualReview: exportFn };
+}
+
+export function usePortalProgramStatuses() {
+  return useQuery({
+    queryKey: ["portal", "program-statuses"],
+    queryFn: () => getPortalProgramStatuses(),
+  });
+}
+
+export function usePortalProgramStatus(programId: string) {
+  return useQuery({
+    queryKey: ["portal", "program-status", programId],
+    queryFn: () => getPortalProgramStatus(programId),
+    enabled: !!programId,
+  });
+}
+
+export function useDownloadPortfolioPDF() {
+  const downloadFn = async () => {
+    try {
+      await downloadPortfolioPDF();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download portfolio PDF";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { downloadPortfolioPDF: downloadFn };
+}
+
+export function useDownloadProgramStatusPDF() {
+  const downloadFn = async (programId: string) => {
+    try {
+      await downloadProgramStatusPDF(programId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download program status PDF";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { downloadProgramStatusPDF: downloadFn };
+}
+
+export function useDownloadCompletionPDF() {
+  const downloadFn = async (programId: string) => {
+    try {
+      await downloadCompletionPDF(programId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download completion PDF";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { downloadCompletionPDF: downloadFn };
+}
+
+export function useDownloadAnnualReviewPDF() {
+  const downloadFn = async (year: number) => {
+    try {
+      await downloadAnnualReviewPDF(year);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to download annual review PDF";
+      toast.error(message);
+      throw error;
+    }
+  };
+  return { downloadAnnualReviewPDF: downloadFn };
 }

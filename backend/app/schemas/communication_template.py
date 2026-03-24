@@ -1,10 +1,10 @@
 """Schemas for communication template operations."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class VariableDefinition(BaseModel):
@@ -30,6 +30,11 @@ class TemplateUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class TemplateStatusAction(BaseModel):
+    action: Literal["submit", "approve", "reject"]
+    reason: str | None = None
+
+
 class TemplateResponse(BaseModel):
     id: UUID
     name: str
@@ -39,11 +44,15 @@ class TemplateResponse(BaseModel):
     variable_definitions: dict[str, Any] | None = None
     is_active: bool
     is_system: bool
+    status: str = "draft"
+    rejection_reason: str | None = None
+    reviewed_by: UUID | None = None
+    reviewed_at: datetime | None = None
     created_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateListResponse(BaseModel):

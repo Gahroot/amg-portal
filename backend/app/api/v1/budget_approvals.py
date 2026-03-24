@@ -3,10 +3,17 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
+from app.api.deps import (
+    BudgetApprovalServiceDep,
+    CurrentUser,
+    require_admin,
+    require_internal,
+    require_rm_or_above,
+)
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.budget_approval import (
     ApprovalChain,
     ApprovalChainStep,
@@ -41,7 +48,6 @@ from app.schemas.budget_approval import (
     PendingApprovalItem,
     PendingApprovalsResponse,
 )
-from app.services.budget_approval_service import BudgetApprovalService
 
 router = APIRouter()
 
@@ -49,9 +55,7 @@ router = APIRouter()
 # === Helper Functions ===
 
 
-async def _build_threshold_response(
-    threshold: ApprovalThreshold, db
-) -> dict[str, Any]:
+async def _build_threshold_response(threshold: ApprovalThreshold) -> dict[str, Any]:
     """Build a threshold response with chain name."""
     return {
         "id": threshold.id,
@@ -126,7 +130,7 @@ async def _build_request_response(request: BudgetApprovalRequest) -> dict[str, A
         "current_step": request.current_step,
         "total_steps": total_steps,
         "status": request.status,
-        "metadata": request.metadata,
+        "metadata": request.request_metadata,
         "requested_by": request.requested_by,
         "requester_name": request.requester.full_name if request.requester else "",
         "approved_by": request.approved_by,
@@ -175,7 +179,7 @@ async def _build_history_response(history: BudgetApprovalHistory) -> dict[str, A
         "actor_name": history.actor_name,
         "actor_role": history.actor_role,
         "comments": history.comments,
-        "metadata": history.metadata,
+        "metadata": history.history_metadata,
         "created_at": history.created_at,
     }
 
@@ -186,33 +190,32 @@ async def _build_history_response(history: BudgetApprovalHistory) -> dict[str, A
 @router.post("/impact", response_model=BudgetImpactResponse)
 async def calculate_budget_impact(
     data: BudgetImpactRequest,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+) -> BudgetImpactResponse:
     """Calculate budget impact and determine required approval chain."""
-    service = BudgetApprovalService(db)
     try:
         impact = await service.calculate_budget_impact(data.program_id, data.requested_amount)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from None
+        raise NotFoundException(str(e)) from None
 
-    threshold_data = None
-    chain_data = None
+    threshold_data: ApprovalThresholdResponse | None = None
+    chain_data: ApprovalChainSummary | None = None
 
     if impact["threshold_matched"]:
-        threshold_data = await _build_threshold_response(
-            impact["threshold_matched"], db
+        threshold_data = ApprovalThresholdResponse.model_validate(
+            await _build_threshold_response(impact["threshold_matched"])
         )
         if impact["approval_chain"]:
             chain = impact["approval_chain"]
             has_steps = hasattr(chain, "steps")
-            chain_data = {
-                "id": chain.id,
-                "name": chain.name,
-                "description": chain.description,
-                "is_active": chain.is_active,
-                "step_count": len(chain.steps) if has_steps else 0,
-            }
+            chain_data = ApprovalChainSummary(
+                id=chain.id,
+                name=chain.name,
+                description=chain.description,
+                is_active=chain.is_active,
+                step_count=len(chain.steps) if has_steps else 0,
+            )
 
     return BudgetImpactResponse(
         program_id=impact["program_id"],
@@ -238,22 +241,17 @@ async def calculate_budget_impact(
 )
 async def create_threshold(
     data: ApprovalThresholdCreate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     current_user: CurrentUser,
     _: None = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Create a new approval threshold."""
-    service = BudgetApprovalService(db)
-
     # Verify chain exists
-    result = await db.execute(
+    result = await service.db.execute(
         select(ApprovalChain).where(ApprovalChain.id == data.approval_chain_id)
     )
     if not result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Approval chain not found",
-        )
+        raise NotFoundException("Approval chain not found")
 
     threshold = await service.create_threshold(
         name=data.name,
@@ -264,73 +262,60 @@ async def create_threshold(
         is_active=data.is_active,
         priority=data.priority,
     )
-    return await _build_threshold_response(threshold, db)
+    return await _build_threshold_response(threshold)
 
 
 @router.get("/thresholds", response_model=list[ApprovalThresholdResponse])
 async def list_thresholds(
-    is_active: bool | None = Query(None),
-    db: DB = Depends(lambda: None),
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+    is_active: bool | None = Query(None),
+) -> list[dict[str, Any]]:
     """List all approval thresholds."""
-    service = BudgetApprovalService(db)
     thresholds = await service.list_thresholds(is_active=is_active)
-    return [await _build_threshold_response(t, db) for t in thresholds]
+    return [await _build_threshold_response(t) for t in thresholds]
 
 
 @router.get("/thresholds/{threshold_id}", response_model=ApprovalThresholdResponse)
 async def get_threshold(
     threshold_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+) -> dict[str, Any]:
     """Get an approval threshold by ID."""
-    service = BudgetApprovalService(db)
     threshold = await service.get_threshold(threshold_id)
     if not threshold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Threshold not found",
-        )
-    return await _build_threshold_response(threshold, db)
+        raise NotFoundException("Threshold not found")
+    return await _build_threshold_response(threshold)
 
 
 @router.patch("/thresholds/{threshold_id}", response_model=ApprovalThresholdResponse)
 async def update_threshold(
     threshold_id: uuid.UUID,
     data: ApprovalThresholdUpdate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Update an approval threshold."""
-    service = BudgetApprovalService(db)
     threshold = await service.update_threshold(
         threshold_id,
         **data.model_dump(exclude_unset=True),
     )
     if not threshold:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Threshold not found",
-        )
-    return await _build_threshold_response(threshold, db)
+        raise NotFoundException("Threshold not found")
+    return await _build_threshold_response(threshold)
 
 
 @router.delete("/thresholds/{threshold_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_threshold(
     threshold_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> None:
     """Delete an approval threshold."""
-    service = BudgetApprovalService(db)
     deleted = await service.delete_threshold(threshold_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Threshold not found",
-        )
+        raise NotFoundException("Threshold not found")
 
 
 # === Approval Chain Endpoints ===
@@ -343,12 +328,11 @@ async def delete_threshold(
 )
 async def create_chain(
     data: ApprovalChainCreate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     current_user: CurrentUser,
     _: None = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Create a new approval chain with steps."""
-    service = BudgetApprovalService(db)
     steps_data = [s.model_dump() for s in data.steps]
     chain = await service.create_chain(
         name=data.name,
@@ -358,18 +342,18 @@ async def create_chain(
         steps=steps_data,
     )
     # Reload with relationships
-    chain = await service.get_chain(chain.id)
-    return await _build_chain_response(chain)
+    reloaded = await service.get_chain(chain.id)
+    assert reloaded is not None
+    return await _build_chain_response(reloaded)
 
 
 @router.get("/chains", response_model=list[ApprovalChainSummary])
 async def list_chains(
-    is_active: bool | None = Query(None),
-    db: DB = Depends(lambda: None),
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+    is_active: bool | None = Query(None),
+) -> list[ApprovalChainSummary]:
     """List all approval chains."""
-    service = BudgetApprovalService(db)
     chains = await service.list_chains(is_active=is_active)
     return [
         ApprovalChainSummary(
@@ -386,17 +370,13 @@ async def list_chains(
 @router.get("/chains/{chain_id}", response_model=ApprovalChainResponse)
 async def get_chain(
     chain_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+) -> dict[str, Any]:
     """Get an approval chain by ID with steps."""
-    service = BudgetApprovalService(db)
     chain = await service.get_chain(chain_id)
     if not chain:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Approval chain not found",
-        )
+        raise NotFoundException("Approval chain not found")
     return await _build_chain_response(chain)
 
 
@@ -404,37 +384,29 @@ async def get_chain(
 async def update_chain(
     chain_id: uuid.UUID,
     data: ApprovalChainUpdate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Update an approval chain."""
-    service = BudgetApprovalService(db)
     chain = await service.update_chain(
         chain_id,
         **data.model_dump(exclude_unset=True),
     )
     if not chain:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Approval chain not found",
-        )
+        raise NotFoundException("Approval chain not found")
     return await _build_chain_response(chain)
 
 
 @router.delete("/chains/{chain_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chain(
     chain_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> None:
     """Delete an approval chain."""
-    service = BudgetApprovalService(db)
     deleted = await service.delete_chain(chain_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Approval chain not found",
-        )
+        raise NotFoundException("Approval chain not found")
 
 
 @router.post(
@@ -445,11 +417,10 @@ async def delete_chain(
 async def add_chain_step(
     chain_id: uuid.UUID,
     data: ApprovalChainStepCreate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Add a step to an approval chain."""
-    service = BudgetApprovalService(db)
     step = await service.add_chain_step(
         chain_id=chain_id,
         step_number=data.step_number,
@@ -460,10 +431,7 @@ async def add_chain_step(
         auto_approve_on_timeout=data.auto_approve_on_timeout,
     )
     if not step:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Approval chain not found",
-        )
+        raise NotFoundException("Approval chain not found")
     return await _build_chain_step_response(step)
 
 
@@ -473,17 +441,13 @@ async def add_chain_step(
 async def remove_chain_step(
     chain_id: uuid.UUID,
     step_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_admin),
-):
+) -> None:
     """Remove a step from an approval chain."""
-    service = BudgetApprovalService(db)
     deleted = await service.remove_chain_step(step_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Step not found",
-        )
+        raise NotFoundException("Step not found")
 
 
 # === Budget Approval Request Endpoints ===
@@ -496,12 +460,11 @@ async def remove_chain_step(
 )
 async def create_request(
     data: BudgetApprovalRequestCreate,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> dict[str, Any]:
     """Create a new budget approval request."""
-    service = BudgetApprovalService(db)
     try:
         request = await service.create_request(
             program_id=data.program_id,
@@ -513,25 +476,25 @@ async def create_request(
             metadata=data.metadata,
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+        raise BadRequestException(str(e)) from None
 
-    request = await service.get_request(request.id)
-    return await _build_request_response(request)
+    reloaded = await service.get_request(request.id)
+    assert reloaded is not None
+    return await _build_request_response(reloaded)
 
 
 @router.get("/requests", response_model=PaginatedBudgetApprovalRequests)
 async def list_requests(
+    service: BudgetApprovalServiceDep,
+    _: None = Depends(require_internal),
     status: BudgetApprovalStatus | None = Query(None),
     program_id: uuid.UUID | None = Query(None),
     request_type: BudgetRequestType | None = Query(None),
     requested_by: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: DB = Depends(lambda: None),
-    _: None = Depends(require_internal),
-):
+) -> PaginatedBudgetApprovalRequests:
     """List budget approval requests with filters."""
-    service = BudgetApprovalService(db)
     requests, total = await service.list_requests(
         status=status,
         program_id=program_id,
@@ -568,12 +531,11 @@ async def list_requests(
 
 @router.get("/requests/pending", response_model=PendingApprovalsResponse)
 async def get_pending_approvals(
-    db: DB,
+    service: BudgetApprovalServiceDep,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> PendingApprovalsResponse:
     """Get pending approvals for the current user."""
-    service = BudgetApprovalService(db)
     pending = await service.get_pending_approvals_for_user(current_user)
 
     items = [
@@ -599,41 +561,34 @@ async def get_pending_approvals(
 @router.get("/requests/{request_id}", response_model=BudgetApprovalRequestResponse)
 async def get_request(
     request_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+) -> dict[str, Any]:
     """Get a budget approval request by ID."""
-    service = BudgetApprovalService(db)
     request = await service.get_request(request_id)
     if not request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Request not found",
-        )
+        raise NotFoundException("Request not found")
     return await _build_request_response(request)
 
 
 @router.post("/requests/{request_id}/cancel", response_model=BudgetApprovalRequestResponse)
 async def cancel_request(
     request_id: uuid.UUID,
+    service: BudgetApprovalServiceDep,
+    current_user: CurrentUser,
     reason: str | None = Query(None),
-    db: DB = Depends(lambda: None),
-    current_user: CurrentUser = Depends(lambda: None),
-):
+) -> dict[str, Any]:
     """Cancel a budget approval request."""
-    service = BudgetApprovalService(db)
     try:
         request = await service.cancel_request(request_id, current_user, reason)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+        raise BadRequestException(str(e)) from None
 
     if not request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Request not found",
-        )
-    request = await service.get_request(request.id)
-    return await _build_request_response(request)
+        raise NotFoundException("Request not found")
+    reloaded = await service.get_request(request.id)
+    assert reloaded is not None
+    return await _build_request_response(reloaded)
 
 
 # === Approval Step Decision Endpoints ===
@@ -643,12 +598,11 @@ async def cancel_request(
 async def decide_step(
     step_id: uuid.UUID,
     data: BudgetApprovalStepDecision,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> dict[str, Any]:
     """Make a decision on an approval step."""
-    service = BudgetApprovalService(db)
     try:
         step = await service.decide_step(
             step_id=step_id,
@@ -657,13 +611,10 @@ async def decide_step(
             comments=data.comments,
         )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
+        raise BadRequestException(str(e)) from None
 
     if not step:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Step not found",
-        )
+        raise NotFoundException("Step not found")
     return await _build_approval_step_response(step)
 
 
@@ -675,10 +626,9 @@ async def decide_step(
 )
 async def get_request_history(
     request_id: uuid.UUID,
-    db: DB,
+    service: BudgetApprovalServiceDep,
     _: None = Depends(require_internal),
-):
+) -> list[dict[str, Any]]:
     """Get the full history for a budget approval request."""
-    service = BudgetApprovalService(db)
     history = await service.get_request_history(request_id)
     return [await _build_history_response(h) for h in history]

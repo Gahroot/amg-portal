@@ -1,27 +1,136 @@
-import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import {
-  Users,
-  BookOpen,
-  AlertTriangle,
-  TrendingUp,
-  Calendar,
-  ArrowRight,
-} from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 import { listClients } from '@/lib/api/clients';
 import { listPrograms } from '@/lib/api/programs';
-import { Card } from '@/components/ui/card';
-import { RAGBadge } from '@/components/status/rag-badge';
-import { ProgramStatusBadge } from '@/components/status/program-status-badge';
-import { LoadingList } from '@/components/layout/loading-skeleton';
+import { useAuthStore } from '@/lib/auth-store';
 import type { Program } from '@/types/program';
-import { parseISO } from 'date-fns';
 
-export default function InternalDashboardScreen() {
+const RAG_COLORS: Record<string, string> = {
+  red: '#ef4444',
+  amber: '#f59e0b',
+  green: '#22c55e',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  active: '#22c55e',
+  design: '#3b82f6',
+  intake: '#a855f7',
+  on_hold: '#f59e0b',
+  completed: '#64748b',
+  closed: '#94a3b8',
+  archived: '#cbd5e1',
+};
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        minWidth: '45%',
+        backgroundColor: '#1e293b',
+        borderRadius: 12,
+        padding: 16,
+        margin: 4,
+      }}
+    >
+      <Text style={{ fontSize: 28, fontWeight: '700', color }}>{value}</Text>
+      <Text style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{label}</Text>
+    </View>
+  );
+}
+
+function ProgramRow({ program, onPress }: { program: Program; onPress: () => void }) {
+  const progress =
+    program.milestone_count > 0
+      ? Math.round((program.completed_milestone_count / program.milestone_count) * 100)
+      : 0;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        backgroundColor: '#1e293b',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 8,
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: '#f8fafc' }} numberOfLines={1}>
+            {program.title}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{program.client_name}</Text>
+        </View>
+        <View
+          style={{
+            backgroundColor: RAG_COLORS[program.rag_status] + '33',
+            borderRadius: 6,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '600', color: RAG_COLORS[program.rag_status] }}>
+            {program.rag_status.toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 8 }}>
+        <View
+          style={{
+            backgroundColor: STATUS_COLORS[program.status] + '33',
+            borderRadius: 6,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '600', color: STATUS_COLORS[program.status] }}>
+            {program.status.replace('_', ' ').toUpperCase()}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 12, color: '#64748b' }}>
+          {program.completed_milestone_count}/{program.milestone_count} milestones
+        </Text>
+      </View>
+
+      <View
+        style={{
+          height: 4,
+          backgroundColor: '#0f172a',
+          borderRadius: 2,
+          marginTop: 10,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            height: '100%',
+            width: `${progress}%`,
+            backgroundColor: progress >= 100 ? '#22c55e' : '#eab308',
+            borderRadius: 2,
+          }}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
 
   const { data: clientsData, isLoading: clientsLoading, refetch: refetchClients } = useQuery({
     queryKey: ['clients', 'dashboard'],
@@ -30,13 +139,19 @@ export default function InternalDashboardScreen() {
 
   const { data: programsData, isLoading: programsLoading, refetch: refetchPrograms } = useQuery({
     queryKey: ['programs', 'dashboard'],
-    queryFn: () => listPrograms({ limit: 10 }),
+    queryFn: () => listPrograms({ limit: 20 }),
   });
 
   const clients = clientsData?.profiles ?? [];
   const programs = programsData?.programs ?? [];
-
   const isLoading = clientsLoading || programsLoading;
+
+  const stats = {
+    totalClients: clientsData?.total ?? 0,
+    activePrograms: programs.filter((p) => p.status === 'active').length,
+    atRiskPrograms: programs.filter((p) => p.rag_status === 'red' || p.rag_status === 'amber').length,
+    completed: programs.filter((p) => p.status === 'completed').length,
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -44,210 +159,135 @@ export default function InternalDashboardScreen() {
     setRefreshing(false);
   };
 
-  // Calculate stats
-  const stats = {
-    totalClients: clientsData?.total ?? 0,
-    activePrograms: programs.filter((p) => p.status === 'active').length,
-    atRiskPrograms: programs.filter((p) => p.rag_status === 'red' || p.rag_status === 'amber').length,
-    upcomingDeadlines: programs.filter((p) => {
-      if (!p.end_date) return false;
-      const date = parseISO(p.end_date);
-      const weekFromNow = new Date();
-      weekFromNow.setDate(weekFromNow.getDate() + 7);
-      return date <= weekFromNow && p.status === 'active';
-    }).length,
-  };
-
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
-        <View className="p-4">
-          <LoadingList count={3} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }} edges={['bottom']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#eab308" />
+          <Text style={{ color: '#64748b', marginTop: 12 }}>Loading dashboard…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }} edges={['bottom']}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#eab308" />
+        }
       >
-        <View className="p-4">
+        <View style={{ padding: 16 }}>
           {/* Welcome Header */}
-          <View className="mb-4">
-            <Text className="text-2xl font-bold text-foreground">Dashboard</Text>
-            <Text className="text-muted-foreground">Overview of programs, clients, and escalations.</Text>
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: '#f8fafc' }}>
+              Hello, {user?.full_name?.split(' ')[0] ?? 'there'} 👋
+            </Text>
+            <Text style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
+              Here's your portfolio overview.
+            </Text>
           </View>
 
-          {/* Stats Cards */}
-          <View className="mb-4 flex-row flex-wrap gap-3">
-            <Card className="flex-1 min-w-[45%]">
-              <View className="flex-row items-center gap-2">
-                <View className="rounded-lg bg-blue-100 p-2">
-                  <Users color="#3b82f6" size={20} />
-                </View>
-                <View>
-                  <Text className="text-2xl font-bold text-foreground">{stats.totalClients}</Text>
-                  <Text className="text-xs text-muted-foreground">Total Clients</Text>
-                </View>
-              </View>
-            </Card>
-
-            <Card className="flex-1 min-w-[45%]">
-              <View className="flex-row items-center gap-2">
-                <View className="rounded-lg bg-green-100 p-2">
-                  <BookOpen color="#22c55e" size={20} />
-                </View>
-                <View>
-                  <Text className="text-2xl font-bold text-foreground">{stats.activePrograms}</Text>
-                  <Text className="text-xs text-muted-foreground">Active Programs</Text>
-                </View>
-              </View>
-            </Card>
-
-            <Card className="flex-1 min-w-[45%]">
-              <View className="flex-row items-center gap-2">
-                <View className="rounded-lg bg-orange-100 p-2">
-                  <AlertTriangle color="#f97316" size={20} />
-                </View>
-                <View>
-                  <Text className="text-2xl font-bold text-rag-amber">{stats.atRiskPrograms}</Text>
-                  <Text className="text-xs text-muted-foreground">At Risk</Text>
-                </View>
-              </View>
-            </Card>
-
-            <Card className="flex-1 min-w-[45%]">
-              <View className="flex-row items-center gap-2">
-                <View className="rounded-lg bg-purple-100 p-2">
-                  <Calendar color="#a855f7" size={20} />
-                </View>
-                <View>
-                  <Text className="text-2xl font-bold text-foreground">{stats.upcomingDeadlines}</Text>
-                  <Text className="text-xs text-muted-foreground">Due This Week</Text>
-                </View>
-              </View>
-            </Card>
+          {/* Stats Grid */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4, marginBottom: 20 }}>
+            <StatCard label="Total Clients" value={stats.totalClients} color="#3b82f6" />
+            <StatCard label="Active Programs" value={stats.activePrograms} color="#22c55e" />
+            <StatCard label="At Risk" value={stats.atRiskPrograms} color="#f59e0b" />
+            <StatCard label="Completed" value={stats.completed} color="#64748b" />
           </View>
 
           {/* Active Programs */}
-          <View className="mb-4">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-foreground">Active Programs</Text>
-              <Pressable className="flex-row items-center gap-1">
-                <Text className="text-sm text-accent">View All</Text>
-                <ArrowRight color="#eab308" size={14} />
+          <View style={{ marginBottom: 20 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#f8fafc' }}>Active Programs</Text>
+              <Pressable onPress={() => router.push('/(internal)/programs')}>
+                <Text style={{ fontSize: 13, color: '#eab308' }}>View All →</Text>
               </Pressable>
             </View>
 
-            {programs
-              .filter((p) => p.status === 'active')
-              .slice(0, 3)
-              .map((program) => (
-                <ProgramCard key={program.id} program={program} />
-              ))}
-
-            {programs.filter((p) => p.status === 'active').length === 0 && (
-              <Card>
-                <View className="items-center py-4">
-                  <BookOpen color="#94a3b8" size={32} />
-                  <Text className="mt-2 text-sm text-muted-foreground">No active programs</Text>
-                </View>
-              </Card>
+            {programs.filter((p) => p.status === 'active').length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: 12,
+                  padding: 32,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 32 }}>📋</Text>
+                <Text style={{ color: '#64748b', marginTop: 8 }}>No active programs</Text>
+              </View>
+            ) : (
+              programs
+                .filter((p) => p.status === 'active')
+                .slice(0, 5)
+                .map((program) => (
+                  <ProgramRow
+                    key={program.id}
+                    program={program}
+                    onPress={() => router.push(`/(internal)/programs/${program.id}`)}
+                  />
+                ))
             )}
           </View>
 
-          {/* At Risk Programs */}
-          {stats.atRiskPrograms > 0 && (
-            <View className="mb-4">
-              <View className="mb-2 flex-row items-center gap-2">
-                <AlertTriangle color="#f97316" size={18} />
-                <Text className="text-lg font-semibold text-foreground">At Risk Programs</Text>
-              </View>
-
-              {programs
-                .filter((p) => p.rag_status === 'red' || p.rag_status === 'amber')
-                .slice(0, 2)
-                .map((program) => (
-                  <ProgramCard key={program.id} program={program} highlightRisk />
-                ))}
-            </View>
-          )}
-
           {/* Recent Clients */}
-          <View className="mb-4">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-foreground">Recent Clients</Text>
-              <Pressable className="flex-row items-center gap-1">
-                <Text className="text-sm text-accent">View All</Text>
-                <ArrowRight color="#eab308" size={14} />
-              </Pressable>
-            </View>
-
-            {clients.slice(0, 3).map((client) => (
-              <Card key={client.id} className="mb-2">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-base font-medium text-foreground">
+          <View style={{ marginBottom: 20 }}>
+            <Text
+              style={{ fontSize: 17, fontWeight: '600', color: '#f8fafc', marginBottom: 12 }}
+            >
+              Recent Clients
+            </Text>
+            {clients.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: 12,
+                  padding: 32,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 32 }}>👤</Text>
+                <Text style={{ color: '#64748b', marginTop: 8 }}>No clients yet</Text>
+              </View>
+            ) : (
+              clients.slice(0, 3).map((client) => (
+                <View
+                  key={client.id}
+                  style={{
+                    backgroundColor: '#1e293b',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '500', color: '#f8fafc' }}>
                       {client.display_name || client.legal_name}
                     </Text>
-                    <Text className="text-sm text-muted-foreground">{client.primary_email}</Text>
+                    <Text style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                      {client.primary_email}
+                    </Text>
                   </View>
-                  <ArrowRight color="#94a3b8" size={16} />
+                  <Text style={{ color: '#64748b', fontSize: 18 }}>›</Text>
                 </View>
-              </Card>
-            ))}
-
-            {clients.length === 0 && (
-              <Card>
-                <View className="items-center py-4">
-                  <Users color="#94a3b8" size={32} />
-                  <Text className="mt-2 text-sm text-muted-foreground">No clients yet</Text>
-                </View>
-              </Card>
+              ))
             )}
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function ProgramCard({ program, highlightRisk = false }: { program: Program; highlightRisk?: boolean }) {
-  const progress =
-    program.milestone_count > 0
-      ? Math.round((program.completed_milestone_count / program.milestone_count) * 100)
-      : 0;
-
-  return (
-    <Card className={`mb-2 ${highlightRisk && program.rag_status === 'red' ? 'border-rag-red' : ''}`}>
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-2">
-          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-            {program.title}
-          </Text>
-          <Text className="text-sm text-muted-foreground">{program.client_name}</Text>
-        </View>
-        <RAGBadge status={program.rag_status} />
-      </View>
-
-      <View className="mt-3">
-        <View className="flex-row items-center justify-between">
-          <ProgramStatusBadge status={program.status} />
-          <Text className="text-xs text-muted-foreground">
-            {program.completed_milestone_count}/{program.milestone_count} milestones
-          </Text>
-        </View>
-        <View className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-          <View
-            className={`h-full rounded-full ${progress >= 100 ? 'bg-green-500' : 'bg-accent'}`}
-            style={{ width: `${progress}%` }}
-          />
-        </View>
-      </View>
-    </Card>
   );
 }

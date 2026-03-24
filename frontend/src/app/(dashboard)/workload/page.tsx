@@ -47,12 +47,7 @@ const CAPACITY_VARIANT: Record<
   overloaded: "destructive",
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  managing_director: "Managing Director",
-  relationship_manager: "Relationship Manager",
-  coordinator: "Coordinator",
-  finance_compliance: "Finance & Compliance",
-};
+import { ROLE_LABELS } from "@/lib/constants";
 
 export default function WorkloadPage() {
   const { user } = useAuth();

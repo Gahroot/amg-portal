@@ -1,16 +1,21 @@
 """API dependencies — auth + RBAC."""
 
-from typing import Annotated
+import uuid
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, decode_mfa_setup_token
 from app.db.session import apply_rls_context, get_db
 from app.models.enums import UserRole
 from app.models.user import User
+from app.services.budget_approval_service import BudgetApprovalService
+
+if TYPE_CHECKING:
+    from app.models.partner import PartnerProfile
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -51,6 +56,49 @@ async def get_current_user(
 # Type aliases
 CurrentUser = Annotated[User, Depends(get_current_user)]
 DB = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def get_mfa_setup_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    """Accept either a regular access token or an MFA setup token.
+
+    Used exclusively on the MFA setup endpoints so that users who
+    received an ``mfa_setup_token`` (no real access token yet) can
+    still call /mfa/setup and /mfa/verify-setup.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # Try regular access token first, then MFA setup token
+    payload = decode_access_token(token) or decode_mfa_setup_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    user_id_str: str | None = payload.get("sub")
+    if user_id_str is None:
+        raise credentials_exception
+
+    result = await db.execute(select(User).where(User.id == user_id_str))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise credentials_exception
+
+    if user.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user",
+        )
+
+    return user
+
+
+MFASetupUser = Annotated[User, Depends(get_mfa_setup_user)]
 
 
 class RoleChecker:
@@ -102,11 +150,13 @@ require_compliance = RoleChecker([UserRole.finance_compliance, UserRole.managing
 
 require_partner = RoleChecker([UserRole.partner])
 
+require_client = RoleChecker([UserRole.client])
+
 
 async def get_current_partner_profile(
     current_user: CurrentUser,
     db: DB,
-):
+) -> "PartnerProfile":
     from app.models.partner import PartnerProfile
 
     result = await db.execute(
@@ -121,7 +171,7 @@ async def get_current_partner_profile(
     return profile
 
 
-CurrentPartner = Annotated[object, Depends(get_current_partner_profile)]
+CurrentPartner = Annotated["PartnerProfile", Depends(get_current_partner_profile)]
 
 
 async def with_rls(db: DB, current_user: CurrentUser) -> None:
@@ -130,3 +180,23 @@ async def with_rls(db: DB, current_user: CurrentUser) -> None:
 
 
 RLSContext = Annotated[None, Depends(with_rls)]
+
+
+async def get_rm_client_ids(db: AsyncSession, rm_id: uuid.UUID) -> list[uuid.UUID]:
+    """Get all client IDs (from the clients table) assigned to an RM.
+
+    Used across multiple endpoints to scope data visibility for
+    relationship_manager users to their own portfolio only.
+    """
+    from app.models.client import Client
+
+    result = await db.execute(select(Client.id).where(Client.rm_id == rm_id))
+    return list(result.scalars().all())
+
+
+async def get_budget_approval_service(db: DB) -> BudgetApprovalService:
+    """Provide a BudgetApprovalService bound to the current request's DB session."""
+    return BudgetApprovalService(db)
+
+
+BudgetApprovalServiceDep = Annotated[BudgetApprovalService, Depends(get_budget_approval_service)]

@@ -66,7 +66,7 @@ export default function NewAssignmentPage() {
   });
 
   const dispatchMutation = useMutation({
-    mutationFn: dispatchAssignment,
+    mutationFn: (id: string) => dispatchAssignment(id),
   });
 
   const isInternal = user?.role !== "client" && user?.role !== "partner";

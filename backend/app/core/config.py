@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "AMG Portal"
     DEBUG: bool = True
+    SQL_ECHO: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
     # Database
@@ -34,11 +35,26 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Backend (for generating absolute URLs like calendar feed URLs)
+    BACKEND_URL: str = "http://localhost:8000"
+
+    # MFA
+    MFA_GRACE_PERIOD_DAYS: int = 7
+    MFA_SETUP_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Password Reset
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
+
     # Scheduler
     SCHEDULER_ENABLED: bool = True
     SLA_CHECK_INTERVAL_MINUTES: int = 5
     MILESTONE_RISK_CHECK_INTERVAL_MINUTES: int = 15
     DIGEST_HOUR_UTC: int = 8
+
+    # Data retention / archival
+    DATA_RETENTION_DAYS: int = 365  # Days after program close before archival eligibility
+    ARCHIVE_BATCH_SIZE: int = 100
+    AUTO_ARCHIVE_PROGRAMS: bool = False  # Auto-archive when eligible; False = notify only
 
     # SMTP / Email
     SMTP_HOST: str | None = None
@@ -47,6 +63,26 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str | None = None
     SMTP_FROM: str = "noreply@amg-portal.com"
     SMTP_TLS: bool = True
+
+    # Travel API Integration
+    TRAVEL_WEBHOOK_SECRET: str = ""  # Secret for authenticating travel webhooks
+
+    # Google Calendar Integration
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_CALENDAR_REDIRECT_URI: str = ""  # e.g., http://localhost:3000/settings/calendar/callback/google
+
+    # Microsoft / Outlook Calendar Integration
+    MICROSOFT_CLIENT_ID: str = ""
+    MICROSOFT_CLIENT_SECRET: str = ""
+    MICROSOFT_CALENDAR_REDIRECT_URI: str = ""  # e.g., http://localhost:3000/settings/calendar/callback/outlook
+    MICROSOFT_TENANT_ID: str = "common"  # Use "common" for multi-tenant, or specific tenant ID
+
+    # Security & Intelligence Feed Integration (Phase 2)
+    # Leave blank to run in stub/offline mode — no real feed will be contacted.
+    SECURITY_FEED_PROVIDER: str | None = None  # e.g. "maxmind", "flashpoint", "custom"
+    SECURITY_FEED_API_KEY: str | None = None
+    SECURITY_FEED_BASE_URL: str | None = None  # Base URL for custom/self-hosted providers
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

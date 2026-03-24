@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ title | default('Financial Report') }}</h1>
+
+{% if report_period %}
+<p><strong>Report Period:</strong> {{ report_period }}</p>
+{% endif %}
+
+{% if summary %}
+<div class="summary-box">
+    <h3>Financial Summary</h3>
+    {% for key, value in summary.items() %}
+    <div class="stat-row">
+        <span class="stat-label">{{ key }}:</span>
+        <span class="stat-value">{{ value }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if budget_overview %}
+<h2>Budget Overview</h2>
+<table>
+    <tr>
+        <th>Category</th>
+        <th class="currency">Budgeted</th>
+        <th class="currency">Actual</th>
+        <th class="currency">Variance</th>
+        <th>Status</th>
+    </tr>
+    {% for item in budget_overview %}
+    <tr>
+        <td>{{ item.category }}</td>
+        <td class="currency">{{ "${:,.2f}".format(item.budgeted) if item.budgeted else '-' }}</td>
+        <td class="currency">{{ "${:,.2f}".format(item.actual) if item.actual else '-' }}</td>
+        <td class="currency">{{ "{:+,.2f}".format(item.variance) if item.variance else '-' }}</td>
+        <td class="rag-{{ item.status | lower if item.status else 'green' }}">{{ item.status | title if item.status else 'OK' }}</td>
+    </tr>
+    {% endfor %}
+    {% if budget_total %}
+    <tr style="font-weight: bold; background-color: #f0e6dc;">
+        <td>Total</td>
+        <td class="currency">{{ "${:,.2f}".format(budget_total.budgeted) }}</td>
+        <td class="currency">{{ "${:,.2f}".format(budget_total.actual) }}</td>
+        <td class="currency">{{ "{:+,.2f}".format(budget_total.variance) }}</td>
+        <td></td>
+    </tr>
+    {% endif %}
+</table>
+{% endif %}
+
+{% if program_costs %}
+<h2>Program Costs</h2>
+<table>
+    <tr>
+        <th>Program</th>
+        <th>Client</th>
+        <th class="currency">Budget</th>
+        <th class="currency">Spent</th>
+        <th class="currency">Remaining</th>
+        <th>Progress</th>
+    </tr>
+    {% for pc in program_costs %}
+    <tr>
+        <td>{{ pc.program_title }}</td>
+        <td>{{ pc.client_name }}</td>
+        <td class="currency">{{ "${:,.2f}".format(pc.budget) if pc.budget else '-' }}</td>
+        <td class="currency">{{ "${:,.2f}".format(pc.spent) if pc.spent else '-' }}</td>
+        <td class="currency">{{ "${:,.2f}".format(pc.remaining) if pc.remaining else '-' }}</td>
+        <td>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ pc.progress | default(0) }}%;"></div>
+            </div>
+            {{ pc.progress | default(0) }}%
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if partner_payments %}
+<h2>Partner Payments</h2>
+<table>
+    <tr>
+        <th>Partner</th>
+        <th>Assignment</th>
+        <th class="currency">Amount</th>
+        <th>Status</th>
+        <th>Due Date</th>
+    </tr>
+    {% for pp in partner_payments %}
+    <tr>
+        <td>{{ pp.partner_name }}</td>
+        <td>{{ pp.assignment_title }}</td>
+        <td class="currency">{{ "${:,.2f}".format(pp.amount) if pp.amount else '-' }}</td>
+        <td>{{ pp.status | title }}</td>
+        <td>{{ pp.due_date or 'N/A' }}</td>
+    </tr>
+    {% endfor %}
+    {% if payments_total %}
+    <tr style="font-weight: bold; background-color: #f0e6dc;">
+        <td colspan="2">Total Payments</td>
+        <td class="currency">{{ "${:,.2f}".format(payments_total) }}</td>
+        <td colspan="2"></td>
+    </tr>
+    {% endif %}
+</table>
+{% endif %}
+
+{% if invoices %}
+<h2>Invoices</h2>
+<table>
+    <tr>
+        <th>Invoice #</th>
+        <th>Client</th>
+        <th class="currency">Amount</th>
+        <th>Status</th>
+        <th>Issued</th>
+        <th>Due</th>
+    </tr>
+    {% for inv in invoices %}
+    <tr>
+        <td>{{ inv.invoice_number }}</td>
+        <td>{{ inv.client_name }}</td>
+        <td class="currency">{{ "${:,.2f}".format(inv.amount) if inv.amount else '-' }}</td>
+        <td>{{ inv.status | title }}</td>
+        <td>{{ inv.issued_date or 'N/A' }}</td>
+        <td>{{ inv.due_date or 'N/A' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if breakdown_by_month %}
+<h2>Monthly Breakdown</h2>
+<table>
+    <tr>
+        <th>Month</th>
+        <th class="currency">Budgeted</th>
+        <th class="currency">Actual</th>
+        <th class="currency">Cumulative</th>
+    </tr>
+    {% for month in breakdown_by_month %}
+    <tr>
+        <td>{{ month.name }}</td>
+        <td class="currency">{{ "${:,.2f}".format(month.budgeted) if month.budgeted else '-' }}</td>
+        <td class="currency">{{ "${:,.2f}".format(month.actual) if month.actual else '-' }}</td>
+        <td class="currency">{{ "${:,.2f}".format(month.cumulative) if month.cumulative else '-' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if notes %}
+<h2>Notes</h2>
+<p>{{ notes }}</p>
+{% endif %}
+{% endblock %}

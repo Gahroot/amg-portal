@@ -3,11 +3,12 @@
 import contextlib
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, require_compliance, require_internal
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.clearance_certificate import (
     CertificateTemplate,
     ClearanceCertificate,
@@ -110,7 +111,7 @@ async def get_template(
     )
     template = result.scalar_one_or_none()
     if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise NotFoundException("Template not found")
     return CertificateTemplateResponse.model_validate(template)
 
 
@@ -128,7 +129,7 @@ async def update_template(
     )
     template = result.scalar_one_or_none()
     if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise NotFoundException("Template not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -152,7 +153,7 @@ async def delete_template(
     )
     template = result.scalar_one_or_none()
     if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise NotFoundException("Template not found")
 
     await db.delete(template)
     await db.commit()
@@ -200,7 +201,7 @@ async def preview_certificate(
         "title": title,
         "issue_date": None,
         "expiry_date": None,
-        "issued_by": f"{current_user.first_name} {current_user.last_name}",
+        "issued_by": current_user.full_name,
     }
 
     # Render content
@@ -256,10 +257,10 @@ def build_certificate_response(
     }
 
     if cert.creator:
-        data["created_by_name"] = f"{cert.creator.first_name} {cert.creator.last_name}"
+        data["created_by_name"] = cert.creator.full_name
 
     if cert.reviewer:
-        data["reviewed_by_name"] = f"{cert.reviewer.first_name} {cert.reviewer.last_name}"
+        data["reviewed_by_name"] = cert.reviewer.full_name
 
     if include_download_url and cert.pdf_path:
         with contextlib.suppress(Exception):
@@ -279,13 +280,13 @@ async def create_certificate(
     # Verify client exists
     result = await db.execute(select(Client).where(Client.id == data.client_id))
     if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise NotFoundException("Client not found")
 
     # Verify program if specified
     if data.program_id:
         result = await db.execute(select(Program).where(Program.id == data.program_id))
         if not result.scalar_one_or_none():
-            raise HTTPException(status_code=404, detail="Program not found")
+            raise NotFoundException("Program not found")
 
     certificate = await certificate_service.create_certificate(
         db,
@@ -394,7 +395,7 @@ async def get_certificate(
     )
     cert = result.scalar_one_or_none()
     if not cert:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise NotFoundException("Certificate not found")
 
     response_data = build_certificate_response(cert, include_download_url=True)
     response_data["history"] = [
@@ -436,10 +437,10 @@ async def update_certificate(
     )
     cert = result.scalar_one_or_none()
     if not cert:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise NotFoundException("Certificate not found")
 
     if cert.status != "draft":
-        raise HTTPException(status_code=400, detail="Only draft certificates can be updated")
+        raise BadRequestException("Only draft certificates can be updated")
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -450,7 +451,7 @@ async def update_certificate(
         certificate_id=cert.id,
         action="updated",
         actor_id=current_user.id,
-        actor_name=f"{current_user.first_name} {current_user.last_name}",
+        actor_name=current_user.full_name,
     )
     db.add(history)
     await db.commit()
@@ -478,7 +479,7 @@ async def issue_certificate(
             review_notes=data.review_notes,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from None
+        raise BadRequestException(str(e)) from None
 
     # Reload with relationships
     result = await db.execute(
@@ -512,7 +513,7 @@ async def revoke_certificate(
             db, certificate_id, current_user, data.reason
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from None
+        raise BadRequestException(str(e)) from None
 
     # Reload with relationships
     result = await db.execute(
@@ -543,13 +544,13 @@ async def download_certificate(
     )
     cert = result.scalar_one_or_none()
     if not cert:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise NotFoundException("Certificate not found")
 
     if cert.status != "issued":
-        raise HTTPException(status_code=400, detail="Certificate has not been issued")
+        raise BadRequestException("Certificate has not been issued")
 
     if not cert.pdf_path:
-        raise HTTPException(status_code=404, detail="PDF not found")
+        raise NotFoundException("PDF not found")
 
     url = storage_service.get_presigned_url(cert.pdf_path)
     return {"download_url": url}
@@ -570,16 +571,16 @@ async def get_certificate_pdf(
     )
     cert = result.scalar_one_or_none()
     if not cert:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise NotFoundException("Certificate not found")
 
     if cert.status != "issued":
-        raise HTTPException(status_code=400, detail="Certificate has not been issued")
+        raise BadRequestException("Certificate has not been issued")
 
     # Generate PDF on-the-fly if not stored
     if not cert.pdf_path:
         pdf_bytes = await certificate_service.generate_certificate_pdf(
             cert,
-            f"{cert.creator.first_name} {cert.creator.last_name}" if cert.creator else "AMG",
+            cert.creator.full_name if cert.creator else "AMG",
         )
     else:
         # Download from storage
@@ -609,10 +610,10 @@ async def delete_certificate(
     )
     cert = result.scalar_one_or_none()
     if not cert:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+        raise NotFoundException("Certificate not found")
 
     if cert.status != "draft":
-        raise HTTPException(status_code=400, detail="Only draft certificates can be deleted")
+        raise BadRequestException("Only draft certificates can be deleted")
 
     # Delete PDF from storage if exists
     if cert.pdf_path:

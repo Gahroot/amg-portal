@@ -1,7 +1,9 @@
 "use client";
 
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, Sun, Moon, Monitor, Keyboard } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/providers/auth-provider";
+import { useKeyboardShortcutsDialog } from "@/components/ui/keyboard-shortcuts-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +13,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
   SidebarFooter,
@@ -19,15 +24,7 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
-
-const ROLE_LABELS: Record<string, string> = {
-  managing_director: "Managing Director",
-  relationship_manager: "Relationship Manager",
-  coordinator: "Coordinator",
-  finance_compliance: "Finance & Compliance",
-  client: "Client",
-  partner: "Partner",
-};
+import { ROLE_LABELS } from "@/lib/constants";
 
 function getInitials(name: string): string {
   return name
@@ -41,6 +38,8 @@ function getInitials(name: string): string {
 export function SidebarUserFooter() {
   const { user, logout } = useAuth();
   const { isMobile } = useSidebar();
+  const { setTheme, theme } = useTheme();
+  const { open: openShortcutsDialog } = useKeyboardShortcutsDialog();
 
   if (!user) return null;
 
@@ -94,8 +93,37 @@ export function SidebarUserFooter() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span>Theme</span>
+                  <span className="ml-auto text-xs text-muted-foreground capitalize">
+                    {theme}
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setTheme("light")}>
+                    <Sun className="mr-2 h-4 w-4" />
+                    Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    <Moon className="mr-2 h-4 w-4" />
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")}>
+                    <Monitor className="mr-2 h-4 w-4" />
+                    System
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuItem onClick={openShortcutsDialog}>
+                <Keyboard className="mr-2 h-4 w-4" />
+                Keyboard Shortcuts
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
-                <LogOut />
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

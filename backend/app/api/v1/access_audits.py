@@ -2,12 +2,14 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_compliance, require_internal
+from app.api.deps import DB, require_compliance, require_internal
+from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.models.access_audit import AccessAudit, AccessAuditFinding
+from app.models.user import User
 from app.schemas.access_audit import (
     AccessAuditFindingListResponse,
     AccessAuditFindingResponse,
@@ -82,7 +84,7 @@ def _enrich_finding(finding: AccessAuditFinding) -> dict:
 @router.get("/", response_model=AccessAuditListResponse)
 async def list_access_audits(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
@@ -118,7 +120,7 @@ async def list_access_audits(
 @router.get("/statistics", response_model=AccessAuditStatistics)
 async def get_access_audit_statistics(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> AccessAuditStatistics:
     """Get access audit statistics."""
     stats = await access_audit_service.get_audit_statistics(db)
@@ -128,7 +130,7 @@ async def get_access_audit_statistics(
 @router.get("/current", response_model=AccessAuditResponse | None)
 async def get_current_quarter_audit(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> AccessAuditResponse | None:
     """Get the audit for the current quarter."""
     audit = await access_audit_service.get_current_quarter_audit(db)
@@ -141,7 +143,7 @@ async def get_current_quarter_audit(
 async def create_access_audit(
     data: CreateAccessAuditRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditResponse:
     """Create a new access audit."""
     # Check for existing audit for same quarter/year
@@ -152,10 +154,7 @@ async def create_access_audit(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Audit already exists for this quarter and year",
-        )
+        raise ConflictException("Audit already exists for this quarter and year")
 
     audit = await access_audit_service.create_quarterly_audit(
         db,
@@ -170,7 +169,7 @@ async def create_access_audit(
 @router.get("/findings", response_model=AccessAuditFindingListResponse)
 async def list_all_findings(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
@@ -196,15 +195,12 @@ async def list_all_findings(
 async def get_access_audit(
     audit_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> AccessAuditResponse:
     """Get a single access audit by ID with all findings."""
     audit = await access_audit_service.get_audit_with_findings(db, audit_id)
     if not audit:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Access audit not found",
-        )
+        raise NotFoundException("Access audit not found")
     return AccessAuditResponse(**_enrich_audit(audit))
 
 
@@ -213,32 +209,50 @@ async def update_access_audit(
     audit_id: uuid.UUID,
     data: UpdateAccessAuditRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditResponse:
     """Update an access audit."""
     audit = await access_audit_service.update(db, audit_id, data)
     if not audit:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Access audit not found",
-        )
+        raise NotFoundException("Access audit not found")
     audit = await access_audit_service.get_audit_with_findings(db, audit.id)
     return AccessAuditResponse(**_enrich_audit(audit))
+
+
+@router.post("/{audit_id}/scan", response_model=AccessAuditResponse)
+async def scan_dormant_accounts(
+    audit_id: uuid.UUID,
+    db: DB,
+    current_user: User = Depends(require_compliance),
+    days_threshold: int = Query(90, ge=1, le=365, description="Inactivity threshold in days"),
+) -> AccessAuditResponse:
+    """Scan for dormant accounts and add inactive_user findings to the audit.
+
+    Safe to re-run — users already flagged with an open finding are skipped.
+    """
+    audit = await access_audit_service.get(db, audit_id)
+    if not audit:
+        raise NotFoundException("Access audit not found")
+
+    if audit.status == "completed":
+        raise BadRequestException("Cannot scan a completed audit")
+
+    await access_audit_service.generate_dormant_findings(db, audit_id, days_threshold)
+    refreshed = await access_audit_service.get_audit_with_findings(db, audit_id)
+    assert refreshed is not None
+    return AccessAuditResponse(**_enrich_audit(refreshed))
 
 
 @router.post("/{audit_id}/complete", response_model=AccessAuditResponse)
 async def complete_access_audit(
     audit_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditResponse:
     """Mark an access audit as complete."""
     audit = await access_audit_service.complete_audit(db, audit_id)
     if not audit:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Access audit not found",
-        )
+        raise NotFoundException("Access audit not found")
     audit = await access_audit_service.get_audit_with_findings(db, audit.id)
     return AccessAuditResponse(**_enrich_audit(audit))
 
@@ -252,22 +266,16 @@ async def create_audit_finding(
     audit_id: uuid.UUID,
     data: CreateAccessAuditFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditFindingResponse:
     """Add a finding to an access audit."""
     # Verify audit exists
     audit = await access_audit_service.get(db, audit_id)
     if not audit:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Access audit not found",
-        )
+        raise NotFoundException("Access audit not found")
 
     if audit.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot add findings to a completed audit",
-        )
+        raise BadRequestException("Cannot add findings to a completed audit")
 
     finding = await access_audit_service.add_finding(db, audit_id, data)
 
@@ -289,15 +297,12 @@ async def update_audit_finding(
     finding_id: uuid.UUID,
     data: UpdateAccessAuditFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditFindingResponse:
     """Update an audit finding."""
     finding = await access_audit_service.update_finding(db, finding_id, data)
     if not finding:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Finding not found",
-        )
+        raise NotFoundException("Finding not found")
 
     # Reload with relationships
     result = await db.execute(
@@ -317,15 +322,12 @@ async def acknowledge_finding(
     finding_id: uuid.UUID,
     data: AcknowledgeFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditFindingResponse:
     """Acknowledge an audit finding."""
     finding = await access_audit_service.acknowledge_finding(db, finding_id, current_user.id)
     if not finding:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Finding not found",
-        )
+        raise NotFoundException("Finding not found")
 
     # Reload with relationships
     result = await db.execute(
@@ -345,17 +347,14 @@ async def remediate_finding(
     finding_id: uuid.UUID,
     data: RemediateFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditFindingResponse:
     """Mark a finding as remediated."""
     finding = await access_audit_service.remediate_finding(
         db, finding_id, current_user.id, data.remediation_notes
     )
     if not finding:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Finding not found",
-        )
+        raise NotFoundException("Finding not found")
 
     # Reload with relationships
     result = await db.execute(
@@ -375,17 +374,14 @@ async def waive_finding(
     finding_id: uuid.UUID,
     data: WaiveFindingRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_compliance),
+    current_user: User = Depends(require_compliance),
 ) -> AccessAuditFindingResponse:
     """Waive a finding with a reason."""
     finding = await access_audit_service.waive_finding(
         db, finding_id, current_user.id, data.waived_reason
     )
     if not finding:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Finding not found",
-        )
+        raise NotFoundException("Finding not found")
 
     # Reload with relationships
     result = await db.execute(

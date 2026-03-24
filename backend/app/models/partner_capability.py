@@ -7,10 +7,10 @@ from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Numeric, Str
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import backref, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class PartnerCapability(Base):
+class PartnerCapability(Base, TimestampMixin):
     """Individual skill/capability of a partner with proficiency level."""
 
     __tablename__ = "partner_capabilities"
@@ -26,19 +26,13 @@ class PartnerCapability(Base):
     verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
 
     # Relationships
     partner = relationship("PartnerProfile", backref="capabilities_detail")
     verifier = relationship("User", foreign_keys=[verified_by])
 
 
-class ServiceCategory(Base):
+class ServiceCategory(Base, TimestampMixin):
     """Service categories with required capabilities."""
 
     __tablename__ = "service_categories"
@@ -48,12 +42,6 @@ class ServiceCategory(Base):
     description = Column(Text, nullable=True)
     required_capabilities = Column(JSON, default=list)  # List of capability names required
     active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
 
     # Relationships
     qualifications = relationship(
@@ -61,7 +49,7 @@ class ServiceCategory(Base):
     )
 
 
-class PartnerQualification(Base):
+class PartnerQualification(Base, TimestampMixin):
     """Partner qualification for a service category."""
 
     __tablename__ = "partner_qualifications"
@@ -78,12 +66,6 @@ class PartnerQualification(Base):
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
 
     # Relationships
     partner = relationship("PartnerProfile", backref="qualifications_detail")
@@ -91,7 +73,7 @@ class PartnerQualification(Base):
     approver = relationship("User", foreign_keys=[approved_by])
 
 
-class PartnerCertification(Base):
+class PartnerCertification(Base, TimestampMixin):
     """Partner certifications with expiry tracking."""
 
     __tablename__ = "partner_certifications"
@@ -110,19 +92,13 @@ class PartnerCertification(Base):
     verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
 
     # Relationships
     partner = relationship("PartnerProfile", backref="certifications_detail")
     verifier = relationship("User", foreign_keys=[verified_by])
 
 
-class PartnerOnboarding(Base):
+class PartnerOnboarding(Base, TimestampMixin):
     """Partner onboarding workflow tracking."""
 
     __tablename__ = "partner_onboarding"
@@ -138,12 +114,6 @@ class PartnerOnboarding(Base):
     assigned_coordinator = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
 
     # Relationships
     partner = relationship("PartnerProfile", backref=backref("onboarding_detail", uselist=False))

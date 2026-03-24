@@ -1,35 +1,22 @@
 import api from "@/lib/api";
+import type {
+  Approval,
+  ApprovalCommentCreate,
+  ApprovalCommentThread,
+  ApprovalDecision,
+  ApprovalListParams,
+  ApprovalRequest,
+} from "@/types/approval";
 
-export interface Approval {
-  id: string;
-  program_id: string;
-  approval_type: string;
-  requested_by: string;
-  requester_name: string;
-  approved_by: string | null;
-  approver_name: string | null;
-  status: "pending" | "approved" | "rejected";
-  comments: string | null;
-  decided_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ApprovalRequest {
-  program_id: string;
-  approval_type: "standard" | "elevated" | "strategic" | "emergency";
-  comments?: string;
-}
-
-export interface ApprovalDecision {
-  status: "approved" | "rejected";
-  comments?: string;
-}
-
-export interface ApprovalListParams {
-  skip?: number;
-  limit?: number;
-}
+// Re-export types for convenience
+export type {
+  Approval,
+  ApprovalCommentCreate,
+  ApprovalCommentThread,
+  ApprovalDecision,
+  ApprovalListParams,
+  ApprovalRequest,
+};
 
 export async function listApprovals(
   params?: ApprovalListParams
@@ -65,4 +52,42 @@ export async function getProgramApprovals(
     `/api/v1/approvals/program/${programId}`
   );
   return response.data;
+}
+
+// ─── Comment API ─────────────────────────────────────────────────────────────
+
+export async function getApprovalComments(
+  entityId: string,
+  entityType: string = "program_approval",
+  includeInternal: boolean = true
+): Promise<ApprovalCommentThread> {
+  const response = await api.get<ApprovalCommentThread>(
+    `/api/v1/approvals/${entityId}/comments`,
+    { params: { entity_type: entityType, include_internal: includeInternal } }
+  );
+  return response.data;
+}
+
+export async function addApprovalComment(
+  entityId: string,
+  data: ApprovalCommentCreate,
+  entityType: string = "program_approval"
+): Promise<ApprovalCommentThread["comments"][0]> {
+  const response = await api.post<ApprovalCommentThread["comments"][0]>(
+    `/api/v1/approvals/${entityId}/comments`,
+    data,
+    { params: { entity_type: entityType } }
+  );
+  return response.data;
+}
+
+export async function deleteApprovalComment(
+  entityId: string,
+  commentId: string,
+  entityType: string = "program_approval"
+): Promise<void> {
+  await api.delete(
+    `/api/v1/approvals/${entityId}/comments/${commentId}`,
+    { params: { entity_type: entityType } }
+  );
 }

@@ -6,7 +6,7 @@ within the same transaction as the changes being audited.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
@@ -25,6 +25,7 @@ SENSITIVE_FIELDS = {"hashed_password"}
 _SCALAR_CONVERTERS: dict[type, object] = {
     uuid.UUID: str,
     datetime: datetime.isoformat,
+    date: date.isoformat,
     Decimal: str,
 }
 

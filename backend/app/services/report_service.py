@@ -1,11 +1,11 @@
-"""Report service — aggregates data for client-facing reports."""
+"""Report service — aggregates data for client-facing and internal reports."""
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import extract, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,23 +14,10 @@ from app.models.deliverable import Deliverable
 from app.models.milestone import Milestone
 from app.models.partner_assignment import PartnerAssignment
 from app.models.program import Program
+from app.models.user import User
+from app.utils.rag import compute_rag_status
 
-
-# Reuse compute_rag_status from programs.py
-def compute_rag_status(milestones: list[Milestone]) -> str:
-    """Compute RAG (Red/Amber/Green) status based on milestone due dates."""
-    today = date.today()
-    for m in milestones:
-        if m.status != "completed" and m.due_date and m.due_date < today:
-            return "red"
-    for m in milestones:
-        if (
-            m.status != "completed"
-            and m.due_date
-            and m.due_date <= date(today.year, today.month, today.day + 7)
-        ):
-            return "amber"
-    return "green"
+__all__ = ["compute_rag_status", "ReportService", "report_service"]
 
 
 class ReportService:
@@ -558,5 +545,610 @@ class ReportService:
         }
 
 
+    async def get_rm_portfolio_report(
+        self, db: AsyncSession, rm_id: uuid.UUID
+    ) -> dict[str, Any] | None:
+        """
+        Generate RM portfolio report for MD review.
+
+        Returns:
+        - RM identity and overall metrics
+        - Per-client: program counts, statuses, RAG summary, milestone rates, revenue pipeline
+        - RM-level NPS satisfaction signal (avg from linked client profiles)
+        """
+        rm_result = await db.execute(select(User).where(User.id == rm_id))
+        rm = rm_result.scalar_one_or_none()
+        if not rm:
+            return None
+
+        # Get all clients assigned to this RM with their programs and milestones
+        clients_result = await db.execute(
+            select(Client)
+            .options(
+                selectinload(Client.programs).selectinload(Program.milestones),
+            )
+            .where(Client.rm_id == rm_id)
+            .order_by(Client.name)
+        )
+        clients = list(clients_result.scalars().all())
+
+        # Get RM-level NPS average from client profiles assigned to this RM
+        from app.models.client_profile import ClientProfile
+        from app.models.nps_survey import NPSResponse
+
+        cp_ids_result = await db.execute(
+            select(ClientProfile.id).where(ClientProfile.assigned_rm_id == rm_id)
+        )
+        cp_ids = list(cp_ids_result.scalars().all())
+
+        rm_avg_nps: float | None = None
+        if cp_ids:
+            nps_avg_result = await db.execute(
+                select(func.avg(NPSResponse.score)).where(
+                    NPSResponse.client_profile_id.in_(cp_ids)
+                )
+            )
+            avg_raw = nps_avg_result.scalar_one_or_none()
+            if avg_raw is not None:
+                rm_avg_nps = round(float(avg_raw), 1)
+
+        # Build per-client summaries
+        client_summaries: list[dict[str, Any]] = []
+        total_active_programs = 0
+        total_revenue_pipeline = 0.0
+
+        for client in clients:
+            programs = client.programs or []
+            active_programs = [
+                p for p in programs if p.status in ("active", "design", "intake", "on_hold")
+            ]
+            completed_programs = [p for p in programs if p.status == "completed"]
+
+            status_breakdown: dict[str, int] = {}
+            rag_summary: dict[str, int] = {"red": 0, "amber": 0, "green": 0}
+            total_ms = 0
+            total_ms_done = 0
+
+            program_summaries: list[dict[str, Any]] = []
+            for p in programs:
+                milestones = p.milestones or []
+                m_count = len(milestones)
+                m_done = sum(1 for m in milestones if m.status == "completed")
+                progress = round((m_done / m_count * 100), 1) if m_count > 0 else 0.0
+                rag = compute_rag_status(milestones)
+
+                status_breakdown[p.status] = status_breakdown.get(p.status, 0) + 1
+                rag_summary[rag] = rag_summary.get(rag, 0) + 1
+                total_ms += m_count
+                total_ms_done += m_done
+
+                program_summaries.append(
+                    {
+                        "id": p.id,
+                        "title": p.title,
+                        "status": p.status,
+                        "rag_status": rag,
+                        "start_date": p.start_date,
+                        "end_date": p.end_date,
+                        "budget_envelope": float(p.budget_envelope)
+                        if p.budget_envelope
+                        else None,
+                        "milestone_count": m_count,
+                        "completed_milestone_count": m_done,
+                        "milestone_progress": progress,
+                    }
+                )
+
+            milestone_completion_rate = (
+                round((total_ms_done / total_ms) * 100, 1) if total_ms > 0 else None
+            )
+
+            revenue_pipeline = sum(
+                float(p.budget_envelope) for p in active_programs if p.budget_envelope
+            )
+            total_active_programs += len(active_programs)
+            total_revenue_pipeline += revenue_pipeline
+
+            client_summaries.append(
+                {
+                    "client_id": client.id,
+                    "client_name": client.name,
+                    "client_type": client.client_type,
+                    "client_status": client.status,
+                    "total_programs": len(programs),
+                    "active_programs": len(active_programs),
+                    "completed_programs": len(completed_programs),
+                    "status_breakdown": status_breakdown,
+                    "rag_summary": rag_summary,
+                    "milestone_completion_rate": milestone_completion_rate,
+                    "revenue_pipeline": revenue_pipeline if revenue_pipeline > 0 else None,
+                    "programs": program_summaries,
+                }
+            )
+
+        return {
+            "rm_id": rm.id,
+            "rm_name": rm.full_name,
+            "rm_email": rm.email,
+            "total_clients": len(clients),
+            "total_active_programs": total_active_programs,
+            "total_revenue_pipeline": total_revenue_pipeline
+            if total_revenue_pipeline > 0
+            else None,
+            "avg_nps_score": rm_avg_nps,
+            "clients": client_summaries,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+    async def get_escalation_log_report(
+        self,
+        db: AsyncSession,
+        program_id: uuid.UUID | None = None,
+        client_id: uuid.UUID | None = None,
+        level: str | None = None,
+        status_filter: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate escalation log report for internal review.
+
+        Includes:
+        - All escalations (filterable by program, client, level, status)
+        - Owner details, age, resolution status
+        - Average resolution time metrics
+        """
+        from app.models.escalation import Escalation
+
+        # Build query joining owner User for name/email
+        owner_alias = User
+        query = (
+            select(
+                Escalation,
+                owner_alias.full_name.label("owner_name"),
+                owner_alias.email.label("owner_email"),
+            )
+            .join(owner_alias, owner_alias.id == Escalation.owner_id, isouter=True)
+            .order_by(Escalation.triggered_at.desc())
+        )
+
+        if program_id is not None:
+            query = query.where(Escalation.program_id == program_id)
+        if client_id is not None:
+            query = query.where(Escalation.client_id == client_id)
+        if level is not None:
+            query = query.where(Escalation.level == level)
+        if status_filter is not None:
+            query = query.where(Escalation.status == status_filter)
+
+        result = await db.execute(query)
+        rows = result.all()
+
+        now = datetime.now(UTC)
+        escalation_items: list[dict[str, Any]] = []
+        open_count = 0
+        resolution_times: list[float] = []
+
+        for row in rows:
+            esc = row[0]
+            owner_name: str | None = row[1]
+            owner_email: str | None = row[2]
+
+            # Normalise timezone
+            triggered_at = esc.triggered_at
+            if triggered_at.tzinfo is None:
+                triggered_at = triggered_at.replace(tzinfo=UTC)
+            age_days = (now - triggered_at).days
+
+            resolution_time_days: float | None = None
+            if esc.resolved_at:
+                resolved_at = esc.resolved_at
+                if resolved_at.tzinfo is None:
+                    resolved_at = resolved_at.replace(tzinfo=UTC)
+                resolution_time_days = round(
+                    (resolved_at - triggered_at).total_seconds() / 86400, 1
+                )
+                resolution_times.append(resolution_time_days)
+
+            if esc.status in ("open", "acknowledged"):
+                open_count += 1
+
+            escalation_items.append(
+                {
+                    "id": esc.id,
+                    "title": esc.title,
+                    "description": esc.description,
+                    "level": esc.level,
+                    "status": esc.status,
+                    "entity_type": esc.entity_type,
+                    "entity_id": esc.entity_id,
+                    "program_id": esc.program_id,
+                    "client_id": esc.client_id,
+                    "owner_id": esc.owner_id,
+                    "owner_name": owner_name,
+                    "owner_email": owner_email,
+                    "triggered_at": triggered_at.isoformat(),
+                    "acknowledged_at": esc.acknowledged_at.isoformat()
+                    if esc.acknowledged_at
+                    else None,
+                    "resolved_at": esc.resolved_at.isoformat() if esc.resolved_at else None,
+                    "age_days": age_days,
+                    "resolution_time_days": resolution_time_days,
+                    "resolution_notes": esc.resolution_notes,
+                }
+            )
+
+        avg_resolution_time = (
+            round(sum(resolution_times) / len(resolution_times), 1)
+            if resolution_times
+            else None
+        )
+
+        return {
+            "total_escalations": len(escalation_items),
+            "open_escalations": open_count,
+            "avg_resolution_time_days": avg_resolution_time,
+            "escalations": escalation_items,
+            "generated_at": now.isoformat(),
+        }
+
+    async def get_compliance_audit_report(self, db: AsyncSession) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
+        """
+        Generate compliance audit report for finance/compliance and MD review.
+
+        Covers:
+        - KYC status per client: current, expiring ≤30 days, expired
+        - Document completeness percentage per client
+        - Open access anomalies from the latest access audit
+        - User account status summary
+        """
+        from app.models.access_audit import AccessAudit
+        from app.models.kyc_document import KYCDocument
+
+        today = datetime.now(UTC).date()
+        expiry_threshold = today + timedelta(days=30)
+
+        # 1. Clients + KYC documents
+        clients_result = await db.execute(select(Client).order_by(Client.name))
+        clients = list(clients_result.scalars().all())
+
+        kyc_result = await db.execute(select(KYCDocument))
+        kyc_docs = list(kyc_result.scalars().all())
+
+        # Group by client (KYCDocument uses old-style Column so key is Any at mypy level)
+        kyc_by_client: dict[Any, list[Any]] = {}
+        for doc in kyc_docs:
+            kyc_by_client.setdefault(doc.client_id, []).append(doc)
+
+        client_kyc_statuses: list[dict[str, Any]] = []
+        total_kyc_current = 0
+        total_kyc_expiring = 0
+        total_kyc_expired = 0
+
+        for client in clients:
+            docs = kyc_by_client.get(client.id, [])
+            current = 0
+            expiring_30d = 0
+            expired = 0
+            pending = 0
+
+            for doc in docs:
+                if doc.status == "verified":
+                    if doc.expiry_date:
+                        if doc.expiry_date < today:
+                            expired += 1
+                        elif doc.expiry_date <= expiry_threshold:
+                            expiring_30d += 1
+                        else:
+                            current += 1
+                    else:
+                        current += 1
+                elif doc.status == "expired":
+                    expired += 1
+                elif doc.status in ("pending", "uploaded"):
+                    pending += 1
+
+            total = len(docs)
+            completeness_pct = (
+                round((current + expiring_30d) / total * 100, 1) if total > 0 else 0.0
+            )
+
+            total_kyc_current += current
+            total_kyc_expiring += expiring_30d
+            total_kyc_expired += expired
+
+            if expired > 0:
+                kyc_status = "expired"
+            elif expiring_30d > 0:
+                kyc_status = "expiring"
+            elif pending > 0:
+                kyc_status = "pending"
+            elif current > 0:
+                kyc_status = "current"
+            else:
+                kyc_status = "incomplete"
+
+            client_kyc_statuses.append(
+                {
+                    "client_id": client.id,
+                    "client_name": client.name,
+                    "client_type": client.client_type,
+                    "total_documents": total,
+                    "current": current,
+                    "expiring_30d": expiring_30d,
+                    "expired": expired,
+                    "pending": pending,
+                    "document_completeness_pct": completeness_pct,
+                    "kyc_status": kyc_status,
+                }
+            )
+
+        # 2. Latest access audit open findings
+        latest_audit_result = await db.execute(
+            select(AccessAudit)
+            .options(selectinload(AccessAudit.findings))
+            .order_by(AccessAudit.created_at.desc())
+            .limit(1)
+        )
+        latest_audit = latest_audit_result.scalar_one_or_none()
+
+        access_anomalies: list[dict[str, Any]] = []
+        latest_audit_period: str | None = None
+        if latest_audit:
+            latest_audit_period = latest_audit.audit_period
+            for finding in latest_audit.findings or []:
+                if finding.status not in ("remediated", "closed", "waived"):
+                    access_anomalies.append(
+                        {
+                            "id": finding.id,
+                            "audit_period": latest_audit.audit_period,
+                            "finding_type": finding.finding_type,
+                            "severity": finding.severity,
+                            "description": finding.description,
+                            "status": finding.status,
+                            "user_id": finding.user_id,
+                        }
+                    )
+
+        # 3. User account statuses
+        users_result = await db.execute(select(User).order_by(User.full_name))
+        users = list(users_result.scalars().all())
+
+        active_users = 0
+        inactive_users = 0
+        deactivated_users = 0
+        user_account_statuses: list[dict[str, Any]] = []
+
+        for user in users:
+            if user.status == "active":
+                active_users += 1
+            elif user.status == "deactivated":
+                deactivated_users += 1
+            else:
+                inactive_users += 1
+
+            user_account_statuses.append(
+                {
+                    "user_id": user.id,
+                    "full_name": user.full_name,
+                    "email": user.email,
+                    "role": user.role,
+                    "status": user.status,
+                    "created_at": user.created_at.isoformat(),
+                }
+            )
+
+        return {
+            "total_clients": len(clients),
+            "kyc_current": total_kyc_current,
+            "kyc_expiring_30d": total_kyc_expiring,
+            "kyc_expired": total_kyc_expired,
+            "client_kyc_statuses": client_kyc_statuses,
+            "access_anomalies": access_anomalies,
+            "latest_audit_period": latest_audit_period,
+            "total_users": len(users),
+            "active_users": active_users,
+            "inactive_users": inactive_users,
+            "deactivated_users": deactivated_users,
+            "user_account_statuses": user_account_statuses,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+
 # Singleton instance
 report_service = ReportService()
+
+
+class PartnerReportService:
+    """Service for generating partner-facing (Class C) reports.
+
+    All methods are scoped to the requesting partner's own data.
+    No client metadata or budget information is exposed.
+    """
+
+    async def get_brief_summary(
+        self, db: AsyncSession, partner_id: uuid.UUID
+    ) -> dict[str, Any] | None:
+        """Active brief summary — active assignments with tasks, deadlines, coordinator contact."""
+        from app.models.partner import PartnerProfile
+
+        partner_result = await db.execute(
+            select(PartnerProfile).where(PartnerProfile.id == partner_id)
+        )
+        partner = partner_result.scalar_one_or_none()
+        if not partner:
+            return None
+
+        # Active statuses: dispatched (awaiting response), accepted, in_progress
+        result = await db.execute(
+            select(PartnerAssignment)
+            .options(
+                selectinload(PartnerAssignment.program),
+                selectinload(PartnerAssignment.assigner),
+            )
+            .where(
+                PartnerAssignment.partner_id == partner_id,
+                PartnerAssignment.status.in_(["dispatched", "accepted", "in_progress"]),
+            )
+            .order_by(PartnerAssignment.due_date.asc().nulls_last())
+        )
+        assignments = list(result.scalars().all())
+
+        items = []
+        for a in assignments:
+            items.append(
+                {
+                    "assignment_id": a.id,
+                    "assignment_title": a.title,
+                    "status": a.status,
+                    "brief": a.brief,
+                    "sla_terms": a.sla_terms,
+                    "due_date": a.due_date,
+                    "accepted_at": a.accepted_at,
+                    "program_title": a.program.title if a.program else None,
+                    "coordinator_name": a.assigner.full_name if a.assigner else None,
+                    "coordinator_email": a.assigner.email if a.assigner else None,
+                }
+            )
+
+        return {
+            "partner_id": partner.id,
+            "firm_name": partner.firm_name,
+            "total_active": len(items),
+            "assignments": items,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+    async def get_deliverable_feedback(
+        self,
+        db: AsyncSession,
+        partner_id: uuid.UUID,
+        assignment_id: uuid.UUID | None = None,
+    ) -> dict[str, Any] | None:
+        """History of all deliverable submissions with review status and comments."""
+        from app.models.partner import PartnerProfile
+
+        partner_result = await db.execute(
+            select(PartnerProfile).where(PartnerProfile.id == partner_id)
+        )
+        partner = partner_result.scalar_one_or_none()
+        if not partner:
+            return None
+
+        # Fetch assignments for this partner (optionally filtered)
+        assignment_query = select(PartnerAssignment.id, PartnerAssignment.title).where(
+            PartnerAssignment.partner_id == partner_id
+        )
+        if assignment_id:
+            assignment_query = assignment_query.where(PartnerAssignment.id == assignment_id)
+
+        assignment_result = await db.execute(assignment_query)
+        assignment_map: dict[Any, str] = {
+            row[0]: row[1] for row in assignment_result.all()
+        }
+
+        if not assignment_map:
+            return {
+                "partner_id": partner.id,
+                "firm_name": partner.firm_name,
+                "total_deliverables": 0,
+                "deliverables": [],
+                "generated_at": datetime.now(UTC).isoformat(),
+            }
+
+        deliverable_result = await db.execute(
+            select(Deliverable)
+            .where(Deliverable.assignment_id.in_(list(assignment_map.keys())))
+            .order_by(Deliverable.submitted_at.desc().nulls_last())
+        )
+        deliverables = list(deliverable_result.scalars().all())
+
+        items = []
+        for d in deliverables:
+            items.append(
+                {
+                    "deliverable_id": d.id,
+                    "title": d.title,
+                    "deliverable_type": d.deliverable_type,
+                    "assignment_id": d.assignment_id,
+                    "assignment_title": assignment_map.get(d.assignment_id),
+                    "status": d.status,
+                    "submitted_at": d.submitted_at,
+                    "reviewed_at": d.reviewed_at,
+                    "review_comments": d.review_comments,
+                    "due_date": d.due_date,
+                }
+            )
+
+        return {
+            "partner_id": partner.id,
+            "firm_name": partner.firm_name,
+            "total_deliverables": len(items),
+            "deliverables": items,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+    async def get_engagement_history(
+        self,
+        db: AsyncSession,
+        partner_id: uuid.UUID,
+    ) -> dict[str, Any] | None:
+        """All past engagements with completion stats and performance score."""
+        from app.models.partner import PartnerProfile
+
+        partner_result = await db.execute(
+            select(PartnerProfile).where(PartnerProfile.id == partner_id)
+        )
+        partner = partner_result.scalar_one_or_none()
+        if not partner:
+            return None
+
+        result = await db.execute(
+            select(PartnerAssignment)
+            .options(
+                selectinload(PartnerAssignment.program),
+                selectinload(PartnerAssignment.deliverables),
+            )
+            .where(PartnerAssignment.partner_id == partner_id)
+            .order_by(PartnerAssignment.created_at.desc())
+        )
+        assignments = list(result.scalars().all())
+
+        completed_count = 0
+        items = []
+        for a in assignments:
+            deliverables = a.deliverables or []
+            deliverable_count = len(deliverables)
+            approved_count = sum(1 for d in deliverables if d.status == "approved")
+
+            if a.status == "completed":
+                completed_count += 1
+
+            items.append(
+                {
+                    "assignment_id": a.id,
+                    "title": a.title,
+                    "program_title": a.program.title if a.program else None,
+                    "status": a.status,
+                    "created_at": a.created_at,
+                    "accepted_at": a.accepted_at,
+                    "completed_at": a.completed_at,
+                    "due_date": a.due_date,
+                    "deliverable_count": deliverable_count,
+                    "approved_deliverable_count": approved_count,
+                }
+            )
+
+        return {
+            "partner_id": partner.id,
+            "firm_name": partner.firm_name,
+            "total_engagements": len(items),
+            "completed_engagements": completed_count,
+            "performance_rating": float(partner.performance_rating)
+            if partner.performance_rating
+            else None,
+            "assignments": items,
+            "generated_at": datetime.now(UTC).isoformat(),
+        }
+
+
+# Singleton instance
+partner_report_service = PartnerReportService()

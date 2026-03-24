@@ -1,20 +1,32 @@
 """Dashboard API — internal program health and portfolio summary."""
 
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, require_internal
+from app.api.deps import DB, CurrentUser, RLSContext, get_rm_client_ids, require_internal
 from app.models.client import Client
 from app.models.decision_request import DecisionRequest
+from app.models.enums import UserRole
 from app.models.escalation import Escalation
+from app.models.partner import PartnerProfile
 from app.models.program import Program
 from app.models.sla_tracker import SLATracker
 from app.schemas.dashboard import (
+    ActivityFeedResponse,
+    AlertsResponse,
     PortfolioSummary,
     ProgramHealthItem,
     ProgramHealthResponse,
+    RealTimeStats,
+)
+from app.services.dashboard_aggregation_service import (
+    get_activity_feed,
+    get_dashboard_alerts,
+    get_real_time_stats,
 )
 from app.services.report_service import compute_rag_status
 
@@ -23,18 +35,29 @@ router = APIRouter()
 
 async def _build_program_health_items(
     db: AsyncSession,
+    rm_client_ids: list[uuid.UUID] | None = None,
 ) -> list[ProgramHealthItem]:
-    """Build health items for all programs."""
+    """Build health items for programs.
+
+    Args:
+        db: Database session.
+        rm_client_ids: When provided, restrict results to programs whose
+            client_id is in this list (used for RM-scoped views).
+    """
     # Load programs with milestones and client
-    result = await db.execute(
+    prog_query = (
         select(Program)
         .options(selectinload(Program.milestones), selectinload(Program.client))
         .order_by(Program.created_at.desc())
     )
+    if rm_client_ids is not None:
+        prog_query = prog_query.where(Program.client_id.in_(rm_client_ids))
+
+    result = await db.execute(prog_query)
     programs = list(result.scalars().all())
 
     # Batch-fetch escalation counts per program
-    esc_result = await db.execute(
+    esc_query = (
         select(
             Escalation.program_id,
             func.count(Escalation.id).label("cnt"),
@@ -43,6 +66,10 @@ async def _build_program_health_items(
         .where(Escalation.program_id.is_not(None))
         .group_by(Escalation.program_id)
     )
+    if rm_client_ids is not None:
+        esc_query = esc_query.where(Escalation.client_id.in_(rm_client_ids))
+
+    esc_result = await db.execute(esc_query)
     esc_map: dict[str, int] = {str(row.program_id): row.cnt for row in esc_result.all()}
 
     # Batch-fetch SLA breach counts — SLATracker uses entity_type/entity_id
@@ -93,9 +120,15 @@ async def _build_program_health_items(
     response_model=ProgramHealthResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_program_health(db: DB) -> ProgramHealthResponse:
-    """Return health data for every program."""
-    items = await _build_program_health_items(db)
+async def get_program_health(
+    db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> ProgramHealthResponse:
+    """Return health data for every program the current user may see."""
+    rm_client_ids: list[uuid.UUID] | None = None
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+
+    items = await _build_program_health_items(db, rm_client_ids=rm_client_ids)
     return ProgramHealthResponse(programs=items, total=len(items))
 
 
@@ -104,12 +137,21 @@ async def get_program_health(db: DB) -> ProgramHealthResponse:
     response_model=PortfolioSummary,
     dependencies=[Depends(require_internal)],
 )
-async def get_portfolio_summary(db: DB) -> PortfolioSummary:
-    """Return aggregate portfolio statistics."""
+async def get_portfolio_summary(
+    db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> PortfolioSummary:
+    """Return aggregate portfolio statistics scoped to the current user's access."""
+    is_rm = current_user.role == UserRole.relationship_manager
+    rm_client_ids: list[uuid.UUID] | None = None
+    if is_rm:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+
     # Program counts
-    prog_result = await db.execute(
-        select(Program.status, func.count(Program.id)).group_by(Program.status)
-    )
+    prog_status_query = select(Program.status, func.count(Program.id)).group_by(Program.status)
+    if rm_client_ids is not None:
+        prog_status_query = prog_status_query.where(Program.client_id.in_(rm_client_ids))
+
+    prog_result = await db.execute(prog_status_query)
     status_counts: dict[str, int] = {}
     for row in prog_result.all():
         status_counts[row[0]] = row[1]
@@ -121,23 +163,35 @@ async def get_portfolio_summary(db: DB) -> PortfolioSummary:
     completed_programs = status_counts.get("completed", 0)
 
     # Distinct clients
-    client_result = await db.execute(select(func.count(func.distinct(Client.id))))
+    client_query = select(func.count(func.distinct(Client.id)))
+    if rm_client_ids is not None:
+        client_query = client_query.where(Client.id.in_(rm_client_ids))
+
+    client_result = await db.execute(client_query)
     total_clients = client_result.scalar_one()
 
     # RAG breakdown: need milestones loaded
-    prog_with_ms = await db.execute(select(Program).options(selectinload(Program.milestones)))
+    rag_prog_query = select(Program).options(selectinload(Program.milestones))
+    if rm_client_ids is not None:
+        rag_prog_query = rag_prog_query.where(Program.client_id.in_(rm_client_ids))
+
+    prog_with_ms = await db.execute(rag_prog_query)
     rag_breakdown: dict[str, int] = {"red": 0, "amber": 0, "green": 0}
     for prog in prog_with_ms.scalars().all():
         rag = compute_rag_status(prog.milestones or [])
         rag_breakdown[rag] = rag_breakdown.get(rag, 0) + 1
 
-    # Open escalations
-    esc_count_result = await db.execute(
-        select(func.count(Escalation.id)).where(Escalation.status.in_(["open", "acknowledged"]))
+    # Open escalations (scoped by client for RMs)
+    esc_query = select(func.count(Escalation.id)).where(
+        Escalation.status.in_(["open", "acknowledged"])
     )
+    if rm_client_ids is not None:
+        esc_query = esc_query.where(Escalation.client_id.in_(rm_client_ids))
+
+    esc_count_result = await db.execute(esc_query)
     total_open_escalations = esc_count_result.scalar_one()
 
-    # SLA breaches
+    # SLA breaches (not client-scoped — entity_id is opaque, keep global count)
     sla_count_result = await db.execute(
         select(func.count(SLATracker.id)).where(
             SLATracker.breach_status.in_(["breached", "approaching_breach"])
@@ -145,11 +199,22 @@ async def get_portfolio_summary(db: DB) -> PortfolioSummary:
     )
     total_sla_breaches = sla_count_result.scalar_one()
 
-    # Pending decisions
+    # Pending decisions (scoped by client_id for RMs — DecisionRequest.client_id
+    # references client_profiles.id, which isn't the same as Client.id, so we
+    # keep a global count for RMs to avoid a cross-table join with ClientProfile)
     dec_count_result = await db.execute(
         select(func.count(DecisionRequest.id)).where(DecisionRequest.status == "pending")
     )
     total_pending_decisions = dec_count_result.scalar_one()
+
+    # Probationary partners: active partners with fewer than 3 completed engagements
+    probationary_result = await db.execute(
+        select(func.count(PartnerProfile.id)).where(
+            PartnerProfile.status == "active",
+            PartnerProfile.completed_assignments < 3,
+        )
+    )
+    probationary_partner_count = probationary_result.scalar_one()
 
     return PortfolioSummary(
         total_programs=total_programs,
@@ -160,6 +225,7 @@ async def get_portfolio_summary(db: DB) -> PortfolioSummary:
         total_open_escalations=total_open_escalations,
         total_sla_breaches=total_sla_breaches,
         total_pending_decisions=total_pending_decisions,
+        probationary_partner_count=probationary_partner_count,
     )
 
 
@@ -168,10 +234,55 @@ async def get_portfolio_summary(db: DB) -> PortfolioSummary:
     response_model=ProgramHealthResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_at_risk_programs(db: DB) -> ProgramHealthResponse:
+async def get_at_risk_programs(
+    db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> ProgramHealthResponse:
     """Return programs with red RAG status or active escalations."""
-    items = await _build_program_health_items(db)
+    rm_client_ids: list[uuid.UUID] | None = None
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+
+    items = await _build_program_health_items(db, rm_client_ids=rm_client_ids)
     at_risk = [
         item for item in items if item.rag_status == "red" or item.active_escalation_count > 0
     ]
     return ProgramHealthResponse(programs=at_risk, total=len(at_risk))
+
+
+@router.get(
+    "/real-time-stats",
+    response_model=RealTimeStats,
+    dependencies=[Depends(require_internal)],
+)
+async def get_realtime_stats(
+    db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> RealTimeStats:
+    """Return live dashboard counts for the current user."""
+    return await get_real_time_stats(db, current_user.id)
+
+
+@router.get(
+    "/activity-feed",
+    response_model=ActivityFeedResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def get_activity_feed_endpoint(
+    db: DB,
+    _rls: RLSContext,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+) -> ActivityFeedResponse:
+    """Return recent activity across all entities."""
+    items, total = await get_activity_feed(db, skip=skip, limit=limit)
+    return ActivityFeedResponse(items=items, total=total)
+
+
+@router.get(
+    "/alerts",
+    response_model=AlertsResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def get_alerts_endpoint(db: DB, _rls: RLSContext) -> AlertsResponse:
+    """Return actionable alerts for the dashboard."""
+    alerts, total = await get_dashboard_alerts(db)
+    return AlertsResponse(alerts=alerts, total=total)

@@ -1,8 +1,9 @@
 """Push token management endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from app.api.deps import DB, CurrentUser
+from app.core.exceptions import NotFoundException
 from app.schemas.push_token import (
     PushTokenListResponse,
     PushTokenRegisterRequest,
@@ -49,7 +50,4 @@ async def unregister_push_token(
     """Unregister a push notification token."""
     deleted = await push_service.unregister_token(db, current_user.id, token)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Push token not found",
-        )
+        raise NotFoundException("Push token not found")

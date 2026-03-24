@@ -18,6 +18,7 @@ import {
   deleteTemplate,
   type CertificateTemplate,
 } from "@/lib/api/clearance-certificates";
+import { toast } from "sonner";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
@@ -49,9 +50,8 @@ export default function TemplatesPage() {
       await deleteTemplate(id);
       setTemplates(templates.filter((t) => t.id !== id));
       setTotal(total - 1);
-    } catch (error) {
-      console.error("Failed to delete template:", error);
-      alert("Failed to delete template");
+    } catch {
+      toast.error("Failed to delete template");
     }
   };
 

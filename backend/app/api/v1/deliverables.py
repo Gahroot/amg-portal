@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -13,9 +13,11 @@ from app.api.deps import (
     DB,
     CurrentPartner,
     CurrentUser,
+    RLSContext,
     require_coordinator_or_above,
     require_internal,
 )
+from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.deliverable import Deliverable
 from app.models.partner_assignment import PartnerAssignment
 from app.schemas.deliverable import (
@@ -33,7 +35,7 @@ router = APIRouter()
 
 
 def build_deliverable_response(deliverable: Deliverable) -> dict[str, Any]:
-    data = {
+    data: dict[str, Any] = {
         "id": deliverable.id,
         "assignment_id": deliverable.assignment_id,
         "title": deliverable.title,
@@ -59,7 +61,7 @@ def build_deliverable_response(deliverable: Deliverable) -> dict[str, Any]:
 
         with contextlib.suppress(Exception):
             data["download_url"] = storage_service.get_presigned_url(
-                deliverable.file_path,
+                str(deliverable.file_path),
             )
     return data
 
@@ -69,14 +71,15 @@ async def create_deliverable(
     data: DeliverableCreate,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> dict[str, Any]:
     # Verify assignment exists
     assignment_result = await db.execute(
         select(PartnerAssignment).where(PartnerAssignment.id == data.assignment_id)
     )
     if not assignment_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise NotFoundException("Assignment not found")
 
     deliverable = Deliverable(
         assignment_id=data.assignment_id,
@@ -96,12 +99,14 @@ async def create_deliverable(
 async def list_deliverables(
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     assignment_id: UUID | None = None,
     status: str | None = None,
-):
+    search: str | None = None,
+) -> DeliverableListResponse:
     query = select(Deliverable)
     count_query = select(func.count()).select_from(Deliverable)
 
@@ -110,20 +115,22 @@ async def list_deliverables(
         filters.append(Deliverable.assignment_id == assignment_id)
     if status:
         filters.append(Deliverable.status == status)
+    if search:
+        filters.append(Deliverable.title.ilike(f"%{search}%"))
 
     for f in filters:
         query = query.where(f)
         count_query = count_query.where(f)
 
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     query = query.offset(skip).limit(limit).order_by(Deliverable.created_at.desc())
     result = await db.execute(query)
     deliverables = result.scalars().all()
 
     return DeliverableListResponse(
-        deliverables=[build_deliverable_response(d) for d in deliverables],
+        deliverables=[build_deliverable_response(d) for d in deliverables],  # type: ignore[misc]
         total=total,
     )
 
@@ -133,12 +140,13 @@ async def get_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
-):
+) -> dict[str, Any]:
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
-        raise HTTPException(status_code=404, detail="Deliverable not found")
+        raise NotFoundException("Deliverable not found")
     return build_deliverable_response(deliverable)
 
 
@@ -148,12 +156,13 @@ async def update_deliverable(
     data: DeliverableUpdate,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> dict[str, Any]:
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
-        raise HTTPException(status_code=404, detail="Deliverable not found")
+        raise NotFoundException("Deliverable not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -170,8 +179,9 @@ async def submit_deliverable(
     db: DB,
     current_user: CurrentUser,
     partner: CurrentPartner,
+    _rls: RLSContext,
     file: UploadFile = File(...),
-):
+) -> dict[str, Any]:
     result = await db.execute(
         select(Deliverable)
         .options(selectinload(Deliverable.assignment))
@@ -179,25 +189,22 @@ async def submit_deliverable(
     )
     deliverable = result.scalar_one_or_none()
     if not deliverable:
-        raise HTTPException(status_code=404, detail="Deliverable not found")
+        raise NotFoundException("Deliverable not found")
     if deliverable.assignment.partner_id != partner.id:
-        raise HTTPException(status_code=403, detail="Not your deliverable")
+        raise ForbiddenException("Not your deliverable")
     if deliverable.status not in ("pending", "returned"):
-        raise HTTPException(
-            status_code=400,
-            detail="Deliverable cannot be submitted in current status",
-        )
+        raise BadRequestException("Deliverable cannot be submitted in current status")
 
     object_path, file_size = await storage_service.upload_file(
         file, f"deliverables/{deliverable.assignment_id}"
     )
 
-    deliverable.file_path = object_path
-    deliverable.file_name = file.filename
-    deliverable.file_size = file_size
-    deliverable.submitted_at = datetime.now(UTC)
-    deliverable.submitted_by = current_user.id
-    deliverable.status = "submitted"
+    deliverable.file_path = object_path  # type: ignore[assignment]
+    deliverable.file_name = file.filename  # type: ignore[assignment]
+    deliverable.file_size = file_size  # type: ignore[assignment]
+    deliverable.submitted_at = datetime.now(UTC)  # type: ignore[assignment]
+    deliverable.submitted_by = current_user.id  # type: ignore[assignment]
+    deliverable.status = "submitted"  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(deliverable)
@@ -223,28 +230,40 @@ async def review_deliverable(
     data: DeliverableReview,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> dict[str, Any]:
     if data.status not in ("approved", "returned", "rejected"):
-        raise HTTPException(status_code=400, detail="Invalid review status")
+        raise BadRequestException("Invalid review status")
 
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
-        raise HTTPException(status_code=404, detail="Deliverable not found")
+        raise NotFoundException("Deliverable not found")
     if deliverable.status not in ("submitted", "under_review"):
-        raise HTTPException(status_code=400, detail="Deliverable is not ready for review")
+        raise BadRequestException("Deliverable is not ready for review")
 
-    deliverable.status = data.status
-    deliverable.review_comments = data.review_comments
-    deliverable.reviewed_by = current_user.id
-    deliverable.reviewed_at = datetime.now(UTC)
+    deliverable.status = data.status  # type: ignore[assignment]
+    deliverable.review_comments = data.review_comments  # type: ignore[assignment]
+    deliverable.reviewed_by = current_user.id  # type: ignore[assignment]
+    deliverable.reviewed_at = datetime.now(UTC)  # type: ignore[assignment]
 
     if data.status == "approved":
-        deliverable.client_visible = True
+        deliverable.client_visible = True  # type: ignore[assignment]
 
     await db.commit()
     await db.refresh(deliverable)
+
+    try:
+        from app.services.auto_dispatch_service import on_deliverable_reviewed
+
+        await on_deliverable_reviewed(db, deliverable, data.status)
+    except Exception:
+        logger.exception(
+            "Failed to dispatch review notifications for deliverable %s",
+            deliverable.id,
+        )
+
     return build_deliverable_response(deliverable)
 
 
@@ -253,14 +272,15 @@ async def download_deliverable(
     deliverable_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
-):
+) -> dict[str, str | None]:
     result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
     deliverable = result.scalar_one_or_none()
     if not deliverable:
-        raise HTTPException(status_code=404, detail="Deliverable not found")
+        raise NotFoundException("Deliverable not found")
     if not deliverable.file_path:
-        raise HTTPException(status_code=404, detail="No file uploaded")
+        raise NotFoundException("No file uploaded")
 
-    url = storage_service.get_presigned_url(deliverable.file_path)
+    url = storage_service.get_presigned_url(str(deliverable.file_path))
     return {"download_url": url}

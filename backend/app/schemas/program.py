@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import (
     MilestoneStatus,
@@ -56,7 +56,7 @@ class TaskResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MilestoneResponse(BaseModel):
@@ -67,12 +67,13 @@ class MilestoneResponse(BaseModel):
     due_date: date | None
     status: str
     position: int
+    calendar_event_id: str | None = None
     task_count: int = 0
     completed_task_count: int = 0
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MilestoneDetailResponse(BaseModel):
@@ -83,13 +84,14 @@ class MilestoneDetailResponse(BaseModel):
     due_date: date | None
     status: str
     position: int
+    calendar_event_id: str | None = None
     task_count: int = 0
     completed_task_count: int = 0
     tasks: list[TaskResponse] = []
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProgramDetailResponse(BaseModel):
@@ -103,6 +105,8 @@ class ProgramDetailResponse(BaseModel):
     start_date: date | None
     end_date: date | None
     status: str
+    emergency_reason: str | None = None
+    retrospective_due_at: datetime | None = None
     created_by: UUID
     rag_status: str = "green"
     milestone_count: int = 0
@@ -111,7 +115,7 @@ class ProgramDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProgramCreate(BaseModel):
@@ -135,6 +139,10 @@ class ProgramUpdate(BaseModel):
     status: ProgramStatus | None = None
 
 
+class EmergencyActivationRequest(BaseModel):
+    emergency_reason: str
+
+
 class ProgramResponse(BaseModel):
     id: UUID
     client_id: UUID
@@ -146,6 +154,9 @@ class ProgramResponse(BaseModel):
     start_date: date | None
     end_date: date | None
     status: str
+    archived_at: datetime | None = None
+    emergency_reason: str | None = None
+    retrospective_due_at: datetime | None = None
     created_by: UUID
     rag_status: str = "green"
     milestone_count: int = 0
@@ -153,7 +164,23 @@ class ProgramResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ArchivalCandidateResponse(BaseModel):
+    """A closed program eligible for archival."""
+
+    program_id: UUID
+    title: str
+    client_id: UUID
+    client_name: str
+    closed_at: datetime
+    eligible_at: datetime  # closed_at + DATA_RETENTION_DAYS
+
+
+class ArchivalCandidateList(BaseModel):
+    candidates: list[ArchivalCandidateResponse]
+    total: int
 
 
 class ProgramListResponse(BaseModel):

@@ -18,15 +18,18 @@ export const programCreateSchema = z.object({
   milestones: z.array(milestoneSchema).optional(),
 });
 
-export type ProgramCreateFormData = z.infer<typeof programCreateSchema>;
-export type MilestoneFormData = z.infer<typeof milestoneSchema>;
-
-export const taskCreateSchema = z.object({
-  title: z.string().min(1, "Task title is required"),
-  description: z.string().optional(),
-  due_date: z.string().optional(),
-  assigned_to: z.string().optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+export const programUpdateSchema = programCreateSchema.partial().extend({
+  id: z.string(),
 });
 
-export type TaskCreateFormData = z.infer<typeof taskCreateSchema>;
+export const programFilterSchema = z.object({
+  client_id: z.string().optional(),
+  status: z.string().optional(),
+  rag_status: z.enum(["red", "amber", "green"]).optional(),
+  search: z.string().optional(),
+});
+
+export type ProgramCreateFormData = z.infer<typeof programCreateSchema>;
+export type ProgramUpdateFormData = z.infer<typeof programUpdateSchema>;
+export type ProgramFilterFormData = z.infer<typeof programFilterSchema>;
+export type MilestoneFormData = z.infer<typeof milestoneSchema>;

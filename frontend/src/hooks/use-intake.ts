@@ -1,4 +1,3 @@
-"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,7 +7,8 @@ import {
   saveIntakeStep,
   submitCompletedIntake,
 } from "@/lib/api/intake";
-import type { IntakeFormData, IntakeDraftData } from "@/types/intake-form";
+import type { IntakeFormData } from "@/lib/validations/client";
+import type { IntakeDraftData, IntakeFormResponse } from "@/types/intake-form";
 
 export function useDraftIntake(profileId: string) {
   return useQuery({

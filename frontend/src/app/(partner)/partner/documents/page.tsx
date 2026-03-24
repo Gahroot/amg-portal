@@ -11,6 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Download, Search, Folder, File, FileImage, FileSpreadsheet, FileArchive } from "lucide-react";
+import type { Assignment } from "@/lib/api/assignments";
+import type { DocumentItem } from "@/types/document";
+
+interface DocumentEntry {
+  doc: DocumentItem;
+  assignment: { id: string; title: string };
+}
 
 function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
@@ -37,10 +44,10 @@ export default function PartnerDocumentsPage() {
   const downloadMutation = useDownloadDocument();
 
   const { data: allDocuments, isLoading: docsLoading } = useQuery({
-    queryKey: ["partner-portal", "all-documents", assignmentsData?.assignments?.map((a: any) => a.id)],
-    queryFn: async () => {
+    queryKey: ["partner-portal", "all-documents", assignmentsData?.assignments?.map((a: Assignment) => a.id)],
+    queryFn: async (): Promise<DocumentEntry[]> => {
       if (!assignmentsData?.assignments) return [];
-      const results: any[] = [];
+      const results: DocumentEntry[] = [];
       for (const assignment of assignmentsData.assignments) {
         try {
           const response = await fetch("/api/v1/partner-portal/assignments/" + assignment.id + "/documents", {
@@ -62,23 +69,23 @@ export default function PartnerDocumentsPage() {
   const isLoading = assignmentsLoading || docsLoading;
   const docs = allDocuments ?? [];
 
-  const categories = React.useMemo(() => Array.from(new Set(docs.map((d: any) => d.doc.category))), [docs]);
+  const categories = React.useMemo(() => Array.from(new Set(docs.map((d: DocumentEntry) => d.doc.category))), [docs]);
 
   const filtered = React.useMemo(() => {
     let result = docs;
     if (search) {
       const searchLower = search.toLowerCase();
-      result = result.filter((item: any) =>
+      result = result.filter((item: DocumentEntry) =>
         item.doc.file_name.toLowerCase().includes(searchLower) ||
         item.assignment.title.toLowerCase().includes(searchLower) ||
         item.doc.description?.toLowerCase().includes(searchLower)
       );
     }
     if (categoryFilter !== "all") {
-      result = result.filter((item: any) => item.doc.category === categoryFilter);
+      result = result.filter((item: DocumentEntry) => item.doc.category === categoryFilter);
     }
     if (assignmentFilter !== "all") {
-      result = result.filter((item: any) => item.assignment.id === assignmentFilter);
+      result = result.filter((item: DocumentEntry) => item.assignment.id === assignmentFilter);
     }
     return result;
   }, [docs, search, categoryFilter, assignmentFilter]);
@@ -116,7 +123,7 @@ export default function PartnerDocumentsPage() {
           <SelectTrigger className="w-48"><SelectValue placeholder="Assignment" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Assignments</SelectItem>
-            {assignmentsData?.assignments.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>)}
+            {assignmentsData?.assignments.map((a: Assignment) => <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -143,7 +150,7 @@ export default function PartnerDocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((item: any) => (
+              {filtered.map((item: DocumentEntry) => (
                 <TableRow key={item.doc.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">

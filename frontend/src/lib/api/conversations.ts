@@ -10,6 +10,12 @@ import type {
   UnreadCountResponse,
 } from "@/types/communication";
 
+export interface AudioUploadResult {
+  object_path: string;
+  url: string;
+  file_size: number;
+}
+
 export interface ConversationListParams {
   skip?: number;
   limit?: number;
@@ -87,4 +93,25 @@ export async function addParticipant(
     { user_id: userId }
   );
   return response.data;
+}
+
+// Voice messages
+export async function uploadVoiceAudio(blob: Blob): Promise<AudioUploadResult> {
+  const formData = new FormData();
+  // Give the file a proper name with extension so the backend extracts the right ext
+  const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
+  formData.append("file", blob, `voice_message.${ext}`);
+  const response = await api.post<AudioUploadResult>(
+    "/api/v1/communications/upload-audio",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return response.data;
+}
+
+export async function getAudioPresignedUrl(objectPath: string): Promise<string> {
+  const response = await api.get<{ url: string }>("/api/v1/communications/audio-url", {
+    params: { object_path: objectPath },
+  });
+  return response.data.url;
 }

@@ -16,6 +16,10 @@ export interface ProgramClosure {
   status: string;
   checklist: ChecklistItem[];
   notes: string | null;
+  debrief_notes: string | null;
+  debrief_notes_at: string | null;
+  debrief_notes_by: string | null;
+  debrief_notes_by_name: string | null;
   initiated_by: string;
   completed_at: string | null;
   created_at: string;
@@ -96,6 +100,17 @@ export async function getPartnerRatings(
 ): Promise<PartnerRating[]> {
   const response = await api.get<PartnerRating[]>(
     `/api/v1/programs/${programId}/closure/partner-ratings`,
+  );
+  return response.data;
+}
+
+export async function saveDebriefNotes(
+  programId: string,
+  notes: string,
+): Promise<ProgramClosure> {
+  const response = await api.patch<ProgramClosure>(
+    `/api/v1/programs/${programId}/closure/debrief-notes`,
+    { notes },
   );
   return response.data;
 }

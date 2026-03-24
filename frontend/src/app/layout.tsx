@@ -3,6 +3,8 @@ import { Geist, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/providers/providers";
 import { ErrorBoundary } from "@/components/error/error-boundary";
+import { CommandPalette } from "@/components/navigation/command-palette";
+import { KeyboardShortcutsDialogProvider } from "@/components/ui/keyboard-shortcuts-dialog";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,12 +41,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Skip to main content link for screen readers */}
+        <link rel="help" href="/accessibility" title="Accessibility Statement" />
+      </head>
       <body
         className={`${geistSans.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
           <ErrorBoundary>
-            <Providers>{children}</Providers>
+            <KeyboardShortcutsDialogProvider>
+              <Providers>
+                <CommandPalette />
+                {children}
+              </Providers>
+            </KeyboardShortcutsDialogProvider>
           </ErrorBoundary>
         </ThemeProvider>
       </body>

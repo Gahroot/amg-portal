@@ -5,7 +5,7 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Enums
@@ -87,7 +87,7 @@ class CapabilityResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CapabilityListResponse(BaseModel):
@@ -126,7 +126,7 @@ class ServiceCategoryResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServiceCategoryListResponse(BaseModel):
@@ -174,7 +174,7 @@ class QualificationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QualificationListResponse(BaseModel):
@@ -236,7 +236,7 @@ class CertificationResponse(BaseModel):
     is_expired: bool = False
     is_expiring_soon: bool = False
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CertificationListResponse(BaseModel):
@@ -285,7 +285,7 @@ class OnboardingResponse(BaseModel):
     updated_at: datetime
     progress_percentage: int = 0
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Full Capability Matrix Response

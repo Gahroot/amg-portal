@@ -1,9 +1,6 @@
 import api from "@/lib/api";
-import type {
-  IntakeFormData,
-  IntakeDraftData,
-  IntakeFormResponse,
-} from "@/types/intake-form";
+import type { IntakeFormData } from "@/lib/validations/client";
+import type { IntakeDraftData, IntakeFormResponse } from "@/types/intake-form";
 
 export async function submitIntakeForm(
   data: IntakeFormData

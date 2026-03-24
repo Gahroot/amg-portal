@@ -45,6 +45,47 @@ const DIGEST_FREQUENCIES = [
   { value: "never", label: "Never" },
 ];
 
+/** Notification types the user can configure individually. */
+const NOTIFICATION_TYPES = [
+  {
+    key: "communication",
+    label: "Communications",
+    description: "Program kickoffs, completion notes, and general messages",
+  },
+  {
+    key: "decision_request",
+    label: "Decision Requests",
+    description: "Decisions that require your approval or input",
+  },
+  {
+    key: "assignment_update",
+    label: "Assignment Updates",
+    description: "Deliverable revisions, rejections, and status changes",
+  },
+  {
+    key: "deliverable_ready",
+    label: "Deliverable Notifications",
+    description: "New deliverables approved and ready to view",
+  },
+  {
+    key: "milestone_alert",
+    label: "Milestone Alerts",
+    description: "Approaching deadlines and overdue milestones",
+  },
+  {
+    key: "weekly_status",
+    label: "Weekly Status Reports",
+    description: "Program progress summaries sent every Friday",
+  },
+  {
+    key: "system",
+    label: "System Alerts",
+    description: "Partner performance, audit reminders, and compliance notices",
+  },
+] as const;
+
+type NotificationTypeKey = (typeof NOTIFICATION_TYPES)[number]["key"];
+
 export function NotificationPreferencesForm() {
   const { data: preferences, isLoading } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
@@ -58,6 +99,7 @@ export function NotificationPreferencesForm() {
   const [quietHoursStart, setQuietHoursStart] = React.useState("22:00");
   const [quietHoursEnd, setQuietHoursEnd] = React.useState("07:00");
   const [timezone, setTimezone] = React.useState("UTC");
+  const [typePrefs, setTypePrefs] = React.useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = React.useState(false);
 
   React.useEffect(() => {
@@ -71,11 +113,17 @@ export function NotificationPreferencesForm() {
       setQuietHoursStart(preferences.quiet_hours_start ?? "22:00");
       setQuietHoursEnd(preferences.quiet_hours_end ?? "07:00");
       setTimezone(preferences.timezone);
+      setTypePrefs(preferences.notification_type_preferences ?? {});
       setHasChanges(false);
     }
   }, [preferences]);
 
   const markChanged = () => setHasChanges(true);
+
+  const setTypePref = (key: NotificationTypeKey, value: string) => {
+    setTypePrefs((prev) => ({ ...prev, [key]: value }));
+    markChanged();
+  };
 
   const handleSave = () => {
     updatePreferences.mutate(
@@ -87,6 +135,7 @@ export function NotificationPreferencesForm() {
           in_portal: portalEnabled,
           push: pushEnabled,
         },
+        notification_type_preferences: typePrefs,
         quiet_hours_enabled: quietHoursEnabled,
         quiet_hours_start: quietHoursEnabled ? quietHoursStart : undefined,
         quiet_hours_end: quietHoursEnabled ? quietHoursEnd : undefined,
@@ -121,10 +170,53 @@ export function NotificationPreferencesForm() {
           Control how and when you receive notifications.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
+        {/* Per-Type Notification Control */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-sm font-medium">Notification Types</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Choose how each type of notification is delivered. &ldquo;Immediate&rdquo; sends
+              an email right away; &ldquo;Daily&rdquo; and &ldquo;Weekly&rdquo; bundle them into
+              a digest; &ldquo;Never&rdquo; suppresses the notification entirely.
+            </p>
+          </div>
+          <div className="divide-y rounded-md border">
+            {NOTIFICATION_TYPES.map((nt) => (
+              <div
+                key={nt.key}
+                className="flex items-center justify-between gap-4 px-4 py-3"
+              >
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <Label className="text-sm font-medium">{nt.label}</Label>
+                  <p className="text-xs text-muted-foreground">{nt.description}</p>
+                </div>
+                <Select
+                  value={typePrefs[nt.key] ?? digestFrequency}
+                  onValueChange={(v) => setTypePref(nt.key, v)}
+                >
+                  <SelectTrigger className="w-[160px] shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIGEST_FREQUENCIES.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Digest Settings */}
         <div className="space-y-4">
-          <h4 className="text-sm font-medium">Notification Digest</h4>
+          <h4 className="text-sm font-medium">Default Digest Frequency</h4>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Applied to any notification type that doesn&apos;t have a specific setting above.
+          </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="digest-enabled">Enable Digest</Label>

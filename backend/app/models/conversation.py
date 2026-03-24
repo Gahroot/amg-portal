@@ -1,22 +1,25 @@
 """Conversation model for threaded messaging."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
+from app.models.enums import ConversationType
 
 
-class Conversation(Base):
+class Conversation(Base, TimestampMixin):
     """Threaded conversation between users."""
 
     __tablename__ = "conversations"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversation_type: Mapped[str] = mapped_column(String(50), nullable=False, default="rm_client")
+    conversation_type: Mapped[ConversationType] = mapped_column(
+        String(50), nullable=False, default=ConversationType.rm_client
+    )
     client_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("client_profiles.id", ondelete="SET NULL"), nullable=True
     )
@@ -29,15 +32,6 @@ class Conversation(Base):
     )
     last_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     # Relationships

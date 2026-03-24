@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessibility Statement | AMG Portal</title>
+  <style>
+    :root {
+      --primary: #18181b;
+      --text: #27272a;
+      --text-muted: #71717a;
+      --background: #ffffff;
+      --border: #e4e4e7;
+      --accent: #f4f4f5;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #fafafa;
+        --text: #fafafa;
+        --text-muted: #a1a1aa;
+        --background: #18181b;
+        --border: #27272a;
+        --accent: #27272a;
+      }
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: var(--background);
+      margin: 0;
+      padding: 2rem;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--primary);
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    p {
+      margin-bottom: 1rem;
+    }
+    
+    ul, ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+    
+    li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+    
+    .highlight-box {
+      background-color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    
+    kbd {
+      background-color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      padding: 0.125rem 0.375rem;
+      font-family: monospace;
+      font-size: 0.875em;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    
+    th, td {
+      text-align: left;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+    }
+    
+    th {
+      background-color: var(--accent);
+      font-weight: 600;
+    }
+    
+    a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+    
+    a:hover {
+      text-decoration: none;
+    }
+    
+    a:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      background-color: #22c55e;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to AMG Portal</a>
+    
+    <h1>Accessibility Statement</h1>
+    <p class="meta">
+      <span class="status-badge">WCAG 2.1 AA Compliant</span>
+      <br>
+      Last updated: January 2026
+    </p>
+    
+    <h2>Our Commitment</h2>
+    <p>
+      Anchor Mill Group (AMG) is committed to ensuring digital accessibility for people with disabilities. 
+      We continually improve the user experience for everyone and apply the relevant accessibility standards.
+    </p>
+    
+    <h2>Conformance Status</h2>
+    <p>
+      The AMG Portal aims to conform to the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. 
+      These guidelines explain how to make web content more accessible for people with disabilities.
+    </p>
+    
+    <div class="highlight-box">
+      <strong>Current Status:</strong> We have implemented comprehensive accessibility features including:
+      <ul>
+        <li>Full keyboard navigation support</li>
+        <li>Screen reader compatibility (VoiceOver, NVDA, JAWS, TalkBack)</li>
+        <li>Proper ARIA labeling and roles</li>
+        <li>Color contrast ratios meeting WCAG AA standards</li>
+        <li>Responsive design for all device sizes</li>
+        <li>Skip links for efficient navigation</li>
+        <li>Focus indicators for keyboard users</li>
+      </ul>
+    </div>
+    
+    <h2>Keyboard Navigation</h2>
+    <p>
+      The AMG Portal is fully navigable using a keyboard. Users can access all functionality 
+      without requiring a mouse.
+    </p>
+    
+    <h3>Global Keyboard Shortcuts</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Shortcut</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>Tab</kbd></td>
+          <td>Move focus to the next interactive element</td>
+        </tr>
+        <tr>
+          <td><kbd>Shift</kbd> + <kbd>Tab</kbd></td>
+          <td>Move focus to the previous interactive element</td>
+        </tr>
+        <tr>
+          <td><kbd>Enter</kbd> / <kbd>Space</kbd></td>
+          <td>Activate buttons, links, and controls</td>
+        </tr>
+        <tr>
+          <td><kbd>Escape</kbd></td>
+          <td>Close dialogs, menus, and modals</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>K</kbd></td>
+          <td>Open command palette / global search</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>B</kbd></td>
+          <td>Toggle sidebar</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>/</kbd></td>
+          <td>Show keyboard shortcuts help</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3>Data Table Navigation</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Shortcut</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+          <td>Navigate between rows</td>
+        </tr>
+        <tr>
+          <td><kbd>←</kbd> / <kbd>→</kbd></td>
+          <td>Navigate between cells</td>
+        </tr>
+        <tr>
+          <td><kbd>Space</kbd></td>
+          <td>Select/deselect row</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>A</kbd></td>
+          <td>Select all rows</td>
+        </tr>
+        <tr>
+          <td><kbd>Home</kbd></td>
+          <td>Go to first column</td>
+        </tr>
+        <tr>
+          <td><kbd>End</kbd></td>
+          <td>Go to last column</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>Home</kbd></td>
+          <td>Go to first row</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>End</kbd></td>
+          <td>Go to last row</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3>Form Navigation</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Shortcut</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>Tab</kbd></td>
+          <td>Move to next form field</td>
+        </tr>
+        <tr>
+          <td><kbd>Shift</kbd> + <kbd>Tab</kbd></td>
+          <td>Move to previous form field</td>
+        </tr>
+        <tr>
+          <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+          <td>Navigate select dropdowns</td>
+        </tr>
+        <tr>
+          <td><kbd>Space</kbd></td>
+          <td>Toggle checkboxes and radio buttons</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h2>Skip Links</h2>
+    <p>
+      Skip links are provided at the beginning of each page to allow keyboard users to bypass 
+      repetitive navigation and jump directly to:
+    </p>
+    <ul>
+      <li><strong>Skip to main content</strong> - Jumps to the primary content area</li>
+      <li><strong>Skip to navigation</strong> - Jumps to the sidebar navigation menu</li>
+    </ul>
+    <p>
+      To use skip links, press <kbd>Tab</kbd> immediately after the page loads. The skip links 
+      will become visible when focused.
+    </p>
+    
+    <h2>Screen Reader Support</h2>
+    <p>
+      The AMG Portal is tested with and supports the following screen readers:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Screen Reader</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS / iOS</td>
+          <td>VoiceOver</td>
+        </tr>
+        <tr>
+          <td>Windows</td>
+          <td>NVDA (NonVisual Desktop Access)</td>
+        </tr>
+        <tr>
+          <td>Windows</td>
+          <td>JAWS (Job Access With Speech)</td>
+        </tr>
+        <tr>
+          <td>Android</td>
+          <td>TalkBack</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h2>Visual Design</h2>
+    <h3>Color Contrast</h3>
+    <p>
+      All text and interactive elements maintain a minimum color contrast ratio of 4.5:1 
+      for normal text and 3:1 for large text, meeting WCAG 2.1 Level AA requirements.
+    </p>
+    
+    <h3>Focus Indicators</h3>
+    <p>
+      All interactive elements display a visible focus indicator when navigated via keyboard. 
+      The focus ring uses a high-contrast color that is clearly visible against all backgrounds.
+    </p>
+    
+    <h3>Dark Mode</h3>
+    <p>
+      The portal supports both light and dark color schemes, automatically detecting your 
+      system preference. You can also manually toggle between modes in the user settings.
+    </p>
+    
+    <h2>Technical Specifications</h2>
+    <p>Accessibility features in the AMG Portal are built using:</p>
+    <ul>
+      <li>Semantic HTML5 elements</li>
+      <li>ARIA (Accessible Rich Internet Applications) attributes</li>
+      <li>WAI-ARIA Authoring Practices</li>
+      <li>Radix UI primitives for accessible components</li>
+    </ul>
+    
+    <h2>Known Issues</h2>
+    <p>
+      We are actively working to address any remaining accessibility issues. If you encounter 
+      an accessibility barrier, please contact us so we can address it.
+    </p>
+    
+    <h2>Feedback</h2>
+    <p>
+      We welcome your feedback on the accessibility of the AMG Portal. Please let us know if 
+      you encounter any barriers or have suggestions for improvement:
+    </p>
+    <ul>
+      <li><strong>Email:</strong> accessibility@anchormillgroup.com</li>
+      <li><strong>Phone:</strong> +1 (555) 123-4567</li>
+      <li><strong>Response Time:</strong> We aim to respond within 2 business days</li>
+    </ul>
+    
+    <h2>Formal Complaints</h2>
+    <p>
+      If you are not satisfied with our response to your accessibility concern, you may file 
+      a formal complaint. We take all accessibility concerns seriously and will work to resolve 
+      them promptly.
+    </p>
+    
+    <h2>Third-Party Content</h2>
+    <p>
+      While we strive to ensure accessibility throughout the AMG Portal, some third-party 
+      integrations or embedded content may not be fully accessible. We work with our partners 
+      to improve accessibility wherever possible.
+    </p>
+    
+    <h2>Continuous Improvement</h2>
+    <p>
+      We are committed to ongoing accessibility improvements. This statement was last updated 
+      in January 2026 and will be reviewed regularly as we continue to enhance our accessibility features.
+    </p>
+    
+    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);">
+    
+    <p style="color: var(--text-muted); font-size: 0.875rem;">
+      © 2026 Anchor Mill Group. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>

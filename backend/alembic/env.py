@@ -12,10 +12,13 @@ from app.db.base import Base  # noqa: F401 — ensures all models are registered
 from app.models import (  # noqa: F401  # noqa: F401  # noqa: F401
     approval,
     audit_log,
+    bookmark,
     client,
     client_profile,
     deliverable,
     document,
+    document_acknowledgment,
+    document_request,
     kyc_document,
     milestone,
     partner,

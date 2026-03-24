@@ -2,10 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, require_internal
+from app.core.exceptions import NotFoundException
 from app.models.enums import CommunicationType
 from app.models.sla_tracker import SLATracker
 from app.models.user import User
@@ -159,7 +160,7 @@ async def get_sla_tracker(
     result = await db.execute(select(SLATracker).where(SLATracker.id == tracker_id))
     tracker = result.scalar_one_or_none()
     if not tracker:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SLA tracker not found")
+        raise NotFoundException("SLA tracker not found")
 
     # Get assignee info
     assignee_result = await db.execute(select(User).where(User.id == tracker.assigned_to))

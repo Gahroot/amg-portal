@@ -1,10 +1,11 @@
 """Schemas for conversation operations."""
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.communication import CommunicationResponse
 
 
 class ConversationCreate(BaseModel):
@@ -40,7 +41,7 @@ class ConversationResponse(BaseModel):
     unread_count: int = 0
     participants: list[ParticipantInfo] = Field(default_factory=list)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ConversationListResponse(BaseModel):
@@ -49,7 +50,7 @@ class ConversationListResponse(BaseModel):
 
 
 class MessageListResponse(BaseModel):
-    messages: list[dict[str, Any]]
+    communications: list[CommunicationResponse]
     total: int
 
 

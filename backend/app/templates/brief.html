@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Partner Assignment Brief</h1>
+
+<table>
+    <tr><th>Assignment</th><td>{{ assignment_title }}</td></tr>
+    <tr><th>Program</th><td>{{ program_title }}</td></tr>
+    <tr><th>Partner Firm</th><td>{{ partner_firm_name }}</td></tr>
+    <tr><th>Contact</th><td>{{ partner_contact_name }}</td></tr>
+    <tr><th>Status</th><td>Dispatched</td></tr>
+    <tr><th>Dispatched At</th><td>{{ dispatched_at }}</td></tr>
+    {% if due_date %}<tr><th>Due Date</th><td>{{ due_date }}</td></tr>{% endif %}
+</table>
+
+<h2>Brief</h2>
+<p>{{ brief | replace('\n', '<br>') | safe }}</p>
+
+{% if sla_terms %}
+<h2>SLA Terms</h2>
+<p>{{ sla_terms | replace('\n', '<br>') | safe }}</p>
+{% endif %}
+
+<div style="margin-top: 40px; padding: 16px; background: #faf5f0; border-left: 4px solid #8B4513;">
+    <strong>Confidentiality Notice</strong><br>
+    This brief is confidential and intended solely for the named partner.
+    Do not share, reproduce, or distribute without express written consent from AMG.
+</div>
+{% endblock %}

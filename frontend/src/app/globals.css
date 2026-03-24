@@ -145,6 +145,186 @@
   --rule-color: rgba(240, 236, 228, 0.15);
 }
 
+/* ============================================================================
+ * HIGH CONTRAST MODE - Enhanced accessibility theme
+ * Maximum contrast ratios (7:1+ for text), bold borders, clear focus indicators
+ * ============================================================================ */
+
+/* High Contrast Light Theme */
+.high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+
+  /* Strong black primary for maximum contrast */
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+
+  /* High contrast secondary */
+  --secondary: #000000;
+  --secondary-foreground: #ffffff;
+  --muted: #f0f0f0;
+  --muted-foreground: #000000;
+
+  /* Bright accent for visibility */
+  --accent: #0000cc;
+  --accent-foreground: #ffffff;
+
+  /* Strong destructive color */
+  --destructive: #cc0000;
+
+  /* Solid borders for clarity */
+  --border: #000000;
+  --input: #000000;
+  --ring: #0000cc;
+
+  /* High contrast chart colors with patterns */
+  --chart-1: #000000;
+  --chart-2: #0000cc;
+  --chart-3: #006600;
+  --chart-4: #cc0000;
+  --chart-5: #666666;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f0f0;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #000000;
+  --sidebar-ring: #0000cc;
+
+  /* Design tokens */
+  --charcoal: #000000;
+  --rule-color: #000000;
+}
+
+/* High Contrast Dark Theme */
+.dark.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+
+  /* Bright white primary for maximum contrast */
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+
+  /* High contrast secondary */
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
+  --muted: #1a1a1a;
+  --muted-foreground: #ffffff;
+
+  /* Bright accent for visibility */
+  --accent: #ffff00;
+  --accent-foreground: #000000;
+
+  /* Strong destructive color */
+  --destructive: #ff4444;
+
+  /* Solid borders for clarity */
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffff00;
+
+  /* High contrast chart colors */
+  --chart-1: #ffffff;
+  --chart-2: #ffff00;
+  --chart-3: #00ff00;
+  --chart-4: #ff4444;
+  --chart-5: #888888;
+
+  /* Sidebar */
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff;
+  --sidebar-ring: #ffff00;
+
+  /* Design tokens */
+  --charcoal: #ffffff;
+  --rule-color: #ffffff;
+}
+
+/* ============================================================================
+ * HIGH CONTRAST ENHANCEMENTS
+ * Applied when .high-contrast class is present
+ * ============================================================================ */
+
+.high-contrast {
+  /* Remove subtle shadows, use solid borders instead */
+  --hc-shadow: none;
+  --hc-border-width: 2px;
+  --hc-focus-ring-width: 3px;
+}
+
+/* Ensure all interactive elements have visible borders */
+.high-contrast * {
+  border-color: var(--border);
+}
+
+/* Bold borders on inputs, buttons, and interactive elements */
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select,
+.high-contrast button {
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+/* Clear focus indicators */
+.high-contrast :focus-visible {
+  outline: 3px solid var(--ring) !important;
+  outline-offset: 2px !important;
+}
+
+/* Ensure links are clearly distinguishable */
+.high-contrast a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Status indicators use patterns in addition to color */
+.high-contrast [data-status="success"]::before {
+  content: "✓ ";
+}
+
+.high-contrast [data-status="error"]::before {
+  content: "✗ ";
+}
+
+.high-contrast [data-status="warning"]::before {
+  content: "⚠ ";
+}
+
+/* Disable grain texture in high contrast mode */
+.high-contrast body::after {
+  display: none;
+}
+
+/* System preference for more contrast */
+@media (prefers-contrast: more) {
+  :root:not(.high-contrast) {
+    --border: rgba(139, 125, 94, 0.4);
+    --input: rgba(139, 125, 94, 0.5);
+  }
+
+  :root:not(.high-contrast).dark {
+    --border: rgba(212, 201, 168, 0.3);
+    --input: rgba(212, 201, 168, 0.35);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -166,4 +346,46 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
+}
+
+/* ============================================================================
+ * FOCUS MODE - Distraction-free viewing
+ * Hides sidebar, header extras, and maximizes content area
+ * ============================================================================ */
+
+/* Disable grain texture in focus mode */
+.focus-mode body::after {
+  display: none;
+}
+
+/* Focus mode content styling */
+.focus-mode main {
+  /* Cleaner background in focus mode */
+  background: var(--background);
+}
+
+/* Dim non-essential elements that remain visible in focus mode */
+.focus-mode [data-focus-mode-dim] {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.focus-mode [data-focus-mode-dim]:hover {
+  opacity: 1;
+}
+
+/* Typography improvements for reading in focus mode */
+.focus-mode main {
+  line-height: 1.7;
+}
+
+.focus-mode main p {
+  max-width: 70ch;
+}
+
+/* Smooth transitions for focus mode */
+.focus-mode * {
+  transition-property: opacity, transform, margin, padding;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
 }

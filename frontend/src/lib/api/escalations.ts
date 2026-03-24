@@ -3,7 +3,11 @@ import type {
   Escalation,
   EscalationCreate,
   EscalationListResponse,
+  EscalationMetrics,
+  EscalationMetricsParams,
+  EscalationSimpleMetrics,
   EscalationUpdate,
+  OverdueEscalationListResponse,
 } from "@/types/escalation";
 
 export interface EscalationListParams {
@@ -13,6 +17,7 @@ export interface EscalationListParams {
   status?: string;
   program_id?: string;
   client_id?: string;
+  search?: string;
 }
 
 export async function listEscalations(
@@ -97,4 +102,40 @@ export async function exportEscalationsCsv(
     responseType: "blob",
   });
   return response.data as Blob;
+}
+
+export async function getEscalationMetrics(
+  params?: EscalationMetricsParams,
+): Promise<EscalationMetrics> {
+  const response = await api.get<EscalationMetrics>("/api/v1/escalations/metrics", {
+    params,
+  });
+  return response.data;
+}
+
+export async function getSimpleEscalationMetrics(): Promise<EscalationSimpleMetrics> {
+  const response = await api.get<EscalationSimpleMetrics>("/api/v1/escalations/simple-metrics");
+  return response.data;
+}
+
+export async function getOverdueEscalations(params?: {
+  skip?: number;
+  limit?: number;
+}): Promise<OverdueEscalationListResponse> {
+  const response = await api.get<OverdueEscalationListResponse>(
+    "/api/v1/escalations/overdue",
+    { params },
+  );
+  return response.data;
+}
+
+export async function reassignEscalation(
+  id: string,
+  newOwnerId: string,
+): Promise<Escalation> {
+  const response = await api.post<Escalation>(
+    `/api/v1/escalations/${id}/reassign`,
+    { new_owner_id: newOwnerId },
+  );
+  return response.data;
 }

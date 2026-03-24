@@ -15,6 +15,42 @@ from app.services.crud_base import CRUDBase
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
+# Deep link scheme for mobile app
+DEEP_LINK_SCHEME = "amgportal://"
+
+# Entity type to deep link path mapping
+ENTITY_TO_DEEP_LINK_PATH: dict[str, str] = {
+    "program": "programs",
+    "programs": "programs",
+    "message": "messages",
+    "messages": "messages",
+    "conversation": "messages",
+    "conversations": "messages",
+    "decision": "decisions",
+    "decisions": "decisions",
+}
+
+
+def generate_deep_link(entity_type: str | None, entity_id: str | uuid.UUID | None) -> str | None:
+    """Generate a deep link URL from entity type and ID.
+
+    Args:
+        entity_type: The type of entity (e.g., 'program', 'decision', 'message')
+        entity_id: The UUID of the entity
+
+    Returns:
+        Deep link URL (e.g., 'amgportal://programs/123') or None if invalid
+    """
+    if not entity_type or not entity_id:
+        return None
+
+    path = ENTITY_TO_DEEP_LINK_PATH.get(entity_type.lower())
+    if not path:
+        return None
+
+    entity_id_str = str(entity_id)
+    return f"{DEEP_LINK_SCHEME}{path}/{entity_id_str}"
+
 
 class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
     """Service for Expo push notification operations."""

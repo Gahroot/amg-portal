@@ -31,6 +31,7 @@ import {
   APPROVAL_STATUS_LABELS,
   APPROVAL_STATUS_COLORS,
 } from "@/types/partner-capability";
+import { toast } from "sonner";
 
 interface QualificationCardProps {
   qualifications: PartnerQualification[];
@@ -117,8 +118,8 @@ export function QualificationCard({
       });
       setApprovingQualification(null);
       setApproveState({ status: "approved", notes: "" });
-    } catch (error) {
-      console.error("Failed to approve qualification:", error);
+    } catch {
+      toast.error("Failed to approve qualification");
     } finally {
       setIsLoading(false);
     }

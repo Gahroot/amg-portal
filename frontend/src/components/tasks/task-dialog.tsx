@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 import {
   Dialog,
@@ -31,20 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { taskFormSchema, type TaskFormData } from "@/lib/validations/task";
 import type { AssigneeInfo, MilestoneInfo, TaskBoard, TaskStatus } from "@/types/task";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/types/task";
-
-const taskFormSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  description: z.string().max(2000).optional(),
-  milestone_id: z.string().min(1, "Milestone is required"),
-  status: z.enum(["todo", "in_progress", "blocked", "done", "cancelled"]),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
-  due_date: z.string().optional(),
-  assigned_to: z.string().optional().nullable(),
-});
-
-type TaskFormData = z.infer<typeof taskFormSchema>;
+import { TaskDependencyField } from "./task-dependency-field";
 
 interface TaskDialogProps {
   open: boolean;
@@ -53,7 +42,8 @@ interface TaskDialogProps {
   milestones: MilestoneInfo[];
   assignees: AssigneeInfo[];
   defaultStatus: TaskStatus;
-  onSubmit: (data: TaskFormData) => Promise<void>;
+  allTasks?: TaskBoard[];
+  onSubmit: (data: TaskFormData & { depends_on?: string[] }) => Promise<void>;
 }
 
 export function TaskDialog({
@@ -63,8 +53,11 @@ export function TaskDialog({
   milestones,
   assignees,
   defaultStatus,
+  allTasks = [],
   onSubmit,
 }: TaskDialogProps) {
+  const [dependsOn, setDependsOn] = useState<string[]>([]);
+
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -89,6 +82,7 @@ export function TaskDialog({
         due_date: task.due_date || "",
         assigned_to: task.assigned_to,
       });
+      setDependsOn(task.depends_on ?? []);
     } else {
       form.reset({
         title: "",
@@ -99,11 +93,12 @@ export function TaskDialog({
         due_date: "",
         assigned_to: null,
       });
+      setDependsOn([]);
     }
   }, [task, form, milestones, defaultStatus]);
 
   const handleSubmit = async (data: TaskFormData) => {
-    await onSubmit(data);
+    await onSubmit({ ...data, depends_on: dependsOn });
     onOpenChange(false);
   };
 
@@ -273,6 +268,20 @@ export function TaskDialog({
                 </FormItem>
               )}
             />
+
+            {/* Dependencies */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Dependencies</p>
+              <p className="text-xs text-muted-foreground">
+                This task will be blocked until all dependencies are complete.
+              </p>
+              <TaskDependencyField
+                taskId={task?.id ?? null}
+                value={dependsOn}
+                availableTasks={allTasks}
+                onChange={setDependsOn}
+              />
+            </div>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

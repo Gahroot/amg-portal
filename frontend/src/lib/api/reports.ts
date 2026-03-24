@@ -1,163 +1,55 @@
 import api from "@/lib/api";
+import type {
+  RAGStatus,
+  ReportMilestone,
+  ReportDeliverable,
+  ReportPartner,
+  ReportPendingDecision,
+  PortfolioProgramSummary,
+  PortfolioOverviewReport,
+  ProgramStatusReport,
+  CompletionMilestoneTimeline,
+  CompletionReport,
+  MonthlyProgramCount,
+  PartnerPerformanceSummary,
+  AnnualProgramSummary,
+  AnnualReviewReport,
+  RMClientProgramSummary,
+  RMClientSummary,
+  RMPortfolioReport,
+  EscalationLogItem,
+  EscalationLogReport,
+  ClientKYCStatus,
+  AccessAnomalySummary,
+  UserAccountStatus,
+  ComplianceAuditReport,
+} from "@/types/report";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type RAGStatus = "green" | "amber" | "red";
-
-export interface ReportMilestone {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  status: string;
-  position: number;
-}
-
-export interface ReportDeliverable {
-  id: string;
-  title: string;
-  deliverable_type: string;
-  description: string | null;
-  due_date: string | null;
-  status: string;
-  client_visible: boolean;
-  submitted_at: string | null;
-  reviewed_at: string | null;
-}
-
-export interface ReportPartner {
-  id: string;
-  firm_name: string;
-  contact_name: string;
-  contact_email: string;
-}
-
-export interface ReportPendingDecision {
-  id: string;
-  title: string;
-  description: string | null;
-  requested_at: string;
-  deadline: string | null;
-}
-
-export interface PortfolioProgramSummary {
-  id: string;
-  title: string;
-  status: string;
-  rag_status: RAGStatus;
-  start_date: string | null;
-  end_date: string | null;
-  budget_envelope: number | null;
-  milestone_count: number;
-  completed_milestone_count: number;
-  milestone_progress: number;
-}
-
-export interface PortfolioOverviewReport {
-  client_id: string;
-  client_name: string;
-  total_programs: number;
-  active_programs: number;
-  completed_programs: number;
-  total_budget: number | null;
-  status_breakdown: Record<string, number>;
-  rag_summary: Record<string, number>;
-  overall_milestone_progress: number;
-  programs: PortfolioProgramSummary[];
-  generated_at: string;
-}
-
-export interface ProgramStatusReport {
-  program_id: string;
-  program_title: string;
-  program_status: string;
-  rag_status: RAGStatus;
-  start_date: string | null;
-  end_date: string | null;
-  milestone_progress: number;
-  active_milestones: ReportMilestone[];
-  completed_deliverables: ReportDeliverable[];
-  pending_decisions: ReportPendingDecision[];
-  assigned_partners: ReportPartner[];
-  generated_at: string;
-}
-
-export interface CompletionMilestoneTimeline {
-  id: string;
-  title: string;
-  planned_due_date: string | null;
-  actual_completed_at: string | null;
-  status: string;
-  on_time: boolean | null;
-}
-
-export interface CompletionReport {
-  program_id: string;
-  program_title: string;
-  client_id: string;
-  client_name: string;
-  objectives: string | null;
-  scope: string | null;
-  planned_start_date: string | null;
-  planned_end_date: string | null;
-  actual_start_date: string | null;
-  actual_end_date: string | null;
-  timeline_adherence: string | null;
-  planned_budget: number | null;
-  actual_budget: number | null;
-  total_milestones: number;
-  completed_milestones: number;
-  milestone_timeline: CompletionMilestoneTimeline[];
-  total_deliverables: number;
-  approved_deliverables: number;
-  deliverables: ReportDeliverable[];
-  partners: ReportPartner[];
-  generated_at: string;
-}
-
-export interface MonthlyProgramCount {
-  month: number;
-  month_name: string;
-  new_programs: number;
-  completed_programs: number;
-}
-
-export interface PartnerPerformanceSummary {
-  partner_id: string;
-  firm_name: string;
-  total_assignments: number;
-  completed_assignments: number;
-  avg_performance_rating: number | null;
-}
-
-export interface AnnualProgramSummary {
-  id: string;
-  title: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
-  budget_envelope: number | null;
-  rag_status: RAGStatus;
-}
-
-export interface AnnualReviewReport {
-  client_id: string;
-  client_name: string;
-  year: number;
-  total_programs: number;
-  new_programs: number;
-  completed_programs: number;
-  active_programs: number;
-  total_engagement_value: number | null;
-  total_budget_consumed: number | null;
-  programs_by_status: Record<string, number>;
-  programs_by_month: MonthlyProgramCount[];
-  partner_performance: PartnerPerformanceSummary[];
-  programs: AnnualProgramSummary[];
-  generated_at: string;
-}
+export type {
+  RAGStatus,
+  ReportMilestone,
+  ReportDeliverable,
+  ReportPartner,
+  ReportPendingDecision,
+  PortfolioProgramSummary,
+  PortfolioOverviewReport,
+  ProgramStatusReport,
+  CompletionMilestoneTimeline,
+  CompletionReport,
+  MonthlyProgramCount,
+  PartnerPerformanceSummary,
+  AnnualProgramSummary,
+  AnnualReviewReport,
+  RMClientProgramSummary,
+  RMClientSummary,
+  RMPortfolioReport,
+  EscalationLogItem,
+  EscalationLogReport,
+  ClientKYCStatus,
+  AccessAnomalySummary,
+  UserAccountStatus,
+  ComplianceAuditReport,
+};
 
 // ============================================================================
 // API Functions
@@ -239,6 +131,22 @@ export async function exportAnnualReview(year: number): Promise<void> {
 }
 
 // ============================================================================
+// Portal Program Status APIs (client-scoped, via /portal endpoints)
+// ============================================================================
+
+export async function getPortalProgramStatuses(): Promise<ProgramStatusReport[]> {
+  const response = await api.get<ProgramStatusReport[]>("/api/v1/portal/program-status");
+  return response.data;
+}
+
+export async function getPortalProgramStatus(programId: string): Promise<ProgramStatusReport> {
+  const response = await api.get<ProgramStatusReport>(
+    `/api/v1/portal/program-status/${programId}`,
+  );
+  return response.data;
+}
+
+// ============================================================================
 // PDF Download Helpers
 // ============================================================================
 
@@ -284,4 +192,62 @@ export async function downloadAnnualReviewPDF(year: number): Promise<void> {
     responseType: "blob",
   });
   downloadBlob(response.data, `annual_review_${year}_${dateStr()}.pdf`);
+}
+
+// ============================================================================
+// Class B — Internal Operational Report APIs
+// ============================================================================
+
+export interface EscalationLogParams {
+  program_id?: string;
+  client_id?: string;
+  level?: string;
+  status?: string;
+}
+
+export async function getRMPortfolioReport(rmId?: string): Promise<RMPortfolioReport> {
+  const params = rmId ? { rm_id: rmId } : undefined;
+  const response = await api.get<RMPortfolioReport>("/api/v1/reports/rm-portfolio", { params });
+  return response.data;
+}
+
+export async function getEscalationLogReport(
+  params?: EscalationLogParams,
+): Promise<EscalationLogReport> {
+  const response = await api.get<EscalationLogReport>("/api/v1/reports/escalation-log", {
+    params,
+  });
+  return response.data;
+}
+
+export async function getComplianceAuditReport(): Promise<ComplianceAuditReport> {
+  const response = await api.get<ComplianceAuditReport>("/api/v1/reports/compliance");
+  return response.data;
+}
+
+// ============================================================================
+// Report Favorites APIs
+// ============================================================================
+
+export interface ReportFavoritesResponse {
+  favorites: string[];
+}
+
+export async function getReportFavorites(): Promise<ReportFavoritesResponse> {
+  const response = await api.get<ReportFavoritesResponse>("/api/v1/reports/favorites");
+  return response.data;
+}
+
+export async function addReportFavorite(reportType: string): Promise<ReportFavoritesResponse> {
+  const response = await api.post<ReportFavoritesResponse>(
+    `/api/v1/reports/favorites/${reportType}`,
+  );
+  return response.data;
+}
+
+export async function removeReportFavorite(reportType: string): Promise<ReportFavoritesResponse> {
+  const response = await api.delete<ReportFavoritesResponse>(
+    `/api/v1/reports/favorites/${reportType}`,
+  );
+  return response.data;
 }

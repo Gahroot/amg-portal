@@ -1,4 +1,3 @@
-"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,6 +11,9 @@ import {
   getEntityEscalations,
   triggerRiskCheck,
   exportEscalationsCsv,
+  getSimpleEscalationMetrics,
+  getOverdueEscalations,
+  reassignEscalation,
 } from "@/lib/api/escalations";
 import type { EscalationCreate, EscalationUpdate, EscalationListParams } from "@/types/escalation";
 
@@ -110,5 +112,34 @@ export function useExportEscalations() {
   return useMutation({
     mutationFn: (params?: EscalationListParams) => exportEscalationsCsv(params),
     onError: (error: Error) => toast.error(error.message || "Failed to export escalations"),
+  });
+}
+
+export function useSimpleEscalationMetrics() {
+  return useQuery({
+    queryKey: ["escalations", "simple-metrics"],
+    queryFn: () => getSimpleEscalationMetrics(),
+    staleTime: 60_000, // 1 minute
+  });
+}
+
+export function useOverdueEscalations(params?: { skip?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ["escalations", "overdue", params],
+    queryFn: () => getOverdueEscalations(params),
+  });
+}
+
+export function useReassignEscalation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, newOwnerId }: { id: string; newOwnerId: string }) =>
+      reassignEscalation(id, newOwnerId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["escalations"] });
+      queryClient.invalidateQueries({ queryKey: ["escalations", variables.id] });
+      toast.success("Escalation reassigned");
+    },
+    onError: (error: Error) => toast.error(error.message || "Failed to reassign escalation"),
   });
 }

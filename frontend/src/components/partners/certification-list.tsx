@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   type PartnerCertification,
   type CertificationStatus,
@@ -149,8 +150,8 @@ export function CertificationList({
       });
       setEditingCertification(null);
       resetForm();
-    } catch (error) {
-      console.error("Failed to update certification:", error);
+    } catch {
+      toast.error("Failed to update certification");
     } finally {
       setIsLoading(false);
     }
@@ -180,8 +181,8 @@ export function CertificationList({
     setUploadingId(certificationId);
     try {
       await onUploadDocument(certificationId, file);
-    } catch (error) {
-      console.error("Failed to upload document:", error);
+    } catch {
+      toast.error("Failed to upload document");
     } finally {
       setUploadingId(null);
     }

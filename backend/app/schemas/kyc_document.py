@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.document import DocumentResponse
 
@@ -21,7 +21,7 @@ class KYCDocumentResponse(BaseModel):
     updated_at: datetime
     document: DocumentResponse | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class KYCDocumentListResponse(BaseModel):

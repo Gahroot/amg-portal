@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import { listAssignments } from "@/lib/api/assignments";
-import type { AssignmentListParams } from "@/lib/api/assignments";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Search } from "lucide-react";
 
 const STATUS_VARIANT: Record<
   string,
@@ -37,16 +40,47 @@ const STATUS_VARIANT: Record<
   cancelled: "destructive",
 };
 
-export default function AssignmentsPage() {
+function AssignmentsPageContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const [filters, setFilters] = React.useState<AssignmentListParams>({});
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const isInternal = user?.role !== "client" && user?.role !== "partner";
 
+  // Read initial values from URL
+  const [searchInput, setSearchInput] = React.useState(
+    searchParams.get("search") ?? ""
+  );
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  const statusParam = searchParams.get("status") ?? "all";
+
+  const updateParam = React.useCallback(
+    (key: string, value: string | undefined) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value && value !== "all") {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      router.replace(`${pathname}?${params.toString()}`);
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Sync debounced search to URL
+  React.useEffect(() => {
+    updateParam("search", debouncedSearch || undefined);
+  }, [debouncedSearch, updateParam]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["assignments", filters],
-    queryFn: () => listAssignments(filters),
+    queryKey: ["assignments", debouncedSearch, statusParam],
+    queryFn: () =>
+      listAssignments({
+        search: debouncedSearch || undefined,
+        status: statusParam !== "all" ? statusParam : undefined,
+      }),
     enabled: isInternal,
   });
 
@@ -73,13 +107,18 @@ export default function AssignmentsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search assignments..."
+              className="pl-9"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </div>
           <Select
-            onValueChange={(value) =>
-              setFilters((f) => ({
-                ...f,
-                status: value === "all" ? undefined : value,
-              }))
-            }
+            value={statusParam}
+            onValueChange={(value) => updateParam("status", value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
@@ -170,5 +209,13 @@ export default function AssignmentsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AssignmentsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-muted-foreground text-sm">Loading...</div>}>
+      <AssignmentsPageContent />
+    </Suspense>
   );
 }

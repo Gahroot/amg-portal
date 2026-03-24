@@ -3,12 +3,14 @@
 from datetime import UTC, date, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, RLSContext, require_internal
 from app.api.v1.documents import build_document_response
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client import Client
 from app.models.document import Document
 from app.models.kyc_document import KYCDocument
@@ -55,6 +57,7 @@ async def upload_kyc_document(
     client_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
     file: UploadFile = File(...),
     document_type: str = Form(...),
@@ -64,7 +67,7 @@ async def upload_kyc_document(
     # Validate client exists
     client_result = await db.execute(select(Client).where(Client.id == client_id))
     if not client_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise NotFoundException("Client not found")
 
     await storage_service.validate_file(file)
 
@@ -112,6 +115,7 @@ async def list_kyc_documents(
     client_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -147,6 +151,7 @@ async def get_kyc_document(
     kyc_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
 ) -> KYCDocumentResponse:
     result = await db.execute(
@@ -156,7 +161,7 @@ async def get_kyc_document(
     )
     kyc = result.scalar_one_or_none()
     if not kyc:
-        raise HTTPException(status_code=404, detail="KYC document not found")
+        raise NotFoundException("KYC document not found")
     return build_kyc_response(kyc, include_document=True)
 
 
@@ -170,10 +175,11 @@ async def verify_kyc_document(
     data: KYCVerifyRequest,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
 ) -> KYCDocumentResponse:
     if data.status not in ("verified", "rejected"):
-        raise HTTPException(status_code=400, detail="Status must be 'verified' or 'rejected'")
+        raise BadRequestException("Status must be 'verified' or 'rejected'")
 
     result = await db.execute(
         select(KYCDocument)
@@ -182,7 +188,7 @@ async def verify_kyc_document(
     )
     kyc = result.scalar_one_or_none()
     if not kyc:
-        raise HTTPException(status_code=404, detail="KYC document not found")
+        raise NotFoundException("KYC document not found")
 
     kyc.status = data.status  # type: ignore[assignment]
     kyc.verified_by = current_user.id  # type: ignore[assignment]
@@ -199,12 +205,13 @@ async def verify_kyc_document(
 async def list_expiring_kyc_documents(
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
     days: int = Query(30, ge=1, le=365),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ) -> KYCDocumentListResponse:
-    cutoff = date.today()
+    cutoff = datetime.now(UTC).date()
     from datetime import timedelta
 
     expiry_limit = cutoff + timedelta(days=days)
@@ -238,4 +245,76 @@ async def list_expiring_kyc_documents(
     return KYCDocumentListResponse(
         kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],
         total=total,
+    )
+
+
+class KYCExpirySummaryResponse(BaseModel):
+    """Summary of KYC documents by expiry window."""
+
+    expired: int  # Already expired
+    urgent: int  # Expiring within 7 days
+    warning: int  # Expiring within 30 days (but > 7)
+    total: int  # Total within 30 days
+
+
+@router.get("/kyc-documents/expiry-summary", response_model=KYCExpirySummaryResponse)
+async def get_kyc_expiry_summary(
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_internal),
+) -> KYCExpirySummaryResponse:
+    """Get summary counts of KYC documents by expiry window.
+
+    Per design doc Section 08: "Monthly compliance review: KYC expiry dates."
+    """
+    from datetime import timedelta
+
+    today = datetime.now(UTC).date()
+    urgent_cutoff = today + timedelta(days=7)
+    warning_cutoff = today + timedelta(days=30)
+
+    # Count expired documents (verified status, expiry_date < today)
+    expired_result = await db.execute(
+        select(func.count())
+        .select_from(KYCDocument)
+        .where(
+            KYCDocument.expiry_date.isnot(None),
+            KYCDocument.expiry_date < today,
+            KYCDocument.status == "verified",
+        )
+    )
+    expired = expired_result.scalar() or 0
+
+    # Count urgent (expiring within 7 days, not yet expired)
+    urgent_result = await db.execute(
+        select(func.count())
+        .select_from(KYCDocument)
+        .where(
+            KYCDocument.expiry_date.isnot(None),
+            KYCDocument.expiry_date >= today,
+            KYCDocument.expiry_date <= urgent_cutoff,
+            KYCDocument.status == "verified",
+        )
+    )
+    urgent = urgent_result.scalar() or 0
+
+    # Count warning (expiring within 30 days but > 7 days)
+    warning_result = await db.execute(
+        select(func.count())
+        .select_from(KYCDocument)
+        .where(
+            KYCDocument.expiry_date.isnot(None),
+            KYCDocument.expiry_date > urgent_cutoff,
+            KYCDocument.expiry_date <= warning_cutoff,
+            KYCDocument.status == "verified",
+        )
+    )
+    warning = warning_result.scalar() or 0
+
+    return KYCExpirySummaryResponse(
+        expired=expired,
+        urgent=urgent,
+        warning=warning,
+        total=expired + urgent + warning,
     )

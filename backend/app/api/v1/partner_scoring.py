@@ -2,9 +2,10 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from app.api.deps import DB, require_internal
+from app.core.exceptions import NotFoundException
 from app.schemas.dashboard import (
     PartnerPerformanceEntry,
     PartnerRanking,
@@ -50,10 +51,7 @@ async def partner_scorecard(
     """Get full partner scorecard."""
     scorecard = await get_partner_scorecard(db, partner_id)
     if scorecard is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Partner not found",
-        )
+        raise NotFoundException("Partner not found")
     return PartnerScorecard(**scorecard)
 
 

@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import UserRole
 
@@ -52,9 +52,11 @@ class UserResponse(BaseModel):
     role: UserRole
     status: str
     mfa_enabled: bool = False
+    last_login_at: datetime | None = None
     created_at: datetime
+    onboarding_completed: dict[str, bool] | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -62,6 +64,8 @@ class Token(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     mfa_required: bool = False
+    mfa_setup_required: bool = False
+    mfa_setup_token: str | None = None
 
 
 class MFASetupResponse(BaseModel):
@@ -109,6 +113,40 @@ class ChangePasswordRequest(BaseModel):
         return v
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        """Validate new password meets complexity requirements."""
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+
+        # Check for at least one uppercase letter
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+
+        # Check for at least one lowercase letter
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+
+        # Check for at least one digit
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one digit")
+
+        # Check for at least one special character
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\'\\:"|<>,./?]', v):
+            raise ValueError("Password must contain at least one special character")
+
+        return v
+
+
 class ProfileUpdateRequest(BaseModel):
     """Request body for updating user profile."""
 
@@ -127,6 +165,10 @@ class UserNotificationPreferencesResponse(BaseModel):
     quiet_hours_start: str | None = None
     quiet_hours_end: str | None = None
     timezone: str
+    # Milestone reminder preferences
+    milestone_reminder_days: list[int] | None = None
+    milestone_reminder_channels: list[str] | None = None
+    milestone_reminder_program_overrides: dict[str, object] | None = None
 
 
 class UserNotificationPreferencesUpdate(BaseModel):
@@ -140,3 +182,7 @@ class UserNotificationPreferencesUpdate(BaseModel):
     quiet_hours_start: str | None = None
     quiet_hours_end: str | None = None
     timezone: str | None = None
+    # Milestone reminder preferences
+    milestone_reminder_days: list[int] | None = None
+    milestone_reminder_channels: list[str] | None = None
+    milestone_reminder_program_overrides: dict[str, object] | None = None

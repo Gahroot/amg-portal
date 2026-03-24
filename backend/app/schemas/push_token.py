@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class PushTokenRegisterRequest(BaseModel):
@@ -30,7 +30,7 @@ class PushTokenResponse(BaseModel):
     last_used_at: datetime | None = None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PushTokenListResponse(BaseModel):

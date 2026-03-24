@@ -2,9 +2,10 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.api.deps import DB, CurrentUser, require_admin, require_internal
+from app.core.exceptions import NotFoundException
 from app.schemas.partner_governance import (
     CompositeScoreResponse,
     GovernanceActionCreate,
@@ -122,8 +123,5 @@ async def partner_composite_score(
     """Get composite performance score for a partner."""
     data = await calculate_composite_score(db, partner_id)
     if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Partner not found",
-        )
+        raise NotFoundException("Partner not found")
     return CompositeScoreResponse(**data)

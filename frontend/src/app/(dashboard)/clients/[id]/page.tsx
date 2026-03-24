@@ -5,9 +5,13 @@ import { useParams } from "next/navigation";
 import {
   useClientProfile,
   useUpdateIntelligenceFile,
+  useUpdateClientProfile,
   useComplianceCertificate,
+  useSecurityBrief,
+  useUpdateSecurityProfileLevel,
 } from "@/hooks/use-clients";
 import { useFamilyMembers } from "@/hooks/use-family-members";
+import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,18 +20,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import { ClientProvisionDialog } from "@/components/client-provision-dialog";
 import { DocumentList } from "@/components/documents/document-list";
 import { KYCDocumentPanel } from "@/components/documents/kyc-document-panel";
 import { IntelligenceFileManager } from "@/components/intelligence/intelligence-file-manager";
+import { IntelligenceNotesEditor } from "@/components/intelligence/intelligence-notes-editor";
 import { FamilyMemberList } from "@/components/intake/family-member-list";
 import { FamilyMemberDialog } from "@/components/intake/family-member-dialog";
+import { ClientPreferencesForm } from "@/components/communications/client-preferences-form";
+import { ClientPreferenceCard } from "@/components/clients/client-preference-card";
+import { ImportantDatesForm } from "@/components/clients/important-dates-form";
+import { BookmarkButton } from "@/components/ui/bookmark-button";
+// AuditTrailViewer available: import { AuditTrailViewer } from "@/components/communications/audit-trail-viewer";
 import {
   useCreateFamilyMember,
   useUpdateFamilyMember,
   useDeleteFamilyMember,
 } from "@/hooks/use-family-members";
 import type { FamilyMemberCreate } from "@/types/family-member";
+import type { IntelligenceFile, SecurityProfileLevel } from "@/types/client";
 
 const COMPLIANCE_STATUS_VARIANT: Record<
   string,
@@ -52,11 +65,12 @@ const APPROVAL_STATUS_VARIANT: Record<
   draft: "outline",
 };
 
-type Tab = "overview" | "intelligence" | "family" | "lifestyle" | "compliance" | "provisioning" | "documents" | "kyc";
+type Tab = "overview" | "intelligence" | "family" | "lifestyle" | "compliance" | "provisioning" | "documents" | "kyc" | "preferences" | "security" | "dates";
 
 export default function ClientDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const { user } = useAuth();
   const { data: profile, isLoading } = useClientProfile(id);
   const { data: familyMembersData } = useFamilyMembers(id);
   const [activeTab, setActiveTab] = React.useState<Tab>("overview");
@@ -64,7 +78,11 @@ export default function ClientDetailPage() {
   const [familyDialogOpen, setFamilyDialogOpen] = React.useState(false);
   const [editingMemberId, setEditingMemberId] = React.useState<string | null>(null);
 
+  const isInternalSenior =
+    user?.role === "managing_director" || user?.role === "relationship_manager";
+
   const updateIntelMutation = useUpdateIntelligenceFile(id);
+  const updateSecurityLevelMutation = useUpdateSecurityProfileLevel(id);
   const createFamilyMutation = useCreateFamilyMember(id);
   const updateFamilyMutation = useUpdateFamilyMember(id);
   const deleteFamilyMutation = useDeleteFamilyMember(id);
@@ -98,9 +116,16 @@ export default function ClientDetailPage() {
     { key: "provisioning", label: "Provisioning" },
     { key: "documents", label: "Documents" },
     { key: "kyc", label: "KYC" },
+    { key: "preferences", label: "Preferences" },
+    ...(isInternalSenior
+      ? [
+          { key: "dates" as Tab, label: "Important Dates" },
+          { key: "security" as Tab, label: "Security" },
+        ]
+      : []),
   ];
 
-  const handleUpdateIntelligence = async (data: Record<string, unknown>) => {
+  const handleUpdateIntelligence = async (data: IntelligenceFile) => {
     await updateIntelMutation.mutateAsync(data);
   };
 
@@ -129,13 +154,22 @@ export default function ClientDetailPage() {
     <div className="min-h-screen bg-[#FDFBF7] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="font-serif text-3xl font-bold tracking-tight">
-              {profile.display_name || profile.legal_name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {profile.legal_name}
-            </p>
+          <div className="flex items-start gap-2">
+            <div className="space-y-1">
+              <h1 className="font-serif text-3xl font-bold tracking-tight">
+                {profile.display_name || profile.legal_name}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {profile.legal_name}
+              </p>
+            </div>
+            <BookmarkButton
+              entityType="client"
+              entityId={id}
+              entityTitle={profile.display_name || profile.legal_name}
+              entitySubtitle={profile.legal_name}
+              className="mt-1"
+            />
           </div>
           <div className="flex items-center gap-2">
             <Badge
@@ -172,7 +206,13 @@ export default function ClientDetailPage() {
           ))}
         </div>
 
-        {activeTab === "overview" && <OverviewTab profile={profile} />}
+        {activeTab === "overview" && (
+          <OverviewTab
+            profile={profile}
+            clientId={id}
+            onEditPreferences={() => setActiveTab("preferences")}
+          />
+        )}
         {activeTab === "intelligence" && (
           <IntelligenceTab
             id={id}
@@ -204,7 +244,7 @@ export default function ClientDetailPage() {
         )}
         {activeTab === "compliance" && <ComplianceTab id={id} profile={profile} />}
         {activeTab === "documents" && (
-          <DocumentList entityType="client" entityId={id} />
+          <DocumentList entityType="client" entityId={id} showRequest />
         )}
         {activeTab === "kyc" && (
           <KYCDocumentPanel clientId={id} canVerify={true} />
@@ -213,6 +253,27 @@ export default function ClientDetailPage() {
           <ProvisioningTab
             profile={profile}
             onProvision={() => setProvisionOpen(true)}
+          />
+        )}
+        {activeTab === "preferences" && (
+          <ClientPreferencesForm
+            clientId={id}
+            readOnly={!isInternalSenior}
+          />
+        )}
+        {activeTab === "dates" && isInternalSenior && (
+          <ImportantDatesForm clientId={id} profile={profile} />
+        )}
+        {activeTab === "security" && isInternalSenior && (
+          <SecurityProfileTab
+            id={id}
+            securityProfileLevel={profile.security_profile_level}
+            onUpdateLevel={(level) =>
+              updateSecurityLevelMutation.mutate({
+                security_profile_level: level,
+              })
+            }
+            isUpdating={updateSecurityLevelMutation.isPending}
           />
         )}
 
@@ -228,8 +289,12 @@ export default function ClientDetailPage() {
 
 function OverviewTab({
   profile,
+  clientId,
+  onEditPreferences,
 }: {
   profile: NonNullable<ReturnType<typeof useClientProfile>["data"]>;
+  clientId: string;
+  onEditPreferences: () => void;
 }) {
   const fields = [
     { label: "Legal Name", value: profile.legal_name },
@@ -255,25 +320,37 @@ function OverviewTab({
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-serif text-xl">Profile Details</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fields.map((field) => (
-            <div key={field.label}>
-              <p className="text-sm font-medium text-muted-foreground">
-                {field.label}
-              </p>
-              <p className="text-sm">{field.value || "-"}</p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-xl">Profile Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {fields.map((field) => (
+              <div key={field.label}>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {field.label}
+                </p>
+                <p className="text-sm">{field.value || "-"}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <ClientPreferenceCard
+        clientId={clientId}
+        onEditClick={onEditPreferences}
+      />
+    </div>
   );
 }
+
+const INTELLIGENCE_NOTES_SECTIONS = [
+  { key: "sensitivities", label: "Sensitivities" },
+  { key: "special_instructions", label: "Special Instructions" },
+  { key: "communication_preference", label: "Communication Preference" },
+];
 
 function IntelligenceTab({
   id,
@@ -283,16 +360,51 @@ function IntelligenceTab({
 }: {
   id: string;
   profile: NonNullable<ReturnType<typeof useClientProfile>["data"]>;
-  onUpdate: (data: Record<string, unknown>) => Promise<void>;
+  onUpdate: (data: IntelligenceFile) => Promise<void>;
   isUpdating: boolean;
 }) {
+  const updateProfileMutation = useUpdateClientProfile(id);
+
+  const notesInitialData = React.useMemo<Record<string, string>>(
+    () => ({
+      sensitivities: profile.sensitivities ?? "",
+      special_instructions: profile.special_instructions ?? "",
+      communication_preference: profile.communication_preference ?? "",
+    }),
+    [profile.sensitivities, profile.special_instructions, profile.communication_preference],
+  );
+
+  const handleSaveNotes = async (data: Record<string, string>) => {
+    await updateProfileMutation.mutateAsync({
+      sensitivities: data.sensitivities || undefined,
+      special_instructions: data.special_instructions || undefined,
+      communication_preference: data.communication_preference || undefined,
+    });
+  };
+
   return (
-    <IntelligenceFileManager
-      profileId={id}
-      intelligenceFile={profile.intelligence_file}
-      onUpdate={onUpdate}
-      isUpdating={isUpdating}
-    />
+    <div className="space-y-6">
+      <IntelligenceFileManager
+        profileId={id}
+        intelligenceFile={profile.intelligence_file}
+        onUpdate={onUpdate}
+        isUpdating={isUpdating}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-xl">Intelligence Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <IntelligenceNotesEditor
+            initialData={notesInitialData}
+            sections={INTELLIGENCE_NOTES_SECTIONS}
+            onSave={handleSaveNotes}
+            isSaving={updateProfileMutation.isPending}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -376,16 +488,16 @@ function LifestyleTab({
 }: {
   profile: NonNullable<ReturnType<typeof useClientProfile>["data"]>;
 }) {
-  const lifestyle = (profile.intelligence_file?.lifestyle as Record<string, unknown>) || {};
+  const lifestyle = profile.intelligence_file?.lifestyle_profile ?? null;
 
   const fields = [
-    { label: "Travel Preferences", value: lifestyle.travel_preferences },
-    { label: "Dietary Restrictions", value: lifestyle.dietary_restrictions },
-    { label: "Interests", value: lifestyle.interests },
-    { label: "Language Preference", value: lifestyle.language_preference },
+    { label: "Travel Preferences", value: lifestyle?.travel_preferences },
+    { label: "Dietary Restrictions", value: lifestyle?.dietary_restrictions },
+    { label: "Interests", value: lifestyle?.interests?.join(", ") },
+    { label: "Language Preference", value: lifestyle?.language_preference },
   ];
 
-  const destinations = lifestyle.preferred_destinations as string[] | undefined;
+  const destinations = lifestyle?.preferred_destinations;
 
   return (
     <Card>
@@ -570,5 +682,268 @@ function ProvisioningTab({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Security Profile Tab — MD + RM only, never shown in client/partner portals
+// ---------------------------------------------------------------------------
+
+const SECURITY_LEVEL_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  standard: "outline",
+  elevated: "secondary",
+  executive: "default",
+};
+
+const SECURITY_LEVEL_LABELS: Record<string, string> = {
+  standard: "Standard",
+  elevated: "Elevated",
+  executive: "Executive",
+};
+
+const THREAT_LEVEL_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  low: "default",
+  medium: "secondary",
+  high: "destructive",
+  critical: "destructive",
+  unknown: "outline",
+};
+
+function SecurityProfileTab({
+  id,
+  securityProfileLevel,
+  onUpdateLevel,
+  isUpdating,
+}: {
+  id: string;
+  securityProfileLevel: SecurityProfileLevel;
+  onUpdateLevel: (level: SecurityProfileLevel) => void;
+  isUpdating: boolean;
+}) {
+  const isElevatedOrExecutive =
+    securityProfileLevel === "elevated" || securityProfileLevel === "executive";
+
+  const {
+    data: brief,
+    isLoading: briefLoading,
+    error: briefError,
+    refetch,
+    isFetching,
+  } = useSecurityBrief(id, isElevatedOrExecutive);
+
+  return (
+    <div className="space-y-4">
+      {/* Need-to-know disclaimer */}
+      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+        <AlertDescription className="text-sm font-medium">
+          ⚠ Security information is strictly need-to-know. Access to this tab
+          is logged and audited. Do not share or export this data.
+        </AlertDescription>
+      </Alert>
+
+      {/* Security Profile Level */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-xl">
+            Security Profile Level
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted-foreground">Current level:</p>
+            <Badge
+              variant={
+                SECURITY_LEVEL_VARIANT[securityProfileLevel] ?? "outline"
+              }
+            >
+              {SECURITY_LEVEL_LABELS[securityProfileLevel] ??
+                securityProfileLevel}
+            </Badge>
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Change level
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(["standard", "elevated", "executive"] as SecurityProfileLevel[]).map(
+                (level) => (
+                  <Button
+                    key={level}
+                    size="sm"
+                    variant={
+                      securityProfileLevel === level ? "default" : "outline"
+                    }
+                    disabled={isUpdating || securityProfileLevel === level}
+                    onClick={() => onUpdateLevel(level)}
+                  >
+                    {SECURITY_LEVEL_LABELS[level]}
+                  </Button>
+                )
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground pt-1">
+              <strong>Standard</strong> — no feed integration.{" "}
+              <strong>Elevated</strong> — travel advisories.{" "}
+              <strong>Executive</strong> — full intelligence brief with threat
+              monitoring.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Live Intelligence Brief — only for elevated/executive */}
+      {isElevatedOrExecutive && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-serif text-xl">
+              Intelligence Brief
+            </CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isFetching}
+              onClick={() => refetch()}
+            >
+              {isFetching ? "Refreshing…" : "Refresh"}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {briefLoading && (
+              <p className="text-sm text-muted-foreground">
+                Loading brief…
+              </p>
+            )}
+
+            {briefError && !briefLoading && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">
+                  Unable to load security brief. The feed may be offline or
+                  this client may not have a qualifying profile level.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {brief && !briefLoading && (
+              <div className="space-y-4">
+                {/* Feed status */}
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-muted-foreground">Feed status:</p>
+                  <Badge
+                    variant={
+                      brief.feed_connected ? "default" : "outline"
+                    }
+                  >
+                    {brief.feed_connected ? "Connected" : "Offline"}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    Provider: {brief.provider} · Generated:{" "}
+                    {new Date(brief.generated_at).toLocaleString()}
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Threat summary */}
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold">Threat Summary</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Threat level:
+                    </span>
+                    <Badge
+                      variant={
+                        THREAT_LEVEL_VARIANT[
+                          brief.threat_summary.threat_level
+                        ] ?? "outline"
+                      }
+                    >
+                      {brief.threat_summary.threat_level.toUpperCase()}
+                    </Badge>
+                  </div>
+                  {brief.threat_summary.note && (
+                    <p className="text-xs text-muted-foreground italic">
+                      {brief.threat_summary.note}
+                    </p>
+                  )}
+                  {brief.threat_summary.alerts.length > 0 ? (
+                    <div className="space-y-2 mt-2">
+                      {brief.threat_summary.alerts.map((alert, i) => (
+                        <div
+                          key={alert.alert_id ?? i}
+                          className="rounded border p-3 text-sm"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="destructive" className="text-xs">
+                              {alert.severity}
+                            </Badge>
+                            <span className="font-medium">{alert.title}</span>
+                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            {alert.summary}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No active alerts.
+                    </p>
+                  )}
+                </div>
+
+                {/* Travel advisories */}
+                {brief.travel_advisories.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">Travel Advisories</p>
+                      {brief.travel_advisories.map((adv) => (
+                        <div
+                          key={adv.destination}
+                          className="rounded border p-3 text-sm space-y-1"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {adv.destination}
+                            </span>
+                            <Badge
+                              variant={
+                                THREAT_LEVEL_VARIANT[adv.risk_level] ??
+                                "outline"
+                              }
+                            >
+                              {adv.risk_level}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {adv.summary}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Disclaimer */}
+                <Separator />
+                <p className="text-xs text-muted-foreground italic">
+                  {brief.disclaimer}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ✓ This access has been logged to the audit trail.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

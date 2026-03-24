@@ -6,13 +6,18 @@ import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
-import { createPartner } from "@/lib/api/partners";
+import { createPartner, checkPartnerDuplicates } from "@/lib/api/partners";
+import type { PartnerDuplicateMatch } from "@/types/partner";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DuplicateWarningDialog,
+  type PartnerDuplicateMatch as DialogPartnerMatch,
+} from "@/components/common/duplicate-warning-dialog";
 
 const CAPABILITY_OPTIONS = [
   "Strategy",
@@ -45,13 +50,56 @@ export default function NewPartnerPage() {
     string[]
   >([]);
 
+  // Duplicate detection state
+  const [duplicates, setDuplicates] = React.useState<PartnerDuplicateMatch[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
+  const [pendingFormData, setPendingFormData] =
+    React.useState<CreatePartnerFormData | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = React.useState(false);
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreatePartnerFormData>({
     resolver: zodResolver(createPartnerSchema),
   });
+
+  // Watch form fields for duplicate detection
+  const watchedFields = watch(["firm_name", "contact_name", "contact_email", "contact_phone"]);
+
+  // Debounced duplicate check
+  React.useEffect(() => {
+    const [firm_name, contact_name, contact_email, contact_phone] = watchedFields;
+
+    // Only check if we have at least an email or firm name
+    if (!contact_email && !firm_name) {
+      setDuplicates([]);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        setIsCheckingDuplicates(true);
+        const matches = await checkPartnerDuplicates({
+          firm_name: firm_name || null,
+          contact_name: contact_name || null,
+          contact_email: contact_email || null,
+          contact_phone: contact_phone || null,
+        });
+        setDuplicates(matches);
+      } catch (error) {
+        // Silently fail duplicate check - don't block form submission
+        console.error("Failed to check duplicates:", error);
+        setDuplicates([]);
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [watchedFields]);
 
   if (
     user?.role !== "managing_director" &&
@@ -73,30 +121,67 @@ export default function NewPartnerPage() {
     );
   };
 
+  const doCreatePartner = async (data: CreatePartnerFormData) => {
+    const geographies = data.geographies
+      ? data.geographies
+          .split(",")
+          .map((g) => g.trim())
+          .filter(Boolean)
+      : [];
+    await createPartner({
+      firm_name: data.firm_name,
+      contact_name: data.contact_name,
+      contact_email: data.contact_email,
+      contact_phone: data.contact_phone || undefined,
+      capabilities: selectedCapabilities,
+      geographies,
+      notes: data.notes || undefined,
+    });
+    toast.success("Partner created successfully");
+    router.push("/partners");
+  };
+
   const onSubmit = async (data: CreatePartnerFormData) => {
     try {
-      const geographies = data.geographies
-        ? data.geographies
-            .split(",")
-            .map((g) => g.trim())
-            .filter(Boolean)
-        : [];
-      await createPartner({
-        firm_name: data.firm_name,
-        contact_name: data.contact_name,
-        contact_email: data.contact_email,
-        contact_phone: data.contact_phone || undefined,
-        capabilities: selectedCapabilities,
-        geographies,
-        notes: data.notes || undefined,
-      });
-      toast.success("Partner created successfully");
-      router.push("/partners");
+      // If there are potential duplicates, show warning dialog
+      if (duplicates.length > 0) {
+        setPendingFormData(data);
+        setShowDuplicateDialog(true);
+        return;
+      }
+
+      // No duplicates, proceed with creation
+      await doCreatePartner(data);
     } catch (err) {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create partner. Please try again.";
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to create partner. Please try again.";
       toast.error(message);
     }
   };
+
+  const handleCreateAnyway = async () => {
+    if (!pendingFormData) return;
+    try {
+      await doCreatePartner(pendingFormData);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to create partner. Please try again.";
+      toast.error(message);
+    }
+  };
+
+  // Convert PartnerDuplicateMatch to DialogPartnerMatch format
+  const dialogDuplicates: DialogPartnerMatch[] = duplicates.map((d) => ({
+    partner_id: d.partner_id,
+    firm_name: d.firm_name,
+    contact_name: d.contact_name,
+    contact_email: d.contact_email,
+    contact_phone: d.contact_phone,
+    similarity_score: d.similarity_score,
+    match_reasons: d.match_reasons,
+  }));
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-8">
@@ -187,8 +272,12 @@ export default function NewPartnerPage() {
               </div>
 
               <div className="flex gap-3">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Partner"}
+                <Button type="submit" disabled={isSubmitting || isCheckingDuplicates}>
+                  {isSubmitting
+                    ? "Creating..."
+                    : isCheckingDuplicates
+                      ? "Checking..."
+                      : "Create Partner"}
                 </Button>
                 <Button
                   type="button"
@@ -202,6 +291,14 @@ export default function NewPartnerPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DuplicateWarningDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+        entityType="partner"
+        duplicates={dialogDuplicates}
+        onCreateAnyway={handleCreateAnyway}
+      />
     </div>
   );
 }

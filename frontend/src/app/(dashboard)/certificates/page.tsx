@@ -20,12 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  listCertificates,
-  type ClearanceCertificate,
-  type CertificateStatus,
-} from "@/lib/api/clearance-certificates";
+import { useCertificates } from "@/hooks/use-certificates";
 import { downloadCertificatePDF } from "@/lib/api/clearance-certificates";
+import type { ClearanceCertificate, CertificateStatus } from "@/lib/api/clearance-certificates";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director", "relationship_manager", "coordinator"];
 
@@ -38,30 +35,12 @@ const statusColors: Record<CertificateStatus, string> = {
 
 export default function CertificatesPage() {
   const { user } = useAuth();
-  const [certificates, setCertificates] = React.useState<ClearanceCertificate[]>([]);
-  const [total, setTotal] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<CertificateStatus | "all">("all");
 
-  React.useEffect(() => {
-    async function loadCertificates() {
-      setIsLoading(true);
-      try {
-        const params: { status?: CertificateStatus } = {};
-        if (statusFilter !== "all") {
-          params.status = statusFilter;
-        }
-        const response = await listCertificates(params);
-        setCertificates(response.certificates);
-        setTotal(response.total);
-      } catch (error) {
-        console.error("Failed to load certificates:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadCertificates();
-  }, [statusFilter]);
+  const params = statusFilter !== "all" ? { status: statusFilter } : undefined;
+  const { data, isLoading } = useCertificates(params);
+  const certificates = data?.certificates ?? [];
+  const total = data?.total ?? 0;
 
   const handleDownload = async (cert: ClearanceCertificate) => {
     try {

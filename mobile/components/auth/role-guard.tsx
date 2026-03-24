@@ -2,7 +2,8 @@ import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ShieldAlert } from 'lucide-react-native';
 
-import { useAuthStore, type UserRole } from '@/lib/auth-store';
+import { useAuthStore } from '@/lib/auth-store';
+import { type UserRole } from '@/types/user';
 
 interface RoleGuardProps {
   allowedRoles: UserRole[];

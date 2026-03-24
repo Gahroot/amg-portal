@@ -1,17 +1,55 @@
 import '../global.css';
 
-import { QueryClientProvider } from '@tanstack/react-query';
+import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { useAuthStore } from '@/lib/auth-store';
 import { queryClient } from '@/lib/query-client';
-import { useNotifications } from '@/hooks/use-notifications';
-import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { dataCache } from '@/services/DataCache';
+import { useWidgetIntegration } from '@/widgets';
+
+/**
+ * Setup network monitoring for TanStack Query
+ */
+function useNetworkManager() {
+  useEffect(() => {
+    // React Query supports auto-refetch on reconnect for web
+    // For native, we need to manually integrate with NetInfo
+    if (Platform.OS !== 'web') {
+      const unsubscribe = NetInfo.addEventListener((state) => {
+        const isOnline =
+          state.isConnected != null &&
+          state.isConnected &&
+          Boolean(state.isInternetReachable);
+        onlineManager.setOnline(isOnline);
+      });
+
+      return () => unsubscribe();
+    }
+  }, []);
+
+  // Handle app state changes
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        // Clear expired cache when app becomes active
+        await dataCache.clearExpired();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
+}
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -34,33 +72,56 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
- }
+/**
+ * Widget manager - initializes widget integration when user is authenticated
+ */
+function WidgetManager() {
+  const token = useAuthStore((s) => s.token);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+
+  // Only initialize widgets when user is authenticated
+  useWidgetIntegration();
+
+  return null;
+}
 
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
-  const token = useAuthStore((s) => s.token);
+  const [isReady, setIsReady] = useState(false);
+
+  // Initialize network manager
+  useNetworkManager();
+
+  // Initialize push notifications with deep link handling
+  usePushNotifications();
 
   useEffect(() => {
-    hydrate().then(() => {
+    const initialize = async () => {
+      // Initialize cache
+      await dataCache.initialize();
+
+      // Hydrate auth state
+      await hydrate();
+
+      setIsReady(true);
       SplashScreen.hideAsync();
-    });
+    };
+
+    initialize();
   }, [hydrate]);
 
-  // Initialize notifications when authenticated
-  useEffect(() => {
-    if (!token) return;
-
-    // Initialize push notifications
-    const { requestPermissions } = usePushNotifications();
-    requestPermissions();
-  }, [token]);
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthGate>
+            <WidgetManager />
             <StatusBar style="auto" />
+            <OfflineIndicator position="top" showOnlineToast={true} />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(client)" />

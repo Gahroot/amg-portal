@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useAuth } from "@/providers/auth-provider";
 import { useUnreadMessageCount } from "@/hooks/use-conversations";
+import { useActiveNPSSurvey } from "@/hooks/use-nps-surveys";
 import type { PortalNavConfig, NavItem } from "@/types/navigation";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +30,10 @@ function isActive(pathname: string, href: string): boolean {
 
 function isMessagesItem(item: NavItem): boolean {
   return item.title === "Messages" || item.href.includes("/messages");
+}
+
+function isSurveyItem(item: NavItem): boolean {
+  return item.title === "Survey" || item.href.includes("/survey");
 }
 
 function NavItemWithSub({ item, pathname }: { item: NavItem; pathname: string }) {
@@ -65,7 +70,10 @@ function NavItemWithSub({ item, pathname }: { item: NavItem; pathname: string })
 
 function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const unreadCount = useUnreadMessageCount();
-  const showBadge = isMessagesItem(item) && unreadCount > 0;
+  const { data: activeSurvey } = useActiveNPSSurvey();
+
+  const showMessagesBadge = isMessagesItem(item) && unreadCount > 0;
+  const showSurveyDot = isSurveyItem(item) && !!activeSurvey;
 
   return (
     <SidebarMenuItem>
@@ -73,13 +81,19 @@ function NavItemLink({ item, pathname }: { item: NavItem; pathname: string }) {
         <Link href={item.href} className="relative flex items-center gap-2">
           <item.icon />
           <span>{item.title}</span>
-          {showBadge && (
+          {showMessagesBadge && (
             <Badge
               variant="destructive"
               className="ml-auto h-5 min-w-5 rounded-full px-1.5 text-xs"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
+          )}
+          {showSurveyDot && !showMessagesBadge && (
+            <span
+              className="ml-auto h-2 w-2 rounded-full bg-amber-500"
+              aria-label="Active survey available"
+            />
           )}
         </Link>
       </SidebarMenuButton>

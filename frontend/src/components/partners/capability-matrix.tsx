@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   type PartnerCapability,
   type ProficiencyLevel,
@@ -98,8 +99,8 @@ export function CapabilityMatrix({
       });
       resetForm();
       setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to add capability:", error);
+    } catch {
+      toast.error("Failed to add capability");
     } finally {
       setIsLoading(false);
     }
@@ -133,8 +134,8 @@ export function CapabilityMatrix({
 
     try {
       await onDelete(capabilityId);
-    } catch (error) {
-      console.error("Failed to delete capability:", error);
+    } catch {
+      toast.error("Failed to delete capability");
     }
   };
 

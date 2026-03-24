@@ -31,6 +31,8 @@ export interface PortfolioSummary {
   total_open_escalations: number;
   total_sla_breaches: number;
   total_pending_decisions: number;
+  /** Count of active partners still in probationary period (< 3 completed engagements). */
+  probationary_partner_count: number;
 }
 
 export interface PartnerScorecard {
@@ -91,6 +93,78 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
 export async function getAtRiskPrograms(): Promise<ProgramHealthResponse> {
   const response = await api.get<ProgramHealthResponse>(
     "/api/v1/dashboard/at-risk-programs",
+  );
+  return response.data;
+}
+
+// ============================================================================
+// Real-Time Dashboard API
+// ============================================================================
+
+export interface RealTimeStats {
+  active_programs: number;
+  pending_approvals: number;
+  open_escalations: number;
+  sla_breaches: number;
+  unread_notifications: number;
+  upcoming_deadlines: number;
+}
+
+export interface ActivityFeedItem {
+  id: string;
+  activity_type: string;
+  title: string;
+  description: string;
+  entity_type: string;
+  entity_id: string;
+  timestamp: string;
+  actor_name: string | null;
+  link: string | null;
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityFeedItem[];
+  total: number;
+}
+
+export interface DashboardAlert {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  alert_type: string;
+  title: string;
+  description: string;
+  entity_type: string;
+  entity_id: string;
+  link: string | null;
+  due_date: string | null;
+}
+
+export interface AlertsResponse {
+  alerts: DashboardAlert[];
+  total: number;
+}
+
+export async function getRealTimeStats(): Promise<RealTimeStats> {
+  const response = await api.get<RealTimeStats>(
+    "/api/v1/dashboard/real-time-stats",
+  );
+  return response.data;
+}
+
+export async function getActivityFeed(
+  skip = 0,
+  limit = 50,
+): Promise<ActivityFeedResponse> {
+  const response = await api.get<ActivityFeedResponse>(
+    "/api/v1/dashboard/activity-feed",
+    { params: { skip, limit } },
+  );
+  return response.data;
+}
+
+export async function getDashboardAlerts(): Promise<AlertsResponse> {
+  const response = await api.get<AlertsResponse>(
+    "/api/v1/dashboard/alerts",
   );
   return response.data;
 }

@@ -4,7 +4,7 @@ import contextlib
 import uuid
 from contextvars import Token
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -13,7 +13,7 @@ from app.core.security import decode_access_token
 
 
 class AuditContextMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[no-untyped-def]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         ctx = AuditContext()
 
         # Extract user info from JWT (no DB hit)
@@ -44,4 +44,4 @@ class AuditContextMiddleware(BaseHTTPMiddleware):
         finally:
             audit_context_var.reset(ctx_token)
 
-        return response  # type: ignore[no-any-return]
+        return response

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import (
     NPSFollowUpActionType,
@@ -23,7 +23,7 @@ class NPSSurveyCreate(BaseModel):
     description: str | None = None
     quarter: int = Field(..., ge=1, le=4)
     year: int = Field(..., ge=2020, le=2100)
-    questions: dict[str, Any] = Field(default_factory=dict)
+    questions: list[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
     distribution_method: str = "email"
     reminder_enabled: bool = True
     reminder_days: int = Field(default=7, ge=1, le=30)
@@ -38,7 +38,7 @@ class NPSSurveyUpdate(BaseModel):
 
     name: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
-    questions: dict[str, Any] | None = None
+    questions: list[dict[str, Any]] | dict[str, Any] | None = None
     distribution_method: str | None = None
     reminder_enabled: bool | None = None
     reminder_days: int | None = Field(None, ge=1, le=30)
@@ -56,9 +56,9 @@ class NPSSurveyResponse(BaseModel):
     name: str
     description: str | None
     quarter: int
-    year: str
+    year: int
     status: str
-    questions: dict[str, Any]
+    questions: list[dict[str, Any]] | dict[str, Any]
     distribution_method: str
     reminder_enabled: bool
     reminder_days: int
@@ -71,7 +71,7 @@ class NPSSurveyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NPSSurveyListResponse(BaseModel):
@@ -87,7 +87,6 @@ class NPSSurveyListResponse(BaseModel):
 class NPSResponseCreate(BaseModel):
     """Schema for submitting an NPS response."""
 
-    survey_id: UUID
     score: int = Field(..., ge=0, le=10)
     comment: str | None = Field(None, max_length=5000)
     custom_responses: dict[str, Any] | None = None
@@ -116,7 +115,7 @@ class NPSResponseDetail(BaseModel):
     follow_up_required: bool
     follow_up_completed: bool
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NPSResponseListResponse(BaseModel):
@@ -170,7 +169,7 @@ class NPSFollowUpResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NPSFollowUpListResponse(BaseModel):

@@ -1,0 +1,76 @@
+{
+  "name": "AMG Portal - Webhook Receiver",
+  "description": "Receives webhooks from AMG Portal and routes them to different actions",
+  "blueprint": {
+    "name": "AMG Portal - Webhook Router",
+    "modules": [
+      {
+        "id": 1,
+        "module": "webhook:ActionWebhook",
+        "version": 1,
+        "parameters": {
+          "hook": "amg-portal-webhook",
+          "method": "POST"
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "module": "core:ActionRouter",
+        "version": 1,
+        "parameters": {
+          "routes": [
+            {
+              "label": "Task Created",
+              "condition": "{{1.event_type}} = \"task.created\""
+            },
+            {
+              "label": "Task Completed",
+              "condition": "{{1.event_type}} = \"task.completed\""
+            },
+            {
+              "label": "Assignment Created",
+              "condition": "{{1.event_type}} = \"assignment.created\""
+            },
+            {
+              "label": "Assignment Completed",
+              "condition": "{{1.event_type}} = \"assignment.completed\""
+            }
+          ]
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 300,
+            "y": 0
+          }
+        }
+      }
+    ],
+    "paths": [
+      {
+        "id": 1,
+        "sourceModuleId": 1,
+        "targetModuleId": 2
+      }
+    ]
+  },
+  "webhookSetup": {
+    "description": "Configure this webhook URL in AMG Portal:",
+    "steps": [
+      "1. Copy the webhook URL from Make",
+      "2. In AMG Portal, go to Settings > Integrations",
+      "3. Click 'Add Webhook'",
+      "4. Paste the webhook URL",
+      "5. Select the events to subscribe to",
+      "6. Save the webhook configuration"
+    ],
+    "securityNote": "Verify webhook signatures using the X-AMG-Signature header"
+  }
+}

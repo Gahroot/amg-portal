@@ -1,71 +1,15 @@
 import api from "@/lib/api";
-
-export interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone_number?: string | null;
-  role: string;
-  status: string;
-  mfa_enabled: boolean;
-  created_at: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-  mfa_code?: string;
-}
-
-export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  mfa_required: boolean;
-}
-
-export interface MFASetupResponse {
-  secret: string;
-  provisioning_uri: string;
-  qr_code_base64: string;
-  backup_codes: string[];
-}
-
-export interface MFAVerifyRequest {
-  code: string;
-}
-
-export interface ProfileUpdateRequest {
-  full_name?: string;
-  phone_number?: string;
-}
-
-export interface UserNotificationPreferences {
-  digest_enabled: boolean;
-  digest_frequency: string;
-  notification_type_preferences: Record<string, string> | null;
-  channel_preferences: Record<string, boolean> | null;
-  quiet_hours_enabled: boolean;
-  quiet_hours_start: string | null;
-  quiet_hours_end: string | null;
-  timezone: string;
-}
-
-export interface UserNotificationPreferencesUpdate {
-  digest_enabled?: boolean;
-  digest_frequency?: string;
-  notification_type_preferences?: Record<string, string>;
-  channel_preferences?: Record<string, boolean>;
-  quiet_hours_enabled?: boolean;
-  quiet_hours_start?: string;
-  quiet_hours_end?: string;
-  timezone?: string;
-}
-
-export interface ChangePasswordRequest {
-  current_password: string;
-  new_password: string;
-}
+import type {
+  User,
+  LoginCredentials,
+  AuthResponse,
+  MFASetupResponse,
+  MFAVerifyRequest,
+  ProfileUpdateRequest,
+  UserNotificationPreferences,
+  UserNotificationPreferencesUpdate,
+  ChangePasswordRequest,
+} from "@/types/user";
 
 export async function login(
   credentials: LoginCredentials
@@ -99,19 +43,59 @@ export async function refreshToken(
   return response.data;
 }
 
+function getMFASetupToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem("mfa_setup_token");
+  } catch {
+    return null;
+  }
+}
+
+export function storeMFASetupToken(token: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem("mfa_setup_token", token);
+  } catch {
+    // Silent fail
+  }
+}
+
+export function clearMFASetupToken(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem("mfa_setup_token");
+  } catch {
+    // Silent fail
+  }
+}
+
 export async function setupMFA(): Promise<MFASetupResponse> {
+  // When the user has no real access_token (hard-enforcement path), the
+  // request interceptor won't attach an Authorization header, so we attach
+  // the short-lived mfa_setup_token ourselves.
+  const setupToken = getMFASetupToken();
+  const headers = setupToken
+    ? { Authorization: `Bearer ${setupToken}` }
+    : undefined;
   const response = await api.post<MFASetupResponse>(
-    "/api/v1/auth/mfa/setup"
+    "/api/v1/auth/mfa/setup",
+    {},
+    { headers }
   );
   return response.data;
 }
 
-export async function verifyMFASetup(
-  code: string
-): Promise<{ message: string }> {
-  const response = await api.post("/api/v1/auth/mfa/verify-setup", {
-    code,
-  });
+export async function verifyMFASetup(code: string): Promise<AuthResponse> {
+  const setupToken = getMFASetupToken();
+  const headers = setupToken
+    ? { Authorization: `Bearer ${setupToken}` }
+    : undefined;
+  const response = await api.post<AuthResponse>(
+    "/api/v1/auth/mfa/verify-setup",
+    { code },
+    { headers }
+  );
   return response.data;
 }
 
@@ -128,6 +112,20 @@ export async function changePassword(
   data: ChangePasswordRequest
 ): Promise<void> {
   await api.post("/api/v1/auth/change-password", data);
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await api.post("/api/v1/auth/forgot-password", { email });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string
+): Promise<void> {
+  await api.post("/api/v1/auth/reset-password", {
+    token,
+    new_password: newPassword,
+  });
 }
 
 export async function getNotificationPreferences(): Promise<UserNotificationPreferences> {

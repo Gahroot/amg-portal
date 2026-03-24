@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DeliverableCreate(BaseModel):
@@ -40,7 +40,7 @@ class DeliverableResponse(BaseModel):
     updated_at: datetime
     download_url: str | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DeliverableListResponse(BaseModel):
@@ -51,3 +51,26 @@ class DeliverableListResponse(BaseModel):
 class DeliverableReview(BaseModel):
     status: str  # approved, returned, rejected
     review_comments: str | None = None
+
+
+# ── Bulk Submit ────────────────────────────────────────────────────────────────
+
+
+class BulkSubmitItemMeta(BaseModel):
+    assignment_id: UUID
+    title: str | None = None
+    notes: str | None = None
+
+
+class BulkSubmitFileResult(BaseModel):
+    filename: str
+    success: bool
+    deliverable_id: UUID | None = None
+    error: str | None = None
+
+
+class BulkSubmitResponse(BaseModel):
+    results: list[BulkSubmitFileResult]
+    total: int
+    succeeded: int
+    failed: int

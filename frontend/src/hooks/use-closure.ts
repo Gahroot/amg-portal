@@ -1,10 +1,10 @@
-"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   getClosureStatus,
   initiateClosure,
+  saveDebriefNotes,
   updateChecklist,
   submitPartnerRating,
   getPartnerRatings,
@@ -98,6 +98,27 @@ export function useSubmitPartnerRating() {
   });
 }
 
+export function useSaveDebriefNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      programId,
+      notes,
+    }: {
+      programId: string;
+      notes: string;
+    }) => saveDebriefNotes(programId, notes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["closure", variables.programId],
+      });
+      toast.success("Debrief notes saved");
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || "Failed to save debrief notes"),
+  });
+}
+
 export function useCompleteClosure() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -107,7 +128,7 @@ export function useCompleteClosure() {
         queryKey: ["closure", programId],
       });
       queryClient.invalidateQueries({
-        queryKey: ["program", programId],
+        queryKey: ["programs", programId],
       });
       toast.success("Program closure completed");
     },

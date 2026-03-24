@@ -1,7 +1,7 @@
 """add_document_and_kyc_document
 
 Revision ID: 6bce34dcf2df
-Revises: 82526a45a2c4
+Revises: 24d552ed8ba9
 Create Date: 2026-03-05 11:46:39.710040
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "6bce34dcf2df"
-down_revision: str | Sequence[str] | None = "82526a45a2c4"
+down_revision: str | Sequence[str] | None = "24d552ed8ba9"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

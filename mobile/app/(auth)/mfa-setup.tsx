@@ -133,7 +133,7 @@ export default function MfaSetupScreen() {
               <View className="mb-4 items-center rounded-lg border border-border bg-white p-4">
                 <Image
                   source={{
-                    uri: `data:image/png;base64,${setupData.qr_code_base64}`,
+                    uri: setupData.qr_code_uri,
                   }}
                   style={{ width: 200, height: 200 }}
                   resizeMode="contain"

@@ -1,10 +1,11 @@
 """Client self-service preferences and engagement history."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
 from app.api.v1.client_portal import require_client
+from app.core.exceptions import NotFoundException
 from app.models.client import Client
 from app.models.notification_preference import NotificationPreference
 from app.models.program import Program
@@ -23,10 +24,7 @@ async def _get_client_for_user(db: DB, current_user: CurrentUser) -> Client:
     result = await db.execute(select(Client).where(Client.rm_id == current_user.id))
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
     return client
 
 

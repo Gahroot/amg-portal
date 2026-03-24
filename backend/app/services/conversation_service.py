@@ -1,5 +1,6 @@
 """Service for conversation operations."""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -8,8 +9,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.communication import Communication
 from app.models.conversation import Conversation
+from app.models.enums import INTERNAL_ROLES, ConversationType, UserRole
+from app.models.partner import PartnerProfile
+from app.models.partner_assignment import PartnerAssignment
+from app.models.user import User
 from app.schemas.conversation import ConversationCreate, ConversationUpdate
 from app.services.crud_base import CRUDBase
+
+logger = logging.getLogger(__name__)
+
+
+class MessageScopeError(Exception):
+    """Raised when a sender violates messaging scope rules."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(detail)
 
 
 class ConversationService(CRUDBase[Conversation, ConversationCreate, ConversationUpdate]):
@@ -191,6 +206,131 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
 
         result = await db.execute(query)
         return result.scalar_one() or 0
+
+    # ------------------------------------------------------------------
+    # Scope enforcement
+    # ------------------------------------------------------------------
+
+    async def validate_message_scope(
+        self,
+        db: AsyncSession,
+        conversation_id: uuid.UUID,
+        sender_id: uuid.UUID,
+    ) -> None:
+        """Validate that `sender_id` is allowed to send messages in the conversation.
+
+        Rules:
+        - Sender must be a participant.
+        - For ``coordinator_partner`` conversations: partners can only message
+          the RM / coordinator who manages the assignment — not other partners
+          or clients directly.
+        - For ``rm_client`` conversations: only the assigned RM and approved
+          internal users may participate (no partners).
+
+        Raises:
+            MessageScopeError: if the sender violates scope rules.
+        """
+        conversation = await self.get(db, conversation_id)
+        if conversation is None:
+            raise MessageScopeError("Conversation not found")
+
+        # 1. Must be a participant
+        if sender_id not in conversation.participant_ids:
+            raise MessageScopeError("Sender is not a participant in this conversation")
+
+        # Look up sender role
+        sender_result = await db.execute(select(User).where(User.id == sender_id))
+        sender = sender_result.scalar_one_or_none()
+        if sender is None:
+            raise MessageScopeError("Sender user not found")
+
+        conv_type = conversation.conversation_type
+
+        if conv_type == ConversationType.coordinator_partner:
+            await self._enforce_partner_scope(db, conversation, sender)
+        elif conv_type == ConversationType.rm_client:
+            await self._enforce_client_scope(db, conversation, sender)
+        # Internal conversations have no additional restrictions beyond participation.
+
+    async def _enforce_partner_scope(
+        self,
+        db: AsyncSession,
+        conversation: Conversation,
+        sender: User,
+    ) -> None:
+        """For partner conversations, ensure partners can only message their assigned RM."""
+        if sender.role != UserRole.partner:
+            # Internal users can freely message in partner conversations
+            return
+
+        if conversation.partner_assignment_id is None:
+            raise MessageScopeError(
+                "Partner conversation missing assignment reference"
+            )
+
+        # Get the assignment to find the assigning RM / coordinator
+        assignment_result = await db.execute(
+            select(PartnerAssignment).where(
+                PartnerAssignment.id == conversation.partner_assignment_id
+            )
+        )
+        assignment = assignment_result.scalar_one_or_none()
+        if assignment is None:
+            raise MessageScopeError("Partner assignment not found")
+
+        # Verify sender's partner profile matches the assignment
+        partner_result = await db.execute(
+            select(PartnerProfile).where(PartnerProfile.user_id == sender.id)
+        )
+        partner_profile = partner_result.scalar_one_or_none()
+        if partner_profile is None or partner_profile.id != assignment.partner_id:
+            raise MessageScopeError(
+                "Partner is not assigned to this conversation's assignment"
+            )
+
+        # Ensure only the partner and internal users (no clients, no other partners)
+        other_participant_ids = [
+            pid for pid in conversation.participant_ids if pid != sender.id
+        ]
+        if other_participant_ids:
+            others_result = await db.execute(
+                select(User.id, User.role).where(User.id.in_(other_participant_ids))
+            )
+            for row in others_result.all():
+                other_role = row.role
+                if other_role == UserRole.client:
+                    raise MessageScopeError(
+                        "Partners cannot directly message clients"
+                    )
+                if other_role == UserRole.partner:
+                    raise MessageScopeError(
+                        "Partners cannot directly message other partners"
+                    )
+
+    async def _enforce_client_scope(
+        self,
+        db: AsyncSession,
+        conversation: Conversation,
+        sender: User,
+    ) -> None:
+        """For client conversations, only assigned RM and internal users participate."""
+        if sender.role == UserRole.partner:
+            raise MessageScopeError(
+                "Partners cannot send messages in client conversations"
+            )
+
+        if sender.role in INTERNAL_ROLES:
+            # Internal users are allowed
+            return
+
+        # For clients: verify they are the client associated with this conversation
+        if sender.role == UserRole.client:
+            if conversation.client_id is None:
+                raise MessageScopeError(
+                    "Client conversation missing client reference"
+                )
+            # The client is allowed if they are a participant (already checked above)
+            return
 
 
 conversation_service = ConversationService(Conversation)

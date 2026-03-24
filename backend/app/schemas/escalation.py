@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class EscalationResponse(BaseModel):
@@ -29,8 +29,10 @@ class EscalationResponse(BaseModel):
     resolution_notes: str | None = None
     created_at: datetime
     updated_at: datetime
+    response_deadline: datetime | None = None
+    is_overdue: bool = False
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EscalationListResponse(BaseModel):
@@ -58,3 +60,42 @@ class EscalationTriggerRequest(BaseModel):
     entity_id: str
     level: str
     reason: str
+
+
+class EscalationChainEntry(BaseModel):
+    action: str
+    at: str
+    by: str | None = None
+    level: str | None = None
+    notes: str | None = None
+    from_level: str | None = None
+    to_level: str | None = None
+
+
+class EscalationChainResponse(BaseModel):
+    escalation_id: UUID
+    current_level: str
+    chain: list[dict[str, object]]
+    total_entries: int
+
+
+class EscalationProgressRequest(BaseModel):
+    notes: str | None = None
+
+
+class EscalationMetricsResponse(BaseModel):
+    open_by_level: dict[str, int]
+    avg_resolution_time_hours: float | None
+    overdue_count: int
+    sla_compliance_pct: float | None
+    trend_this_week: int
+    trend_last_week: int
+
+
+class OverdueEscalationResponse(BaseModel):
+    escalations: list[EscalationResponse]
+    total: int
+
+
+class ReassignRequest(BaseModel):
+    new_owner_id: UUID

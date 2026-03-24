@@ -72,6 +72,46 @@ DEFAULT_TEMPLATE = """
 """
 
 
+# Compliance clearance template for auto-generation
+COMPLIANCE_CLEARANCE_TEMPLATE = """
+<h1>Compliance Clearance Certificate</h1>
+
+<p><strong>Certificate Number:</strong> {{ certificate_number }}</p>
+<p><strong>Issue Date:</strong> {{ issue_date }}</p>
+
+<h2>Client Information</h2>
+<p><strong>Client Name:</strong> {{ client_name }}</p>
+{% if client_legal_name %}
+<p><strong>Legal Entity:</strong> {{ client_legal_name }}</p>
+{% endif %}
+{% if entity_type %}
+<p><strong>Entity Type:</strong> {{ entity_type }}</p>
+{% endif %}
+{% if jurisdiction %}
+<p><strong>Jurisdiction:</strong> {{ jurisdiction }}</p>
+{% endif %}
+
+<h2>Clearance Declaration</h2>
+<p>This certificate confirms that the above-named client has been reviewed and <strong>cleared</strong> for compliance purposes as of the issue date.</p>
+
+<p>All Know Your Customer (KYC) and Anti-Money Laundering (AML) documentation has been verified and approved.</p>
+
+<h2>Review Details</h2>
+<p><strong>Reviewed By:</strong> {{ reviewed_by_name }}</p>
+<p><strong>Review Date:</strong> {{ reviewed_at }}</p>
+{% if review_notes %}
+<p><strong>Notes:</strong> {{ review_notes }}</p>
+{% endif %}
+
+<p style="margin-top: 40px;">
+<strong>Issued By:</strong> {{ issued_by }}<br>
+<strong>Date:</strong> {{ issue_date }}
+</p>
+
+<p><em>This certificate is issued by Anchor Mill Group and is confidential.</em></p>
+"""
+
+
 class CertificateService:
     """Service for managing compliance clearance certificates."""
 
@@ -128,29 +168,27 @@ class CertificateService:
             for a in assignments
         ]
 
-        # Get deliverable counts
+        # Get deliverable counts (via partner assignments)
         from app.models.deliverable import Deliverable
         deliv_result = await db.execute(
-            select(func.count()).select_from(Deliverable).where(
-                Deliverable.program_id == program_id
-            )
+            select(func.count()).select_from(Deliverable)
+            .join(PartnerAssignment, Deliverable.assignment_id == PartnerAssignment.id)
+            .where(PartnerAssignment.program_id == program_id)
         )
         total_deliverables = deliv_result.scalar() or 0
 
         approved_result = await db.execute(
-            select(func.count()).select_from(Deliverable).where(
-                Deliverable.program_id == program_id,
-                Deliverable.status == "approved"
+            select(func.count()).select_from(Deliverable)
+            .join(PartnerAssignment, Deliverable.assignment_id == PartnerAssignment.id)
+            .where(
+                PartnerAssignment.program_id == program_id,
+                Deliverable.status == "approved",
             )
         )
         approved_deliverables = approved_result.scalar() or 0
 
-        # Get client profile for legal name
-        from app.models.client_profile import ClientProfile
-        profile_result = await db.execute(
-            select(ClientProfile).where(ClientProfile.client_id == program.client_id)
-        )
-        profile = profile_result.scalar_one_or_none()
+        # Get client profile for legal name (linked via user_id on Client's RM)
+        profile = None
 
         return {
             "program_id": str(program.id),
@@ -265,7 +303,7 @@ class CertificateService:
         data = certificate.populated_data or {}
         data.update({
             "certificate_number": certificate.certificate_number,
-            "issue_date": certificate.issue_date or date.today(),
+            "issue_date": certificate.issue_date or datetime.now(UTC).date(),
             "expiry_date": certificate.expiry_date,
             "certificate_type": certificate.certificate_type,
             "title": certificate.title,
@@ -365,11 +403,11 @@ class CertificateService:
         populated_data: dict[str, Any] = {}
         if data.get("program_id"):
             populated_data = await self.get_program_data_for_certificate(
-                db, UUID(data["program_id"])
+                db, data["program_id"]
             )
         elif data.get("client_id"):
             populated_data = await self.get_client_data_for_certificate(
-                db, UUID(data["client_id"])
+                db, data["client_id"]
             )
 
         # Render content
@@ -380,9 +418,9 @@ class CertificateService:
                 "certificate_number": certificate_number,
                 "certificate_type": data.get("certificate_type", "general"),
                 "title": data.get("title", "Compliance Clearance Certificate"),
-                "issue_date": data.get("issue_date") or date.today(),
+                "issue_date": data.get("issue_date") or datetime.now(UTC).date(),
                 "expiry_date": data.get("expiry_date"),
-                "issued_by": f"{user.first_name} {user.last_name}",
+                "issued_by": user.full_name,
             }
             content = self.render_certificate_content(template_content, render_data)
 
@@ -410,7 +448,7 @@ class CertificateService:
             action="created",
             to_status="draft",
             actor_id=user.id,
-            actor_name=f"{user.first_name} {user.last_name}",
+            actor_name=user.full_name,
         )
         db.add(history)
         await db.commit()
@@ -442,7 +480,7 @@ class CertificateService:
 
         # Update certificate
         certificate.status = "issued"
-        certificate.issue_date = issue_date or date.today()
+        certificate.issue_date = issue_date or datetime.now(UTC).date()
         certificate.expiry_date = expiry_date
         certificate.reviewed_by = user.id
         certificate.reviewed_at = datetime.now(UTC)
@@ -451,7 +489,7 @@ class CertificateService:
         # Generate and store PDF
         pdf_bytes = await self.generate_certificate_pdf(
             certificate,
-            f"{user.first_name} {user.last_name}",
+            user.full_name,
         )
         pdf_path = await self.store_certificate_pdf(pdf_bytes, certificate.id)
         certificate.pdf_path = pdf_path
@@ -463,7 +501,7 @@ class CertificateService:
             from_status="draft",
             to_status="issued",
             actor_id=user.id,
-            actor_name=f"{user.first_name} {user.last_name}",
+            actor_name=user.full_name,
             notes=review_notes,
         )
         db.add(history)
@@ -500,12 +538,131 @@ class CertificateService:
             from_status="issued",
             to_status="revoked",
             actor_id=user.id,
-            actor_name=f"{user.first_name} {user.last_name}",
+            actor_name=user.full_name,
             notes=reason,
         )
         db.add(history)
         await db.commit()
         await db.refresh(certificate)
+
+        return certificate
+
+    async def auto_generate_compliance_clearance_certificate(
+        self,
+        db: AsyncSession,
+        client_id: UUID,
+        reviewer: User,
+        profile_data: dict[str, Any],
+    ) -> ClearanceCertificate | None:
+        """Auto-generate and immediately issue a compliance clearance certificate.
+
+        This method is called when a compliance officer clears a client profile.
+        It creates a certificate, immediately issues it (generates PDF), and
+        attaches it to the client record.
+
+        Args:
+            db: Database session
+            client_id: UUID of the Client record
+            reviewer: User who performed the compliance review
+            profile_data: Client profile data for certificate population
+
+        Returns:
+            The created and issued ClearanceCertificate, or None if client not found
+        """
+        # Verify client exists
+        result = await db.execute(
+            select(Client).where(Client.id == client_id)
+        )
+        client = result.scalar_one_or_none()
+        if not client:
+            logger.warning(
+                "Client %s not found — compliance clearance certificate not generated",
+                client_id,
+            )
+            return None
+
+        # Generate certificate number
+        certificate_number = self._generate_certificate_number()
+        issue_date = datetime.now(UTC).date()
+
+        # Build render data from profile
+        render_data = {
+            "certificate_number": certificate_number,
+            "client_name": profile_data.get("client_name", client.name),
+            "client_legal_name": profile_data.get("client_legal_name"),
+            "entity_type": profile_data.get("entity_type"),
+            "jurisdiction": profile_data.get("jurisdiction"),
+            "reviewed_by_name": profile_data.get("reviewed_by_name", reviewer.full_name),
+            "reviewed_at": profile_data.get("reviewed_at", datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")),
+            "review_notes": profile_data.get("review_notes"),
+            "issue_date": issue_date,
+            "issued_by": reviewer.full_name,
+        }
+
+        # Render content using the compliance clearance template
+        content = self.render_certificate_content(COMPLIANCE_CLEARANCE_TEMPLATE, render_data)
+
+        # Create the certificate directly in "issued" status
+        certificate = ClearanceCertificate(
+            certificate_number=certificate_number,
+            client_id=client_id,
+            title="Compliance Clearance Certificate",
+            content=content,
+            populated_data={
+                "client_name": render_data["client_name"],
+                "client_legal_name": render_data.get("client_legal_name"),
+                "entity_type": render_data.get("entity_type"),
+                "jurisdiction": render_data.get("jurisdiction"),
+                "reviewed_by_name": render_data["reviewed_by_name"],
+                "reviewed_at": render_data["reviewed_at"],
+            },
+            certificate_type="compliance_clearance",
+            status="issued",
+            issue_date=issue_date,
+            reviewed_by=reviewer.id,
+            reviewed_at=datetime.now(UTC),
+            created_by=reviewer.id,
+        )
+
+        db.add(certificate)
+        await db.flush()
+
+        # Generate and store PDF
+        pdf_bytes = await self.generate_certificate_pdf(
+            certificate,
+            reviewer.full_name,
+        )
+        pdf_path = await self.store_certificate_pdf(pdf_bytes, certificate.id)
+        certificate.pdf_path = pdf_path
+
+        # Create history entries
+        history_created = ClearanceCertificateHistory(
+            certificate_id=certificate.id,
+            action="created",
+            to_status="issued",
+            actor_id=reviewer.id,
+            actor_name=reviewer.full_name,
+            notes="Auto-generated on compliance clearance",
+        )
+        history_issued = ClearanceCertificateHistory(
+            certificate_id=certificate.id,
+            action="issued",
+            from_status="draft",
+            to_status="issued",
+            actor_id=reviewer.id,
+            actor_name=reviewer.full_name,
+            notes="Auto-issued on compliance clearance",
+        )
+        db.add(history_created)
+        db.add(history_issued)
+        await db.commit()
+        await db.refresh(certificate)
+
+        logger.info(
+            "Auto-generated compliance clearance certificate %s for client %s",
+            certificate.certificate_number,
+            client_id,
+        )
 
         return certificate
 

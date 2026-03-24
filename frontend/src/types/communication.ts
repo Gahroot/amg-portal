@@ -1,10 +1,13 @@
 export type CommunicationChannel = "email" | "in_portal" | "sms" | "whatsapp" | "phone" | "in_person" | "other";
 export type CommunicationStatus = "draft" | "sending" | "sent" | "delivered" | "failed" | "read" | "archived";
+export type CommunicationApprovalStatus = "draft" | "pending_review" | "approved" | "rejected" | "sent";
+export type ReviewActionType = "approve" | "reject";
 export type ConversationType = "rm_client" | "coordinator_partner" | "internal";
 export type NotificationType = "communication" | "decision_pending" | "assignment_update" | "deliverable_ready" | "milestone_update" | "approval_required" | "system";
 export type DecisionRequestStatus = "pending" | "responded" | "declined" | "expired" | "cancelled";
 export type DigestFrequency = "immediate" | "hourly" | "daily" | "weekly" | "never";
 export type TemplateType = "welcome" | "program_kickoff" | "weekly_status" | "decision_request" | "milestone_alert" | "completion_note" | "partner_dispatch" | "deliverable_submission" | "custom";
+export type TemplateStatus = "draft" | "pending" | "approved" | "rejected";
 export type DecisionResponseType = "choice" | "text" | "yes_no" | "multi_choice";
 
 // Conversation types
@@ -69,6 +72,10 @@ export interface Communication {
   program_id?: string;
   partner_id?: string;
   read_receipts?: Record<string, { read_at: string }>;
+  approval_status: CommunicationApprovalStatus;
+  reviewer_id?: string;
+  reviewed_at?: string;
+  reviewer_notes?: string;
   sent_at?: string;
   created_at: string;
   updated_at: string;
@@ -105,12 +112,58 @@ export interface Notification {
   is_read: boolean;
   read_at?: string;
   email_delivered: boolean;
+  group_key?: string;
+  snoozed_until?: string;
+  snooze_count: number;
   created_at: string;
+}
+
+// Snooze duration presets (in minutes)
+export type SnoozeDurationPreset = 60 | 240 | 1440 | 1441 | 10080;
+
+export interface SnoozeRequestData {
+  snooze_duration_minutes?: SnoozeDurationPreset;
+  snooze_until?: string; // ISO datetime string
+}
+
+export const SNOOZE_PRESETS: { value: SnoozeDurationPreset; label: string }[] = [
+  { value: 60, label: "1 hour" },
+  { value: 240, label: "4 hours" },
+  { value: 1440, label: "Tomorrow morning (9 AM)" },
+  { value: 1441, label: "Tomorrow afternoon (2 PM)" },
+  { value: 10080, label: "Next week (Monday 9 AM)" },
+];
+
+export interface NotificationGroup {
+  group_key: string;
+  group_label: string;
+  notification_type: NotificationType;
+  entity_type?: string;
+  entity_id?: string;
+  priority: string;
+  count: number;
+  unread_count: number;
+  is_read: boolean;
+  latest_created_at: string;
+  latest_title: string;
+  latest_body: string;
+  action_url?: string;
+  action_label?: string;
+  notifications: Notification[];
 }
 
 export interface NotificationListResponse {
   notifications: Notification[];
   total: number;
+  groups?: NotificationGroup[];
+  group_mode?: "type" | "entity" | "time" | null;
+}
+
+export interface GroupedNotificationsResponse {
+  groups: NotificationGroup[];
+  total_groups: number;
+  total_notifications: number;
+  group_mode: "type" | "entity" | "time";
 }
 
 export interface NotificationPreference {
@@ -120,6 +173,7 @@ export interface NotificationPreference {
   digest_frequency: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  grouping_mode?: "type" | "entity" | "time" | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +183,7 @@ export interface NotificationPreferenceUpdateData {
   digest_frequency?: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  grouping_mode?: "type" | "entity" | "time" | null;
 }
 
 // Decision Request types
@@ -136,6 +191,14 @@ export interface DecisionOption {
   id: string;
   label: string;
   description?: string;
+  /** Plain-language explanation of what this choice means for the client */
+  impact_description?: string;
+  /** What will happen next if this option is selected */
+  what_happens_next?: string;
+  /** Key points the client should consider before choosing */
+  considerations?: string[];
+  /** Whether the advisory team recommends this option */
+  recommended?: boolean;
 }
 
 export interface DecisionRequest {
@@ -201,9 +264,18 @@ export interface CommunicationTemplate {
   variable_definitions?: Record<string, VariableDefinition>;
   is_active: boolean;
   is_system: boolean;
+  status: TemplateStatus;
+  rejection_reason?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface TemplateStatusActionData {
+  action: "submit" | "approve" | "reject";
+  reason?: string;
 }
 
 export interface TemplateListResponse {
@@ -229,6 +301,66 @@ export interface TemplateRenderResponse {
   body: string;
 }
 
+export interface TemplatePreviewRequest {
+  template_id: string;
+  variables: Record<string, string>;
+}
+
+export interface TemplatePreviewResponse {
+  subject?: string;
+  body: string;
+}
+
+export interface SendFromTemplateRequest {
+  template_id: string;
+  recipient_user_ids: string[];
+  variables: Record<string, string>;
+  client_id?: string;
+  program_id?: string;
+  partner_id?: string;
+}
+
+// Approval workflow types
+export interface ReviewAction {
+  action: ReviewActionType;
+  notes?: string;
+}
+
+export interface PendingReviewsResponse {
+  communications: Communication[];
+  total: number;
+}
+
+// Message Digest types
+export interface MessageDigestPreference {
+  user_id: string;
+  digest_frequency: DigestFrequency;
+  last_digest_sent_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MessageDigestPreferenceUpdate {
+  digest_frequency: DigestFrequency;
+}
+
+export interface DigestMessageSummary {
+  message_id: string;
+  conversation_id: string;
+  conversation_title?: string;
+  sender_name?: string;
+  body_preview: string;
+  sent_at: string;
+}
+
+export interface DigestPreviewResponse {
+  user_id: string;
+  unread_count: number;
+  messages: DigestMessageSummary[];
+  period_start?: string;
+  period_end: string;
+}
+
 // WebSocket message types
 export interface WSMessage {
   type: string;
@@ -250,4 +382,32 @@ export interface WSTypingMessage extends WSMessage {
 export interface WSNewMessageMessage extends WSMessage {
   type: "new_message";
   data: Communication;
+}
+
+export interface WSEscalationData {
+  id: string;
+  level: string;
+  status: string;
+  title: string;
+  entity_type: string;
+  entity_id: string;
+  program_id?: string;
+}
+
+export interface WSEscalationMessage extends WSMessage {
+  type: "escalation";
+  action: "created" | "updated";
+  data: WSEscalationData;
+}
+
+export interface WSProgramUpdateData {
+  id: string;
+  title: string;
+  status: string;
+  previous_status: string;
+}
+
+export interface WSProgramUpdateMessage extends WSMessage {
+  type: "program_update";
+  data: WSProgramUpdateData;
 }

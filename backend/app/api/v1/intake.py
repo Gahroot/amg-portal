@@ -3,11 +3,12 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DB, CurrentUser, require_rm_or_above
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.enums import ApprovalStatus, ComplianceStatus
 from app.models.family_member import FamilyMember
@@ -23,25 +24,38 @@ router = APIRouter()
 
 def _extract_lifestyle_from_intel(intel: dict[str, Any] | None) -> IntakeStep4Lifestyle | None:
     """Extract lifestyle data from intelligence file."""
-    if not intel or "lifestyle" not in intel:
+    if not intel:
         return None
-    lifestyle = intel.get("lifestyle", {})
+    # Support the structured schema key "lifestyle_profile" and legacy "lifestyle" key.
+    lifestyle = intel.get("lifestyle_profile") or intel.get("lifestyle")
+    if not lifestyle:
+        return None
+    interests = lifestyle.get("interests")
+    if isinstance(interests, list):
+        interests = ", ".join(interests) if interests else None
     return IntakeStep4Lifestyle(
         travel_preferences=lifestyle.get("travel_preferences"),
         dietary_restrictions=lifestyle.get("dietary_restrictions"),
-        interests=lifestyle.get("interests"),
+        interests=interests,
         preferred_destinations=lifestyle.get("preferred_destinations"),
         language_preference=lifestyle.get("language_preference"),
     )
 
 
 def _build_intelligence_file(data: IntakeFormData) -> dict[str, Any]:
-    """Build intelligence file from intake data."""
+    """Build intelligence file from intake data using the structured schema."""
+    interests: list[str] = []
+    if data.interests:
+        interests = [i.strip() for i in data.interests.split(",") if i.strip()]
     return {
-        "lifestyle": {
+        "objectives": [],
+        "preferences": {},
+        "sensitivities": [],
+        "key_relationships": [],
+        "lifestyle_profile": {
             "travel_preferences": data.travel_preferences,
             "dietary_restrictions": data.dietary_restrictions,
-            "interests": data.interests,
+            "interests": interests,
             "preferred_destinations": data.preferred_destinations or [],
             "language_preference": data.language_preference,
         },
@@ -93,10 +107,7 @@ async def submit_intake_form(
         select(ClientProfile).where(ClientProfile.primary_email == data.primary_email)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A client with this email already exists",
-        )
+        raise BadRequestException("A client with this email already exists")
 
     # Build intelligence file with lifestyle data
     intelligence_file = _build_intelligence_file(data)
@@ -133,6 +144,10 @@ async def submit_intake_form(
 
     await db.commit()
     await db.refresh(profile)
+
+    from app.services.intake_workflow_service import on_intake_created
+
+    await on_intake_created(db, profile)
 
     return IntakeFormResponse(
         id=profile.id,
@@ -173,10 +188,7 @@ async def get_draft_intake(
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
 
     # Get family members
     fm_result = await db.execute(
@@ -223,37 +235,39 @@ async def save_intake_step(
 ):
     """Save a specific step of the intake form."""
     if step < 1 or step > 5:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Step must be between 1 and 5",
-        )
+        raise BadRequestException("Step must be between 1 and 5")
 
     result = await db.execute(
         select(ClientProfile).where(ClientProfile.id == profile_id)
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
 
     update_data = data.model_dump(exclude_unset=True, exclude={"family_members"})
 
     # Handle lifestyle data (step 4) separately
     if step == 4:
         intel = profile.intelligence_file or {}
-        intel["lifestyle"] = intel.get("lifestyle", {})
+        # Use structured schema key; fall back from legacy "lifestyle" key
+        lifestyle = intel.get("lifestyle_profile") or intel.get("lifestyle") or {}
         if data.travel_preferences is not None:
-            intel["lifestyle"]["travel_preferences"] = data.travel_preferences
+            lifestyle["travel_preferences"] = data.travel_preferences
         if data.dietary_restrictions is not None:
-            intel["lifestyle"]["dietary_restrictions"] = data.dietary_restrictions
+            lifestyle["dietary_restrictions"] = data.dietary_restrictions
         if data.interests is not None:
-            intel["lifestyle"]["interests"] = data.interests
+            interests_raw = data.interests
+            lifestyle["interests"] = (
+                [i.strip() for i in interests_raw.split(",") if i.strip()]
+                if interests_raw
+                else []
+            )
         if data.preferred_destinations is not None:
-            intel["lifestyle"]["preferred_destinations"] = data.preferred_destinations
+            lifestyle["preferred_destinations"] = data.preferred_destinations
         if data.language_preference is not None:
-            intel["lifestyle"]["language_preference"] = data.language_preference
+            lifestyle["language_preference"] = data.language_preference
+        intel.pop("lifestyle", None)  # remove legacy key if present
+        intel["lifestyle_profile"] = lifestyle
         profile.intelligence_file = intel
         # Remove lifestyle fields from update_data to avoid direct assignment
         for field in ["travel_preferences", "dietary_restrictions", "interests",
@@ -326,16 +340,10 @@ async def submit_completed_intake(
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
 
     if profile.approval_status != ApprovalStatus.draft.value:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Intake form already submitted",
-        )
+        raise BadRequestException("Intake form already submitted")
 
     # Update status to pending compliance
     profile.approval_status = ApprovalStatus.pending_compliance.value
@@ -343,6 +351,10 @@ async def submit_completed_intake(
 
     await db.commit()
     await db.refresh(profile)
+
+    from app.services.intake_workflow_service import on_intake_created
+
+    await on_intake_created(db, profile)
 
     # Get family members
     fm_result = await db.execute(

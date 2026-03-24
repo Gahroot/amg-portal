@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { AxiosError } from 'axios';
 
-import { useAuthStore, type UserRole } from '@/lib/auth-store';
+import { useAuthStore } from '@/lib/auth-store';
+import { type UserRole } from '@/types/user';
 import * as authApi from '@/lib/api/auth';
 
 function getRouteForRole(role: UserRole): '/(client)' | '/(partner)' | '/(internal)' {
@@ -35,7 +36,8 @@ export function useAuth() {
       try {
         const tokenRes = await authApi.login({ email, password });
         if (tokenRes.mfa_required) {
-          setMfaPending(email, password);
+          useAuthStore.getState().setPendingCredentials({ email, password });
+          setMfaPending({ accessToken: tokenRes.access_token, refreshToken: tokenRes.refresh_token });
           router.push('/(auth)/mfa-verify');
           return;
         }

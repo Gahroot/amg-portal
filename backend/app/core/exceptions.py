@@ -68,7 +68,7 @@ class ValidationException(AppException):
     """Validation exception."""
 
     def __init__(self, message: str = "Validation error", details: dict[str, Any] | None = None):
-        super().__init__(message, status.HTTP_422_UNPROCESSABLE_ENTITY, details)
+        super().__init__(message, status.HTTP_422_UNPROCESSABLE_CONTENT, details)
 
 
 def _sanitize_error_message(message: str) -> str:
@@ -123,7 +123,7 @@ async def validation_exception_handler(
         sanitized_errors.append(sanitized_error)
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={"message": "Validation error", "details": sanitized_errors},
     )
 

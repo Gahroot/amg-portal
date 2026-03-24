@@ -2,10 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DB, require_rm_or_above
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.family_member import FamilyMember, FamilyRelationship
 from app.schemas.family_member import (
@@ -37,10 +38,7 @@ async def list_family_members(
         select(ClientProfile).where(ClientProfile.id == profile_id)
     )
     if not result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
 
     # Get family members
     result = await db.execute(
@@ -79,10 +77,7 @@ async def create_family_member(
         select(ClientProfile).where(ClientProfile.id == profile_id)
     )
     if not result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client profile not found",
-        )
+        raise NotFoundException("Client profile not found")
 
     family_member = FamilyMember(
         client_profile_id=profile_id,
@@ -110,10 +105,7 @@ async def update_family_member(
     )
     member = result.scalar_one_or_none()
     if not member:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Family member not found",
-        )
+        raise NotFoundException("Family member not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -139,10 +131,7 @@ async def delete_family_member(
     )
     member = result.scalar_one_or_none()
     if not member:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Family member not found",
-        )
+        raise NotFoundException("Family member not found")
 
     await db.delete(member)
     await db.commit()
@@ -166,10 +155,7 @@ async def create_relationship(
     )
     from_member = result.scalar_one_or_none()
     if not from_member:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Source family member not found",
-        )
+        raise NotFoundException("Source family member not found")
 
     # Verify to_member exists
     result = await db.execute(
@@ -177,17 +163,11 @@ async def create_relationship(
     )
     to_member = result.scalar_one_or_none()
     if not to_member:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Target family member not found",
-        )
+        raise NotFoundException("Target family member not found")
 
     # Verify both members belong to the same client profile
     if from_member.client_profile_id != to_member.client_profile_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Family members must belong to the same client profile",
-        )
+        raise BadRequestException("Family members must belong to the same client profile")
 
     # Check if relationship already exists
     existing = await db.execute(
@@ -197,10 +177,7 @@ async def create_relationship(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Relationship already exists",
-        )
+        raise BadRequestException("Relationship already exists")
 
     relationship = FamilyRelationship(
         from_member_id=from_member_id,
@@ -228,10 +205,7 @@ async def delete_relationship(
     )
     relationship = result.scalar_one_or_none()
     if not relationship:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Relationship not found",
-        )
+        raise NotFoundException("Relationship not found")
 
     await db.delete(relationship)
     await db.commit()

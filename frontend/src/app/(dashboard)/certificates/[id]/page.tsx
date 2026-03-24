@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { downloadCertificatePDF } from "@/lib/api/clearance-certificates";
 import {
-  getCertificate,
-  issueCertificate,
-  revokeCertificate,
-  deleteCertificate,
-  downloadCertificatePDF,
-  type ClearanceCertificateDetail,
-} from "@/lib/api/clearance-certificates";
+  useCertificate,
+  useIssueCertificate,
+  useRevokeCertificate,
+  useDeleteCertificate,
+} from "@/hooks/use-certificates";
+import { toast } from "sonner";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director", "relationship_manager", "coordinator"];
 
@@ -42,73 +42,55 @@ export default function CertificateDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const [certificate, setCertificate] = React.useState<ClearanceCertificateDetail | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [revokeReason, setRevokeReason] = React.useState("");
   const [issueNotes, setIssueNotes] = React.useState("");
 
   const certificateId = params.id as string;
 
-  React.useEffect(() => {
-    async function loadCertificate() {
-      setIsLoading(true);
-      try {
-        const data = await getCertificate(certificateId);
-        setCertificate(data);
-      } catch (error) {
-        console.error("Failed to load certificate:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadCertificate();
-  }, [certificateId]);
+  const { data: certificate, isLoading } = useCertificate(certificateId);
+  const issueMutation = useIssueCertificate();
+  const revokeMutation = useRevokeCertificate();
+  const deleteMutation = useDeleteCertificate();
 
   const handleIssue = async () => {
     if (!certificate) return;
-    try {
-      const updated = await issueCertificate(certificate.id, {
-        review_notes: issueNotes || undefined,
-      });
-      setCertificate({ ...certificate, ...updated });
-    } catch (error) {
-      console.error("Failed to issue certificate:", error);
-      alert("Failed to issue certificate");
-    }
+    issueMutation.mutate(
+      { id: certificate.id, data: { review_notes: issueNotes || undefined } },
+      {
+        onSuccess: () => {
+          setIssueNotes("");
+        },
+      }
+    );
   };
 
   const handleRevoke = async () => {
     if (!certificate || !revokeReason.trim()) return;
-    try {
-      const updated = await revokeCertificate(certificate.id, {
-        reason: revokeReason,
-      });
-      setCertificate({ ...certificate, ...updated });
-      setRevokeReason("");
-    } catch (error) {
-      console.error("Failed to revoke certificate:", error);
-      alert("Failed to revoke certificate");
-    }
+    revokeMutation.mutate(
+      { id: certificate.id, data: { reason: revokeReason } },
+      {
+        onSuccess: () => {
+          setRevokeReason("");
+        },
+      }
+    );
   };
 
   const handleDelete = async () => {
     if (!certificate) return;
-    try {
-      await deleteCertificate(certificate.id);
-      router.push("/certificates");
-    } catch (error) {
-      console.error("Failed to delete certificate:", error);
-      alert("Failed to delete certificate");
-    }
+    deleteMutation.mutate(certificate.id, {
+      onSuccess: () => {
+        router.push("/certificates");
+      },
+    });
   };
 
   const handleDownload = async () => {
     if (!certificate) return;
     try {
       await downloadCertificatePDF(certificate.id, certificate.certificate_number);
-    } catch (error) {
-      console.error("Failed to download certificate:", error);
-      alert("Failed to download certificate PDF");
+    } catch {
+      toast.error("Failed to download certificate PDF");
     }
   };
 

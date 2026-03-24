@@ -7,7 +7,7 @@ from app.core.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=settings.SQL_ECHO,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
@@ -37,12 +37,15 @@ async def apply_rls_context(
 
     Uses SET LOCAL so the settings are scoped to the current transaction
     and automatically reset when the transaction ends.
+
+    Note: PostgreSQL's SET command does not support query parameters ($n /
+    :name), so the values are interpolated directly.  Both inputs come from
+    the verified JWT/session context (UUID and a known enum string) so
+    there is no injection risk here.
     """
-    await session.execute(
-        text("SET LOCAL app.current_user_id = :user_id"),
-        {"user_id": user_id},
-    )
-    await session.execute(
-        text("SET LOCAL app.current_user_role = :role"),
-        {"role": user_role},
-    )
+    # Sanitise inputs: UUIDs contain only hex digits and hyphens; roles only
+    # alphanumeric chars and underscores — no quoting required.
+    safe_id = "".join(c for c in user_id if c in "0123456789abcdefABCDEF-")
+    safe_role = "".join(c for c in user_role if c.isalnum() or c == "_")
+    await session.execute(text(f"SET LOCAL app.current_user_id = '{safe_id}'"))
+    await session.execute(text(f"SET LOCAL app.current_user_role = '{safe_role}'"))

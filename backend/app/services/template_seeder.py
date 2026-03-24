@@ -19,6 +19,9 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
             "Dear {{ client_name }},\n\n"
             "Welcome to the AMG Portal. We are delighted "
             "to have you on board.\n\n"
+            "Your dedicated Relationship Manager is {{ rm_name }}, "
+            "who will be your primary point of contact for all matters.\n"
+            "You can reach {{ rm_name }} at {{ rm_email }}.\n\n"
             "You can access your personalized dashboard "
             "and track your programs at:\n"
             "{{ portal_url }}\n\n"
@@ -28,6 +31,16 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
             "client_name": {
                 "type": "string",
                 "description": "Client's name",
+                "required": True,
+            },
+            "rm_name": {
+                "type": "string",
+                "description": "Relationship Manager's name",
+                "required": True,
+            },
+            "rm_email": {
+                "type": "string",
+                "description": "Relationship Manager's email",
                 "required": True,
             },
             "portal_url": {
@@ -266,6 +279,62 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "template_type": "assignment_accepted",
+        "name": "Assignment Accepted",
+        "subject": "Assignment Accepted: {{ assignment_title }}",
+        "body": (
+            "The following assignment has been accepted "
+            "by the partner.\n\n"
+            "Assignment: {{ assignment_title }}\n"
+            "Partner: {{ partner_firm_name }}\n"
+            "Accepted at: {{ accepted_at }}\n\n"
+            "The SLA clock is now running. Please monitor "
+            "progress in the portal."
+        ),
+        "variable_definitions": {
+            "assignment_title": {
+                "type": "string",
+                "description": "Assignment title",
+                "required": True,
+            },
+            "partner_firm_name": {
+                "type": "string",
+                "description": "Partner firm name",
+                "required": True,
+            },
+            "accepted_at": {
+                "type": "string",
+                "description": "Timestamp of acceptance",
+                "required": True,
+            },
+        },
+    },
+    {
+        "template_type": "assignment_declined",
+        "name": "Assignment Declined",
+        "subject": "Assignment Declined: {{ assignment_title }}",
+        "body": (
+            "The following assignment has been declined "
+            "by the partner.\n\n"
+            "Assignment: {{ assignment_title }}\n"
+            "Partner: {{ partner_firm_name }}\n\n"
+            "Please reassign or take further action "
+            "in the portal."
+        ),
+        "variable_definitions": {
+            "assignment_title": {
+                "type": "string",
+                "description": "Assignment title",
+                "required": True,
+            },
+            "partner_firm_name": {
+                "type": "string",
+                "description": "Partner firm name",
+                "required": True,
+            },
+        },
+    },
 ]
 
 
@@ -277,15 +346,16 @@ async def seed_default_templates(
     Only creates templates that don't already exist
     (matched by template_type + is_system).
     """
-    for tpl_data in DEFAULT_TEMPLATES:
-        result = await db.execute(
-            select(CommunicationTemplate).where(
-                CommunicationTemplate.template_type == tpl_data["template_type"],
-                CommunicationTemplate.is_system.is_(True),
-            )
+    # Single query to fetch all existing system template types
+    result = await db.execute(
+        select(CommunicationTemplate.template_type).where(
+            CommunicationTemplate.is_system.is_(True),
         )
-        existing = result.scalar_one_or_none()
-        if existing:
+    )
+    existing_types: set[str] = {row[0] for row in result.all()}
+
+    for tpl_data in DEFAULT_TEMPLATES:
+        if tpl_data["template_type"] in existing_types:
             logger.debug(
                 "System template '%s' already exists, skipping",
                 tpl_data["template_type"],

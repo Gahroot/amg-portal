@@ -16,13 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  listTemplates,
-  previewCertificate,
-  createCertificate,
-  type CertificateTemplate,
-} from "@/lib/api/clearance-certificates";
-import { listClients, type Client } from "@/lib/api/clients";
-import { listPrograms, type Program } from "@/lib/api/programs";
+  useCertificateTemplates,
+  usePreviewCertificate,
+  useCreateCertificate,
+} from "@/hooks/use-certificates";
+import { useClients } from "@/hooks/use-clients";
+import { usePrograms } from "@/hooks/use-programs";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
@@ -36,11 +35,6 @@ const CERTIFICATE_TYPES = [
 export default function NewCertificatePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [templates, setTemplates] = React.useState<CertificateTemplate[]>([]);
-  const [clients, setClients] = React.useState<Client[]>([]);
-  const [programs, setPrograms] = React.useState<Program[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
 
   // Form state
   const [selectedTemplate, setSelectedTemplate] = React.useState<string>("");
@@ -51,83 +45,67 @@ export default function NewCertificatePage() {
   const [content, setContent] = React.useState("");
   const [previewContent, setPreviewContent] = React.useState("");
 
-  React.useEffect(() => {
-    async function loadData() {
-      try {
-        const [templatesRes, clientsRes] = await Promise.all([
-          listTemplates({ is_active: true }),
-          listClients({ limit: 100 }),
-        ]);
-        setTemplates(templatesRes.templates);
-        setClients(clientsRes.clients);
-      } catch (error) {
-        console.error("Failed to load data:", error);
-      }
-    }
-    loadData();
-  }, []);
+  // Data hooks
+  const { data: templatesData } = useCertificateTemplates({ is_active: true });
+  const { data: clientsData } = useClients({ limit: 100 });
+  const { data: programsData } = usePrograms(
+    selectedClient ? { client_id: selectedClient, limit: 100 } : undefined
+  );
 
-  React.useEffect(() => {
-    async function loadPrograms() {
-      if (!selectedClient) {
-        setPrograms([]);
-        return;
-      }
-      try {
-        const response = await listPrograms({ client_id: selectedClient, limit: 100 });
-        setPrograms(response.programs);
-      } catch (error) {
-        console.error("Failed to load programs:", error);
-      }
-    }
-    loadPrograms();
-  }, [selectedClient]);
+  // Mutation hooks
+  const previewMutation = usePreviewCertificate();
+  const createMutation = useCreateCertificate();
+
+  // Derived data
+  const templates = templatesData?.templates ?? [];
+  const clients = clientsData?.clients ?? [];
+  const programs = programsData?.programs ?? [];
 
   const handlePreview = async () => {
     if (!selectedClient) return;
-    
-    setIsPreviewLoading(true);
-    try {
-      const response = await previewCertificate({
+
+    previewMutation.mutate(
+      {
         template_id: selectedTemplate || undefined,
         program_id: selectedProgram || undefined,
         client_id: selectedClient,
         certificate_type: certificateType,
         title: title || undefined,
-      });
-      setPreviewContent(response.content);
-      if (!title) {
-        setTitle(response.title);
+      },
+      {
+        onSuccess: (response) => {
+          setPreviewContent(response.content);
+          if (!title) {
+            setTitle(response.title);
+          }
+        },
       }
-    } catch (error) {
-      console.error("Failed to preview:", error);
-    } finally {
-      setIsPreviewLoading(false);
-    }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !title) return;
 
-    setIsLoading(true);
-    try {
-      const certificate = await createCertificate({
+    createMutation.mutate(
+      {
         template_id: selectedTemplate || undefined,
         program_id: selectedProgram || undefined,
         client_id: selectedClient,
         title,
         content: content || undefined,
         certificate_type: certificateType,
-      });
-      router.push(`/certificates/${certificate.id}`);
-    } catch (error) {
-      console.error("Failed to create certificate:", error);
-      alert("Failed to create certificate");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      {
+        onSuccess: (certificate) => {
+          router.push(`/certificates/${certificate.id}`);
+        },
+      }
+    );
   };
+
+  const isLoading = createMutation.isPending;
+  const isPreviewLoading = previewMutation.isPending;
 
   if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return (
@@ -297,7 +275,7 @@ export default function NewCertificatePage() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-96 text-muted-foreground border rounded-lg">
-                  Select a client and click "Preview Content" to see a preview
+                  Select a client and click &quot;Preview Content&quot; to see a preview
                 </div>
               )}
             </CardContent>

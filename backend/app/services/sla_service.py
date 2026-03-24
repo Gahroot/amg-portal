@@ -193,6 +193,62 @@ async def get_sla_trackers_with_assignee_info(
     return tracker_data, total
 
 
+async def get_open_sla_for_entity(
+    db: AsyncSession,
+    entity_type: str,
+    entity_id: str,
+) -> list[SLATracker]:
+    """Return all open (not yet responded) SLA trackers for an entity."""
+    result = await db.execute(
+        select(SLATracker).where(
+            SLATracker.entity_type == entity_type,
+            SLATracker.entity_id == entity_id,
+            SLATracker.responded_at.is_(None),
+        )
+    )
+    return list(result.scalars().all())
+
+
+async def close_open_sla_for_entity(
+    db: AsyncSession,
+    entity_type: str,
+    entity_id: str,
+) -> list[SLATracker]:
+    """Mark all open SLA trackers for an entity as responded (stops the clock).
+
+    Sets responded_at to now and updates breach_status based on elapsed time.
+    """
+    trackers = await get_open_sla_for_entity(db, entity_type, entity_id)
+    if not trackers:
+        return []
+
+    now = datetime.now(UTC)
+    for tracker in trackers:
+        tracker.responded_at = now
+        elapsed_hours = (now - tracker.started_at).total_seconds() / 3600
+        if elapsed_hours > tracker.sla_hours:
+            tracker.breach_status = SLABreachStatus.breached.value
+            logger.warning(
+                f"SLA {tracker.id} closed as breached: "
+                f"{elapsed_hours:.2f}h elapsed vs {tracker.sla_hours}h SLA"
+            )
+        else:
+            tracker.breach_status = SLABreachStatus.within_sla.value
+            logger.info(
+                f"SLA {tracker.id} closed within SLA: "
+                f"{elapsed_hours:.2f}h elapsed vs {tracker.sla_hours}h SLA"
+            )
+
+    await db.commit()
+    for tracker in trackers:
+        await db.refresh(tracker)
+
+    logger.info(
+        f"Closed {len(trackers)} SLA tracker(s) for {entity_type}:{entity_id}"
+    )
+    return trackers
+
+
 async def get_breached_slas_with_details(
     db: AsyncSession,
     include_approaching: bool = True,

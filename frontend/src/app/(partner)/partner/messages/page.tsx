@@ -8,14 +8,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, Search, Briefcase, Users, Building } from "lucide-react";
+import type { Conversation, ParticipantInfo } from "@/types/communication";
 
-function filterConversations(conversations: any[], search: string) {
+function filterConversations(conversations: Conversation[], search: string) {
   if (!conversations) return [];
   if (!search) return conversations;
   const searchLower = search.toLowerCase();
   return conversations.filter((conv) =>
     conv.title?.toLowerCase().includes(searchLower) ||
-    conv.participants.some((p: any) => p.full_name.toLowerCase().includes(searchLower))
+    conv.participants.some((p: ParticipantInfo) => p.full_name.toLowerCase().includes(searchLower))
   );
 }
 
@@ -36,7 +37,7 @@ export default function PartnerMessagesPage() {
   const { data, isLoading } = usePartnerConversations({ limit: 50 });
 
   const filtered = filterConversations(data?.conversations || [], search);
-  const totalUnread = data?.conversations.reduce((sum: number, c: any) => sum + c.unread_count, 0) ?? 0;
+  const totalUnread = data?.conversations.reduce((sum: number, c: Conversation) => sum + c.unread_count, 0) ?? 0;
 
   if (isLoading) {
     return <div className="mx-auto max-w-5xl"><p className="text-muted-foreground text-sm">Loading conversations...</p></div>;
@@ -67,7 +68,7 @@ export default function PartnerMessagesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((conversation: any) => (
+          {filtered.map((conversation: Conversation) => (
             <Link key={conversation.id} href={"/partner/messages/" + conversation.id} className="block">
               <Card className="hover:border-primary/50 transition-colors cursor-pointer">
                 <CardContent className="pt-4">

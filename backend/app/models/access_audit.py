@@ -1,7 +1,7 @@
 """Quarterly access audit tracking for compliance."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -9,7 +9,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -48,7 +48,7 @@ class FindingStatus(StrEnum):
     closed = "closed"
 
 
-class AccessAudit(Base):
+class AccessAudit(Base, TimestampMixin):
     """Quarterly access audit for compliance tracking."""
 
     __tablename__ = "access_audits"
@@ -75,15 +75,6 @@ class AccessAudit(Base):
     anomalies_found: Mapped[int] = mapped_column(Integer, default=0)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     # Relationships
     auditor: Mapped["User | None"] = relationship("User", foreign_keys=[auditor_id])
@@ -95,7 +86,7 @@ class AccessAudit(Base):
         return f"<AccessAudit(id={self.id}, period={self.audit_period})>"
 
 
-class AccessAuditFinding(Base):
+class AccessAuditFinding(Base, TimestampMixin):
     """Individual finding from an access audit."""
 
     __tablename__ = "access_audit_findings"
@@ -116,11 +107,15 @@ class AccessAuditFinding(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    finding_type: Mapped[str] = mapped_column(String(30), nullable=False)
-    severity: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    finding_type: Mapped[FindingType] = mapped_column(String(30), nullable=False)
+    severity: Mapped[FindingSeverity] = mapped_column(
+        String(20), nullable=False, default=FindingSeverity.medium
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
+    status: Mapped[FindingStatus] = mapped_column(
+        String(20), nullable=False, default=FindingStatus.open
+    )
     remediation_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     remediated_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -141,15 +136,6 @@ class AccessAuditFinding(Base):
         nullable=True,
     )
     waived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     # Relationships
     audit: Mapped["AccessAudit"] = relationship("AccessAudit", back_populates="findings")

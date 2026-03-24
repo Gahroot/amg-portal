@@ -21,14 +21,15 @@ class TemplateService(CRUDBase[CommunicationTemplate, TemplateCreate, TemplateUp
         template_type: str | None = None,
         skip: int = 0,
         limit: int = 50,
+        include_inactive: bool = False,
     ) -> tuple[list[CommunicationTemplate], int]:
-        """Get active templates, optionally filtered by type."""
-        query = select(CommunicationTemplate).where(CommunicationTemplate.is_active)
-        count_query = (
-            select(func.count())
-            .select_from(CommunicationTemplate)
-            .where(CommunicationTemplate.is_active)
-        )
+        """Get templates, optionally filtered by type. Includes inactive if requested."""
+        query = select(CommunicationTemplate)
+        count_query = select(func.count()).select_from(CommunicationTemplate)
+
+        if not include_inactive:
+            query = query.where(CommunicationTemplate.is_active)
+            count_query = count_query.where(CommunicationTemplate.is_active)
 
         if template_type:
             query = query.where(CommunicationTemplate.template_type == template_type)
@@ -42,12 +43,21 @@ class TemplateService(CRUDBase[CommunicationTemplate, TemplateCreate, TemplateUp
 
         return templates, total
 
+    async def delete(self, db: AsyncSession, template_id: uuid.UUID) -> bool:
+        """Hard-delete a template. Returns True if deleted, False if not found."""
+        template = await self.get(db, template_id)
+        if not template:
+            return False
+        await db.delete(template)
+        await db.commit()
+        return True
+
     async def render_template(
         self,
         db: AsyncSession,
         template_id: uuid.UUID,
         variables: dict[str, Any],
-    ) -> dict[str, str]:
+    ) -> dict[str, str | None] | None:
         """Render a template with the given variables."""
         template = await self.get(db, template_id)
         if not template:
@@ -60,7 +70,7 @@ class TemplateService(CRUDBase[CommunicationTemplate, TemplateCreate, TemplateUp
                     raise ValueError(f"Missing required variable: {var_name}")
 
         # Render subject and body using Jinja2
-        subject = None
+        subject: str | None = None
         if template.subject:
             subject_template = Template(template.subject)
             subject = subject_template.render(**variables)

@@ -1,12 +1,13 @@
 import uuid
 from datetime import timedelta
 
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from minio import Minio
 from minio.sseconfig import Rule, SSEConfig
 from minio.versioningconfig import VersioningConfig
 
 from app.core.config import settings
+from app.core.exceptions import BadRequestException
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
@@ -25,6 +26,19 @@ ALLOWED_MIME_TYPES = {
     "text/plain",
     "text/csv",
 }
+
+ALLOWED_AUDIO_MIME_TYPES = {
+    "audio/webm",
+    "audio/ogg",
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/wave",
+    "video/webm",  # Chrome records as video/webm even for audio-only
+}
+
+MAX_AUDIO_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
 
 class StorageService:
@@ -83,15 +97,11 @@ class StorageService:
         """Validate file size and MIME type."""
         content_type = file.content_type or "application/octet-stream"
         if content_type not in allowed_types:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File type '{content_type}' is not allowed",
-            )
+            raise BadRequestException(f"File type '{content_type}' is not allowed")
         contents = await file.read()
         if len(contents) > max_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File size exceeds maximum of {max_size // (1024 * 1024)} MB",
+            raise BadRequestException(
+                f"File size exceeds maximum of {max_size // (1024 * 1024)} MB"
             )
         await file.seek(0)
 

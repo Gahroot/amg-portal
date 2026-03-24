@@ -1,4 +1,3 @@
-"use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,10 +6,17 @@ import {
   getNotificationPreferences,
   updateNotificationPreferences,
   changePassword,
-  type ProfileUpdateRequest,
-  type UserNotificationPreferencesUpdate,
-  type ChangePasswordRequest,
 } from "@/lib/api/auth";
+import {
+  getClientPreferences,
+  updateClientPreferences,
+  type ClientPreferencesUpdate,
+} from "@/lib/api/client-portal";
+import type {
+  ProfileUpdateRequest,
+  UserNotificationPreferencesUpdate,
+  ChangePasswordRequest,
+} from "@/types/user";
 
 export function useNotificationPreferences() {
   return useQuery({
@@ -61,6 +67,29 @@ export function useChangePassword() {
     onError: (error) => {
       const message =
         error instanceof Error ? error.message : "Failed to change password";
+      toast.error(message);
+    },
+  });
+}
+
+export function useClientPreferences() {
+  return useQuery({
+    queryKey: ["client-preferences"],
+    queryFn: getClientPreferences,
+  });
+}
+
+export function useUpdateClientPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ClientPreferencesUpdate) => updateClientPreferences(data),
+    onSuccess: () => {
+      toast.success("Communication preferences updated");
+      queryClient.invalidateQueries({ queryKey: ["client-preferences"] });
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update preferences";
       toast.error(message);
     },
   });

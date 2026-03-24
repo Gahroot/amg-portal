@@ -4,9 +4,11 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
 import { useAuth } from "@/providers/auth-provider";
 import { useSubmitIntake } from "@/hooks/use-intake";
+import { intakeFormSchema, type IntakeFormData } from "@/lib/validations/client";
+import { checkClientDuplicates } from "@/lib/api/clients";
+import type { DuplicateMatch } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,12 +17,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DuplicateWarningDialog } from "@/components/clients/duplicate-warning-dialog";
 import { IntakeStepIdentity } from "./intake-step-identity";
 import { IntakeStepContact } from "./intake-step-contact";
 import { IntakeStepPreferences } from "./intake-step-preferences";
 import { IntakeStepLifestyle } from "./intake-step-lifestyle";
 import { IntakeStepFamily } from "./intake-step-family";
-import type { IntakeFormData } from "@/types/intake-form";
 
 const ALLOWED_ROLES = [
   "relationship_manager",
@@ -29,33 +31,6 @@ const ALLOWED_ROLES = [
   "finance_compliance",
 ];
 
-const intakeSchema = z.object({
-  // Step 1 - Identity
-  legal_name: z.string().min(1, "Legal name is required"),
-  display_name: z.string().optional(),
-  entity_type: z.string().optional(),
-  jurisdiction: z.string().optional(),
-  tax_id: z.string().optional(),
-
-  // Step 2 - Contact
-  primary_email: z.email("Please enter a valid email address"),
-  secondary_email: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-
-  // Step 3 - Preferences
-  communication_preference: z.string().optional(),
-  sensitivities: z.string().optional(),
-  special_instructions: z.string().optional(),
-
-  // Step 4 - Lifestyle
-  travel_preferences: z.string().optional(),
-  dietary_restrictions: z.string().optional(),
-  interests: z.string().optional(),
-  preferred_destinations: z.array(z.string()).optional(),
-  language_preference: z.string().optional(),
-});
-
 const STEPS = [
   { id: 1, title: "Identity", description: "Basic information" },
   { id: 2, title: "Contact", description: "Contact details" },
@@ -63,6 +38,9 @@ const STEPS = [
   { id: 4, title: "Lifestyle", description: "Travel and lifestyle" },
   { id: 5, title: "Family", description: "Family members" },
 ];
+
+/** Steps at which a duplicate check should fire before advancing. */
+const DUPLICATE_CHECK_STEPS = new Set([1, 2]);
 
 interface IntakeWizardProps {
   initialData?: Partial<IntakeFormData>;
@@ -78,10 +56,13 @@ export function IntakeWizard({
   const { user } = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = React.useState(1);
+  const [duplicates, setDuplicates] = React.useState<DuplicateMatch[]>([]);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = React.useState(false);
+  const [pendingNextStep, setPendingNextStep] = React.useState<number | null>(null);
   const submitMutation = useSubmitIntake();
 
   const methods = useForm<IntakeFormData>({
-    resolver: zodResolver(intakeSchema),
+    resolver: zodResolver(intakeFormSchema),
     defaultValues: {
       legal_name: "",
       primary_email: "",
@@ -103,6 +84,35 @@ export function IntakeWizard({
 
   const progress = (currentStep / STEPS.length) * 100;
 
+  /**
+   * Run a duplicate check for the fields captured so far.
+   * Only runs when advancing from steps 1 or 2 (where name/email/phone are entered).
+   * Returns the list of matches found (empty array = no duplicates).
+   */
+  const runDuplicateCheck = async (): Promise<DuplicateMatch[]> => {
+    if (!DUPLICATE_CHECK_STEPS.has(currentStep) || isEditing) return [];
+
+    const values = methods.getValues();
+    const hasEnoughData =
+      (values.legal_name && values.legal_name.trim().length >= 3) ||
+      (values.primary_email && values.primary_email.trim().length > 0) ||
+      (values.phone && values.phone.trim().length >= 7);
+
+    if (!hasEnoughData) return [];
+
+    try {
+      const matches = await checkClientDuplicates({
+        legal_name: values.legal_name || null,
+        primary_email: values.primary_email || null,
+        phone: values.phone || null,
+      });
+      return matches;
+    } catch {
+      // Non-blocking — if the check fails, don't block the user
+      return [];
+    }
+  };
+
   const handleNext = async () => {
     // Validate current step fields
     let fieldsToValidate: (keyof IntakeFormData)[] = [];
@@ -115,16 +125,25 @@ export function IntakeWizard({
         fieldsToValidate = ["primary_email"];
         break;
       default:
-        // No required fields for steps 3-5
         break;
     }
 
     const isValid = await methods.trigger(fieldsToValidate);
-    if (isValid) {
-      if (currentStep < STEPS.length) {
-        setCurrentStep((prev) => prev + 1);
-      }
+    if (!isValid) return;
+
+    const nextStep = currentStep + 1;
+    if (nextStep > STEPS.length) return;
+
+    // Run duplicate check before advancing from identity / contact steps
+    const matches = await runDuplicateCheck();
+    if (matches.length > 0) {
+      setDuplicates(matches);
+      setPendingNextStep(nextStep);
+      setDuplicateDialogOpen(true);
+      return;
     }
+
+    setCurrentStep(nextStep);
   };
 
   const handleBack = () => {
@@ -133,7 +152,28 @@ export function IntakeWizard({
     }
   };
 
+  /** User confirmed they want to proceed despite duplicates. */
+  const handleCreateAnyway = () => {
+    if (pendingNextStep !== null) {
+      setCurrentStep(pendingNextStep);
+      setPendingNextStep(null);
+    }
+    setDuplicates([]);
+  };
+
   const handleSubmit = async (data: IntakeFormData) => {
+    // Final duplicate check before submission (covers step 5 "Submit" button)
+    const matches = await runDuplicateCheck();
+    if (matches.length > 0) {
+      setDuplicates(matches);
+      setPendingNextStep(null); // null signals "proceed with submission"
+      setDuplicateDialogOpen(true);
+      return;
+    }
+    await doSubmit(data);
+  };
+
+  const doSubmit = async (data: IntakeFormData) => {
     try {
       const result = await submitMutation.mutateAsync(data);
       router.push(`/clients/${result.id}`);
@@ -142,9 +182,20 @@ export function IntakeWizard({
     }
   };
 
+  /** Called from dialog when user confirms on the final submission check. */
+  const handleCreateAnywayAndSubmit = () => {
+    if (pendingNextStep !== null) {
+      handleCreateAnyway();
+    } else {
+      // We were blocking final submission
+      setDuplicates([]);
+      const data = methods.getValues() as IntakeFormData;
+      void doSubmit(data);
+    }
+  };
+
   const handleSaveDraft = () => {
-    // In a real app, this would save to the backend
-    console.log("Saving draft...", methods.getValues());
+    // TODO: Implement draft saving to backend
   };
 
   const renderStep = () => {
@@ -276,6 +327,14 @@ export function IntakeWizard({
           </form>
         </FormProvider>
       </div>
+
+      {/* Duplicate warning dialog */}
+      <DuplicateWarningDialog
+        open={duplicateDialogOpen}
+        onOpenChange={setDuplicateDialogOpen}
+        duplicates={duplicates}
+        onCreateAnyway={handleCreateAnywayAndSubmit}
+      />
     </div>
   );
 }

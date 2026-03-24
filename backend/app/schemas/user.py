@@ -22,3 +22,7 @@ class UserUpdate(BaseModel):
 class UserListResponse(BaseModel):
     users: list[UserResponse]
     total: int
+
+
+class ReportFavoritesResponse(BaseModel):
+    favorites: list[str]

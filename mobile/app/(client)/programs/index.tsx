@@ -156,8 +156,8 @@ export default function ProgramsListScreen() {
       ) : (
         <FlashList
           data={data.programs}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: Program) => item.id}
+          renderItem={({ item }: { item: Program }) => (
             <ProgramCard
               program={item}
               onPress={() => router.push(`/(client)/programs/${item.id}`)}

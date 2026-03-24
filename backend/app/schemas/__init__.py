@@ -32,6 +32,12 @@ from app.schemas.communication import (  # noqa: F401
     SendMessageRequest,
     UnreadCountResponse,
 )
+from app.schemas.communication_log import (  # noqa: F401
+    CommunicationLogCreate,
+    CommunicationLogListResponse,
+    CommunicationLogResponse,
+    CommunicationLogUpdate,
+)
 from app.schemas.communication_template import (  # noqa: F401
     TemplateCreate,
     TemplateListResponse,

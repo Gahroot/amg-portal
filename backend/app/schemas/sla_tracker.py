@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SLATrackerResponse(BaseModel):
@@ -19,7 +19,7 @@ class SLATrackerResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SLATrackerListResponse(BaseModel):
@@ -48,4 +48,4 @@ class SLABreachAlertResponse(BaseModel):
     hours_remaining: float | None = None
     overdue_hours: float | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

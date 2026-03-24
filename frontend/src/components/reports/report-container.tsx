@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 
 interface ReportContainerProps {
   title: string;
@@ -15,6 +15,7 @@ interface ReportContainerProps {
   children: React.ReactNode;
   onExport?: () => void;
   exportLabel?: string;
+  onExportPdf?: () => void;
   isLoading?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function ReportContainer({
   children,
   onExport,
   exportLabel = "Export CSV",
+  onExportPdf,
   isLoading = false,
 }: ReportContainerProps) {
   return (
@@ -33,17 +35,30 @@ export function ReportContainer({
           <h1 className="font-serif text-3xl font-bold tracking-tight">{title}</h1>
           {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
         </div>
-        {onExport && (
-          <Button
-            variant="outline"
-            onClick={onExport}
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {exportLabel}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onExportPdf && (
+            <Button
+              variant="outline"
+              onClick={onExportPdf}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Download PDF
+            </Button>
+          )}
+          {onExport && (
+            <Button
+              variant="outline"
+              onClick={onExport}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exportLabel}
+            </Button>
+          )}
+        </div>
       </div>
       {children}
     </div>

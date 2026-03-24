@@ -1,33 +1,20 @@
 import api from "@/lib/api";
-import type { User } from "./auth";
+import type {
+  User,
+  UserCreateData,
+  UserUpdateData,
+  UserListResponse,
+  UserListParams,
+} from "@/types/user";
 
-export interface UserCreateData {
-  email: string;
-  password: string;
-  full_name: string;
-  role: string;
-  phone_number?: string;
-}
-
-export interface UserUpdateData {
-  full_name?: string;
-  role?: string;
-  status?: string;
-  phone_number?: string;
-}
-
-export interface UserListResponse {
-  users: User[];
-  total: number;
-}
-
-export interface UserListParams {
-  role?: string;
-  status?: string;
-  search?: string;
-  skip?: number;
-  limit?: number;
-}
+// Re-export types for convenience
+export type {
+  User,
+  UserCreateData,
+  UserUpdateData,
+  UserListResponse,
+  UserListParams,
+};
 
 export async function listUsers(
   params?: UserListParams

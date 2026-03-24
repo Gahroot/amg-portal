@@ -1,11 +1,11 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 DEFAULT_CHECKLIST = [
     {
@@ -36,7 +36,7 @@ DEFAULT_CHECKLIST = [
 ]
 
 
-class ProgramClosure(Base):
+class ProgramClosure(Base, TimestampMixin):
     __tablename__ = "program_closures"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -51,21 +51,18 @@ class ProgramClosure(Base):
         JSON, nullable=False, default=lambda: list(DEFAULT_CHECKLIST)
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    debrief_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    debrief_notes_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    debrief_notes_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    debrief_notes_by_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     initiated_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     program = relationship("Program")
     initiator = relationship("User", foreign_keys=[initiated_by])

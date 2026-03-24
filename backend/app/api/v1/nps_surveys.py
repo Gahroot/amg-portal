@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
 from app.api.deps import (
@@ -12,6 +12,7 @@ from app.api.deps import (
     require_internal,
     require_rm_or_above,
 )
+from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.enums import NPSFollowUpStatus, NPSSurveyStatus
 from app.schemas.nps_survey import (
     NPSFollowUpListResponse,
@@ -106,7 +107,7 @@ async def get_nps_survey(
     """Get a specific NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
     return survey
 
 
@@ -123,13 +124,10 @@ async def update_nps_survey(
     """Update an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     if survey.status not in [NPSSurveyStatus.draft, NPSSurveyStatus.scheduled]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot update survey that is active or closed",
-        )
+        raise BadRequestException("Cannot update survey that is active or closed")
 
     update_data = data.model_dump(exclude_unset=True)
     return await nps_survey_service.update(db, db_obj=survey, obj_in=update_data)
@@ -147,13 +145,10 @@ async def activate_nps_survey(
     """Activate an NPS survey for distribution."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     if survey.status not in [NPSSurveyStatus.draft, NPSSurveyStatus.scheduled]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Survey must be in draft or scheduled status to activate",
-        )
+        raise BadRequestException("Survey must be in draft or scheduled status to activate")
 
     return await nps_survey_service.update_survey_status(db, survey, NPSSurveyStatus.active)
 
@@ -170,13 +165,10 @@ async def close_nps_survey(
     """Close an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     if survey.status != NPSSurveyStatus.active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Survey must be active to close",
-        )
+        raise BadRequestException("Survey must be active to close")
 
     return await nps_survey_service.update_survey_status(db, survey, NPSSurveyStatus.closed)
 
@@ -193,7 +185,7 @@ async def get_nps_survey_stats(
     """Get statistics for an NPS survey."""
     stats = await nps_survey_service.get_survey_stats(db, survey_id)
     if not stats:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
     return stats
 
 
@@ -233,7 +225,7 @@ async def list_nps_responses(
     """List responses for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     responses, total = await nps_response_service.get_responses(
         db,
@@ -259,13 +251,10 @@ async def submit_nps_response(
     """Submit an NPS response (client endpoint)."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     if survey.status != NPSSurveyStatus.active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Survey is not currently active",
-        )
+        raise BadRequestException("Survey is not currently active")
 
     # Get client profile for current user
     from app.models.client_profile import ClientProfile
@@ -275,20 +264,14 @@ async def submit_nps_response(
     )
     client_profile = result.scalar_one_or_none()
     if not client_profile:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Client profile not found",
-        )
+        raise ForbiddenException("Client profile not found")
 
     # Check for existing response
     existing = await nps_response_service.check_existing_response(
         db, survey_id, client_profile.id
     )
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You have already responded to this survey",
-        )
+        raise BadRequestException("You have already responded to this survey")
 
     return await nps_response_service.submit_response(
         db,
@@ -317,7 +300,7 @@ async def get_nps_response(
     for response in responses:
         if response.id == response_id:
             return response
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Response not found")
+    raise NotFoundException("Response not found")
 
 
 # ==================== Follow-Up Endpoints ====================
@@ -339,7 +322,7 @@ async def list_nps_follow_ups(
     """List follow-ups for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Survey not found")
+        raise NotFoundException("Survey not found")
 
     follow_ups, total = await nps_follow_up_service.get_follow_ups(
         db,
@@ -387,7 +370,7 @@ async def get_nps_follow_up(
     """Get a specific NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Follow-up not found")
+        raise NotFoundException("Follow-up not found")
     return follow_up
 
 
@@ -405,7 +388,7 @@ async def update_nps_follow_up(
     """Update an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Follow-up not found")
+        raise NotFoundException("Follow-up not found")
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -440,13 +423,10 @@ async def acknowledge_nps_follow_up(
     """Acknowledge an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Follow-up not found")
+        raise NotFoundException("Follow-up not found")
 
     if follow_up.status != NPSFollowUpStatus.pending:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Follow-up must be in pending status to acknowledge",
-        )
+        raise BadRequestException("Follow-up must be in pending status to acknowledge")
 
     return await nps_follow_up_service.update_status(db, follow_up, NPSFollowUpStatus.acknowledged)
 
@@ -465,13 +445,10 @@ async def complete_nps_follow_up(
     """Complete an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Follow-up not found")
+        raise NotFoundException("Follow-up not found")
 
     if follow_up.status == NPSFollowUpStatus.completed:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Follow-up is already completed",
-        )
+        raise BadRequestException("Follow-up is already completed")
 
     return await nps_follow_up_service.update_status(
         db,

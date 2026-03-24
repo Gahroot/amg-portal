@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import CommunicationLogChannel, CommunicationLogDirection
 
@@ -39,7 +39,7 @@ class CommunicationLogUpdate(BaseModel):
 
 
 class CommunicationLogResponse(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     channel: str

@@ -5,11 +5,12 @@ import io
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import Select, func, select
 
 from app.api.deps import DB, require_compliance
+from app.core.exceptions import NotFoundException
 from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogListResponse, AuditLogResponse
 
@@ -130,7 +131,7 @@ async def get_audit_log(log_id: UUID, db: DB) -> AuditLog:
     result = await db.execute(select(AuditLog).where(AuditLog.id == log_id))
     log = result.scalar_one_or_none()
     if not log:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit log not found")
+        raise NotFoundException("Audit log not found")
     return log
 
 

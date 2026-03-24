@@ -1,14 +1,15 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import date, datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSON, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class ClientProfile(Base):
+class ClientProfile(Base, TimestampMixin):
     """Client profile with compliance workflow."""
 
     __tablename__ = "client_profiles"
@@ -33,6 +34,19 @@ class ClientProfile(Base):
     sensitivities: Mapped[str | None] = mapped_column(Text, nullable=True)
     special_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Communication Preferences
+    preferred_channels: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    contact_hours_start: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    contact_hours_end: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    contact_timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    language_preference: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    do_not_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    opt_out_marketing: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
     # Workflow
     compliance_status: Mapped[str] = mapped_column(
         String(50), nullable=False, default="pending_review"
@@ -55,8 +69,13 @@ class ClientProfile(Base):
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
 
+    # Security
+    security_profile_level: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="standard", server_default="standard"
+    )
+
     # Intelligence
-    intelligence_file: Mapped[dict[str, str] | None] = mapped_column(JSON, nullable=True)
+    intelligence_file: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Provisioning
     user_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -65,18 +84,24 @@ class ClientProfile(Base):
     welcome_email_sent: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     portal_access_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # Compliance certificate (auto-generated on MD approval)
+    compliance_certificate_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("clearance_certificates.id"),
+        nullable=True,
+    )
+    compliance_certificate_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Birthday & important dates
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    important_dates: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+    birthday_reminders_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+
     # Audit
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     # Relationships
@@ -89,6 +114,9 @@ class ClientProfile(Base):
     assigned_rm = relationship("User", foreign_keys=[assigned_rm_id])
     family_members = relationship(
         "FamilyMember", back_populates="client_profile", cascade="all, delete-orphan"
+    )
+    compliance_certificate = relationship(
+        "ClearanceCertificate", foreign_keys=[compliance_certificate_id]
     )
 
     def __repr__(self) -> str:

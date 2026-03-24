@@ -2,13 +2,14 @@
 
 import logging
 import uuid
-from datetime import date
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_coordinator_or_above, require_internal
+from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above, require_internal
+from app.core.exceptions import NotFoundException
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -21,6 +22,9 @@ from app.schemas.task import (
     TaskBoardListResponse,
     TaskBoardResponse,
     TaskBoardUpdate,
+    TaskBulkUpdate,
+    TaskBulkUpdateResult,
+    TaskDependencyUpdate,
     TaskReorder,
 )
 
@@ -34,6 +38,7 @@ def build_task_response(
     assignee: User | None = None,
     program: Program | None = None,
     milestone: Milestone | None = None,
+    blocked_by: list[uuid.UUID] | None = None,
 ) -> dict:
     """Build a task response with related entity info."""
     response = {
@@ -46,6 +51,8 @@ def build_task_response(
         "due_date": task.due_date,
         "assigned_to": task.assigned_to,
         "position": task.position,
+        "depends_on": task.depends_on or [],
+        "blocked_by": blocked_by or [],
         "created_at": task.created_at,
         "updated_at": task.updated_at,
     }
@@ -74,9 +81,39 @@ def build_task_response(
     return response
 
 
+def _detect_cycle(
+    task_id: uuid.UUID,
+    new_deps: list[uuid.UUID],
+    all_tasks_deps: dict[uuid.UUID, list[uuid.UUID]],
+) -> bool:
+    """Return True if adding new_deps to task_id would create a cycle.
+
+    Uses DFS: starting from each dep, check if we can reach task_id.
+    """
+    deps_map = dict(all_tasks_deps)
+    deps_map[task_id] = new_deps
+
+    visited: set[uuid.UUID] = set()
+
+    def dfs(node: uuid.UUID, target: uuid.UUID) -> bool:
+        if node == target:
+            return True
+        if node in visited:
+            return False
+        visited.add(node)
+        return any(dfs(dep, target) for dep in deps_map.get(node, []))
+
+    for dep in new_deps:
+        visited.clear()
+        if dfs(dep, task_id):
+            return True
+    return False
+
+
 @router.get("/", response_model=TaskBoardListResponse)
 async def list_tasks(
     db: DB,
+    _rls: RLSContext,
     program_id: uuid.UUID | None = Query(None),
     assignee_id: uuid.UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
@@ -117,7 +154,11 @@ async def list_tasks(
         filters.append(Task.priority == priority)
     if overdue_only:
         filters.append(
-            and_(Task.due_date < date.today(), Task.status != "done", Task.status != "cancelled")
+            and_(
+                Task.due_date < datetime.now(UTC).date(),
+                Task.status != "done",
+                Task.status != "cancelled",
+            )
         )
 
     for f in filters:
@@ -136,6 +177,12 @@ async def list_tasks(
     result = await db.execute(query)
     tasks = result.scalars().unique().all()
 
+    # Build blocked_by map: for each task, find which tasks depend on it
+    blocked_by_map: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for task in tasks:
+        for dep_id in (task.depends_on or []):
+            blocked_by_map.setdefault(dep_id, []).append(task.id)
+
     task_responses = []
     for task in tasks:
         assignee = task.assignee
@@ -143,7 +190,13 @@ async def list_tasks(
         program = milestone.program if milestone else None
         task_responses.append(
             TaskBoardResponse(
-                **build_task_response(task, assignee, program, milestone)
+                **build_task_response(
+                    task,
+                    assignee,
+                    program,
+                    milestone,
+                    blocked_by=blocked_by_map.get(task.id, []),
+                )
             )
         )
 
@@ -155,6 +208,7 @@ async def create_task(
     data: TaskBoardCreate,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
 ):
     """Create a new task."""
@@ -166,7 +220,7 @@ async def create_task(
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+        raise NotFoundException("Milestone not found")
 
     # Get max position for this status (default to 'todo')
     max_pos_result = await db.execute(
@@ -183,10 +237,22 @@ async def create_task(
         due_date=data.due_date,
         assigned_to=data.assigned_to,
         position=max_pos + 1,
+        depends_on=data.depends_on or [],
     )
     db.add(task)
     await db.commit()
     await db.refresh(task)
+
+    # Reverse cascade: revert a completed milestone when a new task is added
+    try:
+        from app.services.task_cascade_service import on_task_created
+
+        await on_task_created(db, task.id)
+    except Exception:
+        logger.exception(
+            "Task cascade (on_task_created) failed for task %s.",
+            task.id,
+        )
 
     # Load relationships
     result = await db.execute(
@@ -210,6 +276,7 @@ async def update_task(
     data: TaskBoardUpdate,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
 ):
     """Update a task (title, description, status, priority, due_date, assigned_to)."""
@@ -223,7 +290,7 @@ async def update_task(
     )
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise NotFoundException("Task not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "status" in update_data and update_data["status"] is not None:
@@ -231,11 +298,25 @@ async def update_task(
     if "priority" in update_data and update_data["priority"] is not None:
         update_data["priority"] = update_data["priority"].value
 
+    status_changed = "status" in update_data
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
     await db.commit()
     await db.refresh(task)
+
+    # Cascade milestone status when a task's status changes
+    if status_changed:
+        try:
+            from app.services.task_cascade_service import on_task_status_change
+
+            await on_task_status_change(db, task_id, task.status)
+        except Exception:
+            logger.exception(
+                "Task cascade failed for task %s — milestone status not updated.",
+                task_id,
+            )
 
     # Reload with relationships
     result = await db.execute(
@@ -258,13 +339,14 @@ async def reorder_tasks(
     data: TaskReorder,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
 ):
     """Reorder tasks after drag-and-drop. Updates status and position."""
     result = await db.execute(select(Task).where(Task.id == data.task_id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise NotFoundException("Task not found")
 
     # Get all tasks in the target column, ordered by position
     tasks_result = await db.execute(
@@ -276,6 +358,9 @@ async def reorder_tasks(
 
     # Remove the moved task from the list if it was already in this column
     column_tasks = [t for t in column_tasks if t.id != data.task_id]
+
+    # Capture old status before mutating so cascade can detect the change
+    old_task_status = task.status
 
     # Update the task's status
     task.status = data.new_status
@@ -297,7 +382,19 @@ async def reorder_tasks(
     for i, t in enumerate(column_tasks):
         t.position = i
 
+    status_changed = old_task_status != data.new_status
     await db.commit()
+
+    if status_changed:
+        try:
+            from app.services.task_cascade_service import on_task_status_change
+
+            await on_task_status_change(db, data.task_id, data.new_status)
+        except Exception:
+            logger.exception(
+                "Task cascade failed for reordered task %s — milestone status not updated.",
+                data.task_id,
+            )
 
 
 @router.post("/batch-reorder", status_code=status.HTTP_204_NO_CONTENT)
@@ -305,9 +402,13 @@ async def batch_reorder_tasks(
     updates: list[TaskReorder],
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
 ):
     """Batch reorder multiple tasks at once."""
+    # Track tasks whose status actually changed so we can cascade after commit
+    status_changed_tasks: list[tuple[uuid.UUID, str]] = []
+
     for update in updates:
         result = await db.execute(select(Task).where(Task.id == update.task_id))
         task = result.scalar_one_or_none()
@@ -324,6 +425,9 @@ async def batch_reorder_tasks(
 
         # Remove the moved task from the list if it was already in this column
         column_tasks = [t for t in column_tasks if t.id != update.task_id]
+
+        # Capture old status before mutation
+        old_status = task.status
 
         # Update the task's status
         task.status = update.new_status
@@ -343,7 +447,45 @@ async def batch_reorder_tasks(
         for i, t in enumerate(column_tasks):
             t.position = i
 
+        if old_status != update.new_status:
+            status_changed_tasks.append((update.task_id, update.new_status))
+
     await db.commit()
+
+    # Cascade milestone status for each task whose status changed
+    for changed_task_id, new_status in status_changed_tasks:
+        try:
+            from app.services.task_cascade_service import on_task_status_change
+
+            await on_task_status_change(db, changed_task_id, new_status)
+        except Exception:
+            logger.exception(
+                "Task cascade failed for batch-reordered task %s — milestone status not updated.",
+                changed_task_id,
+            )
+
+
+@router.post("/bulk-update", response_model=TaskBulkUpdateResult)
+async def bulk_update_tasks(
+    data: TaskBulkUpdate,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_coordinator_or_above),
+):
+    """Bulk update or delete multiple tasks.
+
+    Supports status/priority/due-date/assignee changes and bulk delete.
+    Returns updated/deleted counts and any per-task failures.
+    """
+    from app.services.task_service import bulk_update
+
+    return await bulk_update(
+        db,
+        data,
+        actor_id=uuid.UUID(str(current_user.id)),
+        actor_email=current_user.email,
+    )
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -351,21 +493,96 @@ async def delete_task(
     task_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
 ):
     """Delete a task."""
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise NotFoundException("Task not found")
 
     await db.delete(task)
     await db.commit()
 
 
+@router.put("/{task_id}/dependencies", response_model=TaskBoardResponse)
+async def update_task_dependencies(
+    task_id: uuid.UUID,
+    data: TaskDependencyUpdate,
+    db: DB,
+    _rls: RLSContext,
+    _: None = Depends(require_coordinator_or_above),
+):
+    """Set the full list of dependencies for a task. Validates for circular deps."""
+    from fastapi import HTTPException
+
+    result = await db.execute(
+        select(Task)
+        .options(
+            selectinload(Task.assignee),
+            selectinload(Task.milestone).selectinload(Milestone.program),
+        )
+        .where(Task.id == task_id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise NotFoundException("Task not found")
+
+    # Validate all dependency IDs exist
+    new_deps = list(dict.fromkeys(data.depends_on))  # deduplicate preserving order
+    if task_id in new_deps:
+        raise HTTPException(status_code=400, detail="A task cannot depend on itself")
+
+    if new_deps:
+        dep_result = await db.execute(
+            select(Task.id).where(Task.id.in_(new_deps))
+        )
+        found_ids = {row[0] for row in dep_result.all()}
+        missing = [str(d) for d in new_deps if d not in found_ids]
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dependency tasks not found: {', '.join(missing)}",
+            )
+
+    # Load all tasks to check for cycles
+    all_tasks_result = await db.execute(select(Task.id, Task.depends_on))
+    all_tasks_deps: dict[uuid.UUID, list[uuid.UUID]] = {
+        row[0]: row[1] or [] for row in all_tasks_result.all()
+    }
+
+    if _detect_cycle(task_id, new_deps, all_tasks_deps):
+        raise HTTPException(
+            status_code=400,
+            detail="Setting these dependencies would create a circular dependency",
+        )
+
+    task.depends_on = new_deps
+    await db.commit()
+    await db.refresh(task)
+
+    # Compute blocked_by for this task from all tasks
+    blocked_by_result = await db.execute(
+        select(Task.id).where(Task.depends_on.contains([task_id]))
+    )
+    blocked_by = [row[0] for row in blocked_by_result.all()]
+
+    return TaskBoardResponse(
+        **build_task_response(
+            task,
+            task.assignee,
+            task.milestone.program,
+            task.milestone,
+            blocked_by=blocked_by,
+        )
+    )
+
+
 @router.get("/programs", response_model=list[ProgramInfo])
 async def list_programs_for_filter(
     db: DB,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
 ):
     """List all programs for the filter dropdown."""
@@ -384,6 +601,7 @@ async def list_programs_for_filter(
 @router.get("/assignees", response_model=list[AssigneeInfo])
 async def list_assignees_for_filter(
     db: DB,
+    _rls: RLSContext,
     _: None = Depends(require_internal),
 ):
     """List all internal users for the assignee filter dropdown."""

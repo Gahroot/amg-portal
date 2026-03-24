@@ -1,69 +1,38 @@
 import api from "@/lib/api";
+import type {
+  AllPartnersCapacitySummary,
+  BlockedDate,
+  BlockedDateCreate,
+  PartnerCapacityHeatmap,
+  PartnerComparisonResponse,
+  PartnerProfile,
+  PartnerListResponse,
+  PartnerListParams,
+  PartnerCreateData,
+  PartnerUpdateData,
+  PartnerProvisionData,
+  PartnerTrends,
+  PartnerDuplicateCheckRequest,
+  PartnerDuplicateMatch,
+  RefreshDuePartnerListResponse,
+} from "@/types/partner";
 
-export interface PartnerProfile {
-  id: string;
-  user_id: string | null;
-  firm_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string | null;
-  capabilities: string[];
-  geographies: string[];
-  availability_status: string;
-  performance_rating: number | null;
-  total_assignments: number;
-  completed_assignments: number;
-  compliance_doc_url: string | null;
-  compliance_verified: boolean;
-  notes: string | null;
-  status: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PartnerListResponse {
-  profiles: PartnerProfile[];
-  total: number;
-}
-
-export interface PartnerListParams {
-  skip?: number;
-  limit?: number;
-  capability?: string;
-  geography?: string;
-  availability?: string;
-  status?: string;
-  search?: string;
-}
-
-export interface PartnerCreateData {
-  firm_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone?: string;
-  capabilities: string[];
-  geographies: string[];
-  notes?: string;
-}
-
-export interface PartnerUpdateData {
-  firm_name?: string;
-  contact_name?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  capabilities?: string[];
-  geographies?: string[];
-  availability_status?: string;
-  compliance_verified?: boolean;
-  notes?: string;
-  status?: string;
-}
-
-export interface PartnerProvisionData {
-  password?: string;
-  send_welcome_email?: boolean;
-}
+// Re-export types for convenience
+export type {
+  AllPartnersCapacitySummary,
+  BlockedDate,
+  BlockedDateCreate,
+  PartnerCapacityHeatmap,
+  PartnerComparisonResponse,
+  PartnerProfile,
+  PartnerListResponse,
+  PartnerListParams,
+  PartnerCreateData,
+  PartnerUpdateData,
+  PartnerProvisionData,
+  PartnerTrends,
+  RefreshDuePartnerListResponse,
+};
 
 export async function listPartners(params?: PartnerListParams): Promise<PartnerListResponse> {
   const response = await api.get<PartnerListResponse>("/api/v1/partners/", { params });
@@ -96,5 +65,112 @@ export async function uploadComplianceDoc(id: string, file: File): Promise<Partn
   const response = await api.post<PartnerProfile>(`/api/v1/partners/${id}/compliance-doc`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  return response.data;
+}
+
+export async function getRefreshDuePartners(
+  includeDueSoon = true
+): Promise<RefreshDuePartnerListResponse> {
+  const response = await api.get<RefreshDuePartnerListResponse>(
+    "/api/v1/partners/refresh-due",
+    { params: { include_due_soon: includeDueSoon } }
+  );
+  return response.data;
+}
+
+export async function comparePartners(
+  ids: string[]
+): Promise<PartnerComparisonResponse> {
+  const response = await api.get<PartnerComparisonResponse>(
+    "/api/v1/partners/compare",
+    { params: { ids: ids.join(",") } }
+  );
+  return response.data;
+}
+
+export async function getPartnerTrends(
+  partnerId: string,
+  days = 90
+): Promise<PartnerTrends> {
+  const response = await api.get<PartnerTrends>(
+    `/api/v1/partners/${partnerId}/trends`,
+    { params: { days } }
+  );
+  return response.data;
+}
+
+export async function getMyTrends(days = 90): Promise<PartnerTrends> {
+  const response = await api.get<PartnerTrends>(
+    "/api/v1/partner-portal/trends",
+    { params: { days } }
+  );
+  return response.data;
+}
+
+// ── Capacity / Heatmap ────────────────────────────────────────────────────────
+
+export async function getPartnerCapacityHeatmap(
+  partnerId: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<PartnerCapacityHeatmap> {
+  const response = await api.get<PartnerCapacityHeatmap>(
+    `/api/v1/partners/${partnerId}/capacity`,
+    { params: { start_date: startDate, end_date: endDate } },
+  );
+  return response.data;
+}
+
+export async function getAllPartnersCapacitySummary(
+  targetDate?: string,
+): Promise<AllPartnersCapacitySummary> {
+  const response = await api.get<AllPartnersCapacitySummary>(
+    "/api/v1/partners/capacity/summary",
+    { params: { target_date: targetDate } },
+  );
+  return response.data;
+}
+
+export async function getPartnerBlockedDates(
+  partnerId: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<BlockedDate[]> {
+  const response = await api.get<BlockedDate[]>(
+    `/api/v1/partners/${partnerId}/blocked-dates`,
+    { params: { start_date: startDate, end_date: endDate } },
+  );
+  return response.data;
+}
+
+export async function addBlockedDate(
+  partnerId: string,
+  data: BlockedDateCreate,
+): Promise<BlockedDate> {
+  const response = await api.post<BlockedDate>(
+    `/api/v1/partners/${partnerId}/blocked-dates`,
+    data,
+  );
+  return response.data;
+}
+
+export async function removeBlockedDate(
+  partnerId: string,
+  blockedDateId: string,
+): Promise<void> {
+  await api.delete(`/api/v1/partners/${partnerId}/blocked-dates/${blockedDateId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Duplicate detection
+// ---------------------------------------------------------------------------
+
+export async function checkPartnerDuplicates(
+  data: PartnerDuplicateCheckRequest
+): Promise<PartnerDuplicateMatch[]> {
+  const response = await api.post<PartnerDuplicateMatch[]>(
+    "/api/v1/partners/check-duplicates",
+    data
+  );
   return response.data;
 }

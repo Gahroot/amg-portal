@@ -5,9 +5,10 @@ Revises: add_two_person_delete
 Create Date: 2025-01-11
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "add_nps_surveys"

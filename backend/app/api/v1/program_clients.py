@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser, require_internal, require_rm_or_above
+from app.core.exceptions import NotFoundException
 from app.models.client import Client
 from app.models.enums import UserRole
 from app.schemas.client import ClientCreate, ClientListResponse, ClientResponse, ClientUpdate
@@ -60,7 +61,7 @@ async def get_client(client_id: uuid.UUID, db: DB):
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
     return client
 
 
@@ -73,7 +74,7 @@ async def update_client(client_id: uuid.UUID, data: ClientUpdate, db: DB):
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "client_type" in update_data and update_data["client_type"] is not None:

@@ -4,16 +4,18 @@ import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyAssignment } from "@/lib/api/partner-portal";
-import { acceptAssignment } from "@/lib/api/assignments";
 import {
   listDeliverables,
   submitDeliverable,
 } from "@/lib/api/deliverables";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import {
+  AssignmentActions,
+  AssignmentStatusBadge,
+} from "@/components/partner/assignment-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -23,18 +25,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  draft: "outline",
-  dispatched: "secondary",
-  accepted: "default",
-  in_progress: "default",
-  completed: "default",
-  cancelled: "destructive",
-};
 
 const DELIVERABLE_STATUS_VARIANT: Record<
   string,
@@ -66,18 +56,6 @@ export default function PartnerAssignmentDetailPage() {
     enabled: !!assignmentId,
   });
 
-  const acceptMutation = useMutation({
-    mutationFn: () => acceptAssignment(assignmentId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["partner-portal", "assignments", assignmentId],
-      });
-    },
-    onError: () => {
-      setError("Failed to accept assignment.");
-    },
-  });
-
   const submitMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       submitDeliverable(id, file),
@@ -107,7 +85,7 @@ export default function PartnerAssignmentDetailPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl">
-        <p className="text-muted-foreground text-sm">Loading...</p>
+        <p className="text-muted-foreground text-sm">Loading…</p>
       </div>
     );
   }
@@ -122,23 +100,12 @@ export default function PartnerAssignmentDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
         <h1 className="font-serif text-3xl font-bold tracking-tight">
           {assignment.title}
         </h1>
-        <div className="flex items-center gap-2">
-          <Badge variant={STATUS_VARIANT[assignment.status] ?? "outline"}>
-            {assignment.status.replace(/_/g, " ")}
-          </Badge>
-          {assignment.status === "dispatched" && (
-            <Button
-              onClick={() => acceptMutation.mutate()}
-              disabled={acceptMutation.isPending}
-            >
-              {acceptMutation.isPending ? "Accepting..." : "Accept"}
-            </Button>
-          )}
-        </div>
+        <AssignmentStatusBadge status={assignment.status} />
       </div>
 
       {error && (
@@ -147,18 +114,27 @@ export default function PartnerAssignmentDetailPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Accept / Decline actions + deadline + history */}
+      <AssignmentActions
+        assignment={assignment}
+        onStatusChange={() =>
+          queryClient.invalidateQueries({
+            queryKey: ["partner-portal", "assignments", assignmentId],
+          })
+        }
+      />
+
+      {/* Meta cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Program</p>
-            <p className="font-medium">
-              {assignment.program_title ?? "-"}
-            </p>
+            <p className="text-muted-foreground text-sm">Program</p>
+            <p className="font-medium">{assignment.program_title ?? "—"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Due Date</p>
+            <p className="text-muted-foreground text-sm">Due Date</p>
             <p className="font-medium">
               {assignment.due_date
                 ? new Date(assignment.due_date).toLocaleDateString()
@@ -168,26 +144,27 @@ export default function PartnerAssignmentDetailPage() {
         </Card>
       </div>
 
+      {/* Brief */}
       <Card>
         <CardContent className="pt-4">
-          <p className="text-sm text-muted-foreground">Brief</p>
-          <p className="text-sm mt-1 whitespace-pre-wrap">
-            {assignment.brief}
-          </p>
+          <p className="text-muted-foreground text-sm">Brief</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{assignment.brief}</p>
         </CardContent>
       </Card>
 
+      {/* SLA Terms */}
       {assignment.sla_terms && (
         <Card>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">SLA Terms</p>
-            <p className="text-sm mt-1 whitespace-pre-wrap">
+            <p className="text-muted-foreground text-sm">SLA Terms</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm">
               {assignment.sla_terms}
             </p>
           </CardContent>
         </Card>
       )}
 
+      {/* Deliverables */}
       <div className="space-y-4">
         <h2 className="font-serif text-xl font-semibold">Deliverables</h2>
 
@@ -225,16 +202,17 @@ export default function PartnerAssignmentDetailPage() {
                   </TableCell>
                   <TableCell>
                     {deliverable.due_date
-                      ? new Date(
-                          deliverable.due_date
-                        ).toLocaleDateString()
-                      : "-"}
+                      ? new Date(deliverable.due_date).toLocaleDateString()
+                      : "—"}
                   </TableCell>
                   <TableCell>
                     {(deliverable.status === "pending" ||
                       deliverable.status === "returned") && (
                       <div>
-                        <Label htmlFor={`file-${deliverable.id}`} className="sr-only">
+                        <Label
+                          htmlFor={`file-${deliverable.id}`}
+                          className="sr-only"
+                        >
                           Upload file
                         </Label>
                         <Input
@@ -247,8 +225,8 @@ export default function PartnerAssignmentDetailPage() {
                           disabled={uploadingId === deliverable.id}
                         />
                         {uploadingId === deliverable.id && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Uploading...
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            Uploading…
                           </p>
                         )}
                       </div>
@@ -261,7 +239,7 @@ export default function PartnerAssignmentDetailPage() {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center text-muted-foreground"
+                    className="text-muted-foreground text-center"
                   >
                     No deliverables found.
                   </TableCell>

@@ -1,25 +1,32 @@
 import logging
 import uuid
-from datetime import date, timedelta
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
     DB,
     CurrentUser,
+    RLSContext,
+    get_rm_client_ids,
+    require_admin,
     require_coordinator_or_above,
     require_internal,
     require_rm_or_above,
 )
+from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
 from app.models.client import Client  # noqa: F401
+from app.models.enums import UserRole
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
 from app.schemas.program import (
+    EmergencyActivationRequest,
     MilestoneCreate,
+    MilestoneDetailResponse,
     MilestoneResponse,
     MilestoneUpdate,
     ProgramCreate,
@@ -33,72 +40,62 @@ from app.schemas.program import (
     TaskResponse,
     TaskUpdate,
 )
+from app.services.calendar_service import sync_milestone_to_google_calendar
+from app.utils.rag import compute_rag_status
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-def compute_rag_status(milestones: list[Milestone]) -> str:
-    today = date.today()
-    for m in milestones:
-        if m.status != "completed" and m.due_date and m.due_date < today:
-            return "red"
-    for m in milestones:
-        if m.status != "completed" and m.due_date and m.due_date <= today + timedelta(days=7):
-            return "amber"
-    return "green"
-
-
-def build_program_response(program: Program) -> dict[str, Any]:
+def build_program_response(program: Program) -> ProgramResponse:
     milestones = program.milestones or []
-    milestone_count = len(milestones)
-    completed_milestone_count = sum(1 for m in milestones if m.status == "completed")
-    rag_status = compute_rag_status(milestones)
-    client_name = program.client.name if program.client else ""
-    return {
-        **{c.key: getattr(program, c.key) for c in program.__table__.columns},
-        "client_name": client_name,
-        "rag_status": rag_status,
-        "milestone_count": milestone_count,
-        "completed_milestone_count": completed_milestone_count,
-    }
+    base = ProgramResponse.model_validate(program, from_attributes=True)
+    return base.model_copy(
+        update={
+            "client_name": program.client.name if program.client else "",
+            "rag_status": compute_rag_status(milestones),
+            "milestone_count": len(milestones),
+            "completed_milestone_count": sum(1 for m in milestones if m.status == "completed"),
+        }
+    )
 
 
-def build_milestone_response(milestone: Milestone) -> dict[str, Any]:
+def build_milestone_response(milestone: Milestone) -> MilestoneResponse:
     tasks = milestone.tasks or []
-    return {
-        **{c.key: getattr(milestone, c.key) for c in milestone.__table__.columns},
-        "task_count": len(tasks),
-        "completed_task_count": sum(1 for t in tasks if t.status == "done"),
-    }
+    base = MilestoneResponse.model_validate(milestone, from_attributes=True)
+    return base.model_copy(
+        update={
+            "task_count": len(tasks),
+            "completed_task_count": sum(1 for t in tasks if t.status == "done"),
+        }
+    )
 
 
-def build_program_detail_response(program: Program) -> dict[str, Any]:
+def build_milestone_detail_response(milestone: Milestone) -> MilestoneDetailResponse:
+    tasks = milestone.tasks or []
+    base = MilestoneDetailResponse.model_validate(milestone, from_attributes=True)
+    return base.model_copy(
+        update={
+            "task_count": len(tasks),
+            "completed_task_count": sum(1 for t in tasks if t.status == "done"),
+            "tasks": [TaskResponse.model_validate(t, from_attributes=True) for t in tasks],
+        }
+    )
+
+
+def build_program_detail_response(program: Program) -> ProgramDetailResponse:
     milestones = program.milestones or []
-    milestone_count = len(milestones)
-    completed_milestone_count = sum(1 for m in milestones if m.status == "completed")
-    rag_status = compute_rag_status(milestones)
-    client_name = program.client.name if program.client else ""
-    milestone_details = []
-    for m in milestones:
-        tasks = m.tasks or []
-        milestone_details.append(
-            {
-                **{c.key: getattr(m, c.key) for c in m.__table__.columns},
-                "task_count": len(tasks),
-                "completed_task_count": sum(1 for t in tasks if t.status == "done"),
-                "tasks": tasks,
-            }
-        )
-    return {
-        **{c.key: getattr(program, c.key) for c in program.__table__.columns},
-        "client_name": client_name,
-        "rag_status": rag_status,
-        "milestone_count": milestone_count,
-        "completed_milestone_count": completed_milestone_count,
-        "milestones": milestone_details,
-    }
+    base = ProgramDetailResponse.model_validate(program, from_attributes=True)
+    return base.model_copy(
+        update={
+            "client_name": program.client.name if program.client else "",
+            "rag_status": compute_rag_status(milestones),
+            "milestone_count": len(milestones),
+            "completed_milestone_count": sum(1 for m in milestones if m.status == "completed"),
+            "milestones": [build_milestone_detail_response(m) for m in milestones],
+        }
+    )
 
 
 @router.post(
@@ -110,8 +107,15 @@ async def create_program(
     data: ProgramCreate,
     db: DB,
     current_user: CurrentUser,
+    _rls: RLSContext,
     _: None = Depends(require_rm_or_above),
 ):
+    from app.models.enums import BudgetRequestType
+    from app.services.program_budget_service import (
+        create_budget_approval_for_program,
+        notify_approval_chain,
+    )
+
     program = Program(
         client_id=data.client_id,
         title=data.title,
@@ -124,6 +128,33 @@ async def create_program(
     )
     db.add(program)
     await db.flush()
+
+    # --- Budget approval check ---
+    # If the budget envelope exceeds a configured threshold the program must go
+    # through an approval chain before it can be activated.  We set the status
+    # to "design" to hold it in a pre-active state; the state-machine guard on
+    # the "active" transition enforces this until all approvals are complete.
+    approval_request_id: uuid.UUID | None = None
+    if data.budget_envelope is not None:
+        budget_amount = Decimal(str(data.budget_envelope))
+        approval_request = await create_budget_approval_for_program(
+            db=db,
+            program=program,
+            budget_amount=budget_amount,
+            request_type=BudgetRequestType.new_expense,
+            requested_by=current_user.id,
+            current_budget=Decimal("0"),
+        )
+        if approval_request:
+            approval_request_id = approval_request.id
+            program.status = "design"
+            logger.info(
+                "Program %s created with budget %s — approval required (request %s); "
+                "status set to 'design'.",
+                program.id,
+                budget_amount,
+                approval_request_id,
+            )
 
     for m_data in data.milestones:
         milestone = Milestone(
@@ -147,6 +178,23 @@ async def create_program(
     )
     program = result.scalar_one()
 
+    # Notify the approval chain now that the transaction is committed.
+    if approval_request_id is not None:
+        try:
+            from app.models.budget_approval import BudgetApprovalRequest
+
+            req_result = await db.execute(
+                select(BudgetApprovalRequest).where(BudgetApprovalRequest.id == approval_request_id)
+            )
+            approval_request = req_result.scalar_one_or_none()
+            if approval_request:
+                await notify_approval_chain(db, approval_request, program)
+        except Exception:
+            logger.exception(
+                "Failed to send budget-approval chain notifications for program %s",
+                program.id,
+            )
+
     try:
         from app.services.auto_dispatch_service import (
             on_program_created,
@@ -165,8 +213,11 @@ async def create_program(
 @router.get("/", response_model=ProgramListResponse)
 async def list_programs(
     db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
     status_filter: str | None = Query(None, alias="status"),
     client_id: uuid.UUID | None = None,
+    search: str | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     _: None = Depends(require_internal),
@@ -183,6 +234,20 @@ async def list_programs(
     if client_id:
         query = query.where(Program.client_id == client_id)
         count_query = count_query.where(Program.client_id == client_id)
+    if search:
+        pattern = f"%{search}%"
+        query = query.where(Program.title.ilike(pattern))
+        count_query = count_query.where(Program.title.ilike(pattern))
+
+    # RMs only see programs belonging to their clients or programs they created.
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+        rm_filter = or_(
+            Program.client_id.in_(rm_client_ids),
+            Program.created_by == current_user.id,
+        )
+        query = query.where(rm_filter)
+        count_query = count_query.where(rm_filter)
 
     total = (await db.execute(count_query)).scalar_one()
     result = await db.execute(query.order_by(Program.created_at.desc()).offset(skip).limit(limit))
@@ -193,12 +258,50 @@ async def list_programs(
     )
 
 
+@router.post(
+    "/compare",
+    response_model=list[ProgramDetailResponse],
+    dependencies=[Depends(require_internal)],
+)
+async def compare_programs(
+    ids: list[uuid.UUID],
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+):
+    """Return detailed data for 2-4 programs for side-by-side comparison."""
+    if len(ids) < 2 or len(ids) > 4:
+        raise ValidationException("Please select 2 to 4 programs to compare")
+
+    result = await db.execute(
+        select(Program)
+        .options(
+            selectinload(Program.client),
+            selectinload(Program.milestones).selectinload(Milestone.tasks),
+        )
+        .where(Program.id.in_(ids))
+    )
+    programs = result.scalars().unique().all()
+
+    if len(programs) != len(ids):
+        raise NotFoundException("One or more programs not found")
+
+    # RM scope check
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+        for p in programs:
+            if p.client_id not in rm_client_ids and p.created_by != current_user.id:
+                raise ForbiddenException("Access denied to one or more programs")
+
+    return [build_program_detail_response(p) for p in programs]
+
+
 @router.get(
     "/{program_id}",
     response_model=ProgramDetailResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_program(program_id: uuid.UUID, db: DB):
+async def get_program(program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext):
     result = await db.execute(
         select(Program)
         .options(
@@ -209,16 +312,36 @@ async def get_program(program_id: uuid.UUID, db: DB):
     )
     program = result.scalar_one_or_none()
     if not program:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+        if (
+            program.client_id not in rm_client_ids
+            and program.created_by != current_user.id
+        ):
+            raise ForbiddenException("Access denied: program not in your portfolio")
     return build_program_detail_response(program)
 
 
 @router.patch(
     "/{program_id}",
     response_model=ProgramResponse,
-    dependencies=[Depends(require_rm_or_above)],
 )
-async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
+async def update_program(
+    program_id: uuid.UUID,
+    data: ProgramUpdate,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_rm_or_above),
+):
+    from app.models.enums import BudgetRequestType
+    from app.services.program_budget_service import (
+        create_budget_approval_for_program,
+        has_pending_budget_approval,
+        notify_approval_chain,
+    )
+
     result = await db.execute(
         select(Program)
         .options(
@@ -229,36 +352,69 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
     )
     program = result.scalar_one_or_none()
     if not program:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
 
-    old_status = program.status
     update_data = data.model_dump(exclude_unset=True)
-    if "status" in update_data and update_data["status"] is not None:
-        update_data["status"] = update_data["status"].value
 
+    # Capture current budget before any updates are applied.
+    old_budget = (
+        Decimal(str(program.budget_envelope))
+        if program.budget_envelope is not None
+        else Decimal("0")
+    )
+
+    # Handle status transitions through the state machine
+    if "status" in update_data and update_data["status"] is not None:
+        new_status = update_data.pop("status")
+        # ProgramStatus enum → plain string value
+        new_status_str = new_status.value if hasattr(new_status, "value") else str(new_status)
+        from app.services.program_state_machine import transition_program
+
+        await transition_program(db, program, new_status_str, current_user)
+
+    # Apply remaining non-status field updates
     for field, value in update_data.items():
         setattr(program, field, value)
 
+    # --- Budget approval check for increases ---
+    # When budget_envelope has increased, re-check whether the delta crosses a
+    # threshold.  If it does, create a new approval request (unless one is
+    # already pending) and hold the program in a non-active state.
+    approval_request_id: uuid.UUID | None = None
+    new_budget_raw = update_data.get("budget_envelope")
+    if new_budget_raw is not None:
+        new_budget = Decimal(str(new_budget_raw))
+        budget_delta = new_budget - old_budget
+        if budget_delta > Decimal("0"):
+            already_pending = await has_pending_budget_approval(db, program.id)
+            if not already_pending:
+                approval_request = await create_budget_approval_for_program(
+                    db=db,
+                    program=program,
+                    budget_amount=budget_delta,
+                    request_type=BudgetRequestType.budget_increase,
+                    requested_by=current_user.id,
+                    current_budget=old_budget,
+                )
+                if approval_request:
+                    approval_request_id = approval_request.id
+                    current_program_status = str(program.status)
+                    if current_program_status in ("intake", "design"):
+                        program.status = "design"
+                    elif current_program_status == "active":
+                        # Put an active program on hold until the budget increase
+                        # is approved — active → on_hold is a valid transition.
+                        program.status = "on_hold"
+                    logger.info(
+                        "Program %s budget increased by %s — approval required (request %s); "
+                        "status set to '%s'.",
+                        program.id,
+                        budget_delta,
+                        approval_request_id,
+                        program.status,
+                    )
+
     await db.commit()
-    await db.refresh(program)
-
-    # Dispatch completion notification if status changed
-    new_status = program.status
-    if old_status != "completed" and new_status == "completed":
-        try:
-            from app.services.auto_dispatch_service import (
-                on_program_completed,
-            )
-
-            await on_program_completed(db, program)
-        except Exception:
-            logger.exception(
-                "Failed to dispatch completion_note for %s",
-                program.id,
-            )
 
     result = await db.execute(
         select(Program)
@@ -269,17 +425,183 @@ async def update_program(program_id: uuid.UUID, data: ProgramUpdate, db: DB):
         .where(Program.id == program_id)
     )
     program = result.scalar_one()
+
+    # Notify the approval chain now that the transaction is committed.
+    if approval_request_id is not None:
+        try:
+            from app.models.budget_approval import BudgetApprovalRequest
+
+            req_result = await db.execute(
+                select(BudgetApprovalRequest).where(BudgetApprovalRequest.id == approval_request_id)
+            )
+            approval_request = req_result.scalar_one_or_none()
+            if approval_request:
+                await notify_approval_chain(db, approval_request, program)
+        except Exception:
+            logger.exception(
+                "Failed to send budget-approval chain notifications for program %s",
+                program.id,
+            )
+
     return build_program_response(program)
 
 
+@router.post(
+    "/{program_id}/emergency-activate",
+    response_model=ProgramDetailResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def emergency_activate_program(
+    program_id: uuid.UUID,
+    data: EmergencyActivationRequest,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+) -> ProgramDetailResponse:
+    """Emergency activation: MD bypasses budget approval, activates immediately.
+
+    Guards:
+    - Program must be in 'design' status.
+    - Program must have at least one milestone.
+
+    Side effects:
+    - Sets status to 'active', records emergency_reason and retrospective_due_at.
+    - Writes an audit log entry flagged as emergency.
+    - Notifies all active managing directors in-portal.
+    - Fires the standard design→active side effect (kickoff notification).
+    """
+    from app.models.audit_log import AuditLog
+    from app.models.user import User
+    from app.schemas.notification import CreateNotificationRequest
+    from app.services.notification_service import notification_service
+    from app.services.program_state_machine import _effect_design_to_active
+
+    result = await db.execute(
+        select(Program)
+        .options(
+            selectinload(Program.client),
+            selectinload(Program.milestones).selectinload(Milestone.tasks),
+        )
+        .where(Program.id == program_id)
+    )
+    program = result.scalar_one_or_none()
+    if not program:
+        raise NotFoundException("Program not found")
+
+    if str(program.status) != "design":
+        raise ValidationException(
+                f"Emergency activation requires program to be in 'design' status; "
+                f"current status is '{program.status}'."
+            )
+
+    milestone_result = await db.execute(
+        select(Milestone).where(Milestone.program_id == program.id).limit(1)
+    )
+    if milestone_result.scalar_one_or_none() is None:
+        raise ValidationException("Cannot activate program: it must have at least one milestone.")
+
+    now = datetime.now(UTC)
+    retrospective_due = now + timedelta(hours=4)
+
+    from_status = str(program.status)
+    program.status = "active"
+    program.emergency_reason = data.emergency_reason
+    program.retrospective_due_at = retrospective_due
+
+    audit = AuditLog(
+        user_id=uuid.UUID(str(current_user.id)),
+        user_email=current_user.email,
+        action="emergency_activate",
+        entity_type="program",
+        entity_id=str(program.id),
+        before_state={"status": from_status},
+        after_state={
+            "status": "active",
+            "emergency_reason": data.emergency_reason,
+            "retrospective_due_at": retrospective_due.isoformat(),
+        },
+    )
+    db.add(audit)
+    await db.flush()
+
+    logger.warning(
+        "EMERGENCY ACTIVATION: Program %s ('%s') activated by MD %s — "
+        "retrospective due by %s. Reason: %s",
+        program.id,
+        program.title,
+        current_user.email,
+        retrospective_due.isoformat(),
+        data.emergency_reason,
+    )
+
+    # Notify all active managing directors
+    try:
+        md_result = await db.execute(
+            select(User).where(
+                User.role == UserRole.managing_director.value,
+                User.status == "active",
+            )
+        )
+        md_users = list(md_result.scalars().all())
+        for md in md_users:
+            notif = CreateNotificationRequest(
+                user_id=uuid.UUID(str(md.id)),
+                notification_type="emergency_activation",
+                title=f"Emergency Activation: {program.title}",
+                body=(
+                    f"MD {current_user.email} has emergency-activated program "
+                    f"'{program.title}'. A formal retrospective must be completed "
+                    f"by {retrospective_due.strftime('%H:%M UTC on %d %b %Y')}. "
+                    f"Reason: {data.emergency_reason}"
+                ),
+                action_url=f"/programs/{program.id}",
+                action_label="View Program",
+                entity_type="program",
+                entity_id=program.id,
+                priority="high",
+            )
+            await notification_service.create_notification(db, notif)
+    except Exception:
+        logger.exception(
+            "Failed to send emergency activation notifications for program %s",
+            program.id,
+        )
+
+    await db.commit()
+
+    # Reload with all relations for the response
+    result = await db.execute(
+        select(Program)
+        .options(
+            selectinload(Program.client),
+            selectinload(Program.milestones).selectinload(Milestone.tasks),
+        )
+        .where(Program.id == program_id)
+    )
+    program = result.scalar_one()
+
+    # Fire standard activation side effect (dispatch kickoff notification)
+    try:
+        await _effect_design_to_active(db, program)
+    except Exception:
+        logger.exception(
+            "Failed to fire activation side effect for emergency-activated program %s",
+            program.id,
+        )
+
+    return build_program_detail_response(program)
+
+
 @router.get("/{program_id}/summary", response_model=ProgramSummary)
-async def get_program_summary(program_id: uuid.UUID, db: DB, current_user: CurrentUser):
+async def get_program_summary(
+    program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext
+):
     result = await db.execute(
         select(Program).options(selectinload(Program.milestones)).where(Program.id == program_id)
     )
     program = result.scalar_one_or_none()
     if not program:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     milestones = program.milestones or []
     total = len(milestones)
@@ -309,10 +631,11 @@ async def get_program_summary(program_id: uuid.UUID, db: DB, current_user: Curre
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB):
-    result = await db.execute(select(Program).where(Program.id == program_id))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB, _rls: RLSContext):
+    program_result = await db.execute(select(Program).where(Program.id == program_id))
+    program = program_result.scalar_one_or_none()
+    if not program:
+        raise NotFoundException("Program not found")
 
     milestone = Milestone(
         program_id=program_id,
@@ -328,6 +651,15 @@ async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB):
         select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone.id)
     )
     milestone = result.scalar_one()
+
+    # Sync to Google Calendar — best-effort, does not fail the request
+    await sync_milestone_to_google_calendar(
+        db=db,
+        milestone=milestone,
+        program_name=program.title,
+        rm_user_id=program.created_by,
+    )
+
     return build_milestone_response(milestone)
 
 
@@ -336,13 +668,15 @@ async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB):
     response_model=MilestoneResponse,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: DB):
+async def update_milestone(
+    milestone_id: uuid.UUID, data: MilestoneUpdate, db: DB, _rls: RLSContext
+):
     result = await db.execute(
         select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone_id)
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+        raise NotFoundException("Milestone not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "status" in update_data and update_data["status"] is not None:
@@ -358,6 +692,18 @@ async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: D
         select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone_id)
     )
     milestone = result.scalar_one()
+
+    # Sync changes to Google Calendar — best-effort, does not fail the request
+    program_result = await db.execute(select(Program).where(Program.id == milestone.program_id))
+    program = program_result.scalar_one_or_none()
+    if program:
+        await sync_milestone_to_google_calendar(
+            db=db,
+            milestone=milestone,
+            program_name=program.title,
+            rm_user_id=program.created_by,
+        )
+
     return build_milestone_response(milestone)
 
 
@@ -366,11 +712,11 @@ async def update_milestone(milestone_id: uuid.UUID, data: MilestoneUpdate, db: D
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_rm_or_above)],
 )
-async def delete_milestone(milestone_id: uuid.UUID, db: DB):
+async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext):
     result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
     milestone = result.scalar_one_or_none()
     if not milestone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+        raise NotFoundException("Milestone not found")
 
     await db.delete(milestone)
     await db.commit()
@@ -385,10 +731,10 @@ async def delete_milestone(milestone_id: uuid.UUID, db: DB):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB):
+async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB, _rls: RLSContext):
     result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
     if not result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+        raise NotFoundException("Milestone not found")
 
     task = Task(
         milestone_id=milestone_id,
@@ -401,6 +747,18 @@ async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB):
     db.add(task)
     await db.commit()
     await db.refresh(task)
+
+    # Reverse cascade: revert a completed milestone when a new task is added
+    try:
+        from app.services.task_cascade_service import on_task_created
+
+        await on_task_created(db, task.id)
+    except Exception:
+        logger.exception(
+            "Task cascade (on_task_created) failed for task %s.",
+            task.id,
+        )
+
     return task
 
 
@@ -409,11 +767,11 @@ async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB):
     response_model=TaskResponse,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB):
+async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB, _rls: RLSContext):
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise NotFoundException("Task not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "status" in update_data and update_data["status"] is not None:
@@ -421,11 +779,26 @@ async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB):
     if "priority" in update_data and update_data["priority"] is not None:
         update_data["priority"] = update_data["priority"].value
 
+    status_changed = "status" in update_data
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
     await db.commit()
     await db.refresh(task)
+
+    # Cascade milestone status when a task's status changes
+    if status_changed:
+        try:
+            from app.services.task_cascade_service import on_task_status_change
+
+            await on_task_status_change(db, task_id, task.status)
+        except Exception:
+            logger.exception(
+                "Task cascade failed for task %s — milestone status not updated.",
+                task_id,
+            )
+
     return task
 
 
@@ -434,11 +807,11 @@ async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def delete_task(task_id: uuid.UUID, db: DB):
+async def delete_task(task_id: uuid.UUID, db: DB, _rls: RLSContext):
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise NotFoundException("Task not found")
 
     await db.delete(task)
     await db.commit()

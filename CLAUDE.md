@@ -5,6 +5,8 @@ A client and partner management platform for delivering bespoke programs to ultr
 ## Project Structure
 
 ```
+docker-compose.yml                # Infrastructure: PostgreSQL, Redis, MinIO
+
 backend/                          # Python FastAPI backend
   ├── alembic/                   # Database migrations
   ├── app/
@@ -14,7 +16,6 @@ backend/                          # Python FastAPI backend
   │   ├── models/               # SQLAlchemy ORM models
   │   ├── schemas/              # Pydantic request/response schemas
   │   └── services/             # Business logic (CRUD base, email, storage)
-  └── docker-compose.yml        # PostgreSQL, Redis, MinIO
 
 frontend/                         # Next.js (v16) React frontend
   └── src/
@@ -73,4 +74,26 @@ docker compose up -d   # PostgreSQL, Redis, MinIO
 
 # Database migrations
 cd backend && alembic upgrade head
+
+# Type generation (requires backend running)
+cd frontend && npm run generate:types   # Generate TypeScript from OpenAPI schema
 ```
+
+## Type Generation
+
+Frontend types in `frontend/src/types/` are being migrated to auto-generated types from the FastAPI OpenAPI schema.
+
+**Generated types:** `frontend/src/types/generated.ts`
+- Run `npm run generate:types` to regenerate (requires backend at localhost:8000)
+- Import as: `import type { components } from "@/types/generated";`
+- Use as: `type User = components["schemas"]["User"];`
+
+**Manual types:** Files like `user.ts`, `program.ts`, `client.ts` contain manually maintained types.
+- These should gradually migrate to re-export from `generated.ts`
+- Keep frontend-specific extensions (UI state, computed fields) in manual files
+
+**Workflow when backend schemas change:**
+1. Update backend Pydantic schemas in `backend/app/schemas/`
+2. Restart backend to refresh OpenAPI spec
+3. Run `cd frontend && npm run generate:types`
+4. Update frontend code to use new generated types

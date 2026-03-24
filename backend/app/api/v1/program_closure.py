@@ -10,12 +10,14 @@ from app.api.deps import (
     require_internal,
     require_rm_or_above,
 )
+from app.models.user import User
 from app.schemas.partner_rating import (
     PartnerRatingCreate,
     PartnerRatingResponse,
 )
 from app.schemas.program_closure import (
     ChecklistUpdate,
+    DebriefNotesUpdate,
     ProgramClosureCreate,
     ProgramClosureResponse,
 )
@@ -24,6 +26,7 @@ from app.services.closure_service import (
     get_closure_status,
     get_partner_ratings,
     initiate_closure,
+    save_debrief_notes,
     submit_partner_rating,
     update_checklist,
 )
@@ -54,7 +57,7 @@ async def initiate_program_closure(
 async def get_program_closure(
     program_id: uuid.UUID,
     db: DB,
-    _user: CurrentUser = Depends(require_internal),
+    _user: User = Depends(require_internal),
 ) -> ProgramClosureResponse:
     closure = await get_closure_status(db, program_id)
     return ProgramClosureResponse.model_validate(closure)
@@ -97,10 +100,31 @@ async def submit_program_partner_rating(
 async def list_partner_ratings(
     program_id: uuid.UUID,
     db: DB,
-    _user: CurrentUser = Depends(require_internal),
+    _user: User = Depends(require_internal),
 ) -> list[PartnerRatingResponse]:
     ratings = await get_partner_ratings(db, program_id)
     return [PartnerRatingResponse.model_validate(r) for r in ratings]
+
+
+@router.patch(
+    "/{program_id}/closure/debrief-notes",
+    response_model=ProgramClosureResponse,
+)
+async def save_program_debrief_notes(
+    program_id: uuid.UUID,
+    data: DebriefNotesUpdate,
+    db: DB,
+    current_user: CurrentUser,
+    _: None = Depends(require_rm_or_above),
+) -> ProgramClosureResponse:
+    closure = await save_debrief_notes(
+        db,
+        program_id,
+        current_user.id,
+        current_user.full_name,
+        data.notes,
+    )
+    return ProgramClosureResponse.model_validate(closure)
 
 
 @router.post(

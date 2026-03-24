@@ -180,6 +180,8 @@ export interface PartnerOnboarding {
   progress_percentage: number;
 }
 
+export type OnboardingResponse = PartnerOnboarding;
+
 export interface OnboardingCreate {
   assigned_coordinator?: string;
 }

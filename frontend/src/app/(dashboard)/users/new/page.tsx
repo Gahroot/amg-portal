@@ -19,15 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const ROLES = [
-  { value: "managing_director", label: "Managing Director" },
-  { value: "relationship_manager", label: "Relationship Manager" },
-  { value: "coordinator", label: "Coordinator" },
-  { value: "finance_compliance", label: "Finance & Compliance" },
-  { value: "client", label: "Client" },
-  { value: "partner", label: "Partner" },
-];
+import { ROLE_OPTIONS } from "@/lib/constants";
 
 const createUserSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -127,7 +119,7 @@ export default function NewUserPage() {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES.map((role) => (
+                    {ROLE_OPTIONS.map((role) => (
                       <SelectItem key={role.value} value={role.value}>
                         {role.label}
                       </SelectItem>

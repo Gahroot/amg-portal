@@ -8,10 +8,17 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
+from app.models.enums import (
+    NPSFollowUpActionType,
+    NPSFollowUpPriority,
+    NPSFollowUpStatus,
+    NPSScoreCategory,
+    NPSSurveyStatus,
+)
 
 
-class NPSSurvey(Base):
+class NPSSurvey(Base, TimestampMixin):
     """NPS Survey definition for quarterly client satisfaction measurement."""
 
     __tablename__ = "nps_surveys"
@@ -25,7 +32,9 @@ class NPSSurvey(Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Status
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
+    status: Mapped[NPSSurveyStatus] = mapped_column(
+        String(20), nullable=False, default=NPSSurveyStatus.draft
+    )
 
     # Questions (stored as JSON array for flexibility)
     # Standard NPS question + optional custom questions
@@ -50,15 +59,6 @@ class NPSSurvey(Base):
     # Audit
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     # Relationships
@@ -96,7 +96,7 @@ class NPSResponse(Base):
     score: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Categorized score
-    score_category: Mapped[str] = mapped_column(String(20), nullable=False)
+    score_category: Mapped[NPSScoreCategory] = mapped_column(String(20), nullable=False)
 
     # Feedback
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -127,12 +127,12 @@ class NPSResponse(Base):
         return f"<NPSResponse(id={self.id}, score={self.score}, category={self.score_category})>"
 
 
-class NPSFollowUp(Base):
+class NPSFollowUp(Base, TimestampMixin):
     """Follow-up action triggered by low NPS scores (detractors)."""
 
     __tablename__ = "nps_follow_ups"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.UUID)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # References
     survey_id: Mapped[uuid.UUID] = mapped_column(
@@ -151,15 +151,19 @@ class NPSFollowUp(Base):
     )
 
     # Priority (based on score severity)
-    priority: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    priority: Mapped[NPSFollowUpPriority] = mapped_column(
+        String(20), nullable=False, default=NPSFollowUpPriority.medium
+    )
 
     # Status
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    status: Mapped[NPSFollowUpStatus] = mapped_column(
+        String(20), nullable=False, default=NPSFollowUpStatus.pending
+    )
 
     # Action details
-    action_type: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="personal_reach_out"
-    )  # personal_reach_out, escalation, service_review, etc.
+    action_type: Mapped[NPSFollowUpActionType] = mapped_column(
+        String(50), nullable=False, default=NPSFollowUpActionType.personal_reach_out
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -168,15 +172,6 @@ class NPSFollowUp(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Audit
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     # Relationships
     survey = relationship("NPSSurvey", back_populates="follow_ups")

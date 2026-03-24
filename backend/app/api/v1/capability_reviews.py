@@ -2,13 +2,15 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, require_internal
+from app.core.exceptions import ConflictException, NotFoundException
 from app.models.capability_review import CapabilityReview
 from app.models.partner import PartnerProfile
+from app.models.user import User
 from app.schemas.capability_review import (
     CapabilityReviewListResponse,
     CapabilityReviewResponse,
@@ -51,7 +53,7 @@ def _enrich_review(review: CapabilityReview) -> dict:
 @router.get("/", response_model=CapabilityReviewListResponse)
 async def list_capability_reviews(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
@@ -90,7 +92,7 @@ async def list_capability_reviews(
 @router.get("/statistics", response_model=CapabilityReviewStatistics)
 async def get_capability_review_statistics(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewStatistics:
     """Get capability review statistics."""
     stats = await capability_review_service.get_review_statistics(db)
@@ -100,7 +102,7 @@ async def get_capability_review_statistics(
 @router.get("/pending", response_model=CapabilityReviewListResponse)
 async def list_pending_reviews(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ) -> CapabilityReviewListResponse:
@@ -115,7 +117,7 @@ async def list_pending_reviews(
 @router.get("/overdue", response_model=CapabilityReviewListResponse)
 async def list_overdue_reviews(
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewListResponse:
     """List overdue capability reviews."""
     reviews = await capability_review_service.get_overdue_reviews(db)
@@ -129,7 +131,7 @@ async def list_overdue_reviews(
 async def generate_annual_reviews(
     db: DB,
     data: GenerateAnnualReviewsRequest,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewListResponse:
     """Generate annual capability reviews for all active partners."""
     reviews = await capability_review_service.create_annual_reviews_for_year(
@@ -161,15 +163,12 @@ async def generate_annual_reviews(
 async def get_capability_review(
     review_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewResponse:
     """Get a single capability review by ID."""
     review = await capability_review_service.get_review_with_details(db, review_id)
     if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Capability review not found",
-        )
+        raise NotFoundException("Capability review not found")
     return CapabilityReviewResponse(**_enrich_review(review))
 
 
@@ -177,7 +176,7 @@ async def get_capability_review(
 async def create_capability_review(
     data: CreateCapabilityReviewRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewResponse:
     """Create a new capability review."""
     # Verify partner exists
@@ -185,10 +184,7 @@ async def create_capability_review(
         select(PartnerProfile).where(PartnerProfile.id == data.partner_id)
     )
     if not partner_result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Partner not found",
-        )
+        raise NotFoundException("Partner not found")
 
     # Check for existing review for same partner/year
     existing = await db.execute(
@@ -198,10 +194,7 @@ async def create_capability_review(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Review already exists for this partner and year",
-        )
+        raise ConflictException("Review already exists for this partner and year")
 
     review = await capability_review_service.create(db, data)
     review = await capability_review_service.get_review_with_details(db, review.id)
@@ -213,15 +206,12 @@ async def update_capability_review(
     review_id: uuid.UUID,
     data: UpdateCapabilityReviewRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewResponse:
     """Update a capability review."""
     review = await capability_review_service.update(db, review_id, data)
     if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Capability review not found",
-        )
+        raise NotFoundException("Capability review not found")
     review = await capability_review_service.get_review_with_details(db, review.id)
     return CapabilityReviewResponse(**_enrich_review(review))
 
@@ -231,7 +221,7 @@ async def complete_capability_review(
     review_id: uuid.UUID,
     data: CompleteCapabilityReviewRequest,
     db: DB,
-    current_user: CurrentUser = Depends(require_internal),
+    current_user: User = Depends(require_internal),
 ) -> CapabilityReviewResponse:
     """Mark a capability review as complete."""
     review = await capability_review_service.complete_review(
@@ -242,9 +232,6 @@ async def complete_capability_review(
         notes=data.notes,
     )
     if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Capability review not found",
-        )
+        raise NotFoundException("Capability review not found")
     review = await capability_review_service.get_review_with_details(db, review.id)
     return CapabilityReviewResponse(**_enrich_review(review))

@@ -1,14 +1,15 @@
 """Service for access audit operations."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.access_audit import AccessAudit, AccessAuditFinding
+from app.models.user import User
 from app.schemas.access_audit import (
     CreateAccessAuditFindingRequest,
     CreateAccessAuditRequest,
@@ -51,14 +52,114 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         )
         return list(result.scalars().all())
 
+    async def detect_dormant_accounts(
+        self,
+        db: AsyncSession,
+        days_threshold: int = 90,
+    ) -> list[User]:
+        """Return active users who are considered dormant.
+
+        A user is dormant if:
+        - They have logged in before but not within *days_threshold* days, OR
+        - They have never logged in and their account is older than *days_threshold* days.
+        """
+        cutoff = datetime.now(UTC) - timedelta(days=days_threshold)
+        result = await db.execute(
+            select(User).where(
+                User.status == "active",
+                or_(
+                    # Has logged in, but not recently
+                    User.last_login_at < cutoff,
+                    # Has never logged in and account is old enough
+                    (User.last_login_at.is_(None)) & (User.created_at < cutoff),
+                ),
+            )
+        )
+        return list(result.scalars().all())
+
+    async def generate_dormant_findings(
+        self,
+        db: AsyncSession,
+        audit_id: uuid.UUID,
+        days_threshold: int = 90,
+    ) -> list[AccessAuditFinding]:
+        """Auto-detect dormant accounts and create inactive_user findings on an audit.
+
+        Skips users that already have an open inactive_user finding for this audit
+        so re-running the scan is safe.
+        """
+        dormant_users = await self.detect_dormant_accounts(db, days_threshold)
+        if not dormant_users:
+            return []
+
+        # Fetch existing open inactive_user findings for this audit to avoid duplicates
+        existing_result = await db.execute(
+            select(AccessAuditFinding.user_id).where(
+                AccessAuditFinding.audit_id == audit_id,
+                AccessAuditFinding.finding_type == "inactive_user",
+                AccessAuditFinding.status.in_(["open", "acknowledged", "in_progress"]),
+            )
+        )
+        already_flagged: set[uuid.UUID | None] = set(existing_result.scalars().all())
+
+        findings: list[AccessAuditFinding] = []
+        audit_result = await db.execute(select(AccessAudit).where(AccessAudit.id == audit_id))
+        audit = audit_result.scalar_one()
+
+        for user in dormant_users:
+            if user.id in already_flagged:
+                continue
+
+            if user.last_login_at is None:
+                days_since = (datetime.now(UTC) - user.created_at).days
+                description = (
+                    f"User {user.full_name} ({user.email}) has never logged in "
+                    f"and the account is {days_since} days old."
+                )
+            else:
+                days_since = (datetime.now(UTC) - user.last_login_at).days
+                description = (
+                    f"User {user.full_name} ({user.email}) has not logged in "
+                    f"for {days_since} days (last login: {user.last_login_at.date()})."
+                )
+
+            finding = AccessAuditFinding(
+                audit_id=audit_id,
+                user_id=user.id,
+                finding_type="inactive_user",
+                severity="medium",
+                description=description,
+                recommendation=(
+                    "Deactivate this account immediately. If still required, "
+                    "confirm access need with the user and document the justification."
+                ),
+                status="open",
+            )
+            db.add(finding)
+            findings.append(finding)
+            audit.anomalies_found = (audit.anomalies_found or 0) + 1
+
+        if findings:
+            await db.commit()
+            for f in findings:
+                await db.refresh(f)
+
+        return findings
+
     async def create_quarterly_audit(
         self,
         db: AsyncSession,
         quarter: int,
         year: int,
         auditor_id: uuid.UUID | None = None,
+        auto_detect_dormant: bool = True,
+        dormant_days_threshold: int = 90,
     ) -> AccessAudit:
-        """Create a new quarterly access audit."""
+        """Create a new quarterly access audit.
+
+        When *auto_detect_dormant* is True (default), dormant account findings
+        are automatically generated immediately after the audit is created.
+        """
         audit_period = f"Q{quarter} {year}"
         audit = AccessAudit(
             audit_period=audit_period,
@@ -71,6 +172,11 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         db.add(audit)
         await db.commit()
         await db.refresh(audit)
+
+        if auto_detect_dormant:
+            await self.generate_dormant_findings(db, audit.id, dormant_days_threshold)
+            await db.refresh(audit)
+
         return audit
 
     async def add_finding(
@@ -264,7 +370,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         # By quarter
         quarter_result = await db.execute(
             select(AccessAudit.audit_period, func.count().label("count"))
-            .group_by(AccessAudit.audit_period)
+            .group_by(AccessAudit.audit_period, AccessAudit.year, AccessAudit.quarter)
             .order_by(AccessAudit.year.desc(), AccessAudit.quarter.desc())
             .limit(8)
         )

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useConversation, useMessages, useSendMessage, useMarkConversationRead } from "@/hooks/use-conversations";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { useAuth } from "@/providers/auth-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,6 +24,7 @@ interface ConversationViewProps {
 }
 
 export function ConversationView({ conversationId, onBack }: ConversationViewProps) {
+  const { user } = useAuth();
   const { data: conversation, isLoading: isLoadingConv } = useConversation(conversationId);
   const { data: messagesData, isLoading: isLoadingMessages } = useMessages(conversationId, { limit: 100 });
   const sendMessage = useSendMessage();
@@ -33,10 +35,11 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
   const { sendTypingIndicator } = useWebSocket({
     onNewMessage: (message) => {
       if (message.conversation_id === conversationId) {
-        // Scroll to bottom when new message arrives
+        // Scroll to bottom and mark as read when a new message arrives in this conversation
         setTimeout(() => {
           scrollRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
+        markRead.mutate(conversationId);
       }
     },
     onTyping: (data) => {
@@ -54,12 +57,13 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
     },
   });
 
-  // Mark conversation as read when viewing
+  // Mark conversation as read whenever it is opened (conversationId changes)
   useEffect(() => {
-    if (conversationId && (conversation?.unread_count ?? 0) > 0) {
+    if (conversationId) {
       markRead.mutate(conversationId);
     }
-  }, [conversationId, conversation?.unread_count, markRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -168,7 +172,7 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
         ) : (
           <div className="space-y-4">
             {messagesData?.communications.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble key={message.id} message={message} currentUserId={user?.id} />
             ))}
             {typers.size > 0 && <TypingIndicator count={typers.size} />}
             <div ref={scrollRef} />
@@ -182,6 +186,11 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
           onSendMessage={handleSendMessage}
           isSending={sendMessage.isPending}
           onTypingChange={(isTyping: boolean) => sendTypingIndicator(conversationId, isTyping)}
+          recipientUserIds={conversation.participant_ids}
+          templateContext={{
+            client_id: conversation.client_id,
+            ...(conversation.title ? { client_name: conversation.title } : {}),
+          }}
         />
       </div>
     </div>

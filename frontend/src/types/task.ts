@@ -32,6 +32,8 @@ export interface TaskBoard {
   program: ProgramInfo | null;
   milestone: MilestoneInfo | null;
   position: number;
+  depends_on: string[];
+  blocked_by: string[];
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +65,28 @@ export interface TaskReorder {
   task_id: string;
   new_status: string;
   after_task_id?: string | null;
+}
+
+export interface TaskBulkUpdatePayload {
+  task_ids: string[];
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  due_date?: string;
+  clear_due_date?: boolean;
+  assigned_to?: string;
+  clear_assignee?: boolean;
+  delete?: boolean;
+}
+
+export interface BulkUpdateFailure {
+  task_id: string;
+  error: string;
+}
+
+export interface TaskBulkUpdateResult {
+  updated: number;
+  deleted: number;
+  failed: BulkUpdateFailure[];
 }
 
 export const TASK_STATUSES: { value: TaskStatus; label: string; color: string }[] = [

@@ -9,7 +9,7 @@ import {
   reviewDeliverable,
   getDownloadUrl,
 } from "@/lib/api/deliverables";
-import type { DeliverableReviewData } from "@/lib/api/deliverables";
+import type { DeliverableReviewData } from "@/types/deliverable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";

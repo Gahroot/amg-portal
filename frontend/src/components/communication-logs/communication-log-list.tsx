@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Plus, Trash2, Pencil } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
+import { DataTableExport } from "@/components/ui/data-table-export";
+import type { ExportColumn } from "@/lib/export-utils";
+import { API_BASE_URL } from "@/lib/constants";
 import {
   useCommunicationLogs,
   useCreateCommunicationLog,
@@ -44,6 +47,21 @@ import type {
   CommunicationLogCreateData,
   CommunicationLogListParams,
 } from "@/types/communication-log";
+
+const EXPORT_COLUMNS: ExportColumn<CommunicationLog>[] = [
+  { header: "Date", accessor: (r) => r.occurred_at ? new Date(r.occurred_at).toLocaleString() : "" },
+  { header: "Channel", accessor: "channel" },
+  { header: "Direction", accessor: "direction" },
+  { header: "Subject", accessor: "subject" },
+  { header: "Contact Name", accessor: (r) => r.contact_name ?? "" },
+  { header: "Contact Email", accessor: (r) => r.contact_email ?? "" },
+  { header: "Client", accessor: (r) => r.client_name ?? "" },
+  { header: "Partner", accessor: (r) => r.partner_name ?? "" },
+  { header: "Program", accessor: (r) => r.program_title ?? "" },
+  { header: "Logged By", accessor: (r) => r.logger_name ?? "" },
+  { header: "Summary", accessor: (r) => r.summary ?? "" },
+  { header: "Tags", accessor: (r) => (r.tags ?? []).join(", ") },
+];
 
 const CHANNEL_LABELS: Record<string, string> = {
   email: "Email",
@@ -132,10 +150,25 @@ export function CommunicationLogList() {
         <h1 className="font-serif text-3xl font-bold tracking-tight">
           Communication Log
         </h1>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Log Communication
-        </Button>
+        <div className="flex items-center gap-2">
+          <DataTableExport
+            visibleRows={data?.logs ?? []}
+            columns={EXPORT_COLUMNS}
+            fileName="communication-logs"
+            exportAllUrl={(() => {
+              const qParams = new URLSearchParams();
+              if (channelFilter !== "all") qParams.set("channel", channelFilter);
+              if (directionFilter !== "all") qParams.set("direction", directionFilter);
+              if (debouncedSearch) qParams.set("search", debouncedSearch);
+              const qs = qParams.toString();
+              return `${API_BASE_URL}/api/v1/export/communication_logs${qs ? `?${qs}` : ""}`;
+            })()}
+          />
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Log Communication
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">

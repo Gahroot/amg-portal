@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getPartner,
+  getPartnerTrends,
   updatePartner,
   provisionPartner,
   uploadComplianceDoc,
 } from "@/lib/api/partners";
 import type { PartnerUpdateData } from "@/types/partner";
+import { PerformanceChart } from "@/components/partners/performance-chart";
 import { listAssignments } from "@/lib/api/assignments";
 import {
   listPartnerNotices,
@@ -73,10 +75,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { DocumentList } from "@/components/documents/document-list";
+import { CapacityHeatmap } from "@/components/partners/capacity-heatmap";
 import { CapabilityMatrix } from "@/components/partners/capability-matrix";
 import { CertificationList } from "@/components/partners/certification-list";
 import { QualificationCard } from "@/components/partners/qualification-card";
 import { Progress } from "@/components/ui/progress";
+import { BookmarkButton } from "@/components/ui/bookmark-button";
 import type { ProficiencyLevel, ApprovalStatus, CertificationStatus } from "@/types/partner-capability";
 
 const STATUS_VARIANT: Record<
@@ -217,9 +221,17 @@ export default function PartnerDetailPage() {
     <div className="min-h-screen bg-[#FDFBF7] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">
-            {partner.firm_name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-3xl font-bold tracking-tight">
+              {partner.firm_name}
+            </h1>
+            <BookmarkButton
+              entityType="partner"
+              entityId={partnerId}
+              entityTitle={partner.firm_name}
+              entitySubtitle={partner.contact_name}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant={STATUS_VARIANT[partner.status] ?? "outline"}>
               {partner.status.replace(/_/g, " ")}
@@ -317,6 +329,8 @@ export default function PartnerDetailPage() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="trends">Performance Trends</TabsTrigger>
+            <TabsTrigger value="availability">Availability</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -695,6 +709,14 @@ export default function PartnerDetailPage() {
               isMD={isMD}
               onIssueNotice={() => setNoticeDialogOpen(true)}
             />
+          </TabsContent>
+
+          <TabsContent value="trends" className="space-y-4">
+            <TrendsTabContent partnerId={partnerId} />
+          </TabsContent>
+
+          <TabsContent value="availability" className="space-y-4">
+            <CapacityHeatmap partnerId={partnerId} />
           </TabsContent>
         </Tabs>
       </div>
@@ -1210,5 +1232,26 @@ function PerformanceNoticesTabContent({
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Trends Tab ────────────────────────────────────────────────────────────────
+
+function TrendsTabContent({ partnerId }: { partnerId: string }) {
+  const [dateRange, setDateRange] = React.useState<30 | 90 | 365>(90);
+
+  const { data: trends, isLoading } = useQuery({
+    queryKey: ["partner-trends", partnerId, dateRange],
+    queryFn: () => getPartnerTrends(partnerId, dateRange),
+    enabled: !!partnerId,
+  });
+
+  return (
+    <PerformanceChart
+      trends={trends}
+      isLoading={isLoading}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
+    />
   );
 }

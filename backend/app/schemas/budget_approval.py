@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import (
     BudgetApprovalStatus,
@@ -55,7 +55,7 @@ class ApprovalThresholdResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === Approval Chain Step Schemas ===
@@ -98,7 +98,7 @@ class ApprovalChainStepResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === Approval Chain Schemas ===
@@ -134,7 +134,7 @@ class ApprovalChainResponse(BaseModel):
     updated_at: datetime
     steps: list[ApprovalChainStepResponse] = []
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ApprovalChainSummary(BaseModel):
@@ -146,7 +146,7 @@ class ApprovalChainSummary(BaseModel):
     is_active: bool
     step_count: int = 0
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === Budget Approval Request Schemas ===
@@ -211,7 +211,7 @@ class BudgetApprovalStepResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BudgetApprovalHistoryResponse(BaseModel):
@@ -230,7 +230,7 @@ class BudgetApprovalHistoryResponse(BaseModel):
     metadata: dict[str, Any] | None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BudgetApprovalRequestResponse(BaseModel):
@@ -265,7 +265,7 @@ class BudgetApprovalRequestResponse(BaseModel):
     steps: list[BudgetApprovalStepResponse] = []
     history: list[BudgetApprovalHistoryResponse] = []
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BudgetApprovalRequestSummary(BaseModel):
@@ -283,7 +283,7 @@ class BudgetApprovalRequestSummary(BaseModel):
     created_at: datetime
     requester_name: str = ""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === List/Query Schemas ===
@@ -324,7 +324,7 @@ class PendingApprovalItem(BaseModel):
     created_at: datetime
     requester_name: str
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PendingApprovalsResponse(BaseModel):

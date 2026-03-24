@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Download, Trash2, Plus } from "lucide-react";
+import { Download, Trash2, Plus, History, Upload, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DataTableExport } from "@/components/ui/data-table-export";
+import type { ExportColumn } from "@/lib/export-utils";
+import { API_BASE_URL } from "@/lib/constants";
 import {
   Table,
   TableBody,
@@ -13,6 +16,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Dialog,
   DialogContent,
@@ -28,9 +37,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileUploadZone } from "@/components/documents/file-upload-zone";
-import { useDocuments, useUploadDocument, useDeleteDocument } from "@/hooks/use-documents";
+import { BulkUpload } from "@/components/documents/bulk-upload";
+import { RequestDocumentDialog } from "@/components/documents/request-document-dialog";
+import { VersionHistory } from "@/components/documents/version-history";
+import {
+  useDocuments,
+  useUploadDocument,
+  useDeleteDocument,
+} from "@/hooks/use-documents";
 import { getDocumentDownloadUrl } from "@/lib/api/documents";
-import type { DocumentCategory } from "@/types/document";
+import { useQueryClient } from "@tanstack/react-query";
+import type { DocumentCategory, DocumentItem } from "@/types/document";
+
+const DOCUMENT_EXPORT_COLUMNS: ExportColumn<DocumentItem>[] = [
+  { header: "File Name", accessor: "file_name" },
+  { header: "Content Type", accessor: "content_type" },
+  { header: "Size", accessor: (r) => formatBytes(r.file_size) },
+  { header: "Category", accessor: "category" },
+  { header: "Version", accessor: (r) => `v${r.version}` },
+  { header: "Description", accessor: (r) => r.description ?? "" },
+  { header: "Uploaded", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+];
 
 const CATEGORIES: DocumentCategory[] = [
   "general",
@@ -56,6 +83,8 @@ interface DocumentListProps {
   entityId: string;
   showUpload?: boolean;
   showDelete?: boolean;
+  /** When true, shows a "Request Document" button (only meaningful for client entities) */
+  showRequest?: boolean;
 }
 
 export function DocumentList({
@@ -63,16 +92,21 @@ export function DocumentList({
   entityId,
   showUpload = true,
   showDelete = true,
+  showRequest = false,
 }: DocumentListProps) {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useDocuments(entityType, entityId);
   const uploadMutation = useUploadDocument();
   const deleteMutation = useDeleteDocument();
 
   const [uploadOpen, setUploadOpen] = React.useState(false);
+  const [bulkOpen, setBulkOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
   const [file, setFile] = React.useState<File | null>(null);
   const [category, setCategory] = React.useState<string>("general");
   const [description, setDescription] = React.useState("");
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [openVersions, setOpenVersions] = React.useState<string[]>([]);
 
   function handleUpload() {
     if (!file) return;
@@ -116,14 +150,35 @@ export function DocumentList({
 
   return (
     <div className="space-y-4">
-      {showUpload && (
-        <div className="flex justify-end">
-          <Button size="sm" onClick={() => setUploadOpen(true)}>
-            <Plus className="size-4" />
-            Upload Document
+      <div className="flex justify-end gap-2">
+        {documents.length > 0 && (
+          <DataTableExport
+            visibleRows={documents}
+            columns={DOCUMENT_EXPORT_COLUMNS}
+            fileName="documents"
+            size="sm"
+            exportAllUrl={`${API_BASE_URL}/api/v1/export/documents?entity_type=${encodeURIComponent(entityType)}&entity_id=${encodeURIComponent(entityId)}`}
+          />
+        )}
+        {showRequest && (
+          <Button size="sm" variant="outline" onClick={() => setRequestOpen(true)}>
+            <FileQuestion className="size-4" />
+            Request Document
           </Button>
-        </div>
-      )}
+        )}
+        {showUpload && (
+          <>
+            <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="size-4" />
+              Bulk Upload
+            </Button>
+            <Button size="sm" onClick={() => setUploadOpen(true)}>
+              <Plus className="size-4" />
+              Upload Document
+            </Button>
+          </>
+        )}
+      </div>
 
       {documents.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">No documents yet.</p>
@@ -135,44 +190,92 @@ export function DocumentList({
               <TableHead>Type</TableHead>
               <TableHead>Size</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Version</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {documents.map((doc) => (
-              <TableRow key={doc.id}>
-                <TableCell className="max-w-[200px] truncate font-medium">
-                  {doc.file_name}
-                </TableCell>
-                <TableCell>{doc.content_type}</TableCell>
-                <TableCell>{formatBytes(doc.file_size)}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{doc.category}</Badge>
-                </TableCell>
-                <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => handleDownload(doc.id)}
-                    >
-                      <Download className="size-3" />
-                    </Button>
-                    {showDelete && (
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => setDeleteId(doc.id)}
-                      >
-                        <Trash2 className="size-3 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {documents.map((doc) => {
+              const isVersionOpen = openVersions.includes(doc.id);
+              return (
+                <React.Fragment key={doc.id}>
+                  <TableRow>
+                    <TableCell className="max-w-[180px] truncate font-medium">
+                      {doc.file_name}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {doc.content_type}
+                    </TableCell>
+                    <TableCell>{formatBytes(doc.file_size)}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{doc.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">v{doc.version}</Badge>
+                    </TableCell>
+                    <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleDownload(doc.id)}
+                          title="Download latest"
+                        >
+                          <Download className="size-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() =>
+                            setOpenVersions((prev) =>
+                              prev.includes(doc.id)
+                                ? prev.filter((id) => id !== doc.id)
+                                : [...prev, doc.id],
+                            )
+                          }
+                          title="Version history"
+                          aria-expanded={isVersionOpen}
+                        >
+                          <History className="size-3" />
+                        </Button>
+                        {showDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => setDeleteId(doc.id)}
+                          >
+                            <Trash2 className="size-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {isVersionOpen && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="bg-muted/20 px-4 py-3">
+                        <Accordion
+                          type="single"
+                          value="history"
+                          className="w-full"
+                        >
+                          <AccordionItem value="history" className="border-0">
+                            <AccordionTrigger className="py-1 text-xs font-medium text-muted-foreground hover:no-underline">
+                              Version History
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-0">
+                              <VersionHistory documentId={doc.id} fileName={doc.file_name} />
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       )}
@@ -226,6 +329,20 @@ export function DocumentList({
         </DialogContent>
       </Dialog>
 
+      {/* Bulk Upload Dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="max-w-2xl">
+          <BulkUpload
+            entityType={entityType}
+            entityId={entityId}
+            onComplete={() => {
+              queryClient.invalidateQueries({ queryKey: ["documents"] });
+              setBulkOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent>
@@ -249,6 +366,15 @@ export function DocumentList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Request Document Dialog */}
+      {showRequest && (
+        <RequestDocumentDialog
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+          clientId={entityId}
+        />
+      )}
     </div>
   );
 }

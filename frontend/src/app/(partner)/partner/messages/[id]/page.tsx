@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Send } from "lucide-react";
+import type { Communication, ParticipantInfo } from "@/types/communication";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -89,7 +90,7 @@ export default function PartnerConversationPage() {
       <div className="flex items-center gap-2 mb-4 pb-4 border-b">
         <span className="text-sm text-muted-foreground">Participants:</span>
         <div className="flex items-center gap-2">
-          {conversation.participants.map((p: any) => (
+          {conversation.participants.map((p: ParticipantInfo) => (
             <div key={p.id} className="flex items-center gap-1">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs bg-primary/10 text-primary">{getInitials(p.full_name)}</AvatarFallback>
@@ -106,7 +107,7 @@ export default function PartnerConversationPage() {
           <div className="text-center py-12"><p className="text-muted-foreground">No messages yet. Start the conversation!</p></div>
         ) : (
           <div className="space-y-4">
-            {messages.map((msg: any) => {
+            {messages.map((msg: Communication) => {
               const isCurrentUser = !msg.sender_id;
               return (
                 <div key={msg.id} className={"flex gap-3 " + (isCurrentUser ? "flex-row-reverse" : "")}>

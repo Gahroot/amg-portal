@@ -1,14 +1,13 @@
 import uuid
-from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class PartnerRating(Base):
+class PartnerRating(Base, TimestampMixin):
     __tablename__ = "partner_ratings"
     __table_args__ = (
         UniqueConstraint(
@@ -35,17 +34,6 @@ class PartnerRating(Base):
     communication_score: Mapped[int] = mapped_column(Integer, nullable=False)
     overall_score: Mapped[int] = mapped_column(Integer, nullable=False)
     comments: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     program = relationship("Program")
     partner = relationship("PartnerProfile")

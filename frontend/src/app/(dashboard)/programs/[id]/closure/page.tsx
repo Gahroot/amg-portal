@@ -15,6 +15,7 @@ import {
   useUpdateChecklist,
   useSubmitPartnerRating,
   usePartnerRatings,
+  useSaveDebriefNotes,
   useCompleteClosure,
 } from "@/hooks/use-closure";
 import type { ChecklistItem } from "@/lib/api/closure";
@@ -78,10 +79,16 @@ export default function ProgramClosurePage() {
   const initiateMutation = useInitiateClosure();
   const checklistMutation = useUpdateChecklist();
   const ratingMutation = useSubmitPartnerRating();
+  const debriefMutation = useSaveDebriefNotes();
   const completeMutation = useCompleteClosure();
 
   // Local state for initiation notes
   const [initiateNotes, setInitiateNotes] = React.useState("");
+
+  // Local state for debrief notes form
+  const [debriefDraft, setDebriefDraft] = React.useState("");
+  const [debriefEditing, setDebriefEditing] = React.useState(false);
+  const DEBRIEF_MAX_CHARS = 5000;
 
   // Local state for partner rating form
   const [ratingForm, setRatingForm] = React.useState({
@@ -250,6 +257,115 @@ export default function ProgramClosurePage() {
                 </Label>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Client Debrief Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Client Debrief Notes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Saved notes — read-only view */}
+            {closure?.debrief_notes && !debriefEditing ? (
+              <div className="space-y-3">
+                <div className="rounded-md border bg-muted/40 p-4">
+                  <p className="whitespace-pre-wrap text-sm">
+                    {closure.debrief_notes}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {closure.debrief_notes_by_name && (
+                      <span className="font-medium">
+                        {closure.debrief_notes_by_name}
+                      </span>
+                    )}
+                    {closure.debrief_notes_at && (
+                      <>
+                        {closure.debrief_notes_by_name ? " · " : ""}
+                        {new Date(
+                          closure.debrief_notes_at,
+                        ).toLocaleString(undefined, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </>
+                    )}
+                  </p>
+                  {!isCompleted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDebriefDraft(closure.debrief_notes ?? "");
+                        setDebriefEditing(true);
+                      }}
+                    >
+                      Edit Notes
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Edit / compose form */
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="debrief-notes">
+                    Notes
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      (markdown supported)
+                    </span>
+                  </Label>
+                  <Textarea
+                    id="debrief-notes"
+                    value={debriefDraft}
+                    onChange={(e) => {
+                      if (e.target.value.length <= DEBRIEF_MAX_CHARS) {
+                        setDebriefDraft(e.target.value);
+                      }
+                    }}
+                    placeholder="Capture key takeaways, client feedback, and follow-up actions from the debrief conversation..."
+                    rows={8}
+                    className="resize-y font-mono text-sm"
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {debriefDraft.length} / {DEBRIEF_MAX_CHARS}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      if (!debriefDraft.trim()) return;
+                      debriefMutation.mutate(
+                        { programId, notes: debriefDraft },
+                        {
+                          onSuccess: () => setDebriefEditing(false),
+                        },
+                      );
+                    }}
+                    disabled={
+                      debriefMutation.isPending || !debriefDraft.trim()
+                    }
+                  >
+                    {debriefMutation.isPending
+                      ? "Saving..."
+                      : "Save Notes"}
+                  </Button>
+                  {closure?.debrief_notes && debriefEditing && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDebriefDraft("");
+                        setDebriefEditing(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

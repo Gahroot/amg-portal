@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -15,6 +15,7 @@ from app.api.deps import (
     require_internal,
     require_rm_or_above,
 )
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.partner import PartnerProfile
 from app.models.partner_capability import (
     PartnerCapability,
@@ -98,7 +99,7 @@ async def create_service_category(
         select(ServiceCategory).where(ServiceCategory.name == data.name)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Service category with this name already exists")
+        raise BadRequestException("Service category with this name already exists")
 
     category = ServiceCategory(
         name=data.name,
@@ -125,7 +126,7 @@ async def update_service_category(
     )
     category = result.scalar_one_or_none()
     if not category:
-        raise HTTPException(status_code=404, detail="Service category not found")
+        raise NotFoundException("Service category not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -176,7 +177,7 @@ async def add_partner_capability(
         select(PartnerProfile).where(PartnerProfile.id == partner_id)
     )
     if not partner_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     # Check for duplicate capability
     existing = await db.execute(
@@ -186,10 +187,7 @@ async def add_partner_capability(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Partner already has this capability",
-        )
+        raise BadRequestException("Partner already has this capability")
 
     capability = PartnerCapability(
         partner_id=partner_id,
@@ -222,7 +220,7 @@ async def update_partner_capability(
     )
     capability = result.scalar_one_or_none()
     if not capability:
-        raise HTTPException(status_code=404, detail="Capability not found")
+        raise NotFoundException("Capability not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -250,7 +248,7 @@ async def delete_partner_capability(
     )
     capability = result.scalar_one_or_none()
     if not capability:
-        raise HTTPException(status_code=404, detail="Capability not found")
+        raise NotFoundException("Capability not found")
 
     await db.delete(capability)
     await db.commit()
@@ -273,7 +271,7 @@ async def verify_partner_capability(
     )
     capability = result.scalar_one_or_none()
     if not capability:
-        raise HTTPException(status_code=404, detail="Capability not found")
+        raise NotFoundException("Capability not found")
 
     capability.verified = True
     capability.verified_by = current_user.id
@@ -340,13 +338,13 @@ async def submit_qualification(
         select(PartnerProfile).where(PartnerProfile.id == partner_id)
     )
     if not partner_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     category_result = await db.execute(
         select(ServiceCategory).where(ServiceCategory.id == data.category_id)
     )
     if not category_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Service category not found")
+        raise NotFoundException("Service category not found")
 
     # Check for duplicate qualification
     existing = await db.execute(
@@ -356,10 +354,7 @@ async def submit_qualification(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Partner already has a qualification for this category",
-        )
+        raise BadRequestException("Partner already has a qualification for this category")
 
     qualification = PartnerQualification(
         partner_id=partner_id,
@@ -408,7 +403,7 @@ async def approve_qualification(
     )
     qualification = result.scalar_one_or_none()
     if not qualification:
-        raise HTTPException(status_code=404, detail="Qualification not found")
+        raise NotFoundException("Qualification not found")
 
     qualification.approval_status = data.status.value
     if data.status == ApprovalStatus.approved:
@@ -504,7 +499,7 @@ async def add_partner_certification(
         select(PartnerProfile).where(PartnerProfile.id == partner_id)
     )
     if not partner_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     today = datetime.now(UTC).date()
     is_expired = data.expiry_date is not None and data.expiry_date < today
@@ -565,7 +560,7 @@ async def upload_certification_document(
     )
     certification = result.scalar_one_or_none()
     if not certification:
-        raise HTTPException(status_code=404, detail="Certification not found")
+        raise NotFoundException("Certification not found")
 
     object_path, _ = await storage_service.upload_file(
         file, f"partners/{partner_id}/certifications/{certification_id}"
@@ -619,7 +614,7 @@ async def verify_partner_certification(
     )
     certification = result.scalar_one_or_none()
     if not certification:
-        raise HTTPException(status_code=404, detail="Certification not found")
+        raise NotFoundException("Certification not found")
 
     certification.verification_status = data.status.value
     certification.verified_by = current_user.id
@@ -716,14 +711,14 @@ async def start_onboarding(
     )
     partner = partner_result.scalar_one_or_none()
     if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     # Check if onboarding already exists
     existing = await db.execute(
         select(PartnerOnboarding).where(PartnerOnboarding.partner_id == partner_id)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Onboarding already started for this partner")
+        raise BadRequestException("Onboarding already started for this partner")
 
     # Initialize checklist items for all stages
     default_checklist = {
@@ -798,7 +793,7 @@ async def complete_onboarding_stage(
     )
     onboarding = result.scalar_one_or_none()
     if not onboarding:
-        raise HTTPException(status_code=404, detail="Onboarding not found")
+        raise NotFoundException("Onboarding not found")
 
     stages = [
         OnboardingStage.profile_setup,
@@ -885,7 +880,7 @@ async def update_onboarding(
     )
     onboarding = result.scalar_one_or_none()
     if not onboarding:
-        raise HTTPException(status_code=404, detail="Onboarding not found")
+        raise NotFoundException("Onboarding not found")
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -946,7 +941,7 @@ async def get_capability_matrix(
     )
     partner = partner_result.scalar_one_or_none()
     if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
+        raise NotFoundException("Partner not found")
 
     # Get capabilities
     cap_result = await db.execute(

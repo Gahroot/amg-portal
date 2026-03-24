@@ -167,7 +167,7 @@ class NPSSurveyService(CRUDBase[NPSSurvey, NPSSurveyCreate, dict[str, Any]]):
                 func.sum(case((NPSResponse.score_category == "detractor", 1), else_=0)).label(
                     "detractors"
                 ),
-                func.avg(func.cast(NPSResponse.score, func.__class__)).label("avg_score"),
+                func.avg(NPSResponse.score).label("avg_score"),
             ).where(NPSResponse.survey_id == survey_id)
         )
         row = result.one()

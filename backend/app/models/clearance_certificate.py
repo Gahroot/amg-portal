@@ -7,10 +7,10 @@ from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class CertificateTemplate(Base):
+class CertificateTemplate(Base, TimestampMixin):
     """Reusable templates for clearance certificates."""
 
     __tablename__ = "certificate_templates"
@@ -28,21 +28,12 @@ class CertificateTemplate(Base):
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     creator = relationship("User", foreign_keys=[created_by])
     certificates = relationship("ClearanceCertificate", back_populates="template")
 
 
-class ClearanceCertificate(Base):
+class ClearanceCertificate(Base, TimestampMixin):
     """Generated compliance clearance certificates."""
 
     __tablename__ = "clearance_certificates"
@@ -94,15 +85,6 @@ class ClearanceCertificate(Base):
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
-    )
 
     # Relationships
     template = relationship("CertificateTemplate", back_populates="certificates")
@@ -110,6 +92,7 @@ class ClearanceCertificate(Base):
     client = relationship("Client")
     creator = relationship("User", foreign_keys=[created_by])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
+    history = relationship("ClearanceCertificateHistory", back_populates="certificate", cascade="all, delete-orphan")
 
 
 class ClearanceCertificateHistory(Base):
@@ -135,7 +118,9 @@ class ClearanceCertificateHistory(Base):
     )
     actor_name: Mapped[str] = mapped_column(String(255), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict[str, object] | None] = mapped_column(
+        "metadata", JSONB, nullable=True, key="extra_metadata"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

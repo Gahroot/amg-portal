@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import {
   listEscalations,
@@ -11,10 +11,11 @@ import {
 } from "@/lib/api/escalations";
 import type { EscalationListParams } from "@/lib/api/escalations";
 import type { Escalation } from "@/types/escalation";
-import { useResolveEscalation } from "@/hooks/use-escalations";
+import { useResolveEscalation, useOverdueEscalations } from "@/hooks/use-escalations";
 import { useDebounce } from "@/hooks/use-debounce";
 import { EscalationStatusBadge } from "@/components/escalations/status-badge";
 import { EscalationLevelBadge } from "@/components/escalations/level-badge";
+import { EscalationCreateDialog } from "@/components/escalations/escalation-create-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,13 +34,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { BarChart2, Clock, LayoutTemplate, Plus, Search } from "lucide-react";
+import Link from "next/link";
 import { EscalationRuleList } from "@/components/escalations/escalation-rule-list";
 import { EscalationRuleForm } from "@/components/escalations/escalation-rule-form";
+import { EscalationMetrics } from "@/components/escalations/escalation-metrics";
 import type { EscalationRule } from "@/types/escalation-rule";
 import { DataTableExport } from "@/components/ui/data-table-export";
 import type { ExportColumn } from "@/lib/export-utils";
+import { API_BASE_URL } from "@/lib/constants";
 
 const EXPORT_COLUMNS: ExportColumn<Escalation>[] = [
   { header: "Title", accessor: "title" },
@@ -73,6 +76,7 @@ const ESCALATION_STATUSES = [
   { value: "investigating", label: "Investigating" },
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
+  { value: "overdue", label: "Overdue" },
 ];
 
 const PAGE_SIZE = 50;
@@ -84,7 +88,6 @@ function EscalationsPageContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  // Read initial filter values from URL
   const [searchInput, setSearchInput] = React.useState(
     searchParams.get("search") ?? ""
   );
@@ -95,6 +98,7 @@ function EscalationsPageContent() {
   const [page, setPage] = React.useState(0);
   const [ruleFormOpen, setRuleFormOpen] = React.useState(false);
   const [editingRule, setEditingRule] = React.useState<EscalationRule | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
 
   const updateParam = React.useCallback(
     (key: string, value: string | undefined) => {
@@ -110,24 +114,32 @@ function EscalationsPageContent() {
     [pathname, router, searchParams]
   );
 
-  // Sync debounced search to URL
   React.useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 
+  const isOverdueFilter = statusParam === "overdue";
+
   const queryParams: EscalationListParams = {
     level: levelParam !== "all" ? levelParam : undefined,
-    status: statusParam !== "all" ? statusParam : undefined,
+    status: !isOverdueFilter && statusParam !== "all" ? statusParam : undefined,
     search: debouncedSearch || undefined,
     skip: page * PAGE_SIZE,
     limit: PAGE_SIZE,
   };
 
-  const { data, isLoading } = useQuery({
+  const { data: regularData, isLoading: regularLoading } = useQuery({
     queryKey: ["escalations", queryParams],
     queryFn: () => listEscalations(queryParams),
-    enabled: !!user && ALLOWED_ROLES.includes(user.role),
+    enabled: !!user && ALLOWED_ROLES.includes(user.role) && !isOverdueFilter,
   });
+
+  const { data: overdueData, isLoading: overdueLoading } = useOverdueEscalations(
+    isOverdueFilter ? { skip: page * PAGE_SIZE, limit: PAGE_SIZE } : undefined,
+  );
+
+  const data = isOverdueFilter ? overdueData : regularData;
+  const isLoading = isOverdueFilter ? overdueLoading : regularLoading;
 
   const resolveMutation = useResolveEscalation();
   const acknowledgeMutation = useMutation({
@@ -180,15 +192,48 @@ function EscalationsPageContent() {
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-8">
       <div className="mx-auto max-w-7xl space-y-6">
+        {/* Metrics Cards */}
+        <EscalationMetrics />
+
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
             Escalations
           </h1>
-          <DataTableExport
-            visibleRows={data?.escalations ?? []}
-            columns={EXPORT_COLUMNS}
-            fileName="escalations"
-          />
+          <div className="flex items-center gap-2">
+            <Link href="/escalations/metrics">
+              <Button variant="outline" size="sm" className="gap-2">
+                <BarChart2 className="h-4 w-4" />
+                Metrics
+              </Button>
+            </Link>
+            <Link href="/escalations/templates">
+              <Button variant="outline" size="sm" className="gap-2">
+                <LayoutTemplate className="h-4 w-4" />
+                Templates
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              New Escalation
+            </Button>
+            <DataTableExport
+              visibleRows={data?.escalations ?? []}
+              columns={EXPORT_COLUMNS}
+              fileName="escalations"
+              exportAllUrl={(() => {
+                const params = new URLSearchParams();
+                if (statusParam !== "all") params.set("status", statusParam);
+                if (levelParam !== "all") params.set("level", levelParam);
+                if (debouncedSearch) params.set("search", debouncedSearch);
+                const qs = params.toString();
+                return `${API_BASE_URL}/api/v1/export/escalations${qs ? `?${qs}` : ""}`;
+              })()}
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
@@ -248,6 +293,7 @@ function EscalationsPageContent() {
                   <TableHead>Entity</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Deadline</TableHead>
                   <TableHead>Age</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -256,13 +302,20 @@ function EscalationsPageContent() {
                 {data?.escalations.map((esc) => (
                   <TableRow
                     key={esc.id}
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${esc.is_overdue ? "bg-red-50 hover:bg-red-100" : ""}`}
                     onClick={() => router.push(`/escalations/${esc.id}`)}
                   >
                     <TableCell>
                       <EscalationLevelBadge level={esc.level} />
                     </TableCell>
-                    <TableCell className="font-medium">{esc.title}</TableCell>
+                    <TableCell className="font-medium">
+                      {esc.title}
+                      {esc.is_overdue && (
+                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+                          Overdue
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {esc.entity_type}:{esc.entity_id.slice(0, 8)}...
                     </TableCell>
@@ -271,6 +324,11 @@ function EscalationsPageContent() {
                     </TableCell>
                     <TableCell>
                       <EscalationStatusBadge status={esc.status} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {esc.response_deadline
+                        ? new Date(esc.response_deadline).toLocaleString()
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {getAgeInDays(esc.triggered_at)}
@@ -311,7 +369,7 @@ function EscalationsPageContent() {
                 {data?.escalations.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center text-muted-foreground"
                     >
                       No escalations found.
@@ -370,6 +428,11 @@ function EscalationsPageContent() {
           open={ruleFormOpen}
           onOpenChange={setRuleFormOpen}
           editingRule={editingRule}
+        />
+
+        <EscalationCreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
         />
       </div>
     </div>

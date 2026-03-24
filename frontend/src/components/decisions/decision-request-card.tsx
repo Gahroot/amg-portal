@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle, XCircle, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddToCalendarButton } from "@/components/decisions/add-to-calendar-button";
 
 interface DecisionRequestCardProps {
   decision: DecisionRequest;
@@ -70,15 +71,18 @@ export function DecisionRequestCard({ decision, onResponse, onViewDetails }: Dec
           </div>
         )}
 
-        {/* Deadline */}
+        {/* Deadline with Add to Calendar */}
         {hasDeadline && decision.deadline_date && (
-          <div className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-orange-500" : "text-muted-foreground")}>
-            <Clock className="h-3 w-3" />
-            <span>
-              {isOverdue ? "Overdue: " : "Deadline: "}
-              {format(new Date(decision.deadline_date), "MMM d, yyyy")}
-              {decision.deadline_time && ` at ${format(new Date(`2000-01-01T${decision.deadline_time}`), "h:mm a")}`}
-            </span>
+          <div className="flex items-center justify-between gap-2">
+            <div className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-orange-500" : "text-muted-foreground")}>
+              <Clock className="h-3 w-3" />
+              <span>
+                {isOverdue ? "Overdue: " : "Deadline: "}
+                {format(new Date(decision.deadline_date), "MMM d, yyyy")}
+                {decision.deadline_time && ` at ${format(new Date(`2000-01-01T${decision.deadline_time}`), "h:mm a")}`}
+              </span>
+            </div>
+            <AddToCalendarButton decision={decision} variant="compact" />
           </div>
         )}
 

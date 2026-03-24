@@ -10,7 +10,7 @@ import { DecisionCard } from '@/components/decisions/decision-card';
 import { LoadingSkeleton } from '@/components/layout/loading-skeleton';
 import { EmptyState } from '@/components/layout/empty-state';
 import { cn } from '@/lib/utils';
-import type { DecisionRequestStatus } from '@/types/decision';
+import type { DecisionRequest, DecisionRequestStatus } from '@/types/decision';
 
 type FilterTab = 'pending' | 'responded' | 'expired';
 
@@ -89,8 +89,8 @@ export default function DecisionsListScreen() {
       ) : (
         <FlashList
           data={data.decisions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: DecisionRequest) => item.id}
+          renderItem={({ item }: { item: DecisionRequest }) => (
             <View className="px-4 mb-3">
               <DecisionCard
                 decision={item}

@@ -1,4 +1,3 @@
-"use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -15,10 +14,25 @@ import {
   getConversationMessages,
   sendMessageToConversation,
   markConversationAsRead,
+  getPartnerBriefSummary,
+  getPartnerDeliverableFeedback,
+  getPartnerEngagementHistory,
+  getMyPerformanceNotices,
+  acknowledgePerformanceNotice,
+  getCapabilityRefreshStatus,
+  submitCapabilityRefresh,
+  getMyScorecard,
+  getMyPerformanceStatus,
+  getMyPayments,
+  getMyPaymentSummary,
   type AssignmentListParams,
   type DeliverableListParams,
+  type ScorecardPeriod,
+  type PaymentListParams,
 } from "@/lib/api/partner-portal";
+import type { CapabilityRefreshRequest } from "@/types/partner";
 import { submitDeliverable } from "@/lib/api/deliverables";
+import { getPartnerOnboarding } from "@/lib/api/partner-capabilities";
 
 // Profile
 export function usePartnerProfile() {
@@ -141,5 +155,113 @@ export function useMarkPartnerConversationRead() {
       });
       queryClient.invalidateQueries({ queryKey: ["partner-portal", "conversations"] });
     },
+  });
+}
+
+// Partner Reports (Class C)
+export function usePartnerBriefSummary() {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "brief-summary"],
+    queryFn: getPartnerBriefSummary,
+  });
+}
+
+export function usePartnerDeliverableFeedback(assignmentId?: string) {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "deliverable-feedback", assignmentId],
+    queryFn: () => getPartnerDeliverableFeedback(assignmentId),
+  });
+}
+
+export function usePartnerEngagementHistory() {
+  return useQuery({
+    queryKey: ["partner-portal", "reports", "engagement-history"],
+    queryFn: getPartnerEngagementHistory,
+  });
+}
+
+// Performance Notices
+export function useMyPerformanceNotices() {
+  return useQuery({
+    queryKey: ["partner-portal", "performance-notices"],
+    queryFn: getMyPerformanceNotices,
+  });
+}
+
+export function useAcknowledgePerformanceNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (noticeId: string) => acknowledgePerformanceNotice(noticeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["partner-portal", "performance-notices"] });
+      toast.success("Notice acknowledged");
+    },
+    onError: (error: Error) => toast.error(error.message || "Failed to acknowledge notice"),
+  });
+}
+
+// Capability Refresh
+export function useCapabilityRefreshStatus() {
+  return useQuery({
+    queryKey: ["partner-portal", "capability-refresh", "status"],
+    queryFn: getCapabilityRefreshStatus,
+  });
+}
+
+export function useSubmitCapabilityRefresh() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CapabilityRefreshRequest) => submitCapabilityRefresh(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["partner-portal", "capability-refresh"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-portal", "profile"] });
+      toast.success("Annual capability refresh submitted successfully");
+    },
+    onError: (error: Error) =>
+      toast.error(error.message || "Failed to submit capability refresh"),
+  });
+}
+
+// Scorecard
+export function useMyScorecard(period: ScorecardPeriod = "90d") {
+  return useQuery({
+    queryKey: ["partner-portal", "scorecard", period],
+    queryFn: () => getMyScorecard(period),
+  });
+}
+
+// Onboarding
+export function usePartnerOnboarding() {
+  const { data: profile } = usePartnerProfile();
+  const partnerId = profile?.id;
+
+  return useQuery({
+    queryKey: ["partner-portal", "onboarding", partnerId],
+    queryFn: () => getPartnerOnboarding(partnerId!),
+    enabled: !!partnerId,
+  });
+}
+
+// Performance status vs thresholds
+export function useMyPerformanceStatus() {
+  return useQuery({
+    queryKey: ["partner-portal", "performance-status"],
+    queryFn: getMyPerformanceStatus,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+}
+
+// Payments
+export function useMyPayments(params?: PaymentListParams) {
+  return useQuery({
+    queryKey: ["partner-portal", "payments", params],
+    queryFn: () => getMyPayments(params),
+  });
+}
+
+export function useMyPaymentSummary() {
+  return useQuery({
+    queryKey: ["partner-portal", "payments", "summary"],
+    queryFn: getMyPaymentSummary,
   });
 }

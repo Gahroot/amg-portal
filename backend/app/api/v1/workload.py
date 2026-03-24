@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, require_internal
+from app.core.exceptions import NotFoundException
 from app.models.escalation import Escalation
 from app.models.program import Program
 from app.models.user import User
@@ -19,12 +20,17 @@ from app.schemas.workload import (
     WorkloadResponse,
     WorkloadSummary,
 )
+from app.services.predictive_service import (
+    CapacityForecast,
+    get_all_capacity_forecasts,
+)
 
 router = APIRouter()
 
+
 # Constants for workload calculation
 MAX_PROGRAMS = 10
-MAX_ESCALATIONS = 5
+MAX_ESCALATIONS = 15
 MAX_TASKS = 20
 
 
@@ -53,7 +59,6 @@ def _get_capacity_status(score: int) -> str:
 @router.get("/", response_model=WorkloadResponse, dependencies=[Depends(require_internal)])
 async def get_workload_overview(db: DB) -> WorkloadResponse:
     """Get workload overview for all internal staff."""
-    # Get internal users (excluding clients and partners)
     internal_roles = [
         "managing_director",
         "relationship_manager",
@@ -65,7 +70,7 @@ async def get_workload_overview(db: DB) -> WorkloadResponse:
     )
     users = list(users_result.scalars().all())
 
-    # Get all active programs (created by users)
+    # Get all active programs
     programs_result = await db.execute(
         select(Program).where(Program.status.in_(["active", "design", "intake"]))
     )
@@ -85,7 +90,6 @@ async def get_workload_overview(db: DB) -> WorkloadResponse:
         creator_id = str(prog.created_by)
         program_counts[creator_id] = program_counts.get(creator_id, 0) + 1
 
-    # Build staff workload items
     staff_items: list[StaffWorkloadItem] = []
     summary = WorkloadSummary(
         total_staff=len(users),
@@ -98,25 +102,16 @@ async def get_workload_overview(db: DB) -> WorkloadResponse:
 
     for user in users:
         user_id = str(user.id)
-
-        # Get program count for user
         active_programs = program_counts.get(user_id, 0)
-
-        # Get escalation count
         open_escalations = escalation_counts.get(user_id, 0)
-
-        # For now, pending_tasks and pending_approvals are placeholder values
-        # In a real implementation, these would come from a tasks/approvals table
         pending_tasks = 0
         pending_approvals = 0
 
-        # Calculate workload score
         workload_score = _calculate_workload_score(
             active_programs, pending_tasks, open_escalations
         )
         capacity_status = _get_capacity_status(workload_score)
 
-        # Update summary counts
         if capacity_status == "available":
             summary.available_staff += 1
         elif capacity_status == "at_capacity":
@@ -150,13 +145,11 @@ async def get_workload_overview(db: DB) -> WorkloadResponse:
 )
 async def get_staff_assignments(user_id: uuid.UUID, db: DB) -> StaffAssignmentsResponse:
     """Get all program assignments for a specific staff member."""
-    # Get user
     user_result = await db.execute(select(User).where(User.id == user_id))
     user = user_result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise NotFoundException("User not found")
 
-    # Get programs created by the user
     programs_result = await db.execute(
         select(Program)
         .options(selectinload(Program.client))
@@ -167,23 +160,18 @@ async def get_staff_assignments(user_id: uuid.UUID, db: DB) -> StaffAssignmentsR
     )
     programs = list(programs_result.scalars().all())
 
-    # Get escalation counts per program
     all_program_ids = [p.id for p in programs]
-    esc_counts: dict[str, int] = {}
-    if all_program_ids:
-        esc_result = await db.execute(
-            select(Escalation.program_id, func.count(Escalation.id))
-            .where(
-                Escalation.status.in_(["open", "acknowledged", "investigating"]),
-                Escalation.program_id.in_(all_program_ids),
-            )
-            .group_by(Escalation.program_id)
+    esc_result = await db.execute(
+        select(Escalation.program_id, func.count(Escalation.id).label("cnt"))
+        .where(
+            Escalation.status.in_(["open", "acknowledged", "investigating"]),
+            Escalation.program_id.in_(all_program_ids),
         )
-        esc_counts = {str(row[0]): row[1] for row in esc_result.all()}
+        .group_by(Escalation.program_id)
+    )
+    esc_map = {str(row[0]): row[1] for row in esc_result.all()}
 
-    # Build assignment items
     assignments: list[StaffAssignmentItem] = []
-
     for prog in programs:
         pid = str(prog.id)
         assignments.append(
@@ -195,8 +183,18 @@ async def get_staff_assignments(user_id: uuid.UUID, db: DB) -> StaffAssignmentsR
                 role="creator",
                 assigned_at=prog.created_at.isoformat(),
                 program_status=prog.status,
-                active_escalations=esc_counts.get(pid, 0),
+                active_escalations=esc_map.get(pid, 0),
             )
         )
 
     return StaffAssignmentsResponse(assignments=assignments, total=len(assignments))
+
+
+@router.get(
+    "/capacity-forecast",
+    response_model=list[CapacityForecast],
+    dependencies=[Depends(require_internal)],
+)
+async def get_capacity_forecast_overview(db: DB) -> list[CapacityForecast]:
+    """Get capacity forecasts for all internal staff members."""
+    return await get_all_capacity_forecasts(db)

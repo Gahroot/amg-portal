@@ -2,6 +2,13 @@ from enum import StrEnum
 
 
 class UserRole(StrEnum):
+    """User roles for the AMG Portal.
+
+    Source of truth for role definitions. Frontend and mobile apps must keep in sync:
+    - frontend/src/types/user.ts — UserRole type
+    - mobile/types/user.ts — UserRole type
+    """
+
     # Tier 2 — Internal
     managing_director = "managing_director"
     relationship_manager = "relationship_manager"
@@ -119,6 +126,7 @@ class AssignmentStatus(StrEnum):
     accepted = "accepted"
     in_progress = "in_progress"
     completed = "completed"
+    declined = "declined"
     cancelled = "cancelled"
 
 
@@ -161,6 +169,24 @@ class DocumentCategory(StrEnum):
     financial = "financial"
     legal = "legal"
     other = "other"
+
+
+class DocumentType(StrEnum):
+    """Document types that support expiry tracking."""
+
+    passport = "passport"
+    visa = "visa"
+    certification = "certification"
+    other = "other"
+
+
+class ExpiryStatus(StrEnum):
+    """Expiry urgency categories for documents."""
+
+    expired = "expired"
+    expiring_30 = "expiring_30"   # within 30 days
+    expiring_90 = "expiring_90"   # within 90 days
+    valid = "valid"
 
 
 class KYCDocumentType(StrEnum):
@@ -518,3 +544,73 @@ class GovernanceAction(StrEnum):
     suspension = "suspension"
     termination = "termination"
     reinstatement = "reinstatement"
+
+
+class DocumentRequestStatus(StrEnum):
+    """Status of a document request sent to a client"""
+
+    pending = "pending"
+    in_progress = "in_progress"
+    received = "received"
+    processing = "processing"
+    complete = "complete"
+    cancelled = "cancelled"
+    overdue = "overdue"
+
+
+class DocumentRequestType(StrEnum):
+    """Common document request types"""
+
+    passport = "passport"
+    national_id = "national_id"
+    proof_of_address = "proof_of_address"
+    bank_statement = "bank_statement"
+    tax_return = "tax_return"
+    source_of_wealth = "source_of_wealth"
+    financial_statement = "financial_statement"
+    corporate_documents = "corporate_documents"
+    contract = "contract"
+    signed_agreement = "signed_agreement"
+    insurance_certificate = "insurance_certificate"
+    other = "other"
+
+
+class PulseSurveyStatus(StrEnum):
+    """Status of pulse surveys"""
+
+    draft = "draft"
+    active = "active"
+    closed = "closed"
+
+
+class PulseSurveyResponseType(StrEnum):
+    """Response type options for pulse surveys"""
+
+    emoji = "emoji"          # 😊 😐 😞
+    stars = "stars"          # 1–5 stars
+    yes_no = "yes_no"        # Yes / No
+    thumbs = "thumbs"        # 👍 / 👎
+
+
+class PulseSurveyTrigger(StrEnum):
+    """What triggers the pulse survey to appear"""
+
+    document_delivery = "document_delivery"
+    milestone_completion = "milestone_completion"
+    random = "random"
+
+
+class TaxDocumentType(StrEnum):
+    """Types of year-end tax documents issued to partners."""
+
+    form_1099_nec = "1099-NEC"
+    form_1099_misc = "1099-MISC"
+    annual_summary = "annual_summary"
+
+
+class TaxDocumentStatus(StrEnum):
+    """Publication status of a tax document."""
+
+    draft = "draft"
+    published = "published"
+    superseded = "superseded"

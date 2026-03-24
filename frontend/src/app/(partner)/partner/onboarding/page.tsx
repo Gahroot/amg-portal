@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 import {
   type PartnerOnboarding,
   type OnboardingStage,
@@ -49,15 +50,15 @@ export default function PartnerOnboardingPage() {
 
       const data = await getPartnerOnboarding(profile.id);
       setOnboarding(data);
-    } catch (error) {
-      console.error("Failed to load onboarding:", error);
+    } catch {
+      toast.error("Failed to load onboarding");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleChecklistItemToggle = async (stage: OnboardingStage, item: string, checked: boolean) => {
-    if (!onboarding) return;
+    if (!onboarding || !profile) return;
 
     setIsSaving(true);
     try {
@@ -91,8 +92,8 @@ export default function PartnerOnboardingPage() {
           checklist_items: updatedChecklist,
         });
       }
-    } catch (error) {
-      console.error("Failed to update checklist:", error);
+    } catch {
+      toast.error("Failed to update checklist");
     } finally {
       setIsSaving(false);
     }
@@ -104,7 +105,9 @@ export default function PartnerOnboardingPage() {
     fetch("/api/v1/partner-portal/profile")
       .then((res) => res.json())
       .then(setProfile)
-      .catch(console.error);
+      .catch(() => {
+        // Profile fetch is non-critical; error is handled elsewhere
+      });
   }, []);
 
   if (isLoading) {

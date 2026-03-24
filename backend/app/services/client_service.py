@@ -2,11 +2,11 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.enums import ApprovalStatus, ComplianceStatus
 from app.schemas.client_profile import (
@@ -15,6 +15,7 @@ from app.schemas.client_profile import (
     ClientProvisionRequest,
     ComplianceCertificate,
     ComplianceReviewRequest,
+    IntelligenceFileSchema,
     MDApprovalRequest,
 )
 from app.services.crud_base import CRUDBase
@@ -27,13 +28,17 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
     async def create_intake(
         self, db: AsyncSession, *, data: ClientProfileCreate, created_by_id: uuid.UUID
     ) -> ClientProfile:
-        return await self.create(
+        profile = await self.create(
             db,
             obj_in=data,
             created_by=created_by_id,
             compliance_status=ComplianceStatus.pending_review.value,
             approval_status=ApprovalStatus.pending_compliance.value,
         )
+        from app.services.intake_workflow_service import on_intake_created
+
+        await on_intake_created(db, profile)
+        return profile
 
     async def submit_compliance_review(
         self,
@@ -45,14 +50,13 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
     ) -> ClientProfile:
         profile = await self.get(db, profile_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+            raise NotFoundException("Profile not found")
         if profile.compliance_status not in (
             ComplianceStatus.pending_review.value,
             ComplianceStatus.under_review.value,
         ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot review profile in {profile.compliance_status} state",
+            raise BadRequestException(
+                f"Cannot review profile in {profile.compliance_status} state"
             )
 
         update_data = {
@@ -75,12 +79,14 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         )
         if review.status in final_statuses:
             from app.services.email_service import send_compliance_notification
+            from app.services.intake_workflow_service import on_compliance_reviewed
 
             await send_compliance_notification(
                 email=updated_profile.primary_email,
                 profile_name=updated_profile.display_name or updated_profile.legal_name,
                 status=review.status.value,
             )
+            await on_compliance_reviewed(db, updated_profile, review.status.value)
 
         return updated_profile
 
@@ -94,11 +100,10 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
     ) -> ClientProfile:
         profile = await self.get(db, profile_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+            raise NotFoundException("Profile not found")
         if profile.approval_status != ApprovalStatus.pending_md_approval.value:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot approve profile in {profile.approval_status} state",
+            raise BadRequestException(
+                f"Cannot approve profile in {profile.approval_status} state"
             )
 
         update_data: dict[str, Any] = {
@@ -116,7 +121,14 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
                 profile.compliance_notes or ""
             ) + f"\nMD: {approval.notes}"
 
-        return await self.update(db, db_obj=profile, obj_in=update_data)
+        updated_profile = await self.update(db, db_obj=profile, obj_in=update_data)
+
+        if approval.approved:
+            from app.services.intake_workflow_service import on_md_approved
+
+            await on_md_approved(db, updated_profile, approver_id)
+
+        return updated_profile
 
     async def provision_client_user(
         self, db: AsyncSession, *, profile_id: uuid.UUID, request: ClientProvisionRequest
@@ -126,16 +138,11 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
 
         profile = await self.get(db, profile_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+            raise NotFoundException("Profile not found")
         if profile.approval_status != ApprovalStatus.approved.value:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Profile must be approved before provisioning",
-            )
+            raise BadRequestException("Profile must be approved before provisioning")
         if profile.user_id is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Client user already provisioned"
-            )
+            raise BadRequestException("Client user already provisioned")
 
         password = request.password or str(uuid.uuid4())[:12]
         user = User(
@@ -170,7 +177,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
     ) -> ComplianceCertificate:
         profile = await self.get(db, profile_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+            raise NotFoundException("Profile not found")
 
         reviewer_name = None
         if profile.compliance_reviewed_by:
@@ -191,14 +198,12 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         )
 
     async def update_intelligence_file(
-        self, db: AsyncSession, profile_id: uuid.UUID, data: dict[str, Any]
+        self, db: AsyncSession, profile_id: uuid.UUID, data: IntelligenceFileSchema
     ) -> ClientProfile:
         profile = await self.get(db, profile_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-        existing = profile.intelligence_file or {}
-        existing.update(data)
-        profile.intelligence_file = existing
+            raise NotFoundException("Profile not found")
+        profile.intelligence_file = data.model_dump()
         await db.commit()
         await db.refresh(profile)
         return profile

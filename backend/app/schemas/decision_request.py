@@ -4,13 +4,21 @@ from datetime import date, datetime, time
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DecisionOption(BaseModel):
     id: str
     label: str
     description: str | None = None
+    # Plain-language impact explanation shown to the client
+    impact_description: str | None = None
+    # What happens next if this option is chosen
+    what_happens_next: str | None = None
+    # Key considerations the client should think about
+    considerations: list[str] | None = None
+    # Whether this option is recommended by the advisory team
+    recommended: bool = False
 
 
 class DecisionRequestCreate(BaseModel):
@@ -44,7 +52,7 @@ class DecisionRequestResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DecisionListResponse(BaseModel):

@@ -1,22 +1,23 @@
 """Add capability review and access audit tables
 
 Revision ID: add_capability_review_access_audit
-Revises: add_report_schedule
+Revises: f5a6b7c8d9e0
 Create Date: 2024-01-15 10:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_capability_review_access_audit"
-down_revision: Union[str, None] = "add_report_schedule"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "f5a6b7c8d9e0"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

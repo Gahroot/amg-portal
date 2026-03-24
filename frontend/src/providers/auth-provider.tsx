@@ -5,9 +5,14 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   getCurrentUser,
   login as loginApi,
-  type User,
-  type LoginCredentials,
+  storeMFASetupToken,
 } from "@/lib/api/auth";
+import {
+  getAccessToken,
+  setTokens,
+  removeTokens,
+} from "@/lib/token-storage";
+import type { User, LoginCredentials } from "@/types/user";
 
 export class MFARequiredError extends Error {
   mfaRequired = true;
@@ -17,48 +22,33 @@ export class MFARequiredError extends Error {
   }
 }
 
+export class MFASetupRequiredError extends Error {
+  mfaSetupRequired = true;
+  constructor() {
+    super("MFA setup required");
+    this.name = "MFASetupRequiredError";
+  }
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<
   AuthContextType | undefined
 >(undefined);
 
-const PUBLIC_PATHS = ["/login"];
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem("access_token");
-  } catch {
-    return null;
-  }
-}
-
-function setTokens(access: string, refresh: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem("access_token", access);
-    localStorage.setItem("refresh_token", refresh);
-  } catch {
-    // Silent fail
-  }
-}
-
-function removeTokens(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-  } catch {
-    // Silent fail
-  }
-}
+const PUBLIC_PATHS = [
+  "/login",
+  "/mfa-setup",
+  "/forgot-password",
+  "/reset-password",
+];
 
 export function AuthProvider({
   children,
@@ -73,7 +63,7 @@ export function AuthProvider({
   const isAuthenticated = user !== null;
 
   const fetchUser = React.useCallback(async () => {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) {
       setIsLoading(false);
       return;
@@ -94,6 +84,17 @@ export function AuthProvider({
     fetchUser();
   }, [fetchUser]);
 
+  // Listen for session-invalidation events dispatched by the axios
+  // interceptor so that React state stays in sync without hard reloads.
+  React.useEffect(() => {
+    const handleLogout = () => {
+      removeTokens();
+      setUser(null);
+    };
+    window.addEventListener("auth:logout", handleLogout);
+    return () => window.removeEventListener("auth:logout", handleLogout);
+  }, []);
+
   React.useEffect(() => {
     if (isLoading) return;
 
@@ -102,6 +103,12 @@ export function AuthProvider({
     if (!isAuthenticated && !isPublicPath) {
       router.replace("/login");
     } else if (isAuthenticated && isPublicPath) {
+      // Don't redirect away from /mfa-setup if the user still needs to
+      // complete MFA enrollment (grace-period tokens are valid but MFA
+      // is not yet enabled).
+      if (pathname === "/mfa-setup" && !user?.mfa_enabled) {
+        return;
+      }
       if (user?.role === "client") {
         router.replace("/portal/dashboard");
       } else if (user?.role === "partner") {
@@ -118,6 +125,23 @@ export function AuthProvider({
 
       if (response.mfa_required) {
         throw new MFARequiredError();
+      }
+
+      if (response.mfa_setup_required) {
+        // Store the setup token so the MFA setup page can use it as a
+        // Bearer credential when no real access_token exists yet.
+        if (response.mfa_setup_token) {
+          storeMFASetupToken(response.mfa_setup_token);
+        }
+
+        if (response.access_token) {
+          // Grace-period path: user has real tokens but must set up MFA.
+          // Store tokens so /mfa-setup can use the regular API client.
+          setTokens(response.access_token, response.refresh_token);
+        }
+
+        // Always redirect to setup page — the user cannot skip this.
+        throw new MFASetupRequiredError();
       }
 
       setTokens(response.access_token, response.refresh_token);
@@ -140,9 +164,28 @@ export function AuthProvider({
     router.replace("/login");
   }, [router]);
 
+  const refreshUser = React.useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    try {
+      const userData = await getCurrentUser();
+      setUser(userData);
+    } catch {
+      removeTokens();
+      setUser(null);
+    }
+  }, []);
+
   const value = React.useMemo(
-    () => ({ user, isLoading, isAuthenticated, login, logout }),
-    [user, isLoading, isAuthenticated, login, logout]
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated,
+      login,
+      logout,
+      refreshUser,
+    }),
+    [user, isLoading, isAuthenticated, login, logout, refreshUser]
   );
 
   return (

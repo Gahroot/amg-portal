@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.schemas.family_member import FamilyMemberCreate, FamilyMemberResponse
 
@@ -134,4 +134,4 @@ class IntakeFormResponse(BaseModel):
     family_members: list[FamilyMemberResponse] = []
     lifestyle: IntakeStep4Lifestyle | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

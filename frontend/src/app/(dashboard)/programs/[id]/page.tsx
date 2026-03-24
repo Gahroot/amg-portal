@@ -2,15 +2,16 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import {
-  getProgram,
   updateTask,
   createMilestone,
 } from "@/lib/api/programs";
-import type { TaskStatus, MilestoneCreate } from "@/lib/api/programs";
-import { getProgramApprovals } from "@/lib/api/approvals";
+import { useProgram } from "@/hooks/use-programs";
+import { useProgramApprovals } from "@/hooks/use-approvals";
+import type { TaskStatus, MilestoneCreate } from "@/types/program";
+import { useSecurityBrief } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,11 +47,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/programs/status-badge";
 import { RagBadge } from "@/components/programs/rag-badge";
 import { ApprovalDialog } from "@/components/programs/approval-dialog";
+import { EmergencyActivationDialog } from "@/components/programs/emergency-activation-dialog";
 import { DocumentList } from "@/components/documents/document-list";
+import { BookmarkButton } from "@/components/ui/bookmark-button";
+import { GanttChart } from "@/components/programs/gantt-chart";
+import { GanttToolbar } from "@/components/programs/gantt-toolbar";
+import type { ZoomLevel, GanttFilters } from "@/components/programs/gantt-toolbar";
+import { useProgramGantt } from "@/hooks/use-program-gantt";
+import { TravelLogisticsTab } from "@/components/travel/travel-logistics-tab";
+import { AlertTriangle, Clock } from "lucide-react";
 
 const TASK_STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "todo", label: "To Do" },
@@ -73,21 +84,15 @@ export default function ProgramDashboardPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: program, isLoading } = useQuery({
-    queryKey: ["program", programId],
-    queryFn: () => getProgram(programId),
-  });
+  const { data: program, isLoading } = useProgram(programId);
 
-  const { data: approvals } = useQuery({
-    queryKey: ["program-approvals", programId],
-    queryFn: () => getProgramApprovals(programId),
-  });
+  const { data: approvals } = useProgramApprovals(programId);
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) =>
       updateTask(taskId, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program", programId] });
+      queryClient.invalidateQueries({ queryKey: ["programs", programId] });
     },
   });
 
@@ -98,18 +103,88 @@ export default function ProgramDashboardPage() {
     due_date: "",
   });
 
+  // Gantt state
+  const ganttData = useProgramGantt(program);
+  const [ganttZoom, setGanttZoom] = React.useState<ZoomLevel>("week");
+  const [ganttFilters, setGanttFilters] = React.useState<GanttFilters>({
+    hideCompleted: false,
+    showOnlyCritical: false,
+    hideTasks: false,
+  });
+  const [isExporting, setIsExporting] = React.useState(false);
+  const svgRef = React.useRef<SVGSVGElement | null>(null);
+
+  const handleGanttExport = React.useCallback(async () => {
+    if (!svgRef.current) return;
+    setIsExporting(true);
+    try {
+      const svg = svgRef.current;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = 2;
+        canvas.width = svg.width.baseVal.value * scale;
+        canvas.height = svg.height.baseVal.value * scale;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `${program?.title ?? "program"}-gantt.png`;
+          link.click();
+          setIsExporting(false);
+        }, "image/png");
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); setIsExporting(false); };
+      img.src = url;
+    } catch {
+      setIsExporting(false);
+    }
+  }, [program?.title]);
+
   const createMilestoneMutation = useMutation({
     mutationFn: (data: MilestoneCreate) => createMilestone(programId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program", programId] });
+      queryClient.invalidateQueries({ queryKey: ["programs", programId] });
       setMilestoneOpen(false);
       setNewMilestone({ title: "", description: "", due_date: "" });
     },
   });
 
+  const [activeTab, setActiveTab] = React.useState("overview");
+
+  // Tick every 30 s so the retrospective countdown stays fresh without impure
+  // Date.now() calls inline during render.
+  const [nowMs, setNowMs] = React.useState(0);
+  React.useEffect(() => {
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const canApprove =
     user?.role === "managing_director" ||
     user?.role === "relationship_manager";
+
+  const isMD = user?.role === "managing_director";
+  const isInternalSenior = canApprove;
+
+  // Security brief — only fetched for MD/RM when we have a client_id
+  // The query is enabled lazily once program data is available.
+  const clientId = program?.client_id?.toString() ?? "";
+  const { data: securityBrief } = useSecurityBrief(
+    clientId,
+    isInternalSenior && !!clientId
+  );
 
   if (isLoading) {
     return (
@@ -143,26 +218,106 @@ export default function ProgramDashboardPage() {
     return Math.round((completed / milestone.tasks.length) * 100);
   };
 
+  // --- Emergency activation derived state ---
+  const hasPendingApproval = approvals?.some((a) => a.status === "pending");
+
+  const showEmergencyButton =
+    isMD &&
+    program.status === "design" &&
+    hasPendingApproval &&
+    program.milestone_count > 0;
+
+  const retrospectiveDue = program.retrospective_due_at
+    ? new Date(program.retrospective_due_at)
+    : null;
+
+  const showRetrospectiveBanner =
+    program.status === "active" &&
+    retrospectiveDue !== null &&
+    retrospectiveDue.getTime() > nowMs;
+
+  const retrospectiveTimeLeft = retrospectiveDue
+    ? (() => {
+        const msLeft = retrospectiveDue.getTime() - nowMs;
+        if (msLeft <= 0) return null;
+        const h = Math.floor(msLeft / 3_600_000);
+        const m = Math.floor((msLeft % 3_600_000) / 60_000);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+      })()
+    : null;
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
+        {/* Retrospective-due banner */}
+        {showRetrospectiveBanner && (
+          <Alert variant="destructive">
+            <Clock className="h-4 w-4" />
+            <AlertTitle>Emergency Activation — Retrospective Required</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <span>
+                This program was emergency-activated. A formal retrospective
+                record must be completed
+                {retrospectiveTimeLeft
+                  ? ` within ${retrospectiveTimeLeft}`
+                  : ` by ${retrospectiveDue?.toLocaleTimeString()}`}
+                . Reason recorded:{" "}
+                <em>{program.emergency_reason}</em>
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => setActiveTab("approvals")}
+              >
+                Complete Retrospective
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">
-            {program.title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-3xl font-bold tracking-tight">
+              {program.title}
+            </h1>
+            <BookmarkButton
+              entityType="program"
+              entityId={programId}
+              entityTitle={program.title}
+              entitySubtitle={program.client_name}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={program.status} />
             <RagBadge status={program.rag_status} />
+            {showEmergencyButton && (
+              <EmergencyActivationDialog
+                programId={programId}
+                trigger={
+                  <Button variant="destructive" size="sm" className="gap-1.5">
+                    <AlertTriangle className="h-4 w-4" />
+                    Emergency Activate
+                  </Button>
+                }
+              />
+            )}
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="milestones">Milestones</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="approvals">Approvals</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="travel">Travel</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -238,6 +393,87 @@ export default function ProgramDashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Security Considerations — MD/RM only, executive-level clients */}
+            {isInternalSenior && securityBrief && (
+              <Card className="border-amber-200 bg-amber-50/50">
+                <CardHeader>
+                  <CardTitle className="font-serif text-xl text-amber-900">
+                    Security Considerations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                    <AlertDescription className="text-xs font-medium">
+                      Security information is strictly need-to-know. This data
+                      is not visible to the client or partner portal.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Threat level:
+                    </span>
+                    <Badge
+                      variant={
+                        securityBrief.threat_summary.threat_level === "high" ||
+                        securityBrief.threat_summary.threat_level === "critical"
+                          ? "destructive"
+                          : securityBrief.threat_summary.threat_level === "medium"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
+                      {securityBrief.threat_summary.threat_level.toUpperCase()}
+                    </Badge>
+                    <Badge variant={securityBrief.feed_connected ? "default" : "outline"}>
+                      {securityBrief.feed_connected ? "Feed: Live" : "Feed: Offline"}
+                    </Badge>
+                  </div>
+
+                  {securityBrief.threat_summary.note && (
+                    <p className="text-xs text-muted-foreground italic">
+                      {securityBrief.threat_summary.note}
+                    </p>
+                  )}
+
+                  {securityBrief.travel_advisories.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-amber-900">
+                          Travel Advisories
+                        </p>
+                        {securityBrief.travel_advisories.map((adv) => (
+                          <div
+                            key={adv.destination}
+                            className="flex items-center justify-between rounded border border-amber-200 bg-white px-3 py-2 text-sm"
+                          >
+                            <span className="font-medium">{adv.destination}</span>
+                            <Badge
+                              variant={
+                                adv.risk_level === "high" ||
+                                adv.risk_level === "extreme"
+                                  ? "destructive"
+                                  : adv.risk_level === "medium"
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                            >
+                              {adv.risk_level}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    ✓ Access logged · View full brief on the client profile
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="milestones" className="space-y-4">
@@ -472,6 +708,26 @@ export default function ProgramDashboardPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="timeline" className="space-y-4">
+            <GanttToolbar
+              zoom={ganttZoom}
+              onZoomChange={setGanttZoom}
+              filters={ganttFilters}
+              onFiltersChange={setGanttFilters}
+              onExport={handleGanttExport}
+              isExporting={isExporting}
+            />
+            <GanttChart
+              items={ganttData.items}
+              dependencies={ganttData.dependencies}
+              projectStart={ganttData.projectStart}
+              projectEnd={ganttData.projectEnd}
+              zoom={ganttZoom}
+              filters={ganttFilters}
+              svgRef={svgRef}
+            />
+          </TabsContent>
+
           <TabsContent value="approvals" className="space-y-4">
             {approvals && approvals.length > 0 ? (
               approvals.map((approval) => (
@@ -534,6 +790,10 @@ export default function ProgramDashboardPage() {
 
           <TabsContent value="documents" className="space-y-4">
             <DocumentList entityType="program" entityId={programId} />
+          </TabsContent>
+
+          <TabsContent value="travel" className="space-y-4">
+            <TravelLogisticsTab programId={programId} />
           </TabsContent>
         </Tabs>
       </div>

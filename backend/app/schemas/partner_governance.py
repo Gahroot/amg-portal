@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 GovernanceActionType = Literal[
     "warning", "probation", "suspension", "termination", "reinstatement"
@@ -32,7 +32,7 @@ class GovernanceActionResponse(BaseModel):
     partner_firm_name: str | None = None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GovernanceHistoryResponse(BaseModel):

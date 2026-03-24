@@ -8,16 +8,29 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   setupMFA,
   verifyMFASetup,
-  type MFASetupResponse,
+  clearMFASetupToken,
 } from "@/lib/api/auth";
+import { useAuth } from "@/providers/auth-provider";
+import type { MFASetupResponse } from "@/types/user";
 
 type SetupStep = "loading" | "verify" | "success" | "error";
+
+function setTokens(access: string, refresh: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+  } catch {
+    // Silent fail
+  }
+}
 
 export function MFASetup({
   onComplete,
 }: {
   onComplete?: () => void;
 }) {
+  const { refreshUser } = useAuth();
   const [step, setStep] = React.useState<SetupStep>("loading");
   const [setupData, setSetupData] =
     React.useState<MFASetupResponse | null>(null);
@@ -55,7 +68,16 @@ export function MFASetup({
     setIsSubmitting(true);
 
     try {
-      await verifyMFASetup(code);
+      const tokenResponse = await verifyMFASetup(code);
+      // Store real tokens returned on successful setup, then clear the
+      // ephemeral setup token — the user is now fully authenticated.
+      if (tokenResponse.access_token) {
+        setTokens(
+          tokenResponse.access_token,
+          tokenResponse.refresh_token
+        );
+      }
+      clearMFASetupToken();
       setStep("success");
     } catch {
       setError("Invalid verification code. Please try again.");
@@ -63,6 +85,17 @@ export function MFASetup({
       setIsSubmitting(false);
     }
   };
+
+  function handleDone() {
+    if (onComplete) {
+      onComplete();
+      return;
+    }
+    // Re-fetch the current user inside the AuthProvider so it picks up
+    // the new tokens and mfa_enabled flag, then the redirect effect
+    // routes to the correct dashboard — no hard page reload needed.
+    refreshUser();
+  }
 
   if (step === "loading") {
     return (
@@ -91,11 +124,9 @@ export function MFASetup({
             protected with two-factor authentication.
           </AlertDescription>
         </Alert>
-        {onComplete && (
-          <Button onClick={onComplete} className="w-full">
-            Done
-          </Button>
-        )}
+        <Button onClick={handleDone} className="w-full">
+          Continue
+        </Button>
       </div>
     );
   }

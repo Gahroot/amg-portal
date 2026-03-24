@@ -5,6 +5,19 @@ import type { Communication } from "@/types/communication";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AudioPlayer } from "./audio-player";
+
+/** Extract voice attachment entries from a message's attachment_ids.
+ *  Voice attachments are stored as ``"voice:<object_path>"``. */
+function extractVoiceAttachments(attachmentIds: string[]): string[] {
+  return attachmentIds
+    .filter((id) => id.startsWith("voice:"))
+    .map((id) => id.slice("voice:".length));
+}
+
+function extractRegularAttachments(attachmentIds: string[]): string[] {
+  return attachmentIds.filter((id) => !id.startsWith("voice:"));
+}
 
 interface MessageBubbleProps {
   message: Communication;
@@ -62,12 +75,19 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
       .slice(0, 2);
   };
 
-  const hasReadReceipt = message.read_receipts && Object.keys(message.read_receipts).length > 0;
-
   // Count how many recipients have read the message (excluding sender)
   const readCount = message.read_receipts
     ? Object.keys(message.read_receipts).filter((id) => id !== message.sender_id).length
     : 0;
+
+  const voiceAttachments = message.attachment_ids
+    ? extractVoiceAttachments(message.attachment_ids)
+    : [];
+  const regularAttachments = message.attachment_ids
+    ? extractRegularAttachments(message.attachment_ids)
+    : [];
+
+  const isVoiceMessage = voiceAttachments.length > 0;
 
   return (
     <div
@@ -96,16 +116,33 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
           <p className="mb-1 text-xs font-semibold opacity-70">{message.sender_name}</p>
         )}
 
-        {/* Message body with markdown rendering */}
-        <div
-          className="break-words text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
-        />
+        {/* Voice message players */}
+        {isVoiceMessage ? (
+          <div className="space-y-1">
+            {voiceAttachments.map((objectPath) => (
+              <AudioPlayer
+                key={objectPath}
+                objectPath={objectPath}
+                className={cn(
+                  isOwn
+                    ? "bg-primary-foreground/10 text-primary-foreground"
+                    : "bg-background/40"
+                )}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Message body with markdown rendering */
+          <div
+            className="break-words text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
+          />
+        )}
 
-        {/* Attachments */}
-        {message.attachment_ids && message.attachment_ids.length > 0 && (
+        {/* Regular (non-voice) attachments */}
+        {regularAttachments.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {message.attachment_ids.map((id) => (
+            {regularAttachments.map((id) => (
               <div
                 key={id}
                 className="flex items-center gap-1 rounded bg-background/10 px-2 py-1 text-xs"

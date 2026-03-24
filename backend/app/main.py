@@ -1,12 +1,10 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 
 from app.api.v1.router import router as v1_router
 from app.api.websocket import ws_router as websocket_router
@@ -18,12 +16,17 @@ from app.core.exceptions import (
     generic_exception_handler,
     validation_exception_handler,
 )
+from app.middleware.audit import AuditContextMiddleware
+from app.middleware.security import SecurityHeadersMiddleware
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Manage application startup and shutdown."""
     from app.db.session import AsyncSessionLocal
+    from app.services.program_template_seeder import seed_program_templates
     from app.services.scheduler_service import (
         start_scheduler,
         stop_scheduler,
@@ -33,8 +36,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # Seed system templates before starting scheduler
-    async with AsyncSessionLocal() as db:
-        await seed_default_templates(db)
+    try:
+        async with AsyncSessionLocal() as db:
+            await seed_default_templates(db)
+    except Exception:
+        logger.warning(
+            "Failed to seed templates — DB may be unavailable or migrations pending",
+            exc_info=True,
+        )
+
+    try:
+        async with AsyncSessionLocal() as db:
+            await seed_program_templates(db)
+    except Exception:
+        logger.warning(
+            "Failed to seed program templates — DB may be unavailable or migrations pending",
+            exc_info=True,
+        )
 
     scheduler = start_scheduler()
     yield
@@ -50,8 +68,8 @@ app = FastAPI(
 )
 
 # Register exception handlers for consistent, secure error responses
-app.add_exception_handler(AppException, app_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, generic_exception_handler)
 
 # CORS - Use explicit methods instead of wildcard for better security
@@ -70,60 +88,7 @@ app.add_middleware(
     ],
 )
 
-
-# Security headers with CSP and HSTS
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
-        response: Response = await call_next(request)
-
-        # Basic security headers
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-
-        # HSTS (HTTP Strict Transport Security) - only add in production with HTTPS
-        if not settings.DEBUG:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains; preload"
-            )
-
-        # Content Security Policy
-        # In development, allow unsafe-eval for Next.js dev server
-        if settings.DEBUG:
-            csp = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-eval' 'unsafe-inline'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data: https:; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'; "
-                "base-uri 'self'; "
-                "form-action 'self';"
-            )
-        else:
-            csp = (
-                "default-src 'self'; "
-                "script-src 'self'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data: https:; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'; "
-                "base-uri 'self'; "
-                "form-action 'self';"
-            )
-        response.headers["Content-Security-Policy"] = csp
-
-        return response
-
-
 app.add_middleware(SecurityHeadersMiddleware)
-
-from app.middleware.audit import AuditContextMiddleware  # noqa: E402  # isort: skip
-
 app.add_middleware(AuditContextMiddleware)
 
 

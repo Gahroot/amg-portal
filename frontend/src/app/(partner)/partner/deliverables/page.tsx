@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock, Upload, CheckCircle2, XCircle, AlertCircle, Search, ExternalLink } from "lucide-react";
+import { Clock, Upload, CheckCircle2, XCircle, AlertCircle, Search, ExternalLink, FolderUp } from "lucide-react";
+import type { DeliverableItem } from "@/types/deliverable";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline", submitted: "secondary", under_review: "secondary",
@@ -100,6 +101,12 @@ export default function PartnerDeliverablesPage() {
               <SelectItem value="approved">Approved</SelectItem>
             </SelectContent>
           </Select>
+          <Button asChild variant="outline">
+            <Link href="/partner/deliverables/upload">
+              <FolderUp className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -130,7 +137,7 @@ export default function PartnerDeliverablesPage() {
 }
 
 function DeliverableTable({ deliverables, uploadingId, handleFileUpload }: {
-  deliverables: any[];
+  deliverables: DeliverableItem[];
   uploadingId: string | null;
   handleFileUpload: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {

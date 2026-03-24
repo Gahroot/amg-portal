@@ -40,7 +40,7 @@ export function ApprovalDialog({
         comments: note || undefined,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program", programId] });
+      queryClient.invalidateQueries({ queryKey: ["programs", programId] });
       queryClient.invalidateQueries({
         queryKey: ["program-approvals", programId],
       });

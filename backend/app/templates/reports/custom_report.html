@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ name }}</h1>
+{% if description %}
+<p style="color: #666; font-style: italic;">{{ description }}</p>
+{% endif %}
+<p style="color: #999; font-size: 9pt;">
+  Data source: <strong>{{ data_source | capitalize }}</strong> &nbsp;|&nbsp;
+  Total rows: <strong>{{ total_rows }}</strong> &nbsp;|&nbsp;
+  Generated: <strong>{{ generated_at[:10] }}</strong>
+</p>
+
+{% if rows %}
+<table>
+  <thead>
+    <tr>
+      {% for col in columns %}
+      <th>{{ col.label }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      {% for col in columns %}
+      <td>
+        {% set val = row[col.key] %}
+        {% if val is none %}
+          <span style="color:#bbb;">—</span>
+        {% else %}
+          {{ val }}
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color: #999; font-style: italic;">No data found for this report.</p>
+{% endif %}
+{% endblock %}

@@ -76,7 +76,7 @@ class CapabilityReviewService(
         db: AsyncSession,
     ) -> list[CapabilityReview]:
         """Get all overdue capability reviews."""
-        today = date.today()
+        today = datetime.now(UTC).date()
         result = await db.execute(
             select(CapabilityReview)
             .options(
@@ -97,7 +97,7 @@ class CapabilityReviewService(
         days: int = 30,
     ) -> list[CapabilityReview]:
         """Get reviews due within the specified number of days."""
-        today = date.today()
+        today = datetime.now(UTC).date()
         due_date = today + timedelta(days=days)
         result = await db.execute(
             select(CapabilityReview)
@@ -171,7 +171,7 @@ class CapabilityReviewService(
             return None
 
         review.status = "completed"
-        review.completed_date = date.today()
+        review.completed_date = datetime.now(UTC).date()
         if findings:
             review.findings = findings
         if recommendations:

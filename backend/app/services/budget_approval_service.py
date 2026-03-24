@@ -57,7 +57,7 @@ class BudgetApprovalService:
         )
         self.db.add(threshold)
         await self.db.commit()
-        await self.db.refresh(threshold)
+        await self.db.refresh(threshold, ["approval_chain"])
         return threshold
 
     async def get_threshold(self, threshold_id: uuid.UUID) -> ApprovalThreshold | None:
@@ -395,6 +395,7 @@ class BudgetApprovalService:
             .options(
                 selectinload(BudgetApprovalRequest.program),
                 selectinload(BudgetApprovalRequest.requester),
+                selectinload(BudgetApprovalRequest.steps),
             )
             .order_by(BudgetApprovalRequest.created_at.desc())
         )
@@ -565,6 +566,25 @@ class BudgetApprovalService:
                 actor_id=approver.id,
                 to_status=BudgetApprovalStatus.approved.value,
             )
+            # Notify the RM that the budget is approved and the program can now
+            # be activated.  Failures are swallowed so the approval still commits.
+            try:
+                from app.models.program import Program as ProgramModel
+                from app.services.program_budget_service import notify_rm_budget_approved
+
+                prog_result = await self.db.execute(
+                    select(ProgramModel).where(ProgramModel.id == request.program_id)
+                )
+                program = prog_result.scalar_one_or_none()
+                if program:
+                    await notify_rm_budget_approved(self.db, request, program)
+            except Exception:
+                import logging as _logging
+
+                _logging.getLogger(__name__).exception(
+                    "Failed to notify RM of budget approval for request %s",
+                    request.id,
+                )
         else:
             # Move to next step
             request.current_step = current_step_num + 1
@@ -645,7 +665,7 @@ class BudgetApprovalService:
             actor_name=actor.full_name if actor else "Unknown",
             actor_role=actor.role if actor else "unknown",
             comments=comments,
-            metadata=metadata,
+            history_metadata=metadata,
         )
         self.db.add(history)
         await self.db.flush()

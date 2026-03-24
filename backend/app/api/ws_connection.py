@@ -84,6 +84,67 @@ class ConnectionManager:
             if participant_id != user_id:
                 await self.send_personal(message, participant_id)
 
+    async def broadcast_preference_update(
+        self,
+        user_id: uuid.UUID,
+        preferences: dict[str, Any],
+        version: int,
+        source_device_id: str | None = None,
+    ) -> None:
+        """Broadcast preference update to all devices for a user.
+
+        This enables real-time sync of preferences across devices.
+        Optionally excludes the source device to avoid echo.
+        """
+        message = {
+            "type": "preference_update",
+            "data": {
+                "preferences": preferences,
+                "version": version,
+                "source_device_id": source_device_id,
+            },
+        }
+        await self.send_personal(message, user_id)
+
+    async def broadcast_read_status(
+        self,
+        user_id: uuid.UUID,
+        entity_type: str,
+        entity_id: uuid.UUID,
+        is_read: bool,
+        read_at: str | None = None,
+        source_device_id: str | None = None,
+    ) -> None:
+        """Broadcast read status update to all devices for a user.
+
+        This enables real-time sync of read status across devices.
+        """
+        message = {
+            "type": "read_status_update",
+            "data": {
+                "entity_type": entity_type,
+                "entity_id": str(entity_id),
+                "is_read": is_read,
+                "read_at": read_at,
+                "source_device_id": source_device_id,
+            },
+        }
+        await self.send_personal(message, user_id)
+
+    async def broadcast_to_other_devices(
+        self,
+        user_id: uuid.UUID,
+        message: dict[str, Any],
+        exclude_device_id: str | None = None,
+    ) -> None:
+        """Broadcast a message to all of a user's devices except the source.
+
+        The message should include device info if device exclusion is needed.
+        """
+        if exclude_device_id:
+            message = {**message, "exclude_device_id": exclude_device_id}
+        await self.send_personal(message, user_id)
+
 
 # Global connection manager instance
 connection_manager = ConnectionManager()

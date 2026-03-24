@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReportScheduleCreate(BaseModel):
@@ -11,10 +11,12 @@ class ReportScheduleCreate(BaseModel):
 
     report_type: str = Field(
         ...,
-        description=("Report type: portfolio, program_status, completion, annual_review"),
+        description=(
+            "Report type: portfolio, program_status, completion, annual_review, partner_performance"
+        ),
     )
     entity_id: str | None = None
-    frequency: str = Field(..., description="Frequency: daily, weekly, monthly")
+    frequency: str = Field(..., description="Frequency: daily, weekly, monthly, quarterly")
     recipients: list[str] = Field(..., description="List of recipient email addresses")
     format: str = Field(default="pdf", description="Output format: pdf or csv")
 
@@ -45,4 +47,4 @@ class ReportScheduleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

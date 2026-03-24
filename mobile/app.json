@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "amg",
+    "scheme": "amgportal",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.amg.portal"
+      "bundleIdentifier": "com.amg.portal",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow AMG Portal to use speech recognition for voice-to-text dictation in messages and notes.",
+        "NSMicrophoneUsageDescription": "Allow AMG Portal to access the microphone for voice-to-text dictation."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +28,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.amg.portal",
-      "permissions": ["NOTIFICATIONS"]
+      "permissions": ["NOTIFICATIONS", "android.permission.RECORD_AUDIO", "android.permission.INTERNET"]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -39,6 +43,28 @@
         {
           "icon": "./assets/icon.png",
           "color": "#0f172a"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow AMG Portal to access your microphone for voice-to-text dictation.",
+          "speechRecognitionPermission": "Allow AMG Portal to use speech recognition for dictating messages and notes."
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.amg.portal.widgets",
+          "groupIdentifier": "group.com.amg.portal",
+          "widgets": [
+            {
+              "name": "TasksWidget",
+              "displayName": "AMG Tasks",
+              "description": "View pending approvals and tasks at a glance",
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge", "accessoryCircular", "accessoryRectangular"]
+            }
+          ]
         }
       ]
     ]

@@ -1,17 +1,17 @@
 """Report schedule model for automated report generation and delivery."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class ReportSchedule(Base):
+class ReportSchedule(Base, TimestampMixin):
     """Scheduled report configuration for automated generation and delivery."""
 
     __tablename__ = "report_schedules"
@@ -38,17 +38,6 @@ class ReportSchedule(Base):
         UUID(as_uuid=True),
         ForeignKey("documents.id", ondelete="SET NULL"),
         nullable=True,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     creator = relationship("User", foreign_keys=[created_by])

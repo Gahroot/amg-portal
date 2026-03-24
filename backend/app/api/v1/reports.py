@@ -7,19 +7,21 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.api.deps import (
     DB,
     CurrentUser,
+    require_client,
     require_compliance,
     require_internal,
     require_rm_or_above,
 )
-from app.api.v1.client_portal import require_client
+from app.core.exceptions import NotFoundException, ValidationException
 from app.models.client import Client
+from app.models.client_profile import ClientProfile
 from app.models.enums import UserRole
 from app.models.report_schedule import ReportSchedule
 from app.schemas.report import (
@@ -36,20 +38,47 @@ from app.schemas.report_schedule import (
     ReportScheduleResponse,
     ReportScheduleUpdate,
 )
+from app.schemas.user import ReportFavoritesResponse
 from app.services.pdf_service import pdf_service
 from app.services.report_service import report_service
 
 router = APIRouter()
 
+# Valid report types that can be favorited
+VALID_FAVORITE_REPORT_TYPES = {
+    "rm_portfolio",
+    "escalation_log",
+    "compliance",
+    "annual_review",
+    "portfolio",
+    "program_status",
+    "completion",
+    "partner_performance",
+}
+
 
 async def get_client_id_from_user(db: DB, current_user: CurrentUser) -> uuid.UUID:
-    """Get the client ID for a client user."""
-    result = await db.execute(select(Client).where(Client.rm_id == current_user.id))
-    client = result.scalar_one_or_none()
+    """Get the client ID for a client role user.
+
+    Resolves: portal user → ClientProfile (via user_id) → Client (via legal_name + assigned_rm_id).
+    """
+    # Step 1: find the ClientProfile linked to this portal user
+    profile_result = await db.execute(
+        select(ClientProfile).where(ClientProfile.user_id == current_user.id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    if not profile:
+        raise ValueError("Client profile not found for this user")
+
+    # Step 2: find the Client record that corresponds to this profile
+    client_query = select(Client).where(Client.name == profile.legal_name)
+    if profile.assigned_rm_id is not None:
+        client_query = client_query.where(Client.rm_id == profile.assigned_rm_id)
+    client_result = await db.execute(client_query.limit(1))
+    client = client_result.scalar_one_or_none()
     if not client:
-        # Also check if user has a client relationship via other means
-        # For now, raise an error
-        raise ValueError("Client profile not found")
+        raise ValueError("Client record not found for this user")
+
     return client.id
 
 
@@ -70,9 +99,8 @@ async def get_portfolio_report(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
     return report
 
 
@@ -85,9 +113,8 @@ async def export_portfolio_report_csv(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -182,15 +209,13 @@ async def get_program_status_report_endpoint(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
     return report
 
 
@@ -211,15 +236,13 @@ async def export_program_status_report_csv(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -308,15 +331,13 @@ async def get_completion_report_endpoint(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
     return report
 
 
@@ -337,15 +358,13 @@ async def export_completion_report_csv(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Program not found")
+        raise NotFoundException("Program not found")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -427,9 +446,8 @@ async def get_annual_review_endpoint(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
     return report
 
 
@@ -443,9 +461,8 @@ async def export_annual_review_csv(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise NotFoundException("Client not found")
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -537,12 +554,8 @@ async def export_portfolio_report_pdf(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not found",
-        )
+        raise NotFoundException("Client not found")
 
     pdf_bytes = pdf_service.generate_portfolio_pdf(report)
     filename = f"portfolio_overview_{datetime.now().strftime('%Y%m%d')}.pdf"
@@ -571,21 +584,13 @@ async def export_program_status_report_pdf(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
 
     pdf_bytes = pdf_service.generate_program_status_pdf(report)
     safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
@@ -618,21 +623,13 @@ async def export_completion_report_pdf(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
 
     pdf_bytes = pdf_service.generate_completion_pdf(report)
     safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
@@ -656,12 +653,8 @@ async def export_annual_review_pdf(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-        from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not found",
-        )
+        raise NotFoundException("Client not found")
 
     pdf_bytes = pdf_service.generate_annual_review_pdf(report)
     filename = f"annual_review_{year}_{datetime.now().strftime('%Y%m%d')}.pdf"
@@ -683,8 +676,9 @@ VALID_REPORT_TYPES = {
     "program_status",
     "completion",
     "annual_review",
+    "partner_performance",
 }
-VALID_FREQUENCIES = {"daily", "weekly", "monthly"}
+VALID_FREQUENCIES = {"daily", "weekly", "monthly", "quarterly"}
 VALID_FORMATS = {"pdf", "csv"}
 
 
@@ -722,6 +716,22 @@ def _calculate_initial_next_run(frequency: str) -> datetime:
             second=0,
             microsecond=0,
         )
+    elif frequency == "quarterly":
+        # 1st of next quarter at 06:00 UTC
+        quarter_start_months = [1, 4, 7, 10]
+        current_quarter_idx = (now.month - 1) // 3
+        next_quarter_idx = (current_quarter_idx + 1) % 4
+        next_quarter_month = quarter_start_months[next_quarter_idx]
+        next_year = now.year if next_quarter_idx > 0 else now.year + 1
+        return now.replace(
+            year=next_year,
+            month=next_quarter_month,
+            day=1,
+            hour=6,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
     # Fallback: tomorrow
     tomorrow = now + timedelta(days=1)
     return tomorrow.replace(hour=6, minute=0, second=0, microsecond=0)
@@ -740,21 +750,16 @@ async def create_report_schedule(
 ) -> ReportSchedule:
     """Create a new report schedule."""
     if body.report_type not in VALID_REPORT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
+        raise ValidationException(
                 f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_REPORT_TYPES))}"
-            ),
-        )
+            )
     if body.frequency not in VALID_FREQUENCIES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"),
+        raise ValidationException(
+            f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
         )
     if body.format not in VALID_FORMATS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
+        raise ValidationException(
+            f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"
         )
 
     schedule = ReportSchedule(
@@ -801,28 +806,21 @@ async def update_report_schedule(
     result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Schedule not found",
-        )
+        raise NotFoundException("Schedule not found")
 
     if body.frequency is not None:
         if body.frequency not in VALID_FREQUENCIES:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=(
+            raise ValidationException(
                     f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
-                ),
-            )
+                )
         schedule.frequency = body.frequency
         schedule.next_run = _calculate_initial_next_run(body.frequency)
     if body.recipients is not None:
         schedule.recipients = body.recipients
     if body.format is not None:
         if body.format not in VALID_FORMATS:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=(f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"),
+            raise ValidationException(
+                f"Invalid format. Must be one of: {', '.join(sorted(VALID_FORMATS))}"
             )
         schedule.format = body.format
     if body.is_active is not None:
@@ -847,10 +845,7 @@ async def delete_report_schedule(
     result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Schedule not found",
-        )
+        raise NotFoundException("Schedule not found")
 
     await db.delete(schedule)
     await db.commit()
@@ -877,16 +872,12 @@ async def execute_report_schedule(
     result = await db.execute(select(ReportSchedule).where(ReportSchedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Schedule not found",
-        )
+        raise NotFoundException("Schedule not found")
 
     doc = await generate_report_for_schedule(db, schedule)
     if doc is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Could not generate report — no data available for this schedule.",
+        raise ValidationException(
+            "Could not generate report — no data available for this schedule."
         )
 
     now = datetime.now(UTC)
@@ -958,10 +949,7 @@ async def get_rm_portfolio_report_endpoint(
 
     report = await report_service.get_rm_portfolio_report(db, effective_rm_id)
     if not report:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="RM not found",
-        )
+        raise NotFoundException("RM not found")
     return report
 
 
@@ -1009,3 +997,63 @@ async def get_compliance_audit_report_endpoint(
     """
     report = await report_service.get_compliance_audit_report(db)
     return report
+
+
+# ---------------------------------------------------------------------------
+# Report favorites endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/favorites",
+    response_model=ReportFavoritesResponse,
+)
+async def get_report_favorites(
+    current_user: CurrentUser,
+) -> ReportFavoritesResponse:
+    """Get the current user's favorite report types."""
+    return ReportFavoritesResponse(favorites=list(current_user.report_favorites or []))
+
+
+@router.post(
+    "/favorites/{report_type}",
+    response_model=ReportFavoritesResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def add_report_favorite(
+    report_type: str,
+    db: DB,
+    current_user: CurrentUser,
+) -> ReportFavoritesResponse:
+    """Add a report type to the current user's favorites."""
+    if report_type not in VALID_FAVORITE_REPORT_TYPES:
+        raise ValidationException(
+            f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_FAVORITE_REPORT_TYPES))}"
+        )
+    favorites = list(current_user.report_favorites or [])
+    if report_type not in favorites:
+        favorites.append(report_type)
+        current_user.report_favorites = favorites
+        await db.commit()
+        await db.refresh(current_user)
+    return ReportFavoritesResponse(favorites=list(current_user.report_favorites or []))
+
+
+@router.delete(
+    "/favorites/{report_type}",
+    response_model=ReportFavoritesResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def remove_report_favorite(
+    report_type: str,
+    db: DB,
+    current_user: CurrentUser,
+) -> ReportFavoritesResponse:
+    """Remove a report type from the current user's favorites."""
+    favorites = list(current_user.report_favorites or [])
+    if report_type in favorites:
+        favorites.remove(report_type)
+        current_user.report_favorites = favorites
+        await db.commit()
+        await db.refresh(current_user)
+    return ReportFavoritesResponse(favorites=list(current_user.report_favorites or []))

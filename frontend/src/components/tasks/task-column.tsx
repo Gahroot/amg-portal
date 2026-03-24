@@ -15,9 +15,15 @@ interface TaskColumnProps {
   title: string;
   color: string;
   tasks: TaskBoard[];
+  allTasks?: TaskBoard[];
   onAddTask: (status: TaskStatus) => void;
   onEditTask: (task: TaskBoard) => void;
   onDeleteTask: (taskId: string) => void;
+  onViewDependencies?: (task: TaskBoard) => void;
+  // Selection
+  selectedIds?: Set<string>;
+  onToggleSelect?: (taskId: string) => void;
+  selectionMode?: boolean;
 }
 
 export function TaskColumn({
@@ -25,9 +31,14 @@ export function TaskColumn({
   title,
   color,
   tasks,
+  allTasks = [],
   onAddTask,
   onEditTask,
   onDeleteTask,
+  onViewDependencies,
+  selectedIds,
+  onToggleSelect,
+  selectionMode = false,
 }: TaskColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -68,6 +79,11 @@ export function TaskColumn({
                   task={task}
                   onEdit={onEditTask}
                   onDelete={onDeleteTask}
+                  isSelected={selectedIds?.has(task.id) ?? false}
+                  onToggleSelect={onToggleSelect}
+                  selectionMode={selectionMode}
+                  allTasks={allTasks}
+                  onViewDependencies={onViewDependencies}
                 />
               ))}
             </SortableContext>

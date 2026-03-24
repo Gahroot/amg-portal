@@ -1,4 +1,4 @@
-import { Home, FileText, Settings, MessageSquare, User, Lock, Bell } from "lucide-react";
+import { Home, FileText, Settings, MessageSquare, LayoutList, Scale, FolderOpen, BarChart2, CalendarDays, CalendarClock, Sparkles } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
 export const portalNavConfig: PortalNavConfig = {
@@ -15,10 +15,52 @@ export const portalNavConfig: PortalNavConfig = {
           tooltip: "Dashboard",
         },
         {
+          title: "Programs",
+          href: "/portal/programs",
+          icon: LayoutList,
+          tooltip: "Programs",
+        },
+        {
+          title: "Calendar",
+          href: "/portal/calendar",
+          icon: CalendarDays,
+          tooltip: "Milestone Calendar",
+        },
+        {
+          title: "Schedule Meeting",
+          href: "/portal/schedule",
+          icon: CalendarClock,
+          tooltip: "Book a Meeting",
+        },
+        {
           title: "Messages",
           href: "/portal/messages",
           icon: MessageSquare,
           tooltip: "Messages",
+        },
+        {
+          title: "Documents",
+          href: "/portal/documents",
+          icon: FolderOpen,
+          tooltip: "Documents",
+        },
+        {
+          title: "Decisions",
+          href: "/portal/decisions",
+          icon: Scale,
+          tooltip: "Decisions",
+        },
+        {
+          title: "What's New",
+          href: "/portal/updates",
+          icon: Sparkles,
+          tooltip: "What's New",
+        },
+        {
+          title: "Survey",
+          href: "/portal/survey",
+          icon: BarChart2,
+          tooltip: "Satisfaction Survey",
         },
         {
           title: "Reports",
@@ -29,6 +71,7 @@ export const portalNavConfig: PortalNavConfig = {
             { title: "Portfolio", href: "/portal/reports/portfolio" },
             { title: "Program Status", href: "/portal/reports/program-status" },
             { title: "Completion", href: "/portal/reports/completion" },
+            { title: "Annual Review", href: "/portal/reports/annual" },
           ],
         },
         {

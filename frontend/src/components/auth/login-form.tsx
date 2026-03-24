@@ -2,23 +2,19 @@
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "@/providers/auth-provider";
-
-const loginSchema = z.object({
-  email: z.email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { useAuth, MFASetupRequiredError } from "@/providers/auth-provider";
+import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function LoginForm() {
   const { login } = useAuth();
+  const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [mfaRequired, setMfaRequired] = React.useState(false);
   const [mfaCode, setMfaCode] = React.useState("");
@@ -40,6 +36,10 @@ export function LoginForm() {
     try {
       await login(data);
     } catch (err) {
+      if (err instanceof MFASetupRequiredError) {
+        router.replace("/mfa-setup");
+        return;
+      }
       const typedErr = err as {
         mfaRequired?: boolean;
         response?: { data?: { detail?: string } };
@@ -174,6 +174,14 @@ export function LoginForm() {
             {errors.password.message}
           </p>
         )}
+        <div className="text-right">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-muted-foreground hover:text-primary"
+          >
+            Forgot password?
+          </Link>
+        </div>
       </div>
 
       <Button

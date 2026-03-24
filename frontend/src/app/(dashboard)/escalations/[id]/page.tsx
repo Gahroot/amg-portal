@@ -12,8 +12,11 @@ import { AcknowledgeDialog } from "@/components/escalations/acknowledge-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, AlertTriangle, User } from "lucide-react";
-import { useResolveEscalation, useAcknowledgeEscalation } from "@/hooks/use-escalations";
+import Link from "next/link";
+import { ArrowLeft, Clock, AlertTriangle, BookOpen } from "lucide-react";
+import { useResolveEscalation, useAcknowledgeEscalation, useReassignEscalation } from "@/hooks/use-escalations";
+import { EscalationChainTimeline } from "@/components/escalations/escalation-chain-timeline";
+import type { TimelineItem } from "@/components/escalations/escalation-chain-timeline";
 import { toast } from "sonner";
 import {
   Select,
@@ -30,15 +33,6 @@ const ALLOWED_ROLES = [
   "managing_director",
   "finance_compliance",
 ];
-
-interface TimelineItem {
-  action: string;
-  at: string;
-  by?: string;
-  notes?: string;
-  to?: string;
-  risk_factors?: Record<string, unknown>;
-}
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   open: ["acknowledged", "investigating"],
@@ -69,6 +63,7 @@ export default function EscalationDetailPage({
 
   const resolveMutation = useResolveEscalation();
   const acknowledgeMutation = useAcknowledgeEscalation();
+  const reassignMutation = useReassignEscalation();
 
   const statusMutation = useMutation({
     mutationFn: (newStatus: string) =>
@@ -125,21 +120,6 @@ export default function EscalationDetailPage({
     return `${diff} days`;
   };
 
-  const getTimelineIcon = (action: string) => {
-    switch (action) {
-      case "triggered":
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case "status_change":
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case "risk_updated":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-      case "assigned":
-        return <User className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
-
   if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -185,13 +165,36 @@ export default function EscalationDetailPage({
           </h1>
         </div>
 
-        <div className="flex items-center gap-4">
-          <EscalationLevelBadge level={data.level} />
-          <EscalationStatusBadge status={data.status} />
-          <Badge variant="outline" className="text-muted-foreground">
-            <Clock className="mr-1 h-3 w-3" />
-            {getAgeInDays(data.triggered_at)} old
-          </Badge>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <EscalationLevelBadge level={data.level} />
+            <EscalationStatusBadge status={data.status} />
+            {data.is_overdue && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Overdue
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-muted-foreground">
+              <Clock className="mr-1 h-3 w-3" />
+              {getAgeInDays(data.triggered_at)} old
+            </Badge>
+            {data.response_deadline && (
+              <Badge
+                variant="outline"
+                className={`gap-1 ${data.is_overdue ? "border-red-400 text-red-600" : "text-muted-foreground"}`}
+              >
+                <Clock className="h-3 w-3" />
+                Deadline: {new Date(data.response_deadline).toLocaleString()}
+              </Badge>
+            )}
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/escalations/${params.id}/playbook`}>
+              <BookOpen className="mr-2 h-4 w-4" />
+              Resolution Playbook
+            </Link>
+          </Button>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -281,46 +284,7 @@ export default function EscalationDetailPage({
             <CardTitle className="text-sm font-medium">Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {chain.map((item, index) => (
-                <div key={index} className="flex items-start gap-3 text-sm">
-                  <div className="mt-0.5">{getTimelineIcon(item.action)}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium capitalize">
-                        {item.action.replace(/_/g, " ")}
-                      </span>
-                      {item.to && (
-                        <>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="capitalize">{item.to}</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(item.at)}
-                      {item.by && (
-                        <span className="ml-2">
-                          by <span className="font-medium">{item.by}</span>
-                        </span>
-                      )}
-                    </div>
-                    {item.notes && (
-                      <p className="mt-1 text-muted-foreground">{item.notes}</p>
-                    )}
-                    {item.risk_factors && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {Object.entries(item.risk_factors).map(([key, value]) => (
-                          <Badge key={key} variant="outline" className="text-xs">
-                            {key}: {String(value)}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <EscalationChainTimeline chain={chain} />
           </CardContent>
         </Card>
 
@@ -347,6 +311,20 @@ export default function EscalationDetailPage({
                 >
                   Resolve
                 </Button>
+                {user?.role === "managing_director" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newOwner = prompt("Enter new owner ID (UUID):");
+                      if (newOwner) {
+                        reassignMutation.mutate({ id: params.id, newOwnerId: newOwner });
+                      }
+                    }}
+                    disabled={reassignMutation.isPending}
+                  >
+                    Reassign
+                  </Button>
+                )}
               </div>
 
               {availableTransitions.length > 0 && (

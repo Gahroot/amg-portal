@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ title }}</h1>
+
+{% if summary %}
+<div class="summary-box">
+    <h3>Summary</h3>
+    {% for key, value in summary.items() %}
+    <div class="stat-row">
+        <span class="stat-label">{{ key | title }}:</span>
+        <span class="stat-value">{{ value }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<p><strong>Total Records:</strong> {{ row_count }}</p>
+
+<table>
+    <thead>
+        <tr>
+            {% for header in headers %}
+            <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for cell in row %}
+            <td>{{ cell if cell is not none else '' }}</td>
+            {% endfor %}
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="{{ headers | length }}" style="text-align: center; color: #999;">
+                No data available
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

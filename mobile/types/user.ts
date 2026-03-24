@@ -1,3 +1,11 @@
+/**
+ * User roles for the AMG Portal.
+ *
+ * Source of truth: backend/app/models/enums.py — UserRole StrEnum
+ * Keep in sync when roles are added or renamed.
+ *
+ * @see backend/app/models/enums.py
+ */
 export type UserRole =
   | 'managing_director'
   | 'relationship_manager'

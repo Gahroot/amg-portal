@@ -8,11 +8,12 @@ import {
   getAssignment,
   dispatchAssignment,
 } from "@/lib/api/assignments";
+import { getPartner } from "@/lib/api/partners";
 import {
   listDeliverables,
   createDeliverable,
 } from "@/lib/api/deliverables";
-import type { DeliverableCreateData } from "@/lib/api/deliverables";
+import type { DeliverableCreateData } from "@/types/deliverable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 const STATUS_VARIANT: Record<
   string,
@@ -91,6 +93,12 @@ export default function AssignmentDetailPage() {
     queryKey: ["deliverables", { assignment_id: assignmentId }],
     queryFn: () => listDeliverables({ assignment_id: assignmentId }),
     enabled: !!assignmentId,
+  });
+
+  const { data: assignedPartner } = useQuery({
+    queryKey: ["partners", assignment?.partner_id],
+    queryFn: () => getPartner(assignment!.partner_id),
+    enabled: !!assignment?.partner_id,
   });
 
   const dispatchMutation = useMutation({
@@ -173,6 +181,19 @@ export default function AssignmentDetailPage() {
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {assignedPartner?.is_on_probation && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-900">Enhanced Oversight Required</AlertTitle>
+            <AlertDescription className="text-amber-800">
+              <span className="font-semibold">{assignedPartner.firm_name}</span> is a probationary
+              partner ({assignedPartner.completed_assignments} of 3 qualifying engagements
+              completed). Apply additional review steps to all deliverables, communications, and
+              sign-offs on this assignment.
+            </AlertDescription>
           </Alert>
         )}
 

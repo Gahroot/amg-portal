@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Recipient(BaseModel):
@@ -41,11 +41,15 @@ class CommunicationResponse(BaseModel):
     program_id: UUID | None = None
     partner_id: UUID | None = None
     read_receipts: dict[str, Any] | None = None
+    approval_status: str = "draft"
+    reviewer_id: UUID | None = None
+    reviewed_at: datetime | None = None
+    reviewer_notes: str | None = None
     sent_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CommunicationListResponse(BaseModel):
@@ -66,3 +70,40 @@ class SendMessageRequest(BaseModel):
     conversation_id: UUID | None = None
     body: str
     attachment_ids: list[str] | None = None
+
+
+class TemplatePreviewRequest(BaseModel):
+    template_id: UUID
+    variables: dict[str, Any]
+
+
+class TemplatePreviewResponse(BaseModel):
+    subject: str | None = None
+    body: str
+
+
+class SendFromTemplateRequest(BaseModel):
+    template_id: UUID
+    recipient_user_ids: list[UUID]
+    variables: dict[str, Any]
+    client_id: UUID | None = None
+    program_id: UUID | None = None
+    partner_id: UUID | None = None
+
+
+class CommunicationSubmitForReview(BaseModel):
+    """Request to submit a communication for review. No extra fields needed."""
+    pass
+
+
+class CommunicationReviewAction(BaseModel):
+    """Request to approve or reject a communication."""
+    action: str  # "approve" or "reject"
+    notes: str | None = None
+
+
+class AudioUploadResponse(BaseModel):
+    """Response after uploading a voice message audio file."""
+    object_path: str
+    url: str
+    file_size: int

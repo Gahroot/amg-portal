@@ -10,8 +10,8 @@ from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger(__name__)
 
-# Template directory
-TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "reports"
+# Root templates directory — all templates are addressed relative to this path.
+TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 
 
 class PDFService:
@@ -21,8 +21,13 @@ class PDFService:
     @property
     def env(self) -> Environment:
         if self._env is None:
+            # Search both the root templates dir and the reports subdirectory so that:
+            # - top-level templates (e.g. brief.html) are found directly
+            # - sub-templates that extend "base.html" still resolve it from reports/
             self._env = Environment(
-                loader=FileSystemLoader(str(TEMPLATE_DIR)),
+                loader=FileSystemLoader(
+                    [str(TEMPLATE_DIR), str(TEMPLATE_DIR / "reports")]
+                ),
                 autoescape=True,
             )
         return self._env
@@ -40,22 +45,32 @@ class PDFService:
 
     def generate_portfolio_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate portfolio overview PDF."""
-        html = self.render_html("portfolio_overview.html", data)
+        html = self.render_html("reports/portfolio_overview.html", data)
         return self.render_html_to_pdf(html)
 
     def generate_program_status_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate program status PDF."""
-        html = self.render_html("program_status.html", data)
+        html = self.render_html("reports/program_status.html", data)
         return self.render_html_to_pdf(html)
 
     def generate_completion_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate completion report PDF."""
-        html = self.render_html("completion_report.html", data)
+        html = self.render_html("reports/completion_report.html", data)
         return self.render_html_to_pdf(html)
 
     def generate_annual_review_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate annual review PDF."""
-        html = self.render_html("annual_review.html", data)
+        html = self.render_html("reports/annual_review.html", data)
+        return self.render_html_to_pdf(html)
+
+    def generate_brief_pdf(self, data: dict[str, Any]) -> bytes:
+        """Generate a partner assignment brief PDF."""
+        html = self.render_html("brief.html", data)
+        return self.render_html_to_pdf(html)
+
+    def generate_custom_report_pdf(self, data: dict[str, Any]) -> bytes:
+        """Generate a custom report PDF."""
+        html = self.render_html("reports/custom_report.html", data)
         return self.render_html_to_pdf(html)
 
     async def store_report_pdf(

@@ -1,5 +1,12 @@
 import axios from "axios";
 
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  removeTokens,
+} from "@/lib/token-storage";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export const api = axios.create({
@@ -11,43 +18,17 @@ export const api = axios.create({
   timeout: 30000,
 });
 
-function safeGetItem(key: string): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function safeSetItem(key: string, value: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Silent fail
-  }
-}
-
-function safeRemoveItem(key: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    // Silent fail
-  }
-}
-
 export function logout(): void {
-  safeRemoveItem("access_token");
-  safeRemoveItem("refresh_token");
-  window.location.href = "/login";
+  removeTokens();
+  // Notify the auth provider so it can clear React state and redirect.
+  // Avoids a hard window.location redirect that races with router.replace.
+  window.dispatchEvent(new Event("auth:logout"));
 }
 
 // Request interceptor — attach JWT
 api.interceptors.request.use(
   (config) => {
-    const token = safeGetItem("access_token");
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -84,7 +65,9 @@ api.interceptors.response.use(
       error.message = error.response.data.detail;
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip interceptor for the refresh endpoint itself to avoid deadlocks
+    const isRefreshRequest = originalRequest.url?.includes("/auth/refresh");
+    if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -96,7 +79,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshTokenValue = safeGetItem("refresh_token");
+      const refreshTokenValue = getRefreshToken();
 
       if (!refreshTokenValue) {
         logout();
@@ -109,8 +92,7 @@ api.interceptors.response.use(
         });
 
         const { access_token, refresh_token } = response.data;
-        safeSetItem("access_token", access_token);
-        safeSetItem("refresh_token", refresh_token);
+        setTokens(access_token, refresh_token);
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
 
         processQueue(null);

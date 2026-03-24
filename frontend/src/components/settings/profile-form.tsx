@@ -14,6 +14,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ValidatedInput,
+  commonValidationRules,
+  type FieldValidationState,
+} from "@/components/ui/validated-input";
 
 export function ProfileForm() {
   const { user } = useAuth();
@@ -22,6 +27,7 @@ export function ProfileForm() {
   const [fullName, setFullName] = React.useState("");
   const [phoneNumber, setPhoneNumber] = React.useState("");
   const [hasChanges, setHasChanges] = React.useState(false);
+  const [isFormValid, setIsFormValid] = React.useState(false);
 
   React.useEffect(() => {
     if (user) {
@@ -32,8 +38,18 @@ export function ProfileForm() {
 
   const markChanged = () => setHasChanges(true);
 
+  const handleFullNameValidation = (state: FieldValidationState) => {
+    setIsFormValid(state.isValid);
+  };
+
+  const handlePhoneValidation = (_state: FieldValidationState) => {
+    // Phone is optional, so we don't block form submission
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) return;
+    
     updateProfile.mutate(
       {
         full_name: fullName,
@@ -85,33 +101,36 @@ export function ProfileForm() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="full-name">Full Name</Label>
-            <Input
-              id="full-name"
-              type="text"
-              value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value);
-                markChanged();
-              }}
-              required
-            />
-          </div>
+          <ValidatedInput
+            id="full-name"
+            label="Full Name"
+            value={fullName}
+            onChange={(value) => {
+              setFullName(value);
+              markChanged();
+            }}
+            rules={commonValidationRules.name}
+            validationMode="onChange"
+            showValidMark
+            onValidationChange={handleFullNameValidation}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => {
-                setPhoneNumber(e.target.value);
-                markChanged();
-              }}
-              placeholder="+1 (555) 000-0000"
-            />
-          </div>
+          <ValidatedInput
+            id="phone"
+            label="Phone Number"
+            type="tel"
+            value={phoneNumber}
+            onChange={(value) => {
+              setPhoneNumber(value);
+              markChanged();
+            }}
+            rules={commonValidationRules.phone}
+            validationMode="onBlur"
+            placeholder="+1 (555) 000-0000"
+            showValidMark
+            onValidationChange={handlePhoneValidation}
+          />
 
           <div className="space-y-2">
             <Label>Role</Label>
@@ -122,7 +141,7 @@ export function ProfileForm() {
             />
           </div>
 
-          <Button type="submit" disabled={!hasChanges || updateProfile.isPending}>
+          <Button type="submit" disabled={!hasChanges || !isFormValid || updateProfile.isPending}>
             {updateProfile.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </form>

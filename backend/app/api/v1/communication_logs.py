@@ -3,11 +3,12 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.core.exceptions import NotFoundException
 from app.models.communication_log import CommunicationLog
 from app.schemas.communication_log import (
     CommunicationLogCreate,
@@ -170,7 +171,7 @@ async def get_communication_log(
     )
     log = result.scalar_one_or_none()
     if not log:
-        raise HTTPException(status_code=404, detail="Communication log not found")
+        raise NotFoundException("Communication log not found")
     return _build_response(log)
 
 
@@ -192,7 +193,7 @@ async def update_communication_log(
     )
     log = result.scalar_one_or_none()
     if not log:
-        raise HTTPException(status_code=404, detail="Communication log not found")
+        raise NotFoundException("Communication log not found")
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -225,7 +226,7 @@ async def delete_communication_log(
     )
     log = result.scalar_one_or_none()
     if not log:
-        raise HTTPException(status_code=404, detail="Communication log not found")
+        raise NotFoundException("Communication log not found")
 
     await db.delete(log)
     await db.commit()

@@ -7,10 +7,10 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 
-class FamilyMember(Base):
+class FamilyMember(Base, TimestampMixin):
     """Family member associated with a client profile."""
 
     __tablename__ = "family_members"
@@ -33,15 +33,6 @@ class FamilyMember(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_primary_contact: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     # Relationships

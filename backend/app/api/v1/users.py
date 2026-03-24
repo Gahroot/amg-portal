@@ -1,12 +1,15 @@
 """User management endpoints (admin only)."""
 
 import uuid
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser, require_admin
+from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.core.security import hash_password
+from app.models.audit_log import AuditLog
 from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.auth import UserResponse
@@ -54,10 +57,7 @@ async def list_users(
 async def create_user(data: UserCreateByAdmin, db: DB):
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
+        raise ConflictException("Email already registered")
 
     user = User(
         email=data.email,
@@ -78,7 +78,7 @@ async def get_user(user_id: uuid.UUID, db: DB):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise NotFoundException("User not found")
     return user
 
 
@@ -87,7 +87,7 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise NotFoundException("User not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "role" in update_data and update_data["role"] is not None:
@@ -108,15 +108,54 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
 )
 async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB):
     if user_id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot deactivate yourself",
-        )
+        raise BadRequestException("Cannot deactivate yourself")
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise NotFoundException("User not found")
 
     user.status = "inactive"
     await db.commit()
+
+
+@router.post(
+    "/{user_id}/deactivate",
+    response_model=UserResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def deactivate_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB) -> UserResponse:
+    """Deactivate a user account.
+
+    Sets the user status to 'inactive', which immediately prevents them from
+    authenticating. Any existing JWT tokens will be rejected on the next
+    request since the auth dependency checks user.status. The action is
+    written to the audit log for compliance traceability.
+    """
+    if user_id == current_user.id:
+        raise BadRequestException("Cannot deactivate your own account")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundException("User not found")
+
+    if user.status == "inactive":
+        raise ConflictException("User account is already inactive")
+
+    previous_status = user.status
+    user.status = "inactive"
+
+    log = AuditLog(
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="update",
+        entity_type="user",
+        entity_id=str(user.id),
+        before_state={"status": previous_status},
+        after_state={"status": "inactive", "deactivated_at": datetime.now(UTC).isoformat()},
+    )
+    db.add(log)
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)

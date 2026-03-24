@@ -1,0 +1,75 @@
+{
+  "name": "AMG Portal - New Task to Slack",
+  "description": "Posts a message to Slack when a new task is created in AMG Portal",
+  "blueprint": {
+    "name": "AMG Portal - New Task Notification",
+    "modules": [
+      {
+        "id": 1,
+        "module": "http:ActionGet",
+        "version": 1,
+        "parameters": {
+          "url": "{{apiUrl}}/api/v1/public/poll/tasks",
+          "headers": [
+            {
+              "key": "X-API-Key",
+              "value": "{{apiKey}}"
+            }
+          ],
+          "method": "GET"
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      {
+        "id": 2,
+        "module": "slack:ActionCreateMessage",
+        "version": 1,
+        "parameters": {
+          "channel": "{{slackChannel}}",
+          "text": "📋 New Task: {{1.title}}\nPriority: {{1.priority}}\nDue: {{1.due_date}}\n\n{{1.description}}"
+        },
+        "mapper": {},
+        "metadata": {
+          "designer": {
+            "x": 300,
+            "y": 0
+          }
+        }
+      }
+    ],
+    "paths": [
+      {
+        "id": 1,
+        "sourceModuleId": 1,
+        "targetModuleId": 2
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "apiUrl",
+      "type": "text",
+      "label": "AMG Portal API URL",
+      "default": "https://api.amg-portal.com",
+      "required": true
+    },
+    {
+      "name": "apiKey",
+      "type": "password",
+      "label": "API Key",
+      "required": true
+    },
+    {
+      "name": "slackChannel",
+      "type": "text",
+      "label": "Slack Channel",
+      "required": true
+    }
+  ]
+}

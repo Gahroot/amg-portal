@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { User, Bell, Lock } from "lucide-react";
+import { User, Bell, Lock, Webhook } from "lucide-react";
 
 const settingsNav = [
   {
@@ -21,6 +21,11 @@ const settingsNav = [
     title: "Security",
     href: "/partner/settings/security",
     icon: Lock,
+  },
+  {
+    title: "Webhooks",
+    href: "/partner/settings/webhooks",
+    icon: Webhook,
   },
 ];
 

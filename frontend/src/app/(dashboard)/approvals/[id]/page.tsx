@@ -24,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ApprovalComments } from "@/components/approvals/approval-comments";
 
 export default function MDApprovalReviewPage() {
   const params = useParams();
@@ -241,6 +242,22 @@ export default function MDApprovalReviewPage() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Comment Thread — keyed by client profile ID with entity_type=client_profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-xl">
+              Discussion
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ApprovalComments
+              entityId={id}
+              entityType="client_profile"
+              showInternal={true}
+            />
           </CardContent>
         </Card>
       </div>

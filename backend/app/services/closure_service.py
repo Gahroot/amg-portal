@@ -3,16 +3,23 @@
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
+from app.models.partner import PartnerProfile
 from app.models.partner_assignment import PartnerAssignment
 from app.models.partner_rating import PartnerRating
 from app.models.program import Program
 from app.models.program_closure import DEFAULT_CHECKLIST, ProgramClosure
 from app.schemas.partner_rating import PartnerRatingCreate
 from app.schemas.program_closure import ChecklistItem
+from app.services.partner_scoring_service import calculate_partner_score
 
 
 async def initiate_closure(
@@ -26,14 +33,10 @@ async def initiate_closure(
     result = await db.execute(select(Program).where(Program.id == program_id))
     program = result.scalar_one_or_none()
     if not program:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Program not found",
-        )
+        raise NotFoundException("Program not found")
     if program.status not in ("completed", "active"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=("Program must be in 'active' or 'completed' status to initiate closure"),
+        raise BadRequestException(
+            "Program must be in 'active' or 'completed' status to initiate closure"
         )
 
     # Check if closure already exists
@@ -41,10 +44,7 @@ async def initiate_closure(
         select(ProgramClosure).where(ProgramClosure.program_id == program_id)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Closure already initiated for this program",
-        )
+        raise ConflictException("Closure already initiated for this program")
 
     closure = ProgramClosure(
         program_id=program_id,
@@ -67,10 +67,7 @@ async def get_closure_status(
     result = await db.execute(select(ProgramClosure).where(ProgramClosure.program_id == program_id))
     closure = result.scalar_one_or_none()
     if not closure:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No closure record found for this program",
-        )
+        raise NotFoundException("No closure record found for this program")
     return closure
 
 
@@ -82,10 +79,7 @@ async def update_checklist(
     """Update checklist items on the closure record."""
     closure = await get_closure_status(db, program_id)
     if closure.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot update checklist on a completed closure",
-        )
+        raise BadRequestException("Cannot update checklist on a completed closure")
 
     closure.checklist = [item.model_dump() for item in items]
     closure.status = "in_progress"
@@ -104,10 +98,7 @@ async def submit_partner_rating(
     # Ensure closure exists
     closure = await get_closure_status(db, program_id)
     if closure.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot submit ratings on a completed closure",
-        )
+        raise BadRequestException("Cannot submit ratings on a completed closure")
 
     # Check for duplicate
     existing = await db.execute(
@@ -117,10 +108,7 @@ async def submit_partner_rating(
         )
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Rating already exists for this partner on this program",
-        )
+        raise ConflictException("Rating already exists for this partner on this program")
 
     rating = PartnerRating(
         program_id=program_id,
@@ -157,9 +145,37 @@ async def submit_partner_rating(
         if closure.status == "initiated":
             closure.status = "in_progress"
 
+    # Update partner's cumulative performance_rating as rolling average of all overall scores
+    scores = await calculate_partner_score(db, rating_data.partner_id)
+    if scores["avg_overall"] is not None:
+        partner_result = await db.execute(
+            select(PartnerProfile).where(PartnerProfile.id == rating_data.partner_id)
+        )
+        partner = partner_result.scalar_one_or_none()
+        if partner:
+            partner.performance_rating = scores["avg_overall"]
+
     await db.commit()
     await db.refresh(rating)
     return rating
+
+
+async def save_debrief_notes(
+    db: AsyncSession,
+    program_id: uuid.UUID,
+    user_id: uuid.UUID,
+    user_name: str,
+    notes: str,
+) -> ProgramClosure:
+    """Save or update the client debrief notes on the closure record."""
+    closure = await get_closure_status(db, program_id)
+    closure.debrief_notes = notes
+    closure.debrief_notes_at = datetime.now(UTC)
+    closure.debrief_notes_by = user_id
+    closure.debrief_notes_by_name = user_name
+    await db.commit()
+    await db.refresh(closure)
+    return closure
 
 
 async def get_partner_ratings(
@@ -179,19 +195,31 @@ async def complete_closure(
     """Finalize the closure after validating all checklist items."""
     closure = await get_closure_status(db, program_id)
     if closure.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Closure is already completed",
+        raise BadRequestException("Closure is already completed")
+
+    # Validate all assigned partners have ratings submitted
+    assignments_result = await db.execute(
+        select(PartnerAssignment.partner_id).where(PartnerAssignment.program_id == program_id)
+    )
+    assigned_partner_ids = set(assignments_result.scalars().all())
+
+    if assigned_partner_ids:
+        ratings_result = await db.execute(
+            select(PartnerRating.partner_id).where(PartnerRating.program_id == program_id)
         )
+        rated_partner_ids = set(ratings_result.scalars().all())
+        missing_partner_ids = assigned_partner_ids - rated_partner_ids
+        if missing_partner_ids:
+            raise ValidationException(
+                "All partner ratings must be submitted before closure can be completed",
+                details={"missing_partner_ids": [str(pid) for pid in missing_partner_ids]},
+            )
 
     # Validate all checklist items are completed
     incomplete = [item for item in closure.checklist if not item.get("completed", False)]
     if incomplete:
         labels = [str(item["label"]) for item in incomplete]
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Incomplete checklist items: {', '.join(labels)}",
-        )
+        raise BadRequestException(f"Incomplete checklist items: {', '.join(labels)}")
 
     closure.status = "completed"
     closure.completed_at = datetime.now(UTC)

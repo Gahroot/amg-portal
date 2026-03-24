@@ -1,21 +1,21 @@
 """Annual capability review tracking for partner compliance."""
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.partner import PartnerProfile
     from app.models.user import User
 
 
-class CapabilityReview(Base):
+class CapabilityReview(Base, TimestampMixin):
     """Annual capability review for partner compliance verification."""
 
     __tablename__ = "capability_reviews"
@@ -49,15 +49,6 @@ class CapabilityReview(Base):
     recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)
     reminder_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-        nullable=False,
     )
 
     # Relationships

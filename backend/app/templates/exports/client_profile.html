@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Client Profile: {{ display_name or legal_name }}</h1>
+
+<div class="summary-box">
+    <h3>Client Overview</h3>
+    <div class="stat-row">
+        <span class="stat-label">Legal Name:</span>
+        <span class="stat-value">{{ legal_name }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Entity Type:</span>
+        <span class="stat-value">{{ entity_type or 'N/A' }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Jurisdiction:</span>
+        <span class="stat-value">{{ jurisdiction or 'N/A' }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Compliance Status:</span>
+        <span class="stat-value">{{ compliance_status | title }}</span>
+    </div>
+</div>
+
+<h2>Contact Information</h2>
+<table>
+    <tr>
+        <th>Field</th>
+        <th>Value</th>
+    </tr>
+    <tr>
+        <td>Primary Email</td>
+        <td>{{ primary_email or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Secondary Email</td>
+        <td>{{ secondary_email or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Primary Phone</td>
+        <td>{{ primary_phone or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Address</td>
+        <td>{{ address or 'N/A' }}</td>
+    </tr>
+</table>
+
+<h2>Relationship Management</h2>
+<table>
+    <tr>
+        <th>Field</th>
+        <th>Value</th>
+    </tr>
+    <tr>
+        <td>Relationship Manager</td>
+        <td>{{ rm_name or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Client Since</td>
+        <td>{{ client_since or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td>Approval Status</td>
+        <td>{{ approval_status | title }}</td>
+    </tr>
+    <tr>
+        <td>Risk Profile</td>
+        <td>{{ risk_profile or 'N/A' }}</td>
+    </tr>
+</table>
+
+{% if family_members %}
+<h2>Family Members / Associates</h2>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Relationship</th>
+        <th>Email</th>
+    </tr>
+    {% for fm in family_members %}
+    <tr>
+        <td>{{ fm.name }}</td>
+        <td>{{ fm.relationship }}</td>
+        <td>{{ fm.email or 'N/A' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<h2>Program Summary</h2>
+<div class="summary-box">
+    <div class="stat-row">
+        <span class="stat-label">Total Programs:</span>
+        <span class="stat-value">{{ total_programs | default(0) }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Active Programs:</span>
+        <span class="stat-value">{{ active_programs | default(0) }}</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Completed Programs:</span>
+        <span class="stat-value">{{ completed_programs | default(0) }}</span>
+    </div>
+</div>
+
+{% if programs %}
+<h3>Recent Programs</h3>
+<table>
+    <tr>
+        <th>Program</th>
+        <th>Status</th>
+        <th>RAG</th>
+        <th>Start Date</th>
+    </tr>
+    {% for p in programs %}
+    <tr>
+        <td>{{ p.title }}</td>
+        <td>{{ p.status | title }}</td>
+        <td class="rag-{{ p.rag_status | lower }}">{{ p.rag_status | upper }}</td>
+        <td>{{ p.start_date or 'TBD' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+{% if communication_preferences %}
+<h2>Communication Preferences</h2>
+<table>
+    <tr>
+        <th>Channel</th>
+        <th>Preference</th>
+    </tr>
+    <tr>
+        <td>Email</td>
+        <td>{{ communication_preferences.email | title if communication_preferences.email else 'Standard' }}</td>
+    </tr>
+    <tr>
+        <td>Phone</td>
+        <td>{{ communication_preferences.phone | title if communication_preferences.phone else 'Standard' }}</td>
+    </tr>
+    <tr>
+        <td>Meeting Preference</td>
+        <td>{{ communication_preferences.meeting or 'N/A' }}</td>
+    </tr>
+</table>
+{% endif %}
+
+{% if notes %}
+<h2>Notes</h2>
+<p>{{ notes }}</p>
+{% endif %}
+{% endblock %}

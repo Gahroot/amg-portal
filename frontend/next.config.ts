@@ -19,12 +19,19 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
 ];
 
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: ["lucide-react", "motion"],
   },
   async headers() {
+    // In development, Turbopack's runtime requires 'unsafe-eval' for module
+    // instantiation.  Skip the strict CSP so chunks load without errors.
+    if (isDev) {
+      return [];
+    }
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
 };
