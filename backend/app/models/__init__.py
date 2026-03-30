@@ -76,6 +76,7 @@ from app.models.push_token import PushToken  # noqa: F401
 from app.models.read_status import ReadStatus  # noqa: F401
 from app.models.recent_item import RecentItem  # noqa: F401
 from app.models.recurring_task import RecurringTaskTemplate  # noqa: F401
+from app.models.refresh_token import RefreshToken  # noqa: F401
 from app.models.report_schedule import ReportSchedule  # noqa: F401
 from app.models.saved_filter import SavedFilter  # noqa: F401
 from app.models.scheduled_event import ScheduledEvent  # noqa: F401

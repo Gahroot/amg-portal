@@ -5,8 +5,8 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import delete, select
 from sqlalchemy import func as sa_func
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -1553,6 +1553,23 @@ async def _send_milestone_reminder_notifications_job() -> None:
         logger.exception("Error in milestone reminder notifications job")
 
 
+async def _cleanup_expired_refresh_tokens_job() -> None:
+    """Delete expired refresh tokens to keep the table lean."""
+    try:
+        from app.models.refresh_token import RefreshToken
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                delete(RefreshToken).where(RefreshToken.expires_at < datetime.now(UTC))
+            )
+            await db.commit()
+            count: int = result.rowcount  # type: ignore[attr-defined]
+        if count:
+            logger.info("Cleaned up %d expired refresh tokens", count)
+    except Exception:
+        logger.exception("Error cleaning up expired refresh tokens")
+
+
 def start_scheduler() -> AsyncIOScheduler | None:
     """Create, configure, and start the background scheduler."""
     global _scheduler  # noqa: PLW0603
@@ -1792,6 +1809,17 @@ def start_scheduler() -> AsyncIOScheduler | None:
         minute=5,
         id="process_recurring_tasks",
         name="Process recurring task templates",
+        replace_existing=True,
+    )
+
+    # Cleanup expired refresh tokens — daily at 3:00 AM UTC
+    _scheduler.add_job(
+        _cleanup_expired_refresh_tokens_job,
+        "cron",
+        hour=3,
+        minute=0,
+        id="cleanup_expired_refresh_tokens",
+        name="Cleanup expired refresh tokens",
         replace_existing=True,
     )
 

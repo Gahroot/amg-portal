@@ -24,6 +24,7 @@ from app.models import (  # noqa: F401  # noqa: F401  # noqa: F401
     partner,
     partner_assignment,
     program,
+    refresh_token,
     task,
     user,
 )

@@ -3,9 +3,11 @@
 import contextlib
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from fastapi import APIRouter, Query, status
-from sqlalchemy import asc, select
+from fastapi import APIRouter, Depends, Query, Request, Response, status
+from sqlalchemy import asc, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DB, CurrentUser, MFASetupUser
 from app.core.config import settings
@@ -16,6 +18,12 @@ from app.core.exceptions import (
     NotFoundException,
     UnauthorizedException,
 )
+from app.core.rate_limit import (
+    rate_limit_forgot_password,
+    rate_limit_login,
+    rate_limit_refresh,
+    rate_limit_register,
+)
 from app.core.security import (
     create_access_token,
     create_mfa_setup_token,
@@ -23,12 +31,16 @@ from app.core.security import (
     create_refresh_token,
     decode_password_reset_token,
     decode_refresh_token,
+    decrypt_mfa_secret,
+    encrypt_mfa_secret,
     hash_password,
+    hash_token,
     verify_password,
 )
 from app.models.bookmark import Bookmark
 from app.models.enums import UserRole
 from app.models.notification_preference import NotificationPreference
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -71,10 +83,67 @@ from app.services.recent_item_service import RecentItemService
 router = APIRouter()
 
 
+def _set_auth_cookies(
+    response: Response, access_token: str, refresh_token: str,
+) -> None:
+    """Set httpOnly cookies for access and refresh tokens."""
+    is_secure = not settings.DEBUG
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=is_secure,
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=is_secure,
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/api/v1/auth/refresh",
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Clear auth cookies."""
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(
+        key="refresh_token", path="/api/v1/auth/refresh",
+    )
+
+
+async def _issue_refresh_token(
+    db: AsyncSession,
+    user_id: str,
+    token_data: dict[str, Any],
+    *,
+    family_id: str | None = None,
+) -> str:
+    """Create a refresh token, store its hash, return the raw JWT."""
+    fid = family_id or str(uuid.uuid4())
+    jti = str(uuid.uuid4())
+    token = create_refresh_token(token_data, family=fid, jti=jti)
+    expires_at = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    db.add(RefreshToken(
+        user_id=user_id,
+        token_hash=hash_token(token),
+        jti=jti,
+        family_id=fid,
+        is_revoked=False,
+        expires_at=expires_at,
+    ))
+    return token
+
+
 @router.post(
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit_register)],
 )
 async def register(data: UserCreate, db: DB):
     result = await db.execute(select(User).where(User.email == data.email))
@@ -94,8 +163,8 @@ async def register(data: UserCreate, db: DB):
     return user
 
 
-@router.post("/login", response_model=Token)
-async def login(data: LoginRequest, db: DB):
+@router.post("/login", response_model=Token, dependencies=[Depends(rate_limit_login)])
+async def login(data: LoginRequest, db: DB, response: Response):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
@@ -120,11 +189,14 @@ async def login(data: LoginRequest, db: DB):
             # Soft enforcement: issue real tokens so the app is accessible,
             # but flag that setup must be completed.
             user.last_login_at = datetime.now(UTC)
-            await db.commit()
             token_data = {"sub": str(user.id), "email": user.email}
+            access_token = create_access_token(token_data)
+            refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
+            await db.commit()
+            _set_auth_cookies(response, access_token, refresh_token)
             return Token(
-                access_token=create_access_token(token_data),
-                refresh_token=create_refresh_token(token_data),
+                access_token=access_token,
+                refresh_token=refresh_token,
                 mfa_setup_required=True,
                 mfa_setup_token=setup_token,
             )
@@ -147,8 +219,10 @@ async def login(data: LoginRequest, db: DB):
 
     # Try TOTP first, then backup codes
     mfa_valid = False
-    if user.mfa_secret and verify_totp(user.mfa_secret, data.mfa_code):
-        mfa_valid = True
+    if user.mfa_secret:
+        decrypted_secret = decrypt_mfa_secret(user.mfa_secret)
+        if verify_totp(decrypted_secret, data.mfa_code):
+            mfa_valid = True
     elif user.mfa_backup_codes:
         valid, remaining = verify_backup_code(user.mfa_backup_codes, data.mfa_code)
         if valid:
@@ -160,35 +234,109 @@ async def login(data: LoginRequest, db: DB):
         raise UnauthorizedException("Invalid MFA code")
 
     user.last_login_at = datetime.now(UTC)
-    await db.commit()
     token_data = {"sub": str(user.id), "email": user.email}
+    access_token = create_access_token(token_data)
+    refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
+    await db.commit()
+    _set_auth_cookies(response, access_token, refresh_token)
     return Token(
-        access_token=create_access_token(token_data),
-        refresh_token=create_refresh_token(token_data),
+        access_token=access_token,
+        refresh_token=refresh_token,
     )
 
 
-@router.post("/refresh", response_model=Token)
-async def refresh(data: RefreshTokenRequest, db: DB):
-    payload = decode_refresh_token(data.refresh_token)
+@router.post("/refresh", response_model=Token, dependencies=[Depends(rate_limit_refresh)])
+async def refresh(
+    request: Request,
+    response: Response,
+    db: DB,
+    data: RefreshTokenRequest | None = None,
+):
+    # Accept refresh token from request body (legacy) or httpOnly cookie
+    raw_token = (
+        data.refresh_token
+        if data and data.refresh_token
+        else request.cookies.get("refresh_token")
+    )
+    if not raw_token:
+        raise UnauthorizedException("Missing refresh token")
+
+    payload = decode_refresh_token(raw_token)
     if payload is None:
         raise UnauthorizedException("Invalid refresh token")
 
     user_id = payload.get("sub")
-    if not user_id:
+    token_jti = payload.get("jti")
+    token_family = payload.get("family")
+    if not user_id or not token_jti or not token_family:
         raise UnauthorizedException("Invalid refresh token")
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    # Look up the stored token by jti
+    result = await db.execute(
+        select(RefreshToken).where(RefreshToken.jti == token_jti)
+    )
+    stored_token = result.scalar_one_or_none()
+
+    if stored_token is None:
+        raise UnauthorizedException("Invalid refresh token")
+
+    # Reuse detection: if this token was already revoked, revoke the entire family
+    if stored_token.is_revoked:
+        await db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.family_id == token_family, RefreshToken.is_revoked.is_(False))
+            .values(is_revoked=True)
+        )
+        await db.commit()
+        _clear_auth_cookies(response)
+        raise UnauthorizedException("Refresh token reuse detected")
+
+    # Verify token hash matches
+    if stored_token.token_hash != hash_token(raw_token):
+        raise UnauthorizedException("Invalid refresh token")
+
+    # Mark current token as revoked (rotation)
+    stored_token.is_revoked = True
+
+    # Verify user exists and is active
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    user = user_result.scalar_one_or_none()
 
     if not user or user.status != "active":
+        await db.commit()
         raise UnauthorizedException("User not found or inactive")
 
+    # Issue new token pair in the same family
     token_data = {"sub": str(user.id), "email": user.email}
-    return Token(
-        access_token=create_access_token(token_data),
-        refresh_token=create_refresh_token(token_data),
+    access_token = create_access_token(token_data)
+    refresh_token = await _issue_refresh_token(
+        db, str(user.id), token_data, family_id=token_family,
     )
+    await db.commit()
+    _set_auth_cookies(response, access_token, refresh_token)
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(request: Request, response: Response, db: DB):
+    """Clear auth cookies and revoke the current refresh token."""
+    raw_token = request.cookies.get("refresh_token")
+    if raw_token:
+        payload = decode_refresh_token(raw_token)
+        if payload:
+            token_jti = payload.get("jti")
+            if token_jti:
+                result = await db.execute(
+                    select(RefreshToken).where(RefreshToken.jti == token_jti)
+                )
+                stored_token = result.scalar_one_or_none()
+                if stored_token and not stored_token.is_revoked:
+                    stored_token.is_revoked = True
+                    await db.commit()
+    _clear_auth_cookies(response)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -212,7 +360,7 @@ async def change_password(
 # ── Password Reset endpoints ────────────────────────────────
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", dependencies=[Depends(rate_limit_forgot_password)])
 async def forgot_password(data: ForgotPasswordRequest, db: DB) -> dict[str, str]:
     """Request a password reset link.
 
@@ -277,8 +425,8 @@ async def mfa_setup(current_user: MFASetupUser, db: DB):
     qr_b64 = generate_qr_code_base64(uri)
     backup_codes = generate_backup_codes()
 
-    # Store secret and backup codes but don't enable yet
-    current_user.mfa_secret = secret
+    # Store encrypted secret and backup codes but don't enable yet
+    current_user.mfa_secret = encrypt_mfa_secret(secret)
     current_user.mfa_backup_codes = backup_codes
     await db.commit()
 
@@ -291,7 +439,12 @@ async def mfa_setup(current_user: MFASetupUser, db: DB):
 
 
 @router.post("/mfa/verify-setup", response_model=Token)
-async def mfa_verify_setup(data: MFAVerifyRequest, current_user: MFASetupUser, db: DB):
+async def mfa_verify_setup(
+    data: MFAVerifyRequest,
+    current_user: MFASetupUser,
+    db: DB,
+    response: Response,
+):
     """Verify a TOTP code to confirm MFA setup.
 
     On success, enables MFA for the user and returns a full Token so that
@@ -301,16 +454,20 @@ async def mfa_verify_setup(data: MFAVerifyRequest, current_user: MFASetupUser, d
     if not current_user.mfa_secret:
         raise BadRequestException("MFA setup not initiated")
 
-    if not verify_totp(current_user.mfa_secret, data.code):
+    decrypted_secret = decrypt_mfa_secret(current_user.mfa_secret)
+    if not verify_totp(decrypted_secret, data.code):
         raise BadRequestException("Invalid verification code")
 
     current_user.mfa_enabled = True
-    await db.commit()
 
     token_data = {"sub": str(current_user.id), "email": current_user.email}
+    access_token = create_access_token(token_data)
+    refresh_token = await _issue_refresh_token(db, str(current_user.id), token_data)
+    await db.commit()
+    _set_auth_cookies(response, access_token, refresh_token)
     return Token(
-        access_token=create_access_token(token_data),
-        refresh_token=create_refresh_token(token_data),
+        access_token=access_token,
+        refresh_token=refresh_token,
     )
 
 
@@ -320,7 +477,8 @@ async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB)
     if not current_user.mfa_enabled or not current_user.mfa_secret:
         raise BadRequestException("MFA is not enabled")
 
-    if not verify_totp(current_user.mfa_secret, data.code):
+    decrypted_secret = decrypt_mfa_secret(current_user.mfa_secret)
+    if not verify_totp(decrypted_secret, data.code):
         raise BadRequestException("Invalid verification code")
 
     current_user.mfa_secret = None
