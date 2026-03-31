@@ -45,6 +45,9 @@ export interface DocumentItem {
   document_type: DocumentType | null;
   expiry_date: string | null;       // ISO date string e.g. "2026-08-15"
   expiry_status: ExpiryStatus | null;
+  // DocuSign
+  envelope_id: string | null;
+  docusign_status: string | null;
 }
 
 export interface ExpiringDocumentItem {

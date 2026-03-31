@@ -84,6 +84,15 @@ class Settings(BaseSettings):
     SECURITY_FEED_API_KEY: str | None = None
     SECURITY_FEED_BASE_URL: str | None = None  # Base URL for custom/self-hosted providers
 
+    # DocuSign eSignature
+    DOCUSIGN_INTEGRATION_KEY: str = ""
+    DOCUSIGN_USER_ID: str = ""
+    DOCUSIGN_ACCOUNT_ID: str = ""
+    DOCUSIGN_PRIVATE_KEY: str = ""
+    DOCUSIGN_BASE_URI: str = "https://demo.docusign.net/restapi"
+    DOCUSIGN_AUTH_SERVER: str = "account-d.docusign.com"
+    DOCUSIGN_RETURN_URL: str = "http://localhost:3000/docusign/complete"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Require SECRET_KEY to be set in non-debug environments

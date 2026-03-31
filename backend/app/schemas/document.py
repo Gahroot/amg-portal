@@ -25,6 +25,9 @@ class DocumentResponse(BaseModel):
     document_type: str | None = None
     expiry_date: date | None = None
     expiry_status: str | None = None  # computed: expired/expiring_30/expiring_90/valid
+    # DocuSign
+    envelope_id: str | None = None
+    docusign_status: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

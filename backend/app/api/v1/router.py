@@ -28,6 +28,7 @@ from app.api.v1.deliverable_templates import router as deliverable_templates_rou
 from app.api.v1.deliverables import router as deliverables_router
 from app.api.v1.document_requests import router as document_requests_router
 from app.api.v1.documents import router as documents_router
+from app.api.v1.docusign import router as docusign_router
 from app.api.v1.escalation_templates import router as escalation_templates_router
 from app.api.v1.escalations import router as escalations_router
 from app.api.v1.export import router as export_router
@@ -160,6 +161,7 @@ router.include_router(
     prefix="/audit-trail",
     tags=["communication-audit"],
 )
+router.include_router(docusign_router, prefix="/docusign", tags=["docusign"])
 router.include_router(
     communication_logs_router,
     prefix="/communication-logs",
