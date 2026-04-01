@@ -7,9 +7,15 @@ services:
       POSTGRES_PASSWORD: amg_dev_password
       POSTGRES_DB: amg_portal
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c work_mem=16MB
+        -c effective_cache_size=1GB
+        -c max_connections=100
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U amg"]
       interval: 5s
@@ -20,7 +26,7 @@ services:
     image: redis:7-alpine
     container_name: amg-redis
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -30,7 +36,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-03-12T18-04-18Z
     container_name: amg-minio
     environment:
       MINIO_ROOT_USER: amg_minio
@@ -42,7 +48,7 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 5

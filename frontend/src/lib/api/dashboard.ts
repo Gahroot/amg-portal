@@ -90,13 +90,6 @@ export async function getPortfolioSummary(): Promise<PortfolioSummary> {
   return response.data;
 }
 
-export async function getAtRiskPrograms(): Promise<ProgramHealthResponse> {
-  const response = await api.get<ProgramHealthResponse>(
-    "/api/v1/dashboard/at-risk-programs",
-  );
-  return response.data;
-}
-
 // ============================================================================
 // Real-Time Dashboard API
 // ============================================================================

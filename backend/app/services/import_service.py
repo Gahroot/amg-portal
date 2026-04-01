@@ -1,6 +1,7 @@
 """Service for importing data from CSV/Excel files."""
 
 import base64
+import contextlib
 import csv
 import io
 import logging
@@ -9,40 +10,32 @@ import uuid
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from email.utils import parseaddr
-from typing import Any, TypeVar
+from typing import Any
 
 from openpyxl import load_workbook
-from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BadRequestException, NotFoundException, ValidationException
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.enums import TaskPriority, TaskStatus
 from app.models.partner import PartnerProfile
 from app.models.program import Program
 from app.models.user import User
-from app.schemas.import import (
-    ClientImportRow,
+from app.schemas.import_schemas import (
     ColumnMapping,
-    ImportError,
     ImportEntityType,
+    ImportError,
     ImportFieldDefinition,
     ImportJobResponse,
-    ImportPreviewRow,
     ImportStatus,
     ImportTemplateResponse,
     ImportWarning,
-    PartnerImportRow,
-    ProgramImportRow,
-    TaskImportRow,
 )
 from app.services.client_service import client_service
 from app.services.duplicate_detection_service import check_duplicates
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 # In-memory storage for import jobs (in production, use Redis or database)
 _import_jobs: dict[str, dict[str, Any]] = {}
@@ -382,7 +375,6 @@ def _normalize_column_name(name: str) -> str:
 def _auto_detect_mappings(columns: list[str], entity_type: ImportEntityType) -> dict[str, str]:
     """Auto-detect column to field mappings based on column names."""
     field_defs = FIELD_DEFINITIONS.get(entity_type, [])
-    field_map = {f.name: f for f in field_defs}
 
     # Build a lookup for field name variations
     field_variations: dict[str, str] = {}
@@ -506,7 +498,7 @@ def _apply_transform(value: str, transform: str | None) -> str:
         return value.strip()
     elif transform.startswith("date:"):
         # Date format transform
-        _, valid, normalized = transform, *_validate_date(value)
+        _valid, normalized = _validate_date(value)
         if normalized:
             return normalized
     return value
@@ -574,13 +566,14 @@ class ImportService:
         }
         _import_jobs[import_id] = job_data
 
+        from typing import cast as _cast
         return ImportJobResponse(
             import_id=import_id,
             entity_type=entity_type,
             filename=filename,
             status=ImportStatus.PENDING,
-            created_at=job_data["created_at"],
-            updated_at=job_data["updated_at"],
+            created_at=_cast(datetime, job_data["created_at"]),
+            updated_at=_cast(datetime, job_data["updated_at"]),
             total_rows=len(rows),
             mappings=[],
         )
@@ -596,7 +589,14 @@ class ImportService:
         if not job:
             raise NotFoundException("Import job not found")
 
-        job["mappings"] = [{"source_column": m.source_column, "target_field": m.target_field, "transform": m.transform} for m in mappings]
+        job["mappings"] = [
+            {
+                "source_column": m.source_column,
+                "target_field": m.target_field,
+                "transform": m.transform,
+            }
+            for m in mappings
+        ]
         job["default_values"] = default_values or {}
         job["status"] = ImportStatus.MAPPING
         job["updated_at"] = datetime.utcnow()
@@ -612,7 +612,7 @@ class ImportService:
             mappings=mappings,
         )
 
-    async def validate(
+    async def validate(  # noqa: PLR0912, PLR0915
         self,
         db: AsyncSession,
         import_id: str,
@@ -647,7 +647,6 @@ class ImportService:
 
         # Load reference data for validation
         existing_clients = await self._load_client_emails(db)
-        existing_partners = await self._load_partner_emails(db)
         existing_programs = await self._load_program_titles(db)
         existing_users = await self._load_user_emails(db)
 
@@ -673,7 +672,7 @@ class ImportService:
 
             # Validate required fields
             for req_field in required_fields:
-                value = mapped_data.get(req_field)
+                value = mapped_data.get(req_field) or ""
                 if not value:
                     row_errors.append({
                         "row_number": row_num,
@@ -743,20 +742,27 @@ class ImportService:
                         mapped_data[field_name] = str(parsed)
 
                 # Enum validation
-                elif field_def.field_type == "enum" and field_def.enum_values:
-                    if value.lower() not in [v.lower() for v in field_def.enum_values]:
-                        row_errors.append({
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "value",
-                            "message": f"Invalid value: {value}. Must be one of: {', '.join(field_def.enum_values)}",
-                            "value": value,
-                        })
+                elif (
+                    field_def.field_type == "enum"
+                    and field_def.enum_values
+                    and value.lower() not in [v.lower() for v in field_def.enum_values]
+                ):
+                    row_errors.append({
+                        "row_number": row_num,
+                        "field": field_name,
+                        "error_type": "value",
+                        "message": (
+                            f"Invalid value: {value}. "
+                            f"Must be one of: {', '.join(field_def.enum_values)}"
+                        ),
+                        "value": value,
+                    })
 
             # Reference validation (entity-specific)
             if entity_type == ImportEntityType.CLIENTS:
                 # Check for duplicates
-                if not skip_duplicates and mapped_data.get("legal_name") or mapped_data.get("primary_email"):
+                has_name = not skip_duplicates and mapped_data.get("legal_name")
+                if has_name or mapped_data.get("primary_email"):
                     duplicates = await check_duplicates(
                         db,
                         legal_name=mapped_data.get("legal_name"),
@@ -768,7 +774,10 @@ class ImportService:
                             "row_number": row_num,
                             "field": "legal_name",
                             "warning_type": "duplicate_match",
-                            "message": f"Potential duplicate: {dup.legal_name} ({int(dup.similarity_score * 100)}% match)",
+                            "message": (
+                                f"Potential duplicate: {dup.legal_name} "
+                                f"({int(dup.similarity_score * 100)}% match)"
+                            ),
                             "value": mapped_data.get("legal_name"),
                             "existing_id": dup.client_id,
                             "existing_name": dup.legal_name,
@@ -805,7 +814,10 @@ class ImportService:
                         "row_number": row_num,
                         "field": "program_title",
                         "warning_type": "reference",
-                        "message": f"Program not found: {program_title}. Task will be created without program association.",
+                        "message": (
+                            f"Program not found: {program_title}. "
+                            "Task will be created without program association."
+                        ),
                         "value": program_title,
                     })
 
@@ -862,7 +874,7 @@ class ImportService:
             "preview_rows": preview_rows,
         }
 
-    async def confirm_import(
+    async def confirm_import(  # noqa: PLR0912, PLR0915
         self,
         db: AsyncSession,
         import_id: str,
@@ -899,6 +911,10 @@ class ImportService:
         # Load reference data for lookups
         client_email_to_id = await self._load_client_email_to_id(db)
         user_email_to_id = await self._load_user_email_to_id(db)
+
+        # Suppress per-row audit log entries during bulk import to avoid
+        # write amplification (one audit entry per inserted row).
+        db.info["skip_audit"] = True
 
         for preview_row in job["preview_rows"]:
             row_num = preview_row["row_number"]
@@ -1060,7 +1076,12 @@ class ImportService:
             reverse=True,
         )[:limit]
 
-        return [await self.get_job(j["import_id"]) for j in jobs if await self.get_job(j["import_id"])]
+        results = []
+        for j in jobs:
+            job = await self.get_job(j["import_id"])
+            if job:
+                results.append(job)
+        return results
 
     # --- Helper methods ---
 
@@ -1145,8 +1166,8 @@ class ImportService:
         created_by_id: uuid.UUID | None,
     ) -> uuid.UUID | None:
         """Import a single partner."""
-        from app.models.partner import PartnerProfile
         from app.models.enums import PartnerStatus
+        from app.models.partner import PartnerProfile
 
         capabilities = []
         if data.get("capabilities"):
@@ -1185,8 +1206,8 @@ class ImportService:
         created_by_id: uuid.UUID | None,
     ) -> uuid.UUID | None:
         """Import a single program."""
-        from app.models.program import Program
         from app.models.enums import ProgramStatus
+        from app.models.program import Program
 
         client_email = data.get("client_email", "").lower()
         client_id = client_email_to_id.get(client_email)
@@ -1195,12 +1216,10 @@ class ImportService:
 
         budget = None
         if data.get("budget_envelope"):
-            try:
+            with contextlib.suppress(InvalidOperation, ValueError):
                 budget = Decimal(data["budget_envelope"])
-            except (InvalidOperation, ValueError):
-                pass
 
-        status_val = data.get("status") or ProgramStatus.planning.value
+        status_val = data.get("status") or ProgramStatus.intake.value
 
         program = Program(
             client_id=client_id,
@@ -1237,17 +1256,13 @@ class ImportService:
 
         priority = TaskPriority.medium
         if data.get("priority"):
-            try:
+            with contextlib.suppress(ValueError):
                 priority = TaskPriority(data["priority"].lower())
-            except ValueError:
-                pass
 
-        status_val = TaskStatus.pending
+        status_val = TaskStatus.todo
         if data.get("status"):
-            try:
+            with contextlib.suppress(ValueError):
                 status_val = TaskStatus(data["status"].lower())
-            except ValueError:
-                pass
 
         task = Task(
             title=data.get("title", ""),

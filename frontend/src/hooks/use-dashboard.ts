@@ -1,15 +1,20 @@
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getProgramHealth,
   getPortfolioSummary,
-  getAtRiskPrograms,
   getRealTimeStats,
   getActivityFeed,
   getDashboardAlerts,
   getPartnerScorecard,
   getPartnerRankings,
+  type ProgramHealthResponse,
 } from "@/lib/api/dashboard";
+
+interface QueryOptions {
+  enabled?: boolean;
+}
 
 export function useProgramHealth() {
   return useQuery({
@@ -18,18 +23,34 @@ export function useProgramHealth() {
   });
 }
 
-export function usePortfolioSummary() {
+export function usePortfolioSummary(options?: QueryOptions) {
   return useQuery({
     queryKey: ["dashboard", "portfolio-summary"],
     queryFn: () => getPortfolioSummary(),
+    enabled: options?.enabled,
   });
 }
 
-export function useAtRiskPrograms() {
-  return useQuery({
-    queryKey: ["dashboard", "at-risk-programs"],
-    queryFn: () => getAtRiskPrograms(),
+/**
+ * Derives at-risk programs from the program health cache — no extra API call.
+ * A program is "at risk" when its RAG status is red OR it has active escalations.
+ */
+export function useAtRiskPrograms(options?: QueryOptions) {
+  const health = useQuery({
+    queryKey: ["dashboard", "program-health"],
+    queryFn: () => getProgramHealth(),
+    enabled: options?.enabled,
   });
+
+  const atRisk = useMemo<ProgramHealthResponse | undefined>(() => {
+    if (!health.data) return undefined;
+    const programs = health.data.programs.filter(
+      (p) => p.rag_status === "red" || p.active_escalation_count > 0,
+    );
+    return { programs, total: programs.length };
+  }, [health.data]);
+
+  return { ...health, data: atRisk };
 }
 
 export function usePartnerScorecard(partnerId: string) {
@@ -47,26 +68,31 @@ export function usePartnerRankings(skip = 0, limit = 50) {
   });
 }
 
-export function useRealTimeStats() {
+export function useRealTimeStats(options?: QueryOptions) {
   return useQuery({
     queryKey: ["dashboard", "real-time-stats"],
     queryFn: () => getRealTimeStats(),
-    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled,
   });
 }
 
-export function useActivityFeed(skip = 0, limit = 50) {
+export function useActivityFeed(options?: QueryOptions & { skip?: number; limit?: number }) {
+  const skip = options?.skip ?? 0;
+  const limit = options?.limit ?? 50;
   return useQuery({
     queryKey: ["dashboard", "activity-feed", skip, limit],
     queryFn: () => getActivityFeed(skip, limit),
-    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled,
   });
 }
 
-export function useDashboardAlerts() {
+export function useDashboardAlerts(options?: QueryOptions) {
   return useQuery({
     queryKey: ["dashboard", "alerts"],
     queryFn: () => getDashboardAlerts(),
-    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled,
   });
 }

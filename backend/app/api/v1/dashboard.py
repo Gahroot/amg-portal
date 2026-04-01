@@ -1,9 +1,10 @@
 """Dashboard API — internal program health and portfolio summary."""
 
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import case, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,6 +13,7 @@ from app.models.client import Client
 from app.models.decision_request import DecisionRequest
 from app.models.enums import UserRole
 from app.models.escalation import Escalation
+from app.models.milestone import Milestone
 from app.models.partner import PartnerProfile
 from app.models.program import Program
 from app.models.sla_tracker import SLATracker
@@ -28,7 +30,7 @@ from app.services.dashboard_aggregation_service import (
     get_dashboard_alerts,
     get_real_time_stats,
 )
-from app.services.report_service import compute_rag_status
+from app.utils.rag import compute_rag_status
 
 router = APIRouter()
 
@@ -170,16 +172,47 @@ async def get_portfolio_summary(
     client_result = await db.execute(client_query)
     total_clients = client_result.scalar_one()
 
-    # RAG breakdown: need milestones loaded
-    rag_prog_query = select(Program).options(selectinload(Program.milestones))
+    # RAG breakdown: compute in SQL to avoid loading all milestone objects
+    today = datetime.now(UTC).date()
+    amber_cutoff = today + timedelta(days=7)
+
+    # Subquery: per-program milestone flags
+    ms_agg = (
+        select(
+            Milestone.program_id,
+            func.bool_or(
+                (Milestone.status != "completed")
+                & Milestone.due_date.isnot(None)
+                & (Milestone.due_date < today)
+            ).label("has_overdue"),
+            func.bool_or(
+                (Milestone.status != "completed")
+                & Milestone.due_date.isnot(None)
+                & (Milestone.due_date <= amber_cutoff)
+            ).label("has_amber"),
+        )
+        .group_by(Milestone.program_id)
+        .subquery()
+    )
+
+    rag_prog_query = (
+        select(
+            Program.id,
+            case(
+                (ms_agg.c.has_overdue.is_(True), literal("red")),
+                (ms_agg.c.has_amber.is_(True), literal("amber")),
+                else_=literal("green"),
+            ).label("rag"),
+        )
+        .outerjoin(ms_agg, Program.id == ms_agg.c.program_id)
+    )
     if rm_client_ids is not None:
         rag_prog_query = rag_prog_query.where(Program.client_id.in_(rm_client_ids))
 
-    prog_with_ms = await db.execute(rag_prog_query)
+    rag_rows = await db.execute(rag_prog_query)
     rag_breakdown: dict[str, int] = {"red": 0, "amber": 0, "green": 0}
-    for prog in prog_with_ms.scalars().all():
-        rag = compute_rag_status(prog.milestones or [])
-        rag_breakdown[rag] = rag_breakdown.get(rag, 0) + 1
+    for row in rag_rows.all():
+        rag_breakdown[row.rag] = rag_breakdown.get(row.rag, 0) + 1
 
     # Open escalations (scoped by client for RMs)
     esc_query = select(func.count(Escalation.id)).where(
@@ -228,25 +261,6 @@ async def get_portfolio_summary(
         probationary_partner_count=probationary_partner_count,
     )
 
-
-@router.get(
-    "/at-risk-programs",
-    response_model=ProgramHealthResponse,
-    dependencies=[Depends(require_internal)],
-)
-async def get_at_risk_programs(
-    db: DB, current_user: CurrentUser, _rls: RLSContext
-) -> ProgramHealthResponse:
-    """Return programs with red RAG status or active escalations."""
-    rm_client_ids: list[uuid.UUID] | None = None
-    if current_user.role == UserRole.relationship_manager:
-        rm_client_ids = await get_rm_client_ids(db, current_user.id)
-
-    items = await _build_program_health_items(db, rm_client_ids=rm_client_ids)
-    at_risk = [
-        item for item in items if item.rag_status == "red" or item.active_escalation_count > 0
-    ]
-    return ProgramHealthResponse(programs=at_risk, total=len(at_risk))
 
 
 @router.get(

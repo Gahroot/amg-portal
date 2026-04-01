@@ -246,7 +246,14 @@ def after_flush(session: Session, flush_context: object) -> None:
     1. All pending changes have been persisted (including ID generation)
     2. The transaction is still open, so audit entries are part of the same transaction
     3. Any audit entries added will be flushed in a subsequent flush cycle (SQLAlchemy handles this)
+
+    Set ``session.info["skip_audit"] = True`` before flushing to suppress audit
+    logging for bulk operations (e.g. imports, seed scripts) and avoid the
+    write amplification of one audit entry per inserted row.
     """
+    if session.info.get("skip_audit"):
+        return
+
     ctx = audit_context_var.get()
     skipped: list[tuple[str, str, str]] = []
 

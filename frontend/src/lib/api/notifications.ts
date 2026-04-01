@@ -52,6 +52,13 @@ export async function markAllNotificationsRead(): Promise<void> {
   await api.post("/api/v1/notifications/mark-all-read");
 }
 
+export async function getUnreadNotificationCount(): Promise<number> {
+  const response = await api.get<{ unread_count: number }>(
+    "/api/v1/notifications/unread-count"
+  );
+  return response.data.unread_count;
+}
+
 // Snooze
 export async function snoozeNotification(
   id: string,

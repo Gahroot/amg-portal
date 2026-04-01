@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import String, cast, func, literal, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.redis import redis_client
@@ -140,77 +140,94 @@ async def get_activity_feed(
     if cached:
         return [ActivityFeedItem(**i) for i in cached["items"]], cached["total"]
 
-    items: list[ActivityFeedItem] = []
+    # Build UNION ALL of the three activity sources so sorting and pagination
+    # happen in a single SQL round-trip instead of three separate queries.
+    user_alias_comm = User.__table__.alias("u_comm")
+    user_alias_esc = User.__table__.alias("u_esc")
+    user_alias_deliv = User.__table__.alias("u_deliv")
 
-    # Recent communications (sent)
-    comm_query = (
-        select(Communication, User.full_name)
-        .outerjoin(User, Communication.sender_id == User.id)
+    comm_sel = (
+        select(
+            cast(Communication.id, String).label("id"),
+            literal("communication").label("activity_type"),
+            (
+                literal("Communication sent: ")
+                + func.coalesce(Communication.subject, "No subject")
+            ).label("title"),
+            (literal("Sent via ") + cast(Communication.channel, String)).label("description"),
+            literal("communication").label("entity_type"),
+            cast(Communication.id, String).label("entity_id"),
+            Communication.created_at.label("timestamp"),
+            user_alias_comm.c.full_name.label("actor_name"),
+            (literal("/communications/") + cast(Communication.id, String)).label("link"),
+        )
+        .outerjoin(user_alias_comm, Communication.sender_id == user_alias_comm.c.id)
         .where(Communication.status == "sent")
-        .order_by(Communication.created_at.desc())
-        .limit(limit)
     )
-    comm_result = await db.execute(comm_query)
-    for comm, sender_name in comm_result.all():
-        items.append(ActivityFeedItem(
-            id=str(comm.id),
-            activity_type="communication",
-            title=f"Communication sent: {comm.subject or 'No subject'}",
-            description=f"Sent via {comm.channel}",
-            entity_type="communication",
-            entity_id=str(comm.id),
-            timestamp=comm.created_at,
-            actor_name=sender_name,
-            link=f"/communications/{comm.id}",
-        ))
 
-    # Recent escalations
-    esc_query = (
-        select(Escalation, User.full_name)
-        .outerjoin(User, Escalation.triggered_by == User.id)
-        .order_by(Escalation.triggered_at.desc())
-        .limit(limit)
+    esc_sel = (
+        select(
+            cast(Escalation.id, String).label("id"),
+            literal("escalation").label("activity_type"),
+            (literal("Escalation: ") + Escalation.title).label("title"),
+            (
+                literal("Status: ")
+                + cast(Escalation.status, String)
+                + literal(" | Level: ")
+                + cast(Escalation.level, String)
+            ).label("description"),
+            literal("escalation").label("entity_type"),
+            cast(Escalation.id, String).label("entity_id"),
+            Escalation.triggered_at.label("timestamp"),
+            user_alias_esc.c.full_name.label("actor_name"),
+            (literal("/escalations/") + cast(Escalation.id, String)).label("link"),
+        )
+        .outerjoin(user_alias_esc, Escalation.triggered_by == user_alias_esc.c.id)
     )
-    esc_result = await db.execute(esc_query)
-    for esc, actor_name in esc_result.all():
-        items.append(ActivityFeedItem(
-            id=str(esc.id),
-            activity_type="escalation",
-            title=f"Escalation: {esc.title}",
-            description=f"Status: {esc.status} | Level: {esc.level}",
-            entity_type="escalation",
-            entity_id=str(esc.id),
-            timestamp=esc.triggered_at,
-            actor_name=actor_name,
-            link=f"/escalations/{esc.id}",
-        ))
 
-    # Recent deliverable submissions
-    deliv_query = (
-        select(Deliverable, User.full_name)
-        .outerjoin(User, Deliverable.submitted_by == User.id)
+    deliv_sel = (
+        select(
+            cast(Deliverable.id, String).label("id"),
+            literal("deliverable_submission").label("activity_type"),
+            (literal("Deliverable submitted: ") + Deliverable.title).label("title"),
+            (literal("Status: ") + cast(Deliverable.status, String)).label("description"),
+            literal("deliverable").label("entity_type"),
+            cast(Deliverable.id, String).label("entity_id"),
+            Deliverable.submitted_at.label("timestamp"),
+            user_alias_deliv.c.full_name.label("actor_name"),
+            (literal("/deliverables/") + cast(Deliverable.id, String)).label("link"),
+        )
+        .outerjoin(user_alias_deliv, Deliverable.submitted_by == user_alias_deliv.c.id)
         .where(Deliverable.submitted_at.isnot(None))
-        .order_by(Deliverable.submitted_at.desc())
+    )
+
+    combined = union_all(comm_sel, esc_sel, deliv_sel).subquery()
+
+    # Count total rows without skip/limit
+    count_result = await db.execute(select(func.count()).select_from(combined))
+    total: int = count_result.scalar_one()
+
+    # Fetch paginated, sorted page
+    feed_result = await db.execute(
+        select(combined)
+        .order_by(combined.c.timestamp.desc())
+        .offset(skip)
         .limit(limit)
     )
-    deliv_result = await db.execute(deliv_query)
-    for deliv, actor_name in deliv_result.all():
-        items.append(ActivityFeedItem(
-            id=str(deliv.id),
-            activity_type="deliverable_submission",
-            title=f"Deliverable submitted: {deliv.title}",
-            description=f"Status: {deliv.status}",
-            entity_type="deliverable",
-            entity_id=str(deliv.id),
-            timestamp=deliv.submitted_at,
-            actor_name=actor_name,
-            link=f"/deliverables/{deliv.id}",
-        ))
-
-    # Sort all by timestamp desc, take top `limit`
-    items.sort(key=lambda x: x.timestamp, reverse=True)
-    total = len(items)
-    items = items[skip : skip + limit]
+    items: list[ActivityFeedItem] = [
+        ActivityFeedItem(
+            id=row.id,
+            activity_type=row.activity_type,
+            title=row.title,
+            description=row.description,
+            entity_type=row.entity_type,
+            entity_id=row.entity_id,
+            timestamp=row.timestamp,
+            actor_name=row.actor_name,
+            link=row.link,
+        )
+        for row in feed_result.all()
+    ]
 
     await _set_cached(
         cache_key,

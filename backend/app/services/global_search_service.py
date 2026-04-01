@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -241,46 +242,38 @@ class GlobalSearchService:
             else (entity_types or list(SearchEntityType))
         )
 
-        all_results: list[SearchResult] = []
         per_type_limit = min(limit, self.PER_TYPE_LIMIT)
 
-        # Search each entity type
+        # Build coroutines for each requested entity type and run them in parallel
+        coros = []
         if SearchEntityType.program in types_to_search:
-            program_results = await self._search_programs(
-                parsed, per_type_limit, date_from, date_to, statuses, client_id
+            coros.append(
+                self._search_programs(
+                    parsed, per_type_limit, date_from, date_to, statuses, client_id
+                )
             )
-            all_results.extend(program_results)
-
         if SearchEntityType.client in types_to_search:
-            client_results = await self._search_clients(
-                parsed, per_type_limit, date_from, date_to, statuses
+            coros.append(
+                self._search_clients(parsed, per_type_limit, date_from, date_to, statuses)
             )
-            all_results.extend(client_results)
-
         if SearchEntityType.partner in types_to_search:
-            partner_results = await self._search_partners(
-                parsed, per_type_limit, date_from, date_to, statuses
+            coros.append(
+                self._search_partners(parsed, per_type_limit, date_from, date_to, statuses)
             )
-            all_results.extend(partner_results)
-
         if SearchEntityType.document in types_to_search:
-            document_results = await self._search_documents(
-                parsed, per_type_limit, date_from, date_to, program_id
+            coros.append(
+                self._search_documents(parsed, per_type_limit, date_from, date_to, program_id)
             )
-            all_results.extend(document_results)
-
         if SearchEntityType.task in types_to_search:
-            task_results = await self._search_tasks(
-                parsed,
-                per_type_limit,
-                date_from,
-                date_to,
-                statuses,
-                priorities,
-                assigned_to,
-                program_id,
+            coros.append(
+                self._search_tasks(
+                    parsed, per_type_limit, date_from, date_to,
+                    statuses, priorities, assigned_to, program_id,
+                )
             )
-            all_results.extend(task_results)
+
+        result_lists = await asyncio.gather(*coros)
+        all_results: list[SearchResult] = [item for sublist in result_lists for item in sublist]
 
         # Calculate relevance scores
         for result in all_results:
@@ -337,17 +330,15 @@ class GlobalSearchService:
             else:
                 conditions.append(
                     or_(
-                        func.lower(Program.title).like(f"%{term}%"),
-                        func.lower(Program.status).like(f"%{term}%"),
-                        func.lower(Program.objectives).like(f"%{term}%"),
+                        Program.title.ilike(f"%{term}%"),
+                        Program.status.ilike(f"%{term}%"),
+                        Program.objectives.ilike(f"%{term}%"),
                     )
                 )
 
         # Exclude terms
         for excluded in parsed.excluded_terms:
-            conditions.append(
-                func.lower(Program.title).not_like(f"%{excluded}%")
-            )
+            conditions.append(~Program.title.ilike(f"%{excluded}%"))
 
         # Status filter
         if statuses:
@@ -413,14 +404,14 @@ class GlobalSearchService:
             else:
                 conditions.append(
                     or_(
-                        func.lower(Client.name).like(f"%{term}%"),
-                        func.lower(Client.client_type).like(f"%{term}%"),
-                        func.lower(Client.notes).like(f"%{term}%"),
+                        Client.name.ilike(f"%{term}%"),
+                        Client.client_type.ilike(f"%{term}%"),
+                        Client.notes.ilike(f"%{term}%"),
                     )
                 )
 
         for excluded in parsed.excluded_terms:
-            conditions.append(func.lower(Client.name).not_like(f"%{excluded}%"))
+            conditions.append(~Client.name.ilike(f"%{excluded}%"))
 
         # Status filter
         if statuses:
@@ -484,20 +475,16 @@ class GlobalSearchService:
             else:
                 conditions.append(
                     or_(
-                        func.lower(PartnerProfile.firm_name).like(f"%{term}%"),
-                        func.lower(PartnerProfile.contact_name).like(f"%{term}%"),
-                        func.lower(PartnerProfile.contact_email).like(f"%{term}%"),
-                        func.lower(PartnerProfile.notes).like(f"%{term}%"),
+                        PartnerProfile.firm_name.ilike(f"%{term}%"),
+                        PartnerProfile.contact_name.ilike(f"%{term}%"),
+                        PartnerProfile.contact_email.ilike(f"%{term}%"),
+                        PartnerProfile.notes.ilike(f"%{term}%"),
                     )
                 )
 
         for excluded in parsed.excluded_terms:
-            conditions.append(
-                or_(
-                    func.lower(PartnerProfile.firm_name).not_like(f"%{excluded}%"),
-                    func.lower(PartnerProfile.contact_name).not_like(f"%{excluded}%"),
-                )
-            )
+            conditions.append(~PartnerProfile.firm_name.ilike(f"%{excluded}%"))
+            conditions.append(~PartnerProfile.contact_name.ilike(f"%{excluded}%"))
 
         # Status filter
         if statuses:
@@ -556,14 +543,14 @@ class GlobalSearchService:
             else:
                 conditions.append(
                     or_(
-                        func.lower(Document.file_name).like(f"%{term}%"),
-                        func.lower(Document.description).like(f"%{term}%"),
-                        func.lower(Document.category).like(f"%{term}%"),
+                        Document.file_name.ilike(f"%{term}%"),
+                        Document.description.ilike(f"%{term}%"),
+                        Document.category.ilike(f"%{term}%"),
                     )
                 )
 
         for excluded in parsed.excluded_terms:
-            conditions.append(func.lower(Document.file_name).not_like(f"%{excluded}%"))
+            conditions.append(~Document.file_name.ilike(f"%{excluded}%"))
 
         # Program filter - documents linked to a specific program
         if program_id:
@@ -626,14 +613,14 @@ class GlobalSearchService:
             else:
                 conditions.append(
                     or_(
-                        func.lower(Task.title).like(f"%{term}%"),
-                        func.lower(Task.description).like(f"%{term}%"),
-                        func.lower(Task.status).like(f"%{term}%"),
+                        Task.title.ilike(f"%{term}%"),
+                        Task.description.ilike(f"%{term}%"),
+                        Task.status.ilike(f"%{term}%"),
                     )
                 )
 
         for excluded in parsed.excluded_terms:
-            conditions.append(func.lower(Task.title).not_like(f"%{excluded}%"))
+            conditions.append(~Task.title.ilike(f"%{excluded}%"))
 
         # Status filter
         if statuses:

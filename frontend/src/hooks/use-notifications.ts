@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   listNotifications,
   listGroupedNotifications,
+  getUnreadNotificationCount,
   markNotificationRead,
   markGroupRead,
   markAllNotificationsRead,
@@ -23,7 +24,7 @@ export function useNotifications(params?: { unread_only?: boolean; skip?: number
   return useQuery({
     queryKey: ["notifications", params],
     queryFn: () => listNotifications(params),
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -36,7 +37,7 @@ export function useGroupedNotifications(params?: {
   return useQuery({
     queryKey: ["notifications", "grouped", params],
     queryFn: () => listGroupedNotifications(params),
-    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -128,14 +129,11 @@ export function useUpdateNotificationPreferences() {
   });
 }
 
-// Unread count hook
+// Unread count hook — calls the dedicated /unread-count endpoint
 export function useUnreadNotificationCount() {
   return useQuery({
     queryKey: ["notifications", "unread-count"],
-    queryFn: async () => {
-      const response = await listNotifications({ unread_only: true, limit: 1 });
-      return response.total;
-    },
-    refetchInterval: 30000,
+    queryFn: () => getUnreadNotificationCount(),
+    refetchOnWindowFocus: true,
   });
 }

@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
+import hashlib
+import json
+import logging
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
+from app.db.redis import redis_client
 from app.models.client import Client
 from app.models.document import Document
 from app.models.partner import PartnerProfile
@@ -20,6 +25,10 @@ from app.services.global_search_service import (
     GlobalSearchService,
     SearchEntityType,
 )
+
+logger = logging.getLogger(__name__)
+
+_SUGGESTIONS_TTL = 5  # seconds — fast enough for keystroke-level calls
 
 router = APIRouter()
 
@@ -288,6 +297,16 @@ async def search_suggestions(  # noqa: PLR0912, PLR0915
 
     Suggestions are ordered by relevance: exact prefix match first, then contains.
     """
+    # Try Redis cache first — suggestions are identical for the same query
+    cache_key = f"search:suggestions:{hashlib.md5(f'{q}:{limit}'.encode()).hexdigest()}"
+    try:
+        cached = await redis_client.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+            return SearchSuggestionsResponse(**data)
+    except Exception:
+        logger.debug("Redis unavailable for suggestions cache key=%s", cache_key)
+
     suggestions: list[SearchSuggestion] = []
     query = q.strip().lower()
     seen_texts: set[str] = set()
@@ -343,98 +362,87 @@ async def search_suggestions(  # noqa: PLR0912, PLR0915
             )
         return SearchSuggestionsResponse(query=q, suggestions=suggestions, total=len(suggestions))
 
-    # Search clients for name suggestions (prefix match first)
-    client_stmt = (
-        select(Client.name)
-        .where(func.lower(Client.name).like(f"{query}%"))
-        .distinct()
-        .limit(5)
-    )
-    client_rows = await db.execute(client_stmt)
-    for (name,) in client_rows.all():
-        add_suggestion(name, "client", "Client")
-
-    # Then check contains for clients
-    if len(suggestions) < limit:
-        client_contains_stmt = (
+    # Run all 8 prefix+contains queries in parallel
+    (
+        client_prefix_rows,
+        client_contains_rows,
+        program_prefix_rows,
+        program_contains_rows,
+        partner_prefix_rows,
+        partner_contains_rows,
+        doc_prefix_rows,
+        doc_contains_rows,
+    ) = await asyncio.gather(
+        db.execute(
             select(Client.name)
-            .where(func.lower(Client.name).like(f"%{query}%"))
-            .where(func.lower(Client.name).notlike(f"{query}%"))
+            .where(Client.name.ilike(f"{query}%"))
             .distinct()
-            .limit(limit - len(suggestions))
-        )
-        client_contains_rows = await db.execute(client_contains_stmt)
-        for (name,) in client_contains_rows.all():
-            add_suggestion(name, "client", "Client")
-
-    # Search programs for title suggestions
-    program_stmt = (
-        select(Program.title)
-        .where(func.lower(Program.title).like(f"{query}%"))
-        .distinct()
-        .limit(5)
-    )
-    program_rows = await db.execute(program_stmt)
-    for (title,) in program_rows.all():
-        add_suggestion(title, "program", "Program")
-
-    if len(suggestions) < limit:
-        program_contains_stmt = (
+            .limit(5)
+        ),
+        db.execute(
+            select(Client.name)
+            .where(Client.name.ilike(f"%{query}%"))
+            .where(~Client.name.ilike(f"{query}%"))
+            .distinct()
+            .limit(limit)
+        ),
+        db.execute(
             select(Program.title)
-            .where(func.lower(Program.title).like(f"%{query}%"))
-            .where(func.lower(Program.title).notlike(f"{query}%"))
+            .where(Program.title.ilike(f"{query}%"))
             .distinct()
-            .limit(limit - len(suggestions))
-        )
-        program_contains_rows = await db.execute(program_contains_stmt)
-        for (title,) in program_contains_rows.all():
-            add_suggestion(title, "program", "Program")
-
-    # Search partners for firm name suggestions
-    partner_stmt = (
-        select(PartnerProfile.firm_name)
-        .where(func.lower(PartnerProfile.firm_name).like(f"{query}%"))
-        .distinct()
-        .limit(5)
-    )
-    partner_rows = await db.execute(partner_stmt)
-    for (firm_name,) in partner_rows.all():
-        add_suggestion(str(firm_name), "partner", "Partner")
-
-    if len(suggestions) < limit:
-        partner_contains_stmt = (
+            .limit(5)
+        ),
+        db.execute(
+            select(Program.title)
+            .where(Program.title.ilike(f"%{query}%"))
+            .where(~Program.title.ilike(f"{query}%"))
+            .distinct()
+            .limit(limit)
+        ),
+        db.execute(
             select(PartnerProfile.firm_name)
-            .where(func.lower(PartnerProfile.firm_name).like(f"%{query}%"))
-            .where(func.lower(PartnerProfile.firm_name).notlike(f"{query}%"))
+            .where(PartnerProfile.firm_name.ilike(f"{query}%"))
             .distinct()
-            .limit(limit - len(suggestions))
-        )
-        partner_contains_rows = await db.execute(partner_contains_stmt)
-        for (firm_name,) in partner_contains_rows.all():
-            add_suggestion(str(firm_name), "partner", "Partner")
-
-    # Search documents for file name suggestions
-    doc_stmt = (
-        select(Document.file_name)
-        .where(func.lower(Document.file_name).like(f"{query}%"))
-        .distinct()
-        .limit(5)
-    )
-    doc_rows = await db.execute(doc_stmt)
-    for (file_name,) in doc_rows.all():
-        add_suggestion(str(file_name), "document", "Document")
-
-    if len(suggestions) < limit:
-        doc_contains_stmt = (
+            .limit(5)
+        ),
+        db.execute(
+            select(PartnerProfile.firm_name)
+            .where(PartnerProfile.firm_name.ilike(f"%{query}%"))
+            .where(~PartnerProfile.firm_name.ilike(f"{query}%"))
+            .distinct()
+            .limit(limit)
+        ),
+        db.execute(
             select(Document.file_name)
-            .where(func.lower(Document.file_name).like(f"%{query}%"))
-            .where(func.lower(Document.file_name).notlike(f"{query}%"))
+            .where(Document.file_name.ilike(f"{query}%"))
             .distinct()
-            .limit(limit - len(suggestions))
-        )
-        doc_contains_rows = await db.execute(doc_contains_stmt)
-        for (file_name,) in doc_contains_rows.all():
-            add_suggestion(str(file_name), "document", "Document")
+            .limit(5)
+        ),
+        db.execute(
+            select(Document.file_name)
+            .where(Document.file_name.ilike(f"%{query}%"))
+            .where(~Document.file_name.ilike(f"{query}%"))
+            .distinct()
+            .limit(limit)
+        ),
+    )
+
+    for (name,) in client_prefix_rows.all():
+        add_suggestion(name, "client", "Client")
+    for (name,) in client_contains_rows.all():
+        add_suggestion(name, "client", "Client")
+    for (title,) in program_prefix_rows.all():
+        add_suggestion(title, "program", "Program")
+    for (title,) in program_contains_rows.all():
+        add_suggestion(title, "program", "Program")
+    for (firm_name,) in partner_prefix_rows.all():
+        add_suggestion(str(firm_name), "partner", "Partner")
+    for (firm_name,) in partner_contains_rows.all():
+        add_suggestion(str(firm_name), "partner", "Partner")
+    for (file_name,) in doc_prefix_rows.all():
+        add_suggestion(str(file_name), "document", "Document")
+    for (file_name,) in doc_contains_rows.all():
+        add_suggestion(str(file_name), "document", "Document")
 
     # Add popular searches that match the query
     if len(suggestions) < limit:
@@ -444,4 +452,13 @@ async def search_suggestions(  # noqa: PLR0912, PLR0915
                 if len(suggestions) >= limit:
                     break
 
-    return SearchSuggestionsResponse(query=q, suggestions=suggestions, total=len(suggestions))
+    response = SearchSuggestionsResponse(query=q, suggestions=suggestions, total=len(suggestions))
+    try:
+        await redis_client.set(
+            cache_key,
+            json.dumps(response.model_dump(), default=str),
+            ex=_SUGGESTIONS_TTL,
+        )
+    except Exception:
+        logger.debug("Redis write failed for suggestions cache key=%s", cache_key)
+    return response
