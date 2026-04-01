@@ -5,13 +5,13 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   getCurrentUser,
   login as loginApi,
-  storeMFASetupToken,
 } from "@/lib/api/auth";
 import {
   getAccessToken,
   setTokens,
   removeTokens,
 } from "@/lib/token-storage";
+import api from "@/lib/api";
 import type { User, LoginCredentials } from "@/types/user";
 
 export class MFARequiredError extends Error {
@@ -128,12 +128,6 @@ export function AuthProvider({
       }
 
       if (response.mfa_setup_required) {
-        // Store the setup token so the MFA setup page can use it as a
-        // Bearer credential when no real access_token exists yet.
-        if (response.mfa_setup_token) {
-          storeMFASetupToken(response.mfa_setup_token);
-        }
-
         if (response.access_token) {
           // Grace-period path: user has real tokens but must set up MFA.
           // Store tokens so /mfa-setup can use the regular API client.
@@ -159,6 +153,8 @@ export function AuthProvider({
   );
 
   const logout = React.useCallback(() => {
+    // Clear httpOnly cookies on the server
+    api.post("/api/v1/auth/logout").catch(() => {});
     removeTokens();
     setUser(null);
     router.replace("/login");

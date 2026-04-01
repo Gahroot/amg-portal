@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy import asc, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DB, CurrentUser, MFASetupUser
@@ -21,6 +22,7 @@ from app.core.exceptions import (
 from app.core.rate_limit import (
     rate_limit_forgot_password,
     rate_limit_login,
+    rate_limit_mfa_disable,
     rate_limit_refresh,
     rate_limit_register,
 )
@@ -40,6 +42,7 @@ from app.core.security import (
 from app.models.bookmark import Bookmark
 from app.models.enums import UserRole
 from app.models.notification_preference import NotificationPreference
+from app.models.password_reset_token import PasswordResetToken
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.schemas.auth import (
@@ -116,6 +119,25 @@ def _clear_auth_cookies(response: Response) -> None:
     )
 
 
+def _set_mfa_setup_cookie(response: Response, token: str) -> None:
+    """Set a short-lived httpOnly cookie for the MFA setup token."""
+    is_secure = not settings.DEBUG
+    response.set_cookie(
+        key="mfa_setup_token",
+        value=token,
+        httponly=True,
+        secure=is_secure,
+        samesite="lax",
+        max_age=settings.MFA_SETUP_TOKEN_EXPIRE_MINUTES * 60,
+        path="/api/v1/auth/mfa",
+    )
+
+
+def _clear_mfa_setup_cookie(response: Response) -> None:
+    """Clear the MFA setup cookie."""
+    response.delete_cookie(key="mfa_setup_token", path="/api/v1/auth/mfa")
+
+
 async def _issue_refresh_token(
     db: AsyncSession,
     user_id: str,
@@ -158,7 +180,11 @@ async def register(data: UserCreate, db: DB):
         status="pending_approval",
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ConflictException("Email already registered") from None
     await db.refresh(user)
     return user
 
@@ -194,19 +220,21 @@ async def login(data: LoginRequest, db: DB, response: Response):
             refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
             await db.commit()
             _set_auth_cookies(response, access_token, refresh_token)
+            _set_mfa_setup_cookie(response, setup_token)
             return Token(
                 access_token=access_token,
                 refresh_token=refresh_token,
                 mfa_setup_required=True,
-                mfa_setup_token=setup_token,
+                mfa_setup_token=None,
             )
 
         # Hard enforcement: no real tokens until MFA is configured.
+        _set_mfa_setup_cookie(response, setup_token)
         return Token(
             access_token="",
             refresh_token="",
             mfa_setup_required=True,
-            mfa_setup_token=setup_token,
+            mfa_setup_token=None,
         )
 
     # ── MFA enabled — require TOTP/backup code ──────────────
@@ -354,6 +382,18 @@ async def change_password(
         raise BadRequestException("Current password is incorrect")
 
     current_user.hashed_password = hash_password(data.new_password)
+
+    # Revoke all active refresh tokens so sessions using the old password
+    # are immediately invalidated (prevents stolen-token persistence).
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.is_revoked.is_(False),
+        )
+        .values(is_revoked=True)
+    )
+
     await db.commit()
 
 
@@ -376,6 +416,18 @@ async def forgot_password(data: ForgotPasswordRequest, db: DB) -> dict[str, str]
         token_data = {"sub": str(user.id), "email": user.email}
         reset_token = create_password_reset_token(token_data)
 
+        # Persist a hash of the token so we can enforce single-use
+        expires_at = datetime.now(UTC) + timedelta(
+            minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES,
+        )
+        db.add(PasswordResetToken(
+            user_id=str(user.id),
+            token_hash=hash_token(reset_token),
+            is_used=False,
+            expires_at=expires_at,
+        ))
+        await db.commit()
+
         # Send reset email (non-blocking, errors are suppressed to prevent enumeration)
         with contextlib.suppress(Exception):
             await send_password_reset_email(
@@ -390,7 +442,12 @@ async def forgot_password(data: ForgotPasswordRequest, db: DB) -> dict[str, str]
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_password(data: ResetPasswordRequest, db: DB) -> None:
-    """Reset password using a valid reset token."""
+    """Reset password using a valid reset token.
+
+    The token is single-use: on first successful reset its DB record is
+    marked as consumed so replay attempts within the 15-minute window are
+    rejected immediately.
+    """
     payload = decode_password_reset_token(data.token)
     if payload is None:
         raise BadRequestException("Invalid or expired reset token")
@@ -399,11 +456,24 @@ async def reset_password(data: ResetPasswordRequest, db: DB) -> None:
     if not user_id:
         raise BadRequestException("Invalid reset token")
 
+    # Look up the persisted token record and enforce single-use
+    token_hash = hash_token(data.token)
+    prt_result = await db.execute(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+    )
+    prt = prt_result.scalar_one_or_none()
+
+    if prt is None or prt.is_used:
+        raise BadRequestException("Invalid or expired reset token")
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
     if not user:
         raise BadRequestException("Invalid reset token")
+
+    # Consume the token before updating the password so concurrent requests fail
+    prt.is_used = True
 
     # Update password
     user.hashed_password = hash_password(data.new_password)
@@ -465,13 +535,14 @@ async def mfa_verify_setup(
     refresh_token = await _issue_refresh_token(db, str(current_user.id), token_data)
     await db.commit()
     _set_auth_cookies(response, access_token, refresh_token)
+    _clear_mfa_setup_cookie(response)
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
     )
 
 
-@router.post("/mfa/disable")
+@router.post("/mfa/disable", dependencies=[Depends(rate_limit_mfa_disable)])
 async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB):
     """Disable MFA after verifying a TOTP code."""
     if not current_user.mfa_enabled or not current_user.mfa_secret:

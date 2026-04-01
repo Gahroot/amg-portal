@@ -42,58 +42,18 @@ export async function refreshToken(
   return response.data;
 }
 
-function getMFASetupToken(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return sessionStorage.getItem("mfa_setup_token");
-  } catch {
-    return null;
-  }
-}
-
-export function storeMFASetupToken(token: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem("mfa_setup_token", token);
-  } catch {
-    // Silent fail
-  }
-}
-
-export function clearMFASetupToken(): void {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.removeItem("mfa_setup_token");
-  } catch {
-    // Silent fail
-  }
-}
-
 export async function setupMFA(): Promise<MFASetupResponse> {
-  // When the user has no real access_token (hard-enforcement path), the
-  // request interceptor won't attach an Authorization header, so we attach
-  // the short-lived mfa_setup_token ourselves.
-  const setupToken = getMFASetupToken();
-  const headers = setupToken
-    ? { Authorization: `Bearer ${setupToken}` }
-    : undefined;
   const response = await api.post<MFASetupResponse>(
     "/api/v1/auth/mfa/setup",
-    {},
-    { headers }
+    {}
   );
   return response.data;
 }
 
 export async function verifyMFASetup(code: string): Promise<AuthResponse> {
-  const setupToken = getMFASetupToken();
-  const headers = setupToken
-    ? { Authorization: `Bearer ${setupToken}` }
-    : undefined;
   const response = await api.post<AuthResponse>(
     "/api/v1/auth/mfa/verify-setup",
-    { code },
-    { headers }
+    { code }
   );
   return response.data;
 }

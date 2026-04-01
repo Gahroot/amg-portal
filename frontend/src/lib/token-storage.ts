@@ -1,73 +1,64 @@
 /**
- * Centralized token storage utilities for auth token management.
- * Handles SSR safety and localStorage errors gracefully.
+ * Centralized auth state utilities.
+ *
+ * Tokens are now stored in httpOnly cookies set by the backend.
+ * JavaScript cannot read them directly (which prevents XSS token theft).
+ * These helpers manage a lightweight in-memory/cookie flag so the UI can
+ * check "are we logged in?" without touching the actual JWT.
  */
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+const AUTH_FLAG_KEY = "has_session";
 
 /**
- * Safely get an item from localStorage, handling SSR and errors.
+ * Check if the user likely has an active session.
+ * This reads a non-httpOnly flag cookie that the frontend sets alongside
+ * the backend's httpOnly token cookies.  It does NOT expose the JWT.
  */
-function safeGetItem(key: string): string | null {
+export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(key);
+    // Return a truthy sentinel if the session flag is present.
+    // Callers only need to know "is there a token?" — the actual JWT
+    // is sent automatically via cookies.
+    return document.cookie.includes(AUTH_FLAG_KEY + "=1") ? "__cookie__" : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Safely set an item in localStorage, handling SSR and errors.
- */
-function safeSetItem(key: string, value: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Silent fail
-  }
-}
-
-/**
- * Safely remove an item from localStorage, handling SSR and errors.
- */
-function safeRemoveItem(key: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    // Silent fail
-  }
-}
-
-/**
- * Get the access token from localStorage.
- */
-export function getAccessToken(): string | null {
-  return safeGetItem(ACCESS_TOKEN_KEY);
-}
-
-/**
- * Get the refresh token from localStorage.
+ * @deprecated Refresh tokens are now managed via httpOnly cookies.
+ * Kept for backward compatibility — always returns null.
  */
 export function getRefreshToken(): string | null {
-  return safeGetItem(REFRESH_TOKEN_KEY);
+  return null;
 }
 
 /**
- * Store both access and refresh tokens in localStorage.
+ * Mark that we have an active session (called after login / token refresh).
+ * The actual JWTs are in httpOnly cookies set by the server.
  */
-export function setTokens(accessToken: string, refreshToken: string): void {
-  safeSetItem(ACCESS_TOKEN_KEY, accessToken);
-  safeSetItem(REFRESH_TOKEN_KEY, refreshToken);
+export function setTokens(_accessToken: string, _refreshToken: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    // Set a lightweight, non-httpOnly flag so client JS can detect "logged in".
+    const secureFlag = window.location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${AUTH_FLAG_KEY}=1; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax${secureFlag}`;
+  } catch {
+    // Silent fail
+  }
 }
 
 /**
- * Remove both access and refresh tokens from localStorage.
+ * Clear the session flag (called on logout).
+ * The server-side logout endpoint clears the httpOnly cookies.
  */
 export function removeTokens(): void {
-  safeRemoveItem(ACCESS_TOKEN_KEY);
-  safeRemoveItem(REFRESH_TOKEN_KEY);
+  if (typeof window === "undefined") return;
+  try {
+    const secureFlag = window.location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${AUTH_FLAG_KEY}=; path=/; max-age=0; samesite=lax${secureFlag}`;
+  } catch {
+    // Silent fail
+  }
 }

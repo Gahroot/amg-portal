@@ -7,12 +7,10 @@ import type { User, LoginCredentials, AuthResponse } from "@/types/user";
 // ---- mock API layer ---------------------------------------------------------
 const mockLoginApi = vi.fn();
 const mockGetCurrentUser = vi.fn();
-const mockStoreMFASetupToken = vi.fn();
 
 vi.mock("@/lib/api/auth", () => ({
   login: (...args: unknown[]) => mockLoginApi(...args),
   getCurrentUser: () => mockGetCurrentUser(),
-  storeMFASetupToken: (token: string) => mockStoreMFASetupToken(token),
 }));
 
 // ---- mock token storage -----------------------------------------------------
@@ -231,14 +229,14 @@ describe("useAuth hook", () => {
       expect(mockReplace).not.toHaveBeenCalled();
     });
 
-    it("throws MFASetupRequiredError when mfa_setup_required is true", async () => {
+    it("throws MFASetupRequiredError when mfa_setup_required is true (grace-period path)", async () => {
       const mfaSetupResponse: AuthResponse = {
         access_token: "access-token",
         refresh_token: "refresh-token",
         token_type: "bearer",
         mfa_required: false,
         mfa_setup_required: true,
-        mfa_setup_token: "mfa-setup-token",
+        mfa_setup_token: null,
       };
       mockLoginApi.mockResolvedValue(mfaSetupResponse);
 
@@ -252,18 +250,17 @@ describe("useAuth hook", () => {
         await expect(result.current.login(credentials)).rejects.toThrow(MFASetupRequiredError);
       });
 
-      expect(mockStoreMFASetupToken).toHaveBeenCalledWith("mfa-setup-token");
       expect(mockSetTokens).toHaveBeenCalledWith("access-token", "refresh-token");
     });
 
-    it("stores mfa_setup_token even without access_token in mfa_setup_required flow", async () => {
+    it("throws MFASetupRequiredError without storing tokens in hard-enforcement mfa_setup_required flow", async () => {
       const mfaSetupResponse: AuthResponse = {
         access_token: "",
         refresh_token: "",
         token_type: "bearer",
         mfa_required: false,
         mfa_setup_required: true,
-        mfa_setup_token: "mfa-setup-token-only",
+        mfa_setup_token: null,
       };
       mockLoginApi.mockResolvedValue(mfaSetupResponse);
 
@@ -277,7 +274,6 @@ describe("useAuth hook", () => {
         await expect(result.current.login(credentials)).rejects.toThrow(MFASetupRequiredError);
       });
 
-      expect(mockStoreMFASetupToken).toHaveBeenCalledWith("mfa-setup-token-only");
       // setTokens should not be called with empty tokens
       expect(mockSetTokens).not.toHaveBeenCalled();
     });

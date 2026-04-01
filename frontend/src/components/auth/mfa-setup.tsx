@@ -5,25 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  setupMFA,
-  verifyMFASetup,
-  clearMFASetupToken,
-} from "@/lib/api/auth";
+import { setupMFA, verifyMFASetup } from "@/lib/api/auth";
+import { setTokens } from "@/lib/token-storage";
 import { useAuth } from "@/providers/auth-provider";
 import type { MFASetupResponse } from "@/types/user";
 
 type SetupStep = "loading" | "verify" | "success" | "error";
-
-function setTokens(access: string, refresh: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem("access_token", access);
-    localStorage.setItem("refresh_token", refresh);
-  } catch {
-    // Silent fail
-  }
-}
 
 export function MFASetup({
   onComplete,
@@ -77,7 +64,6 @@ export function MFASetup({
           tokenResponse.refresh_token
         );
       }
-      clearMFASetupToken();
       setStep("success");
     } catch {
       setError("Invalid verification code. Please try again.");

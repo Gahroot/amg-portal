@@ -3,7 +3,7 @@
 import uuid
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,18 +17,34 @@ from app.services.budget_approval_service import BudgetApprovalService
 if TYPE_CHECKING:
     from app.models.partner import PartnerProfile
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+# auto_error=False so we can fall back to cookies when no header is present
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
+
+def _extract_token(
+    bearer_token: str | None,
+    request: Request,
+) -> str | None:
+    """Return a JWT from the Authorization header or the access_token cookie."""
+    if bearer_token:
+        return bearer_token
+    return request.cookies.get("access_token")
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    bearer_token: Annotated[str | None, Depends(oauth2_scheme)],
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
+    token = _extract_token(bearer_token, request)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if token is None:
+        raise credentials_exception
 
     payload = decode_access_token(token)
     if payload is None:
@@ -59,7 +75,8 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_mfa_setup_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    bearer_token: Annotated[str | None, Depends(oauth2_scheme)],
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
     """Accept either a regular access token or an MFA setup token.
@@ -68,11 +85,16 @@ async def get_mfa_setup_user(
     received an ``mfa_setup_token`` (no real access token yet) can
     still call /mfa/setup and /mfa/verify-setup.
     """
+    token = _extract_token(bearer_token, request) or request.cookies.get("mfa_setup_token")
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if token is None:
+        raise credentials_exception
 
     # Try regular access token first, then MFA setup token
     payload = decode_access_token(token) or decode_mfa_setup_token(token)
