@@ -176,23 +176,3 @@ export const useNavigationStore = create<NavigationStore>()(
   )
 );
 
-/**
- * Hook to get the saved filters for a route
- */
-export function useRouteFilters(route: string): RouteFilterState | undefined {
-  return useNavigationStore((state) => state.routeStates[normalizeRoute(route)]?.filters);
-}
-
-/**
- * Hook to get the saved scroll position for a route
- */
-export function useRouteScrollPosition(route: string): number {
-  return useNavigationStore((state) => state.routeStates[normalizeRoute(route)]?.scrollY ?? 0);
-}
-
-/**
- * Hook to get the saved pagination state for a route
- */
-export function useRoutePagination(route: string): RoutePaginationState | undefined {
-  return useNavigationStore((state) => state.routeStates[normalizeRoute(route)]?.pagination);
-}

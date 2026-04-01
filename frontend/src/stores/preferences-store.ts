@@ -264,9 +264,3 @@ export function usePendingChanges() {
   return usePreferencesStore((state) => state.syncState.pendingChanges);
 }
 
-/**
- * Get offline queue
- */
-export function useOfflineQueue() {
-  return usePreferencesStore((state) => state.offlineQueue);
-}

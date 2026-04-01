@@ -194,10 +194,6 @@ export function IntakeWizard({
     }
   };
 
-  const handleSaveDraft = () => {
-    // TODO: Implement draft saving to backend
-  };
-
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -299,13 +295,6 @@ export function IntakeWizard({
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleSaveDraft}
-                >
-                  Save Draft
-                </Button>
                 {currentStep < STEPS.length ? (
                   <Button type="button" onClick={handleNext}>
                     Continue
