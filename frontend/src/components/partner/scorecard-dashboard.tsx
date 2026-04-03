@@ -236,12 +236,12 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
             borderRadius: "8px",
             fontSize: 12,
           }}
-          formatter={(val: unknown, name: string) => {
-            if (val === null || val === undefined) return ["—", name];
+          formatter={(val, name) => {
+            if (val === null || val === undefined) return ["—", name ?? ""];
             const n = val as number;
             if (name === "SLA Compliance") return [`${n.toFixed(1)}%`, name];
             if (name === "Assignments") return [n, name];
-            return [n.toFixed(2), name];
+            return [n.toFixed(2), name ?? ""];
           }}
         />
         <Legend

@@ -234,8 +234,7 @@ export function TimelineEventCard({ event, isLast = false }: TimelineEventCardPr
                   ))}
                 </div>
               )}
-              {event.metadata.tags &&
-                Array.isArray(event.metadata.tags) &&
+              {Array.isArray(event.metadata.tags) &&
                 (event.metadata.tags as string[]).length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-1">
                     {(event.metadata.tags as string[]).map((tag) => (

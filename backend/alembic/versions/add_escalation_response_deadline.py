@@ -1,7 +1,7 @@
 """add_escalation_response_deadline
 
-Revision ID: a1b2c3d4e5f6
-Revises: None
+Revision ID: esc_response_deadline_01
+Revises: ddc5d4fef8cd
 Create Date: 2026-03-23 00:00:00.000000
 
 Standalone migration: adds response_deadline and parent_escalation_id columns
@@ -16,9 +16,9 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "a1b2c3d4e5f6"
-down_revision: str | Sequence[str] | None = None
-branch_labels: str | Sequence[str] | None = "escalation_deadline"
+revision: str = "esc_response_deadline_01"
+down_revision: str | Sequence[str] | None = "ddc5d4fef8cd"
+branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 

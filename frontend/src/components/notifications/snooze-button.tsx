@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { format, isToday, isTomorrow } from "date-fns";
 
 interface SnoozeButtonProps {
-  onSnooze: (durationMinutes: SnoozeDurationPreset) => void;
+  onSnooze?: (durationMinutes: SnoozeDurationPreset) => void;
   onUnsnooze?: () => void;
   isSnoozed?: boolean;
   snoozedUntil?: string;
@@ -92,7 +92,7 @@ export function SnoozeButton({
             <DropdownMenuItem
               key={preset.value}
               onClick={() => {
-                onSnooze(preset.value);
+                onSnooze?.(preset.value);
                 setIsOpen(false);
               }}
             >
@@ -134,7 +134,7 @@ export function SnoozeButton({
           <DropdownMenuItem
             key={preset.value}
             onClick={() => {
-              onSnooze(preset.value);
+              onSnooze?.(preset.value);
               setIsOpen(false);
             }}
           >

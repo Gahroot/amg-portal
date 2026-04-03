@@ -22,6 +22,7 @@ import {
 } from "@/hooks/use-certificates";
 import { useClients } from "@/hooks/use-clients";
 import { usePrograms } from "@/hooks/use-programs";
+import DOMPurify from "isomorphic-dompurify";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
@@ -271,7 +272,7 @@ export default function NewCertificatePage() {
               {previewContent ? (
                 <div
                   className="prose prose-sm max-w-none border rounded-lg p-4 bg-white min-h-96"
-                  dangerouslySetInnerHTML={{ __html: previewContent }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent) }}
                 />
               ) : (
                 <div className="flex items-center justify-center h-96 text-muted-foreground border rounded-lg">

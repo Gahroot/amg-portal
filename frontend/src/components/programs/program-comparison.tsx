@@ -192,7 +192,7 @@ export function ProgramComparison({ programs }: ProgramComparisonProps) {
                         </p>
                       )}
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Tasks: {ms.completed_task_count}/{ms.task_count}
+                        Tasks: {(ms as unknown as { completed_task_count: number }).completed_task_count}/{(ms as unknown as { task_count: number }).task_count}
                       </p>
                     </div>
                   ))

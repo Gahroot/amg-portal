@@ -1,7 +1,7 @@
 """Add compliance clearance certificates
 
 Revision ID: add_clearance_certificates
-Revises: 
+Revises: ddc5d4fef8cd
 Create Date: 2025-01-11
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_clearance_certificates"
-down_revision: str | None = None
+down_revision: str | None = "ddc5d4fef8cd"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

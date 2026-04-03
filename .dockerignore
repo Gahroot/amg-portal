@@ -1,0 +1,29 @@
+.git
+.gitignore
+.ezcoder
+.dockerignore
+
+# Frontend
+frontend/node_modules
+frontend/.next
+frontend/.env*
+
+# Backend
+backend/__pycache__
+backend/.venv
+backend/.env*
+backend/tests
+backend/.pytest_cache
+backend/.mypy_cache
+backend/.ruff_cache
+
+# Mobile (not containerized)
+mobile
+
+# Integrations docs
+integrations
+
+# Misc
+*.md
+LICENSE
+docker-compose.yml

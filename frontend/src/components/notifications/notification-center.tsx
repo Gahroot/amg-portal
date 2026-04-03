@@ -30,7 +30,7 @@ import {
 import { NotificationItem } from "./notification-item";
 import { NotificationGroup } from "./notification-group";
 import { CheckCheck, Layers, List, AlarmClock } from "lucide-react";
-import type { NotificationGroup as NotificationGroupType, SnoozeDurationPreset } from "@/types/communication";
+import type { NotificationGroup as NotificationGroupType, NotificationListResponse, SnoozeDurationPreset } from "@/types/communication";
 
 interface NotificationCenterProps {
   open: boolean;
@@ -97,7 +97,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
     );
   };
 
-  const renderListView = (notifications: { notifications: { id: string; [key: string]: unknown }[] } | undefined, emptyMessage: string) => {
+  const renderListView = (notifications: NotificationListResponse | undefined, emptyMessage: string) => {
     if (!notifications || notifications.notifications.length === 0) {
       return (
         <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -111,7 +111,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
         {notifications.notifications.map((notification) => (
           <NotificationItem
             key={notification.id}
-            notification={notification as Parameters<typeof NotificationItem>[0]["notification"]}
+            notification={notification}
             onRead={(id) => markRead.mutate(id)}
             onSnooze={handleSnooze}
             onUnsnooze={handleUnsnooze}

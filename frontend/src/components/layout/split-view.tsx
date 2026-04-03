@@ -407,7 +407,7 @@ export function SplitViewContainer({
             scrollRef={leftScrollRef}
           >
             <SplitPanelContent
-              panel={leftPanel}
+              panel={leftPanel!}
               side="left"
               isSplit={true}
             />
@@ -434,7 +434,7 @@ export function SplitViewContainer({
             scrollRef={rightScrollRef}
           >
             <SplitPanelContent
-              panel={rightPanel}
+              panel={rightPanel!}
               side="right"
               isSplit={true}
             />

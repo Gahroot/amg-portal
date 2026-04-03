@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import DOMPurify from "isomorphic-dompurify";
 import type { Communication } from "@/types/communication";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, CheckCheck } from "lucide-react";
@@ -43,10 +44,16 @@ function renderMarkdown(text: string): string {
   // Italic: _text_
   html = html.replace(/_(.+?)_/g, "<em>$1</em>");
 
-  // Links: [text](url)
+  // Links: [text](url) — only allow safe URL schemes to prevent XSS
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="underline hover:no-underline">$1</a>'
+    (_match: string, text: string, url: string) => {
+      const trimmed = url.trim();
+      if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed)) {
+        return `<a href="${trimmed}" target="_blank" rel="noopener noreferrer" class="underline hover:no-underline">${text}</a>`;
+      }
+      return text;
+    }
   );
 
   // Bullet lists: - item
@@ -135,7 +142,7 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
           /* Message body with markdown rendering */
           <div
             className="break-words text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(message.body)) }}
           />
         )}
 

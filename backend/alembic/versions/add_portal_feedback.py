@@ -1,7 +1,7 @@
 """Add portal feedback table.
 
 Revision ID: add_portal_feedback
-Revises:
+Revises: ddc5d4fef8cd
 Create Date: 2025-01-23
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "add_portal_feedback"
-down_revision = None  # Will be set by Alembic
+down_revision = "ddc5d4fef8cd"
 branch_labels = None
 depends_on = None
 

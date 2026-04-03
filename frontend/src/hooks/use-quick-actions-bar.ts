@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, type RefObject, type KeyboardEvent } from "react";
 import { isInputElement } from "@/lib/keyboard-shortcuts";
 
 /**
@@ -69,7 +69,7 @@ interface UseQuickActionsBarReturn {
   /** Current state */
   state: QuickActionsBarState;
   /** Bar ref for focus management */
-  barRef: React.RefObject<HTMLDivElement | null>;
+  barRef: RefObject<HTMLDivElement | null>;
   /** Show the bar */
   showBar: () => void;
   /** Hide the bar */
@@ -95,7 +95,7 @@ interface UseQuickActionsBarReturn {
   /** End dragging */
   endDrag: () => void;
   /** Handle keyboard events */
-  handleKeyDown: (event: React.KeyboardEvent) => void;
+  handleKeyDown: (event: KeyboardEvent) => void;
   /** Config */
   config: Required<QuickActionsBarConfig>;
 }
@@ -141,12 +141,12 @@ export function useQuickActionsBar(
   onActivateAction: (index: number) => void,
   config?: QuickActionsBarConfig
 ): UseQuickActionsBarReturn {
-  const mergedConfig = React.useMemo(
+  const mergedConfig = useMemo(
     () => ({ ...loadConfig(), ...config }),
     [config]
   );
 
-  const [state, setState] = React.useState<QuickActionsBarState>({
+  const [state, setState] = useState<QuickActionsBarState>({
     isVisible: mergedConfig.mode === "always",
     isFocused: false,
     focusedIndex: -1,
@@ -154,11 +154,11 @@ export function useQuickActionsBar(
     draggingActionId: null,
   });
 
-  const barRef = React.useRef<HTMLDivElement>(null);
-  const hideTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear auto-hide timeout
-  const clearHideTimeout = React.useCallback(() => {
+  const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
       hideTimeoutRef.current = null;
@@ -166,7 +166,7 @@ export function useQuickActionsBar(
   }, []);
 
   // Start auto-hide timer
-  const startAutoHide = React.useCallback(() => {
+  const startAutoHide = useCallback(() => {
     if (mergedConfig.mode !== "auto") return;
     
     clearHideTimeout();
@@ -179,7 +179,7 @@ export function useQuickActionsBar(
   }, [mergedConfig.mode, mergedConfig.autoHideTimeout, clearHideTimeout]);
 
   // Show the bar
-  const showBar = React.useCallback(() => {
+  const showBar = useCallback(() => {
     clearHideTimeout();
     setState((prev) => ({ ...prev, isVisible: true }));
     
@@ -190,7 +190,7 @@ export function useQuickActionsBar(
   }, [mergedConfig.mode, clearHideTimeout, startAutoHide]);
 
   // Hide the bar
-  const hideBar = React.useCallback(() => {
+  const hideBar = useCallback(() => {
     clearHideTimeout();
     setState((prev) => ({ 
       ...prev, 
@@ -202,7 +202,7 @@ export function useQuickActionsBar(
   }, [clearHideTimeout]);
 
   // Toggle bar visibility
-  const toggleBar = React.useCallback(() => {
+  const toggleBar = useCallback(() => {
     setState((prev) => {
       if (prev.isVisible) {
         clearHideTimeout();
@@ -218,14 +218,14 @@ export function useQuickActionsBar(
   }, [clearHideTimeout]);
 
   // Focus the bar
-  const focusBar = React.useCallback(() => {
+  const focusBar = useCallback(() => {
     clearHideTimeout();
     setState((prev) => ({ ...prev, isVisible: true, isFocused: true, focusedIndex: -1 }));
     barRef.current?.focus();
   }, [clearHideTimeout]);
 
   // Focus next action
-  const focusNext = React.useCallback(() => {
+  const focusNext = useCallback(() => {
     setState((prev) => {
       const nextIndex = prev.focusedIndex >= actionCount - 1 ? 0 : prev.focusedIndex + 1;
       return { ...prev, focusedIndex: nextIndex, isVisible: true };
@@ -233,7 +233,7 @@ export function useQuickActionsBar(
   }, [actionCount]);
 
   // Focus previous action
-  const focusPrevious = React.useCallback(() => {
+  const focusPrevious = useCallback(() => {
     setState((prev) => {
       const prevIndex = prev.focusedIndex <= 0 ? actionCount - 1 : prev.focusedIndex - 1;
       return { ...prev, focusedIndex: prevIndex, isVisible: true };
@@ -241,40 +241,40 @@ export function useQuickActionsBar(
   }, [actionCount]);
 
   // Focus action at index
-  const focusAction = React.useCallback((index: number) => {
+  const focusAction = useCallback((index: number) => {
     if (index < 0 || index >= actionCount) return;
     setState((prev) => ({ ...prev, focusedIndex: index, isVisible: true }));
   }, [actionCount]);
 
   // Activate focused action
-  const activateFocused = React.useCallback(() => {
+  const activateFocused = useCallback(() => {
     if (state.focusedIndex >= 0 && state.focusedIndex < actionCount) {
       onActivateAction(state.focusedIndex);
     }
   }, [state.focusedIndex, actionCount, onActivateAction]);
 
   // Enter customization mode
-  const enterCustomizeMode = React.useCallback(() => {
+  const enterCustomizeMode = useCallback(() => {
     setState((prev) => ({ ...prev, customizeMode: true }));
   }, []);
 
   // Exit customization mode
-  const exitCustomizeMode = React.useCallback(() => {
+  const exitCustomizeMode = useCallback(() => {
     setState((prev) => ({ ...prev, customizeMode: false }));
   }, []);
 
   // Start dragging
-  const startDrag = React.useCallback((actionId: string) => {
+  const startDrag = useCallback((actionId: string) => {
     setState((prev) => ({ ...prev, draggingActionId: actionId }));
   }, []);
 
   // End dragging
-  const endDrag = React.useCallback(() => {
+  const endDrag = useCallback(() => {
     setState((prev) => ({ ...prev, draggingActionId: null }));
   }, []);
 
   // Handle keyboard events
-  const handleKeyDown = React.useCallback((event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
     switch (event.key) {
       case "ArrowRight":
       case "ArrowDown":
@@ -313,11 +313,11 @@ export function useQuickActionsBar(
   }, [focusNext, focusPrevious, activateFocused, state.customizeMode, state.focusedIndex, exitCustomizeMode, hideBar, focusAction, actionCount]);
 
   // Global keyboard shortcut to focus the bar
-  React.useEffect(() => {
+  useEffect(() => {
     const shortcut = mergedConfig.focusShortcut;
     const requiresMeta = mergedConfig.focusShortcutMetaKey;
 
-    function handleKeyDown(e: KeyboardEvent) {
+    function handleGlobalKeyDown(e: globalThis.KeyboardEvent) {
       const key = e.key.toLowerCase();
       const matchesKey = shortcut.toLowerCase() === key;
       const matchesMeta = requiresMeta
@@ -330,12 +330,12 @@ export function useQuickActionsBar(
       }
     }
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
   }, [mergedConfig.focusShortcut, mergedConfig.focusShortcutMetaKey, focusBar]);
 
   // Handle focus events
-  React.useEffect(() => {
+  useEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
 
@@ -359,7 +359,7 @@ export function useQuickActionsBar(
   }, [clearHideTimeout, startAutoHide]);
 
   // Cleanup timeout on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => clearHideTimeout();
   }, [clearHideTimeout]);
 
