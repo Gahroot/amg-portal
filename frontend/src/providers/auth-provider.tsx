@@ -192,6 +192,27 @@ export function AuthProvider({
     [user, isLoading, isAuthenticated, login, logout, refreshUser]
   );
 
+  const isPublicPath = PUBLIC_PATHS.includes(pathname);
+
+  // While checking auth state, only render public pages (like /login).
+  // Protected pages stay blank until we know whether to show them or redirect.
+  if (isLoading && !isPublicPath) {
+    return (
+      <AuthContext.Provider value={value}>
+        {null}
+      </AuthContext.Provider>
+    );
+  }
+
+  // Not authenticated on a protected page — redirect is pending, don't flash content.
+  if (!isLoading && !isAuthenticated && !isPublicPath) {
+    return (
+      <AuthContext.Provider value={value}>
+        {null}
+      </AuthContext.Provider>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
       {children}
