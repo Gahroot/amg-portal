@@ -1,3 +1,6 @@
+import base64
+import hashlib
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,7 +9,7 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "AMG Portal"
-    DEBUG: bool = True
+    DEBUG: bool = False
     SQL_ECHO: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
@@ -31,6 +34,12 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "amg_minio_secret"
     MINIO_SECURE: bool = False
     MINIO_BUCKET: str = "amg-portal"
+    # Public-facing MinIO hostname for presigned URLs served to browsers.
+    # When the backend runs inside Docker, MINIO_ENDPOINT is the internal service
+    # name (e.g. "minio:9000") which is unreachable from browsers.  Set this to the
+    # host-accessible address (e.g. "localhost:9000") so presigned URLs work.
+    # Defaults to MINIO_ENDPOINT when not set.
+    MINIO_PUBLIC_ENDPOINT: str | None = None
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
@@ -41,9 +50,23 @@ class Settings(BaseSettings):
     # MFA
     MFA_GRACE_PERIOD_DAYS: int = 7
     MFA_SETUP_TOKEN_EXPIRE_MINUTES: int = 30
+    MFA_ENCRYPTION_KEY: str = ""  # Fernet key for encrypting MFA secrets at rest
+    # Emails that are permanently exempt from MFA (e.g. demo accounts). JSON array string.
+    MFA_EXEMPT_EMAILS: list[str] = []
 
     # Password Reset
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
+
+    # Trusted reverse proxies (CIDR or exact IPs).
+    # X-Forwarded-For is only trusted when the direct connection comes from one of these.
+    # Example: ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+    TRUSTED_PROXIES: list[str] = []
+
+    # Rate Limiting (requests per minute per IP)
+    RATE_LIMIT_LOGIN: int = 5
+    RATE_LIMIT_REGISTER: int = 3
+    RATE_LIMIT_FORGOT_PASSWORD: int = 3
+    RATE_LIMIT_REFRESH: int = 10
 
     # Scheduler
     SCHEDULER_ENABLED: bool = True
@@ -70,19 +93,22 @@ class Settings(BaseSettings):
     # Google Calendar Integration
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_CALENDAR_REDIRECT_URI: str = ""  # e.g., http://localhost:3000/settings/calendar/callback/google
+    GOOGLE_CALENDAR_REDIRECT_URI: str = (
+        ""  # e.g., http://localhost:3000/settings/calendar/callback/google
+    )
 
     # Microsoft / Outlook Calendar Integration
     MICROSOFT_CLIENT_ID: str = ""
     MICROSOFT_CLIENT_SECRET: str = ""
-    MICROSOFT_CALENDAR_REDIRECT_URI: str = ""  # e.g., http://localhost:3000/settings/calendar/callback/outlook
+    MICROSOFT_CALENDAR_REDIRECT_URI: str = (
+        ""  # e.g., http://localhost:3000/settings/calendar/callback/outlook
+    )
     MICROSOFT_TENANT_ID: str = "common"  # Use "common" for multi-tenant, or specific tenant ID
 
     # Security & Intelligence Feed Integration (Phase 2)
     # Leave blank to run in stub/offline mode — no real feed will be contacted.
     SECURITY_FEED_PROVIDER: str | None = None  # e.g. "maxmind", "flashpoint", "custom"
     SECURITY_FEED_API_KEY: str | None = None
-    SECURITY_FEED_BASE_URL: str | None = None  # Base URL for custom/self-hosted providers
 
     # DocuSign eSignature
     DOCUSIGN_INTEGRATION_KEY: str = ""
@@ -91,12 +117,12 @@ class Settings(BaseSettings):
     DOCUSIGN_PRIVATE_KEY: str = ""
     DOCUSIGN_BASE_URI: str = "https://demo.docusign.net/restapi"
     DOCUSIGN_AUTH_SERVER: str = "account-d.docusign.com"
-    DOCUSIGN_RETURN_URL: str = "http://localhost:3000/docusign/complete"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Require SECRET_KEY to be set in non-debug environments
-        if not self.DEBUG and not self.SECRET_KEY:
+        _secret_key_placeholder = "change-me-in-production"
+        if not self.DEBUG and (not self.SECRET_KEY or _secret_key_placeholder == self.SECRET_KEY):
             raise ValueError(
                 "SECRET_KEY must be set in production. "
                 "Set a secure random string via the SECRET_KEY environment variable."
@@ -104,11 +130,28 @@ class Settings(BaseSettings):
         # Use a development key only in DEBUG mode
         if not self.SECRET_KEY:
             self.SECRET_KEY = "dev-secret-key-change-in-production-do-not-use-in-prod"
+        # Require MINIO_SECRET_KEY to be overridden in non-debug environments
+        if not self.DEBUG and self.MINIO_SECRET_KEY == "amg_minio_secret":
+            raise ValueError(
+                "MINIO_SECRET_KEY must be changed from the default in production. "
+                "Set a secure value via the MINIO_SECRET_KEY environment variable."
+            )
         # Validate JWT algorithm
         if self.ALGORITHM not in ("HS256", "HS384", "HS512"):
             raise ValueError(
                 f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512."
             )
+        # Derive MFA encryption key from SECRET_KEY when not explicitly set
+        if not self.MFA_ENCRYPTION_KEY:
+            if not self.DEBUG:
+                raise ValueError(
+                    "MFA_ENCRYPTION_KEY must be set in production. Generate one with: "
+                    "python -c 'from cryptography.fernet import Fernet; "
+                    "print(Fernet.generate_key().decode())'"
+                )
+            # Derive a deterministic Fernet key from SECRET_KEY for development
+            digest = hashlib.sha256(self.SECRET_KEY.encode("utf-8")).digest()
+            self.MFA_ENCRYPTION_KEY = base64.urlsafe_b64encode(digest).decode("utf-8")
 
 
 settings = Settings()

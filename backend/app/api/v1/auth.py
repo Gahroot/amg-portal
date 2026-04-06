@@ -87,7 +87,9 @@ router = APIRouter()
 
 
 def _set_auth_cookies(
-    response: Response, access_token: str, refresh_token: str,
+    response: Response,
+    access_token: str,
+    refresh_token: str,
 ) -> None:
     """Set httpOnly cookies for access and refresh tokens."""
     is_secure = not settings.DEBUG
@@ -115,7 +117,8 @@ def _clear_auth_cookies(response: Response) -> None:
     """Clear auth cookies."""
     response.delete_cookie(key="access_token", path="/")
     response.delete_cookie(
-        key="refresh_token", path="/api/v1/auth/refresh",
+        key="refresh_token",
+        path="/api/v1/auth/refresh",
     )
 
 
@@ -150,14 +153,16 @@ async def _issue_refresh_token(
     jti = str(uuid.uuid4())
     token = create_refresh_token(token_data, family=fid, jti=jti)
     expires_at = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    db.add(RefreshToken(
-        user_id=user_id,
-        token_hash=hash_token(token),
-        jti=jti,
-        family_id=fid,
-        is_revoked=False,
-        expires_at=expires_at,
-    ))
+    db.add(
+        RefreshToken(
+            user_id=user_id,
+            token_hash=hash_token(token),
+            jti=jti,
+            family_id=fid,
+            is_revoked=False,
+            expires_at=expires_at,
+        )
+    )
     return token
 
 
@@ -200,6 +205,16 @@ async def login(data: LoginRequest, db: DB, response: Response):
     if user.status != "active":
         raise ForbiddenException("Account is not active")
 
+    # ── MFA exempt (e.g. demo accounts) ─────────────────────
+    if user.email in settings.MFA_EXEMPT_EMAILS:
+        user.last_login_at = datetime.now(UTC)
+        token_data = {"sub": str(user.id), "email": user.email}
+        access_token = create_access_token(token_data)
+        refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
+        await db.commit()
+        _set_auth_cookies(response, access_token, refresh_token)
+        return Token(access_token=access_token, refresh_token=refresh_token)
+
     # ── MFA not yet set up ──────────────────────────────────
     if not user.mfa_enabled:
         setup_token_data = {"sub": str(user.id), "email": user.email}
@@ -225,7 +240,7 @@ async def login(data: LoginRequest, db: DB, response: Response):
                 access_token=access_token,
                 refresh_token=refresh_token,
                 mfa_setup_required=True,
-                mfa_setup_token=None,
+                mfa_setup_token=setup_token,
             )
 
         # Hard enforcement: no real tokens until MFA is configured.
@@ -282,9 +297,7 @@ async def refresh(
 ):
     # Accept refresh token from request body (legacy) or httpOnly cookie
     raw_token = (
-        data.refresh_token
-        if data and data.refresh_token
-        else request.cookies.get("refresh_token")
+        data.refresh_token if data and data.refresh_token else request.cookies.get("refresh_token")
     )
     if not raw_token:
         raise UnauthorizedException("Missing refresh token")
@@ -300,9 +313,7 @@ async def refresh(
         raise UnauthorizedException("Invalid refresh token")
 
     # Look up the stored token by jti
-    result = await db.execute(
-        select(RefreshToken).where(RefreshToken.jti == token_jti)
-    )
+    result = await db.execute(select(RefreshToken).where(RefreshToken.jti == token_jti))
     stored_token = result.scalar_one_or_none()
 
     if stored_token is None:
@@ -338,7 +349,10 @@ async def refresh(
     token_data = {"sub": str(user.id), "email": user.email}
     access_token = create_access_token(token_data)
     refresh_token = await _issue_refresh_token(
-        db, str(user.id), token_data, family_id=token_family,
+        db,
+        str(user.id),
+        token_data,
+        family_id=token_family,
     )
     await db.commit()
     _set_auth_cookies(response, access_token, refresh_token)
@@ -357,9 +371,7 @@ async def logout(request: Request, response: Response, db: DB):
         if payload:
             token_jti = payload.get("jti")
             if token_jti:
-                result = await db.execute(
-                    select(RefreshToken).where(RefreshToken.jti == token_jti)
-                )
+                result = await db.execute(select(RefreshToken).where(RefreshToken.jti == token_jti))
                 stored_token = result.scalar_one_or_none()
                 if stored_token and not stored_token.is_revoked:
                     stored_token.is_revoked = True
@@ -420,12 +432,14 @@ async def forgot_password(data: ForgotPasswordRequest, db: DB) -> dict[str, str]
         expires_at = datetime.now(UTC) + timedelta(
             minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES,
         )
-        db.add(PasswordResetToken(
-            user_id=str(user.id),
-            token_hash=hash_token(reset_token),
-            is_used=False,
-            expires_at=expires_at,
-        ))
+        db.add(
+            PasswordResetToken(
+                user_id=str(user.id),
+                token_hash=hash_token(reset_token),
+                is_used=False,
+                expires_at=expires_at,
+            )
+        )
         await db.commit()
 
         # Send reset email (non-blocking, errors are suppressed to prevent enumeration)
@@ -796,9 +810,7 @@ async def add_bookmark(
         return BookmarkResponse.model_validate(bookmark)
 
     # Assign display_order = current count so new items go at the end
-    count_result = await db.execute(
-        select(Bookmark).where(Bookmark.user_id == current_user.id)
-    )
+    count_result = await db.execute(select(Bookmark).where(Bookmark.user_id == current_user.id))
     current_count = len(count_result.scalars().all())
 
     bookmark = Bookmark(
