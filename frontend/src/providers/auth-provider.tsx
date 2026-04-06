@@ -129,12 +129,20 @@ export function AuthProvider({
 
       if (response.mfa_setup_required) {
         if (response.access_token) {
-          // Grace-period path: user has real tokens but must set up MFA.
-          // Store tokens so /mfa-setup can use the regular API client.
+          // Grace-period: real tokens issued, MFA setup encouraged but not blocking.
           setTokens(response.access_token, response.refresh_token);
+          const userData = await getCurrentUser();
+          setUser(userData);
+          if (userData.role === "client") {
+            router.replace("/portal/dashboard");
+          } else if (userData.role === "partner") {
+            router.replace("/partner");
+          } else {
+            router.replace("/");
+          }
+          return;
         }
-
-        // Always redirect to setup page — the user cannot skip this.
+        // Hard enforcement: no real tokens — surface the setup requirement.
         throw new MFASetupRequiredError();
       }
 
