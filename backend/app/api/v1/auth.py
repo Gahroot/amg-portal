@@ -86,19 +86,35 @@ from app.services.recent_item_service import RecentItemService
 router = APIRouter()
 
 
+def _is_cross_origin() -> bool:
+    """True when frontend and backend are on different origins."""
+    try:
+        from urllib.parse import urlparse
+
+        fe = urlparse(settings.FRONTEND_URL)
+        be = urlparse(settings.BACKEND_URL)
+        return fe.hostname != be.hostname
+    except Exception:
+        return False
+
+
 def _set_auth_cookies(
     response: Response,
     access_token: str,
     refresh_token: str,
 ) -> None:
     """Set httpOnly cookies for access and refresh tokens."""
-    is_secure = not settings.DEBUG
+    cross_origin = _is_cross_origin()
+    # Cross-origin deployments (separate frontend/backend domains) require
+    # SameSite=none + Secure so the browser sends cookies on XHR requests.
+    samesite: str = "none" if cross_origin else "lax"
+    secure = True if cross_origin else not settings.DEBUG
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=is_secure,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
@@ -106,8 +122,8 @@ def _set_auth_cookies(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=is_secure,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/api/v1/auth/refresh",
     )
@@ -124,13 +140,15 @@ def _clear_auth_cookies(response: Response) -> None:
 
 def _set_mfa_setup_cookie(response: Response, token: str) -> None:
     """Set a short-lived httpOnly cookie for the MFA setup token."""
-    is_secure = not settings.DEBUG
+    cross_origin = _is_cross_origin()
+    samesite: str = "none" if cross_origin else "lax"
+    secure = True if cross_origin else not settings.DEBUG
     response.set_cookie(
         key="mfa_setup_token",
         value=token,
         httponly=True,
-        secure=is_secure,
-        samesite="lax",
+        secure=secure,
+        samesite=samesite,
         max_age=settings.MFA_SETUP_TOKEN_EXPIRE_MINUTES * 60,
         path="/api/v1/auth/mfa",
     )
