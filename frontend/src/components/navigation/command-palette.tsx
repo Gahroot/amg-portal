@@ -17,6 +17,10 @@ import {
   Filter,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { dashboardNavConfig } from "@/config/dashboard-nav";
+import { portalNavConfig } from "@/config/portal-nav";
+import { partnerNavConfig } from "@/config/partner-nav";
 import {
   CommandDialog,
   CommandEmpty,
@@ -83,6 +87,14 @@ const TYPE_FILTERS: { type: SearchEntityType | "all"; label: string; icon: React
   { type: "document", label: "Documents", icon: FileText },
 ];
 
+interface NavCommandItem {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  searchValue: string;
+  isSubItem: boolean;
+}
+
 interface CommandPaletteProps {
   /** Control the open state from outside */
   open?: boolean;
@@ -127,12 +139,57 @@ export function CommandPalette({
   const recordRecentItem = useRecordRecentItem();
   const addRecentSearch = useAddRecentSearch();
 
-  const isInternal = user && INTERNAL_ROLES.includes(user.role);
-  const isMDOrRM =
-    user &&
-    (user.role === "managing_director" || user.role === "relationship_manager");
-
   const hasQuery = debouncedQuery.trim().length > 0;
+
+  // Build config-driven navigation items based on user role
+  const navGroups = React.useMemo(() => {
+    if (!user) return {};
+
+    const config =
+      user.role === "client"
+        ? portalNavConfig
+        : user.role === "partner"
+          ? partnerNavConfig
+          : dashboardNavConfig;
+
+    const result: Record<string, NavCommandItem[]> = {};
+
+    for (const group of config.groups) {
+      const items: NavCommandItem[] = [];
+
+      for (const item of group.items) {
+        if (item.roles && !item.roles.includes(user.role)) continue;
+
+        const Icon = item.icon;
+        items.push({
+          title: item.title,
+          href: item.href,
+          icon: Icon,
+          searchValue: `navigate ${group.label} ${item.title} ${item.tooltip ?? ""}`,
+          isSubItem: false,
+        });
+
+        // Flatten subItems
+        if (item.subItems) {
+          for (const sub of item.subItems) {
+            items.push({
+              title: `${item.title} > ${sub.title}`,
+              href: sub.href,
+              icon: Icon,
+              searchValue: `navigate ${group.label} ${item.title} ${sub.title}`,
+              isSubItem: true,
+            });
+          }
+        }
+      }
+
+      if (items.length > 0) {
+        result[group.label] = items;
+      }
+    }
+
+    return result;
+  }, [user]);
 
   // Track if a search has been performed (for recording to recent searches)
   const hasPerformedSearch = React.useRef(false);
@@ -396,94 +453,71 @@ export function CommandPalette({
           />
         )}
 
-        {/* Quick actions (when no search query) */}
+        {/* Actions and navigation (when no search query) */}
         {!hasQuery && (
           <>
+            {/* Create actions — role-gated */}
+            {user && INTERNAL_ROLES.includes(user.role) && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Actions">
+                  {(user.role === "managing_director" || user.role === "relationship_manager") && (
+                    <CommandItem
+                      value="create new program"
+                      onSelect={() => handleAction("/programs/new")}
+                    >
+                      <Plus className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span>New Program</span>
+                      <CommandShortcut>Action</CommandShortcut>
+                    </CommandItem>
+                  )}
+                  <CommandItem
+                    value="create new communication"
+                    onSelect={() => handleAction("/communications")}
+                  >
+                    <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>New Communication</span>
+                    <CommandShortcut>Action</CommandShortcut>
+                  </CommandItem>
+                  <CommandItem
+                    value="create new escalation"
+                    onSelect={() => handleAction("/escalations")}
+                  >
+                    <AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>New Escalation</span>
+                    <CommandShortcut>Action</CommandShortcut>
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
+
+            {/* Config-driven navigation groups */}
+            {Object.entries(navGroups).map(([groupLabel, items]) => (
+              <React.Fragment key={groupLabel}>
+                <CommandSeparator />
+                <CommandGroup heading={groupLabel}>
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <CommandItem
+                        key={item.href}
+                        value={item.searchValue}
+                        onSelect={() => handleAction(item.href)}
+                      >
+                        <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className={item.isSubItem ? "text-sm text-muted-foreground" : ""}>
+                          {item.title}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </React.Fragment>
+            ))}
+
+            {/* Utilities */}
             <CommandSeparator />
-            <CommandGroup heading="Quick Actions">
-              {isInternal && (
-                <CommandItem
-                  value="navigate programs"
-                  onSelect={() => handleAction("/programs")}
-                >
-                  <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Go to Programs</span>
-                </CommandItem>
-              )}
-              {isInternal && (
-                <CommandItem
-                  value="navigate clients"
-                  onSelect={() => handleAction("/clients")}
-                >
-                  <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Go to Clients</span>
-                </CommandItem>
-              )}
-              {isInternal && (
-                <CommandItem
-                  value="navigate partners"
-                  onSelect={() => handleAction("/partners")}
-                >
-                  <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Go to Partners</span>
-                </CommandItem>
-              )}
-              {isInternal && (
-                <CommandItem
-                  value="navigate tasks"
-                  onSelect={() => handleAction("/tasks")}
-                >
-                  <CheckSquare className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Go to Tasks</span>
-                </CommandItem>
-              )}
-              {isMDOrRM && (
-                <CommandItem
-                  value="create new program"
-                  onSelect={() => handleAction("/programs/new")}
-                >
-                  <Plus className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>New Program</span>
-                  <CommandShortcut>Action</CommandShortcut>
-                </CommandItem>
-              )}
-              {isInternal && (
-                <CommandItem
-                  value="create new communication"
-                  onSelect={() => handleAction("/communications")}
-                >
-                  <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>New Communication</span>
-                  <CommandShortcut>Action</CommandShortcut>
-                </CommandItem>
-              )}
-              {isInternal && (
-                <CommandItem
-                  value="create new escalation"
-                  onSelect={() => handleAction("/escalations")}
-                >
-                  <AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>New Escalation</span>
-                  <CommandShortcut>Action</CommandShortcut>
-                </CommandItem>
-              )}
-              <CommandItem
-                value="review pending approvals"
-                onSelect={() => handleAction("/approvals")}
-              >
-                <CheckSquare className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>Review Pending Approvals</span>
-                <CommandShortcut>Action</CommandShortcut>
-              </CommandItem>
-              {isInternal && (
-                <CommandItem
-                  value="search documents"
-                  onSelect={() => handleAction("/documents")}
-                >
-                  <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Browse Documents</span>
-                </CommandItem>
-              )}
+            <CommandGroup heading="Utilities">
               <CommandItem
                 value="show keyboard shortcuts"
                 onSelect={handleShowShortcuts}
