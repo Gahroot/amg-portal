@@ -331,7 +331,7 @@ function PaymentTable({ filters }: PaymentTableProps) {
                 <TableCell className="whitespace-nowrap font-medium">
                   {formatDate(payment.payment_date)}
                 </TableCell>
-                <TableCell className="whitespace-nowrap font-semibold text-green-700 dark:text-green-400">
+                <TableCell className="whitespace-nowrap font-semibold text-green-700 dark:text-green-300">
                   {formatCurrency(payment.amount, payment.currency)}
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">

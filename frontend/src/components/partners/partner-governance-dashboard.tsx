@@ -15,9 +15,9 @@ import Link from "next/link";
 
 function scoreColor(score: number | null): string {
   if (score === null) return "text-muted-foreground";
-  if (score >= 70) return "text-green-700";
-  if (score >= 40) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 70) return "text-green-700 dark:text-green-300";
+  if (score >= 40) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function statusBadgeVariant(
@@ -55,7 +55,7 @@ export function PartnerGovernanceDashboard() {
   const entries = data?.entries ?? [];
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -103,7 +103,7 @@ export function PartnerGovernanceDashboard() {
                 <span
                   className={
                     entry.sla_breach_count > 0
-                      ? "text-red-600 font-medium"
+                      ? "text-red-600 dark:text-red-400 font-medium"
                       : ""
                   }
                 >

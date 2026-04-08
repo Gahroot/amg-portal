@@ -132,9 +132,9 @@ export function QualificationCard({
 
   const QualificationLevelBadge = ({ level }: { level: QualificationLevel }) => {
     const colors: Record<QualificationLevel, string> = {
-      qualified: "bg-blue-100 text-blue-700",
-      preferred: "bg-purple-100 text-purple-700",
-      expert: "bg-green-100 text-green-700",
+      qualified: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+      preferred: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300",
+      expert: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300",
     };
 
     const dots = level === "qualified" ? 1 : level === "preferred" ? 2 : 3;
@@ -146,7 +146,7 @@ export function QualificationCard({
             <div
               key={i}
               className={`w-1.5 h-1.5 rounded-full ${
-                i < dots ? "bg-current" : "bg-white/50"
+                i < dots ? "bg-current" : "bg-card/50"
               }`}
             />
           ))}
@@ -219,7 +219,7 @@ export function QualificationCard({
                           variant="ghost"
                           size="sm"
                           onClick={() => openApproveDialog(qualification)}
-                          className="text-green-600"
+                          className="text-green-600 dark:text-green-400"
                           title="Approve"
                         >
                           <Check className="h-4 w-4" />
@@ -230,7 +230,7 @@ export function QualificationCard({
                           onClick={() =>
                             openApproveDialog(qualification)
                           }
-                          className="text-red-600"
+                          className="text-red-600 dark:text-red-400"
                           title="Reject"
                         >
                           <X className="h-4 w-4" />

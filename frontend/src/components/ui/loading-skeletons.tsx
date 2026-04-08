@@ -67,7 +67,7 @@ interface TableSkeletonProps {
 
 export function TableSkeleton({ rows = 6, columns = 4 }: TableSkeletonProps) {
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

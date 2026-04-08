@@ -36,22 +36,22 @@ const LEVEL_CONFIG: Record<
 > = {
   task: {
     label: "Task",
-    badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
+    badgeClass: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800",
     dotClass: "bg-blue-500",
   },
   milestone: {
     label: "Milestone",
-    badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
+    badgeClass: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800",
     dotClass: "bg-amber-500",
   },
   program: {
     label: "Program",
-    badgeClass: "bg-orange-100 text-orange-800 border-orange-200",
+    badgeClass: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800",
     dotClass: "bg-orange-500",
   },
   client_impact: {
     label: "Client Impact",
-    badgeClass: "bg-red-100 text-red-800 border-red-200",
+    badgeClass: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800",
     dotClass: "bg-red-500",
   },
 };
@@ -77,8 +77,8 @@ function AlertRow({ escalation }: AlertRowProps) {
   const acknowledge = useAcknowledgeEscalation();
   const levelCfg = LEVEL_CONFIG[escalation.level] ?? {
     label: escalation.level,
-    badgeClass: "bg-gray-100 text-gray-800 border-gray-200",
-    dotClass: "bg-gray-400",
+    badgeClass: "bg-muted text-foreground border-border",
+    dotClass: "bg-muted-foreground",
   };
   const statusCfg = STATUS_CONFIG[escalation.status] ?? {
     label: escalation.status,
@@ -97,7 +97,7 @@ function AlertRow({ escalation }: AlertRowProps) {
       className={cn(
         "group relative flex flex-col gap-2 rounded-lg border p-3 transition-colors",
         isOpen
-          ? "border-red-200 bg-red-50/50 dark:border-red-900/40 dark:bg-red-950/20"
+          ? "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
           : "border-border bg-muted/20",
       )}
     >

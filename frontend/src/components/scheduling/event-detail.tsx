@@ -22,10 +22,10 @@ import { useConfirmEvent, useCancelEvent } from "@/hooks/use-scheduling";
 import type { ScheduledEvent } from "@/types/scheduling";
 
 const statusColors: Record<string, string> = {
-  scheduled: "bg-blue-100 text-blue-800",
-  confirmed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  completed: "bg-gray-100 text-gray-800",
+  scheduled: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
+  confirmed: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+  cancelled: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
+  completed: "bg-muted text-foreground",
 };
 
 const typeLabels: Record<string, string> = {

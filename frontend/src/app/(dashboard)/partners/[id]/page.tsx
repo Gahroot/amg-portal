@@ -199,7 +199,7 @@ export default function PartnerDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">Loading partner...</p>
         </div>
@@ -209,7 +209,7 @@ export default function PartnerDetailPage() {
 
   if (!partner) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Partner not found.</p>
         </div>
@@ -218,7 +218,7 @@ export default function PartnerDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function PartnerDetailPage() {
             {partner.is_on_probation && (
               <Badge
                 variant="outline"
-                className="border-amber-300 bg-amber-50 text-amber-800 gap-1"
+                className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 gap-1"
               >
                 <ShieldAlert className="h-3 w-3" />
                 Probationary
@@ -300,10 +300,10 @@ export default function PartnerDetailPage() {
         )}
 
         {partner.is_on_probation && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
-            <ShieldAlert className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-900">Probationary Partner</AlertTitle>
-            <AlertDescription className="text-amber-800">
+          <Alert className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
+            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-900 dark:text-amber-300">Probationary Partner</AlertTitle>
+            <AlertDescription className="text-amber-800 dark:text-amber-300">
               This partner is under enhanced oversight for their first three engagements.{" "}
               <span className="font-semibold">
                 {partner.completed_assignments} of 3 qualifying engagements completed.
@@ -582,7 +582,7 @@ export default function PartnerDetailPage() {
           </TabsContent>
 
           <TabsContent value="assignments" className="space-y-4">
-            <div className="rounded-md border bg-white">
+            <div className="rounded-md border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -73,7 +73,7 @@ function MetricCard({
       className={[
         "transition-colors",
         href ? "hover:border-primary/40 cursor-pointer" : "",
-        isAlert ? "border-red-300 bg-red-50 dark:bg-red-950/20" : "",
+        isAlert ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -81,13 +81,13 @@ function MetricCard({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle
           className={`text-sm font-medium ${
-            isAlert ? "text-red-700" : "text-muted-foreground"
+            isAlert ? "text-red-700 dark:text-red-300" : "text-muted-foreground"
           }`}
         >
           {title}
         </CardTitle>
         <span
-          className={`h-4 w-4 ${isAlert ? "text-red-600" : "text-muted-foreground"}`}
+          className={`h-4 w-4 ${isAlert ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
         >
           {icon}
         </span>
@@ -98,7 +98,7 @@ function MetricCard({
         ) : (
           <>
             <p
-              className={`text-2xl font-bold ${isAlert ? "text-red-700" : ""}`}
+              className={`text-2xl font-bold ${isAlert ? "text-red-700 dark:text-red-300" : ""}`}
             >
               {value ?? 0}
             </p>
@@ -230,21 +230,21 @@ function RagSummary({ breakdown }: RagSummaryProps) {
     <div className="flex flex-wrap gap-2">
       <Badge
         variant="outline"
-        className="gap-1.5 border-red-200 bg-red-50 px-3 py-1 text-sm text-red-800"
+        className="gap-1.5 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-3 py-1 text-sm text-red-800 dark:text-red-300"
       >
         <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
         Red — {red}
       </Badge>
       <Badge
         variant="outline"
-        className="gap-1.5 border-amber-200 bg-amber-50 px-3 py-1 text-sm text-amber-800"
+        className="gap-1.5 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 text-sm text-amber-800 dark:text-amber-300"
       >
         <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
         Amber — {amber}
       </Badge>
       <Badge
         variant="outline"
-        className="gap-1.5 border-green-200 bg-green-50 px-3 py-1 text-sm text-green-800"
+        className="gap-1.5 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-1 text-sm text-green-800 dark:text-green-300"
       >
         <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
         Green — {green}
@@ -262,15 +262,15 @@ const SEVERITY_STYLES: Record<
   { badge: string; dot: string }
 > = {
   critical: {
-    badge: "border-red-200 bg-red-50 text-red-800",
+    badge: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300",
     dot: "bg-red-500",
   },
   warning: {
-    badge: "border-amber-200 bg-amber-50 text-amber-800",
+    badge: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300",
     dot: "bg-amber-500",
   },
   info: {
-    badge: "border-blue-200 bg-blue-50 text-blue-800",
+    badge: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300",
     dot: "bg-blue-500",
   },
 };

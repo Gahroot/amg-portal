@@ -23,7 +23,7 @@ async function captureElement(element: HTMLElement): Promise<HTMLCanvasElement> 
     scale: EXPORT_SCALE,
     useCORS: true,
     allowTaint: true,
-    backgroundColor: "#ffffff",
+    backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-card').trim() || '#ffffff',
     logging: false,
     // Ignore interactive elements that shouldn't appear in exports
     ignoreElements: (el) => {
@@ -46,21 +46,27 @@ function buildHeaderCanvas(
   canvas.height = headerHeight;
   const ctx = canvas.getContext("2d")!;
 
+  const computedStyle = getComputedStyle(document.documentElement);
+  const cardColor = computedStyle.getPropertyValue('--color-card').trim() || '#ffffff';
+  const primaryColor = computedStyle.getPropertyValue('--color-primary').trim() || '#8B4513';
+  const mutedFgColor = computedStyle.getPropertyValue('--color-muted-foreground').trim() || '#666666';
+  const accentColor = computedStyle.getPropertyValue('--color-accent').trim() || '#D2691E';
+
   // Background
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = cardColor;
   ctx.fillRect(0, 0, width, headerHeight);
 
   // AMG branding bar
-  ctx.fillStyle = "#8B4513";
+  ctx.fillStyle = primaryColor;
   ctx.fillRect(0, 0, width, 4 * EXPORT_SCALE);
 
   // Title
-  ctx.fillStyle = "#8B4513";
+  ctx.fillStyle = primaryColor;
   ctx.font = `bold ${18 * EXPORT_SCALE}px Georgia, serif`;
   ctx.fillText("AMG Dashboard Export", 20 * EXPORT_SCALE, 35 * EXPORT_SCALE);
 
   // Subtitle
-  ctx.fillStyle = "#666666";
+  ctx.fillStyle = mutedFgColor;
   ctx.font = `${11 * EXPORT_SCALE}px -apple-system, BlinkMacSystemFont, sans-serif`;
   ctx.fillText(title, 20 * EXPORT_SCALE, 55 * EXPORT_SCALE);
 
@@ -76,7 +82,7 @@ function buildHeaderCanvas(
   );
 
   // Separator line
-  ctx.strokeStyle = "#D2691E";
+  ctx.strokeStyle = accentColor;
   ctx.lineWidth = EXPORT_SCALE;
   ctx.beginPath();
   ctx.moveTo(20 * EXPORT_SCALE, 85 * EXPORT_SCALE);
@@ -98,7 +104,7 @@ function mergeCanvases(
   merged.height = header.height + content.height;
 
   const ctx = merged.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-card').trim() || '#ffffff';
   ctx.fillRect(0, 0, merged.width, merged.height);
   ctx.drawImage(header, 0, 0);
   ctx.drawImage(content, 0, header.height);
@@ -156,7 +162,7 @@ async function exportPDF(
     pageCanvas.height = sourceHeight;
 
     const ctx = pageCanvas.getContext("2d")!;
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-card').trim() || '#ffffff';
     ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
     ctx.drawImage(
       canvas,

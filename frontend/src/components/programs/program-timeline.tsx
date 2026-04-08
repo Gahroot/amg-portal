@@ -72,11 +72,11 @@ function FullTimeline({
 
         const labelColor =
           state === "completed"
-            ? "text-green-700"
+            ? "text-green-700 dark:text-green-300"
             : state === "current"
               ? "text-primary font-semibold"
               : state === "overdue"
-                ? "text-red-600 font-semibold"
+                ? "text-red-600 dark:text-red-400 font-semibold"
                 : "text-muted-foreground";
 
         const dateColor =

@@ -373,7 +373,7 @@ export function EditableTable<TData>({
   const selectedCount = Object.keys(selectedRows).length;
 
   return (
-    <div className={cn("rounded-md border bg-white", className)}>
+    <div className={cn("rounded-md border bg-card", className)}>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

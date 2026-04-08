@@ -271,7 +271,7 @@ export default function NewCertificatePage() {
             <CardContent>
               {previewContent ? (
                 <div
-                  className="prose prose-sm max-w-none border rounded-lg p-4 bg-white min-h-96"
+                  className="prose prose-sm max-w-none border rounded-lg p-4 bg-card min-h-96"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent) }}
                 />
               ) : (

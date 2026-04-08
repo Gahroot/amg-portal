@@ -31,20 +31,20 @@ function StatItem({ label, value, icon, alert = false }: StatItemProps) {
   return (
     <Card
       className={
-        isAlert ? "border-red-300 bg-red-50 dark:bg-red-950/20" : ""
+        isAlert ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30" : ""
       }
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle
           className={`text-[11px] font-medium uppercase tracking-widest ${
-            isAlert ? "text-red-700" : "text-muted-foreground"
+            isAlert ? "text-red-700 dark:text-red-300" : "text-muted-foreground"
           }`}
         >
           {label}
         </CardTitle>
         <span
           className={`rounded-lg p-2 ${
-            isAlert ? "bg-red-100 text-red-600" : "bg-primary/10 text-muted-foreground"
+            isAlert ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" : "bg-primary/10 text-muted-foreground"
           }`}
         >
           {icon}
@@ -52,7 +52,7 @@ function StatItem({ label, value, icon, alert = false }: StatItemProps) {
       </CardHeader>
       <CardContent>
         <p
-          className={`text-2xl font-light tabular-nums tracking-tight ${isAlert ? "text-red-700" : ""}`}
+          className={`text-2xl font-light tabular-nums tracking-tight ${isAlert ? "text-red-700 dark:text-red-300" : ""}`}
         >
           {animatedValue}
         </p>

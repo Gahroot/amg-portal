@@ -137,7 +137,7 @@ export default function ReportSchedulesPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Page header */}
         <div className="flex items-start justify-between gap-4">

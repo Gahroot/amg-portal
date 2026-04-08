@@ -7,9 +7,9 @@ import { Progress } from "@/components/ui/progress";
 
 function scoreColor(score: number | null): string {
   if (score === null) return "text-muted-foreground";
-  if (score >= 70) return "text-green-700";
-  if (score >= 40) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 70) return "text-green-700 dark:text-green-300";
+  if (score >= 40) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function scoreBadgeVariant(
@@ -102,11 +102,11 @@ export function PartnerScoreCard({ data }: { data: CompositeScore }) {
 
         {/* Recommended action */}
         {data.recommended_action && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-            <p className="text-xs font-medium text-amber-800">
+          <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
               Recommended Action
             </p>
-            <p className="text-sm font-semibold text-amber-900 capitalize">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-300 capitalize">
               {data.recommended_action}
             </p>
           </div>

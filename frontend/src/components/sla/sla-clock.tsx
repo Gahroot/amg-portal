@@ -18,7 +18,7 @@ export function SLAClock({
   className = "",
 }: SLAClockProps) {
   const [timeDisplay, setTimeDisplay] = useState<React.ReactNode>("");
-  const [colorClass, setColorClass] = useState("text-green-600");
+  const [colorClass, setColorClass] = useState("text-green-600 dark:text-green-400");
 
   useEffect(() => {
     const updateDisplay = () => {
@@ -41,7 +41,7 @@ export function SLAClock({
           </span>,
         );
         setColorClass(
-          elapsedHours > slaHours ? "text-red-600" : "text-green-600"
+          elapsedHours > slaHours ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
         );
         return;
       }
@@ -52,11 +52,11 @@ export function SLAClock({
         const hours = Math.floor(overdueHours);
         const minutes = Math.floor((overdueHours % 1) * 60);
         setTimeDisplay(
-          <span className="text-red-600 font-semibold">
+          <span className="text-red-600 dark:text-red-400 font-semibold">
             OVERDUE by {hours}h {minutes}m
           </span>,
         );
-        setColorClass("text-red-600");
+        setColorClass("text-red-600 dark:text-red-400");
       } else {
         const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
         const remainingMinutes = Math.floor(
@@ -71,11 +71,11 @@ export function SLAClock({
         );
 
         if (percentage >= 100) {
-          setColorClass("text-red-600");
+          setColorClass("text-red-600 dark:text-red-400");
         } else if (percentage >= 80) {
-          setColorClass("text-amber-600");
+          setColorClass("text-amber-600 dark:text-amber-400");
         } else {
-          setColorClass("text-green-600");
+          setColorClass("text-green-600 dark:text-green-400");
         }
       }
     };

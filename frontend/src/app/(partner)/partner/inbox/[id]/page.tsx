@@ -129,9 +129,9 @@ export default function PartnerAssignmentDetailPage() {
     const now = new Date();
     const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return { text: `Overdue by ${Math.abs(diffDays)} days`, color: "text-destructive" };
-    if (diffDays === 0) return { text: "Due today", color: "text-orange-600" };
-    if (diffDays === 1) return { text: "Due tomorrow", color: "text-orange-600" };
-    if (diffDays <= 7) return { text: `Due in ${diffDays} days`, color: "text-yellow-600" };
+    if (diffDays === 0) return { text: "Due today", color: "text-orange-600 dark:text-orange-400" };
+    if (diffDays === 1) return { text: "Due tomorrow", color: "text-orange-600 dark:text-orange-400" };
+    if (diffDays <= 7) return { text: `Due in ${diffDays} days`, color: "text-yellow-600 dark:text-yellow-400" };
     return { text: date.toLocaleDateString(), color: "text-muted-foreground" };
   };
 
@@ -347,7 +347,7 @@ export default function PartnerAssignmentDetailPage() {
                               </p>
                             )}
                             {deliverable.review_comments && (
-                              <p className="text-xs text-orange-600">
+                              <p className="text-xs text-orange-600 dark:text-orange-400">
                                 Review: {deliverable.review_comments}
                               </p>
                             )}
@@ -391,7 +391,7 @@ export default function PartnerAssignmentDetailPage() {
                             <span className="text-xs text-muted-foreground">Submitted for review</span>
                           )}
                           {deliverable.status === "approved" && (
-                            <span className="text-xs text-green-600">Approved</span>
+                            <span className="text-xs text-green-600 dark:text-green-400">Approved</span>
                           )}
                         </TableCell>
                       </TableRow>

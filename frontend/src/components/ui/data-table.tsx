@@ -167,7 +167,7 @@ export function DataTable<TData, TValue>({
   }, [table, enableColumnResizing]);
 
   return (
-    <div className={cn("rounded-md border bg-white", className)}>
+    <div className={cn("rounded-md border bg-card", className)}>
       <Table
         style={{
           ...columnSizeVars,

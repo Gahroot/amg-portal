@@ -167,7 +167,7 @@ export default function SharedDocumentPage({ params }: PageProps) {
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               <CardTitle>Access granted</CardTitle>
             </div>
             <CardDescription>
@@ -246,7 +246,7 @@ export default function SharedDocumentPage({ params }: PageProps) {
               {isRequestingCode ? "Sending…" : "Send verification code"}
             </Button>
             {codeSentMessage && (
-              <p className="text-sm text-green-700">{codeSentMessage}</p>
+              <p className="text-sm text-green-700 dark:text-green-300">{codeSentMessage}</p>
             )}
           </div>
 

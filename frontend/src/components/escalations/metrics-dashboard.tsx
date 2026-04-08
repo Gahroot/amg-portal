@@ -51,14 +51,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 const LEVEL_COLORS: Record<string, string> = {
   task: "#8b7d5e",
   milestone: "#c4a060",
-  program: "#1B2A4A",
+  program: "var(--color-charcoal)",
   client_impact: "#8B2020",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   open: "#8B2020",
   acknowledged: "#c4a060",
-  investigating: "#1B2A4A",
+  investigating: "var(--color-charcoal)",
   resolved: "#4A7A5A",
   closed: "#B8B0A0",
 };
@@ -130,7 +130,7 @@ function SummaryCard({ title, value, subtext, icon, trend, highlight }: SummaryC
         {trend !== undefined && trend !== null && (
           <div
             className={`mt-2 flex items-center gap-1 text-xs font-medium ${
-              trend > 0 ? "text-red-500" : "text-emerald-600"
+              trend > 0 ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
             }`}
           >
             {trend > 0 ? (
@@ -752,7 +752,7 @@ export function EscalationMetricsDashboard() {
                       >
                         {LEVEL_LABELS[p.level] ?? p.level}
                       </Badge>
-                      <span className="text-xs font-bold text-amber-600">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
                         ×{p.count}
                       </span>
                     </div>
@@ -766,9 +766,9 @@ export function EscalationMetricsDashboard() {
 
       {/* ── Insights ── */}
       {(data?.insights?.length ?? 0) > 0 && (
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
           <CardHeader className="pb-2">
-            <CardTitle className="font-serif text-base flex items-center gap-2 text-amber-800">
+            <CardTitle className="font-serif text-base flex items-center gap-2 text-amber-800 dark:text-amber-300">
               <Lightbulb className="h-4 w-4" />
               Insights
             </CardTitle>
@@ -776,7 +776,7 @@ export function EscalationMetricsDashboard() {
           <CardContent>
             <ul className="space-y-2">
               {data?.insights.map((insight, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-amber-900">
+                <li key={i} className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-300">
                   <span className="mt-0.5 h-2 w-2 rounded-full bg-amber-400 shrink-0" />
                   {insight}
                 </li>

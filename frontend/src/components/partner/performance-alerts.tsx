@@ -53,10 +53,10 @@ async function getMyPerformanceStatus(): Promise<PerformanceStatusResponse> {
 
 function StatusIcon({ status }: { status: "good" | "warning" | "critical" }) {
   if (status === "good")
-    return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
   if (status === "warning")
     return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  return <XCircle className="h-4 w-4 text-red-600" />;
+  return <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />;
 }
 
 function TrendIcon({
@@ -65,9 +65,9 @@ function TrendIcon({
   trend: "improving" | "declining" | "stable" | "insufficient_data";
 }) {
   if (trend === "improving")
-    return <TrendingUp className="h-4 w-4 text-green-600" />;
+    return <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />;
   if (trend === "declining")
-    return <TrendingDown className="h-4 w-4 text-red-600" />;
+    return <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />;
   if (trend === "stable") return <Minus className="h-4 w-4 text-muted-foreground" />;
   return <Info className="h-4 w-4 text-muted-foreground" />;
 }
@@ -108,10 +108,10 @@ function AlertRow({ alert }: { alert: MetricAlert }) {
 
   const valueColor =
     alert.status === "critical"
-      ? "text-red-600 font-semibold"
+      ? "text-red-600 dark:text-red-400 font-semibold"
       : alert.status === "warning"
-      ? "text-amber-600 font-semibold"
-      : "text-green-700 font-medium";
+      ? "text-amber-600 dark:text-amber-400 font-semibold"
+      : "text-green-700 dark:text-green-300 font-medium";
 
   return (
     <div className="rounded-lg border p-4">
@@ -155,7 +155,7 @@ function AlertRow({ alert }: { alert: MetricAlert }) {
 
       {/* Suggestion */}
       {expanded && (
-        <div className="mt-3 rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground leading-relaxed border-l-2 border-amber-400">
+        <div className="mt-3 rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground leading-relaxed border-l-2 border-amber-400 dark:border-amber-600">
           <strong className="text-foreground">Suggestion: </strong>
           {alert.suggestion}
         </div>
@@ -173,13 +173,13 @@ function OverallStatusBanner({
 }) {
   if (status === "good") {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+      <div className="flex items-center gap-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-4 py-3">
+        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-green-900">
+          <p className="text-sm font-semibold text-green-900 dark:text-green-300">
             Performance is on track
           </p>
-          <p className="text-xs text-green-700">
+          <p className="text-xs text-green-700 dark:text-green-300">
             All metrics are within acceptable thresholds.
           </p>
         </div>
@@ -189,13 +189,13 @@ function OverallStatusBanner({
 
   if (status === "warning") {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+      <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-amber-900">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
             Attention required
           </p>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-amber-700 dark:text-amber-300">
             One or more metrics need improvement. Review the alerts below.
           </p>
         </div>
@@ -204,13 +204,13 @@ function OverallStatusBanner({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-      <XCircle className="h-5 w-5 text-red-600 shrink-0" />
+    <div className="flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3">
+      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
       <div>
-        <p className="text-sm font-semibold text-red-900">
+        <p className="text-sm font-semibold text-red-900 dark:text-red-300">
           Critical performance issues
         </p>
-        <p className="text-xs text-red-700">
+        <p className="text-xs text-red-700 dark:text-red-300">
           Metrics are below the minimum threshold. Immediate action is required.
         </p>
       </div>
@@ -297,14 +297,14 @@ export function PerformanceAlerts() {
                 key={key}
                 className={`rounded-md border px-3 py-2 text-center ${
                   met
-                    ? "border-green-200 bg-green-50"
-                    : "border-red-200 bg-red-50"
+                    ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
+                    : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30"
                 }`}
               >
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <p
                   className={`text-base font-semibold ${
-                    met ? "text-green-700" : "text-red-700"
+                    met ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"
                   }`}
                 >
                   {numericValue !== null

@@ -56,7 +56,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_overall",
     label: "Overall Rating",
-    color: "#1B2A4A",
+    color: "var(--color-charcoal)",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -72,7 +72,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_timeliness",
     label: "Timeliness",
-    color: "#6B5E4A",
+    color: "var(--color-primary)",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -88,7 +88,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "assignments_completed",
     label: "Assignments Completed",
-    color: "#D4CFC5",
+    color: "var(--color-muted-foreground)",
     type: "bar",
     yAxisId: "count",
   },
@@ -231,7 +231,7 @@ export function PerformanceChart({
     if (!chartRef.current) return;
     try {
       const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(chartRef.current, { backgroundColor: "#ffffff" });
+      const canvas = await html2canvas(chartRef.current, { backgroundColor: "var(--color-card)" });
       const link = document.createElement("a");
       link.download = `partner-performance-${dateRange}d.png`;
       link.href = canvas.toDataURL("image/png");
@@ -500,7 +500,7 @@ export function PerformanceChart({
                       label={{
                         value: ann.label,
                         fontSize: 9,
-                        fill: "#6b7280",
+                        fill: "var(--color-muted-foreground)",
                         position: "insideTopLeft",
                       }}
                     />

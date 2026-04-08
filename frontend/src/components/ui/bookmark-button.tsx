@@ -57,7 +57,7 @@ export function BookmarkButton({
               size === "sm" ? "h-7 w-7" : "h-9 w-9",
               "transition-colors",
               isBookmarked
-                ? "text-amber-500 hover:text-amber-600"
+                ? "text-amber-500 hover:text-amber-600 dark:text-amber-400"
                 : "text-muted-foreground hover:text-foreground",
               className
             )}

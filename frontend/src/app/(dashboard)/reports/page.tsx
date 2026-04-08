@@ -190,7 +190,7 @@ function RMPortfolioPreview({ data }: { data: Awaited<ReturnType<typeof getRMPor
   return (
     <div className="space-y-6">
       {/* Identity row */}
-      <div className="rounded-md border bg-white px-5 py-4">
+      <div className="rounded-md border bg-card px-5 py-4">
         <p className="font-semibold">{data.rm_name}</p>
         <p className="text-sm text-muted-foreground">{data.rm_email}</p>
       </div>
@@ -220,7 +220,7 @@ function RMPortfolioPreview({ data }: { data: Awaited<ReturnType<typeof getRMPor
       </div>
 
       {/* Client table */}
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -310,7 +310,7 @@ function EscalationLogPreview({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -397,7 +397,7 @@ function CompliancePreview({
       {/* KYC table */}
       <div>
         <h3 className="mb-2 text-sm font-semibold">Client KYC Status</h3>
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -488,7 +488,7 @@ function AnnualReviewPreview({
   return (
     <div className="space-y-6">
       {/* Identity */}
-      <div className="rounded-md border bg-white px-5 py-4">
+      <div className="rounded-md border bg-card px-5 py-4">
         <p className="font-semibold">{data.client_name}</p>
         <p className="text-sm text-muted-foreground">Annual Review — {data.year}</p>
       </div>
@@ -518,7 +518,7 @@ function AnnualReviewPreview({
       {data.partner_performance.length > 0 && (
         <div>
           <h3 className="mb-2 text-sm font-semibold">Partner Performance</h3>
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -550,7 +550,7 @@ function AnnualReviewPreview({
       {/* Programs */}
       <div>
         <h3 className="mb-2 text-sm font-semibold">Programs ({data.year})</h3>
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -734,7 +734,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* ── Page header ─────────────────────────────────── */}
         <div>
@@ -855,7 +855,7 @@ export default function ReportsPage() {
 
             {/* Loading state */}
             {isLoading && (
-              <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-white">
+              <div className="flex min-h-[200px] items-center justify-center rounded-lg border bg-card">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   <span className="text-sm">Loading report data…</span>
@@ -887,7 +887,7 @@ export default function ReportsPage() {
 
             {/* Data preview */}
             {!isLoading && hasData && (
-              <div className="rounded-lg border bg-[#FDFBF7] p-6">
+              <div className="rounded-lg border bg-background p-6">
                 {reportType === "rm_portfolio" && rmPortfolioQuery.data && (
                   <RMPortfolioPreview data={rmPortfolioQuery.data} />
                 )}

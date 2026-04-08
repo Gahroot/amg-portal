@@ -136,7 +136,7 @@ export function FavoriteStarButton({
         size === "sm" ? "h-7 w-7" : "h-9 w-9",
         "shrink-0 transition-colors",
         isFavorited
-          ? "text-amber-500 hover:text-amber-600"
+          ? "text-amber-500 hover:text-amber-600 dark:text-amber-400"
           : "text-muted-foreground hover:text-amber-500",
         className,
       )}

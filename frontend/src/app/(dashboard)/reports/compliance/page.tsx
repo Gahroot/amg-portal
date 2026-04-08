@@ -72,7 +72,7 @@ export default function ComplianceAuditReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
         <div>
@@ -154,7 +154,7 @@ export default function ComplianceAuditReportPage() {
             {/* Client KYC Status Table */}
             <section className="space-y-3">
               <h2 className="text-base font-semibold">Client KYC Status</h2>
-              <div className="rounded-md border bg-white">
+              <div className="rounded-md border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -254,7 +254,7 @@ export default function ComplianceAuditReportPage() {
                 )}
               </h2>
               {report.access_anomalies.length === 0 ? (
-                <div className="rounded-md border bg-white px-5 py-4">
+                <div className="rounded-md border bg-card px-5 py-4">
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-500" />
                     No open access anomalies
@@ -262,7 +262,7 @@ export default function ComplianceAuditReportPage() {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-md border bg-white">
+                <div className="rounded-md border bg-card">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -319,7 +319,7 @@ export default function ComplianceAuditReportPage() {
                   <span>Deactivated: <strong className="text-foreground">{report.deactivated_users}</strong></span>
                 </div>
               </div>
-              <div className="rounded-md border bg-white">
+              <div className="rounded-md border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>

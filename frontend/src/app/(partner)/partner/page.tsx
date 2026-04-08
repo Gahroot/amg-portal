@@ -80,7 +80,7 @@ function SLACountdown({ dueDate, compact = false }: SLACountdownProps) {
     const label =
       daysOver >= 1 ? `${daysOver}d overdue` : `${hoursOver}h overdue`;
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 dark:text-red-400">
         <Timer className="h-3 w-3" />
         {label}
       </span>
@@ -92,13 +92,13 @@ function SLACountdown({ dueDate, compact = false }: SLACountdownProps) {
 
   if (isToday(due)) {
     label = `${hoursLeft}h left`;
-    colorClass = "text-red-600";
+    colorClass = "text-red-600 dark:text-red-400";
   } else if (isTomorrow(due)) {
     label = compact ? "Tomorrow" : `Tomorrow (${hoursLeft}h)`;
-    colorClass = "text-amber-600";
+    colorClass = "text-amber-600 dark:text-amber-400";
   } else if (daysLeft <= 3) {
     label = `${daysLeft}d left`;
-    colorClass = "text-amber-600";
+    colorClass = "text-amber-600 dark:text-amber-400";
   } else {
     label = format(due, "MMM d");
     colorClass = "text-muted-foreground";
@@ -232,7 +232,7 @@ function DeliverableRow({ deliverable }: { deliverable: DeliverableItem }) {
         <p className="text-xs text-muted-foreground capitalize">
           {deliverable.deliverable_type.replace(/_/g, " ")}
           {deliverable.review_comments && (
-            <span className="ml-2 text-amber-600">· Feedback available</span>
+            <span className="ml-2 text-amber-600 dark:text-amber-400">· Feedback available</span>
           )}
         </p>
       </div>
@@ -401,17 +401,17 @@ export default function PartnerDashboardPage() {
 
       {/* ── Performance Notice Banner ── */}
       {unacknowledgedNotices > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-red-300 bg-red-50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="shrink-0 rounded-full bg-red-100 p-1.5">
-              <Bell className="h-4 w-4 text-red-600" />
+            <div className="shrink-0 rounded-full bg-red-100 dark:bg-red-900/30 p-1.5">
+              <Bell className="h-4 w-4 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <p className="font-medium text-red-900">
+              <p className="font-medium text-red-900 dark:text-red-300">
                 {unacknowledgedNotices} unacknowledged performance notice
                 {unacknowledgedNotices !== 1 ? "s" : ""}
               </p>
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-red-700 dark:text-red-300">
                 Formal notices from the Managing Director require your acknowledgement.
               </p>
             </div>
@@ -429,26 +429,26 @@ export default function PartnerDashboardPage() {
         <div
           className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
             refreshStatus.is_overdue
-              ? "border-red-300 bg-red-50"
-              : "border-amber-200 bg-amber-50"
+              ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30"
+              : "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30"
           }`}
         >
           <div className="flex items-center gap-3">
             <div
               className={`shrink-0 rounded-full p-1.5 ${
-                refreshStatus.is_overdue ? "bg-red-100" : "bg-amber-100"
+                refreshStatus.is_overdue ? "bg-red-100 dark:bg-red-900/30" : "bg-amber-100 dark:bg-amber-900/30"
               }`}
             >
               <RefreshCw
                 className={`h-4 w-4 ${
-                  refreshStatus.is_overdue ? "text-red-600" : "text-amber-600"
+                  refreshStatus.is_overdue ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
                 }`}
               />
             </div>
             <div>
               <p
                 className={`font-medium ${
-                  refreshStatus.is_overdue ? "text-red-900" : "text-amber-900"
+                  refreshStatus.is_overdue ? "text-red-900 dark:text-red-300" : "text-amber-900 dark:text-amber-300"
                 }`}
               >
                 {refreshStatus.is_overdue
@@ -457,7 +457,7 @@ export default function PartnerDashboardPage() {
               </p>
               <p
                 className={`text-sm ${
-                  refreshStatus.is_overdue ? "text-red-700" : "text-amber-700"
+                  refreshStatus.is_overdue ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"
                 }`}
               >
                 Confirm your current accreditations, insurance, and capacity to remain active.
@@ -488,8 +488,8 @@ export default function PartnerDashboardPage() {
                   <p className="text-2xl font-bold mt-0.5">{newAssignments}</p>
                   <p className="text-xs text-muted-foreground">assignments</p>
                 </div>
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </CardContent>
@@ -505,8 +505,8 @@ export default function PartnerDashboardPage() {
                   <p className="text-2xl font-bold mt-0.5">{activeAssignments.length}</p>
                   <p className="text-xs text-muted-foreground">in progress</p>
                 </div>
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ClipboardList className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -524,8 +524,8 @@ export default function PartnerDashboardPage() {
                   <p className="text-2xl font-bold mt-0.5">{pendingDeliverables}</p>
                   <p className="text-xs text-muted-foreground">need action</p>
                 </div>
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <PackageCheck className="h-5 w-5 text-yellow-600" />
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <PackageCheck className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
             </CardContent>
@@ -541,8 +541,8 @@ export default function PartnerDashboardPage() {
                   <p className="text-2xl font-bold mt-0.5">{totalUnread}</p>
                   <p className="text-xs text-muted-foreground">unread</p>
                 </div>
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <MessageSquare className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
@@ -555,7 +555,7 @@ export default function PartnerDashboardPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-blue-600" />
+              <Layers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <CardTitle className="text-lg">Active Assignments</CardTitle>
               {activeAssignments.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
@@ -570,7 +570,7 @@ export default function PartnerDashboardPage() {
             </Button>
           </div>
           {overdueAssignments > 0 && (
-            <p className="text-xs text-red-600 font-medium flex items-center gap-1 mt-1">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1 mt-1">
               <AlertCircle className="h-3.5 w-3.5" />
               {overdueAssignments} assignment{overdueAssignments !== 1 ? "s" : ""} past due date
             </p>
@@ -628,7 +628,7 @@ export default function PartnerDashboardPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PackageCheck className="h-5 w-5 text-yellow-600" />
+              <PackageCheck className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               <CardTitle className="text-lg">Deliverables</CardTitle>
               {deliverables.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
@@ -730,17 +730,17 @@ export default function PartnerDashboardPage() {
 
       {/* ── Completion Summary ── */}
       {completedAssignments > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="font-medium text-green-900">
+              <p className="font-medium text-green-900 dark:text-green-300">
                 {completedAssignments} completed assignment
                 {completedAssignments !== 1 ? "s" : ""}
               </p>
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-green-700 dark:text-green-300">
                 Great work on delivering your assignments.
               </p>
             </div>

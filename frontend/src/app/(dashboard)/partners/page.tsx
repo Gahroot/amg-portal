@@ -250,7 +250,7 @@ function PartnersPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -265,7 +265,7 @@ function PartnersPageContent() {
             {overdueCount === 0 && dueSoonCount > 0 && (
               <Badge
                 variant="secondary"
-                className="text-sm bg-amber-100 text-amber-800 border-amber-200"
+                className="text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
               >
                 {dueSoonCount} refresh{dueSoonCount !== 1 ? "es" : ""} due soon
               </Badge>
@@ -273,7 +273,7 @@ function PartnersPageContent() {
             {probationaryCount > 0 && (
               <Badge
                 variant="outline"
-                className="text-sm border-amber-300 bg-amber-50 text-amber-800 gap-1"
+                className="text-sm border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 gap-1"
               >
                 <ShieldAlert className="h-3 w-3" />
                 {probationaryCount} on probation
@@ -322,15 +322,15 @@ function PartnersPageContent() {
 
         {/* Overdue Refreshes Alert Section */}
         {refreshDueData && refreshDueData.total > 0 && (
-          <Card className={overdueCount > 0 ? "border-red-200 bg-red-50/50" : "border-amber-200 bg-amber-50/50"}>
+          <Card className={overdueCount > 0 ? "border-red-200 dark:border-red-800 bg-red-50/50" : "border-amber-200 dark:border-amber-800 bg-amber-50/50"}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 {overdueCount > 0 ? (
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                 ) : (
-                  <RefreshCw className="h-4 w-4 text-amber-600" />
+                  <RefreshCw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 )}
-                <span className={overdueCount > 0 ? "text-red-900" : "text-amber-900"}>
+                <span className={overdueCount > 0 ? "text-red-900 dark:text-red-300" : "text-amber-900 dark:text-amber-300"}>
                   {overdueCount > 0
                     ? `${overdueCount} partner${overdueCount !== 1 ? "s" : ""} with overdue annual refresh`
                     : `${dueSoonCount} partner${dueSoonCount !== 1 ? "s" : ""} with refresh due soon`}
@@ -376,7 +376,7 @@ function PartnersPageContent() {
                         ) : (
                           <Badge
                             variant="secondary"
-                            className="bg-amber-100 text-amber-800 border-amber-200"
+                            className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                           >
                             Due in {partner.days_until_due}d
                           </Badge>
@@ -459,7 +459,7 @@ function PartnersPageContent() {
         {isLoading ? (
           <TableSkeleton rows={6} columns={7} />
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -514,7 +514,7 @@ function PartnersPageContent() {
                         {partner.is_on_probation && (
                           <Badge
                             variant="outline"
-                            className="border-amber-300 bg-amber-50 text-amber-700 text-[10px] px-1.5 py-0 gap-0.5"
+                            className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 text-[10px] px-1.5 py-0 gap-0.5"
                           >
                             <ShieldAlert className="h-2.5 w-2.5" />
                             Probationary
@@ -613,7 +613,7 @@ export default function PartnersPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FDFBF7] p-8">
+        <div className="min-h-screen bg-background p-8">
           <div className="mx-auto max-w-6xl space-y-6">
             <TableSkeleton rows={6} columns={7} />
           </div>

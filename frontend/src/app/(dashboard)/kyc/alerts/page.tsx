@@ -48,12 +48,12 @@ function urgencyBadge(days: number) {
     return <Badge variant="destructive">Expires in {days}d</Badge>;
   if (days <= 30)
     return (
-      <Badge variant="secondary" className="text-amber-700 bg-amber-100">
+      <Badge variant="secondary" className="text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30">
         Expires in {days}d
       </Badge>
     );
   return (
-    <Badge variant="secondary" className="text-blue-700 bg-blue-100">
+    <Badge variant="secondary" className="text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30">
       Expires in {days}d
     </Badge>
   );
@@ -70,7 +70,7 @@ export default function KYCAlertsPage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -115,14 +115,14 @@ export default function KYCAlertsPage() {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : docs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-white py-16">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-card py-16">
             <Clock className="mb-3 size-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               No documents expiring within {windowDays} days.
             </p>
           </div>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

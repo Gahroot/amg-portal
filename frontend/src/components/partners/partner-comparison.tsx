@@ -111,7 +111,7 @@ function MetricRow({
         <Cell key={i} highlight={bi === i && bi !== -1}>
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
-              <span className={bi === i && bi !== -1 ? "font-semibold text-green-700" : ""}>
+              <span className={bi === i && bi !== -1 ? "font-semibold text-green-700 dark:text-green-300" : ""}>
                 {format(v)}
               </span>
               {bi === i && bi !== -1 && (
@@ -215,11 +215,11 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
     <div className="space-y-4">
       {/* Recommendation banner */}
       {bestPartner && (
-        <Card className="border-green-200 bg-green-50/60">
+        <Card className="border-green-200 dark:border-green-800 bg-green-50/60">
           <CardContent className="py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrophyIcon className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-medium text-green-900">
+              <span className="text-sm font-medium text-green-900 dark:text-green-300">
                 Recommended:{" "}
                 <Link
                   href={`/partners/${bestPartner.partner_id}`}
@@ -323,7 +323,7 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
                 {partners.map((p) => (
                   <Cell key={p.partner_id}>
                     {p.compliance_verified ? (
-                      <CheckIcon className="h-4 w-4 text-green-600" />
+                      <CheckIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
                     ) : (
                       <XIcon className="h-4 w-4 text-red-500" />
                     )}
@@ -443,7 +443,7 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
                     <span
                       className={
                         p.total_sla_breached > 0
-                          ? "text-red-600 font-medium"
+                          ? "text-red-600 dark:text-red-400 font-medium"
                           : "text-muted-foreground"
                       }
                     >
@@ -468,7 +468,7 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
                           <span
                             className={
                               bi === i
-                                ? "font-semibold text-green-700"
+                                ? "font-semibold text-green-700 dark:text-green-300"
                                 : ""
                             }
                           >
@@ -513,7 +513,7 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
                     <div className="flex items-center gap-1.5">
                       <span>{fmtNum(p.avg_recent_overall)}</span>
                       {p.trend_direction === "up" && (
-                        <ArrowUpIcon className="h-3.5 w-3.5 text-green-600" />
+                        <ArrowUpIcon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       )}
                       {p.trend_direction === "down" && (
                         <ArrowDownIcon className="h-3.5 w-3.5 text-red-500" />
@@ -534,7 +534,7 @@ export function PartnerComparison({ partners, onRemove }: PartnerComparisonProps
                     {p.trend_direction === "up" ? (
                       <Badge
                         variant="secondary"
-                        className="bg-green-100 text-green-800 border-green-200 gap-1"
+                        className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 gap-1"
                       >
                         <ArrowUpIcon className="h-3 w-3" />
                         Improving

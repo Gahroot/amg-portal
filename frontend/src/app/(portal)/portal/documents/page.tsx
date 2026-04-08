@@ -46,12 +46,12 @@ function formatBytes(bytes: number): string {
 
 function getFileIcon(contentType: string | null) {
   if (!contentType) return <File className="h-5 w-5 text-muted-foreground" />;
-  if (contentType.startsWith("image/")) return <FileImage className="h-5 w-5 text-purple-600" />;
+  if (contentType.startsWith("image/")) return <FileImage className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
   if (contentType.includes("spreadsheet") || contentType.includes("excel"))
-    return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
-  if (contentType.includes("pdf")) return <FileText className="h-5 w-5 text-red-600" />;
+    return <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />;
+  if (contentType.includes("pdf")) return <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />;
   if (contentType.includes("zip") || contentType.includes("archive"))
-    return <FileArchive className="h-5 w-5 text-yellow-600" />;
+    return <FileArchive className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
   return <File className="h-5 w-5 text-muted-foreground" />;
 }
 
@@ -68,7 +68,7 @@ interface DocumentTableProps {
 
 function DocumentTable({ documents, onShare }: DocumentTableProps) {
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

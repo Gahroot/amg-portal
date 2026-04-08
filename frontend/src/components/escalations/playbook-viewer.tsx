@@ -103,9 +103,9 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
     <div
       className={`rounded-lg border transition-colors ${
         isCompleted
-          ? "border-green-200 bg-green-50/50"
+          ? "border-green-200 dark:border-green-800 bg-green-50/50"
           : isSkipped
-            ? "border-amber-200 bg-amber-50/50"
+            ? "border-amber-200 dark:border-amber-800 bg-amber-50/50"
             : "border-border bg-card"
       }`}
     >
@@ -113,7 +113,7 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
         {/* Step number / completion indicator */}
         <div className="mt-0.5 flex-shrink-0">
           {isCompleted ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : isSkipped ? (
             <SkipForward className="h-5 w-5 text-amber-500" />
           ) : (
@@ -128,7 +128,7 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
           <div className="flex items-center justify-between gap-2">
             <span
               className={`font-medium text-sm ${
-                isCompleted ? "text-green-800 line-through" : isSkipped ? "text-amber-700 line-through" : ""
+                isCompleted ? "text-green-800 dark:text-green-300 line-through" : isSkipped ? "text-amber-700 dark:text-amber-300 line-through" : ""
               }`}
             >
               {step.title}
@@ -156,12 +156,12 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
           </div>
 
           {isSkipped && state?.skip_reason && (
-            <p className="mt-1 text-xs text-amber-600">
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
               Skipped: {state.skip_reason}
             </p>
           )}
           {isCompleted && state?.completed_by && (
-            <p className="mt-1 text-xs text-green-600">
+            <p className="mt-1 text-xs text-green-600 dark:text-green-400">
               Completed by {state.completed_by}
             </p>
           )}
@@ -182,7 +182,7 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
                         href={r.url ?? "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs text-blue-600 hover:bg-blue-50"
+                        className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 dark:bg-blue-950/30"
                       >
                         <ExternalLink className="h-3 w-3" />
                         {r.label}
@@ -220,8 +220,8 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
 
               {/* Skip form */}
               {!isDone && showSkip && (
-                <div className="space-y-2 rounded border border-amber-200 bg-amber-50 p-3">
-                  <Label className="text-xs text-amber-700">
+                <div className="space-y-2 rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3">
+                  <Label className="text-xs text-amber-700 dark:text-amber-300">
                     Reason for skipping (required)
                   </Label>
                   <Textarea
@@ -229,13 +229,13 @@ function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
                     onChange={(e) => setSkipReason(e.target.value)}
                     placeholder="Why is this step not applicable?"
                     rows={2}
-                    className="border-amber-200 bg-white text-sm"
+                    className="border-amber-200 dark:border-amber-800 bg-card text-sm"
                   />
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                      className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 dark:bg-amber-900/30"
                       onClick={handleSkip}
                       disabled={mutation.isPending || !skipReason.trim()}
                     >
@@ -361,7 +361,7 @@ export function PlaybookViewer({ escalationId, data }: PlaybookViewerProps) {
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <BookOpen className="h-5 w-5 text-[#8B6914]" />
+                <BookOpen className="h-5 w-5 text-amber-700 dark:text-amber-300" />
                 {playbook.name}
               </CardTitle>
               {playbook.description && (
@@ -375,7 +375,7 @@ export function PlaybookViewer({ escalationId, data }: PlaybookViewerProps) {
                 variant={execution.status === "completed" ? "default" : "outline"}
                 className={
                   execution.status === "completed"
-                    ? "bg-green-100 text-green-800"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
                     : ""
                 }
               >
@@ -455,14 +455,14 @@ export function PlaybookViewer({ escalationId, data }: PlaybookViewerProps) {
             {playbook.escalation_paths.map((path, i) => (
               <div
                 key={i}
-                className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm"
+                className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 p-3 text-sm"
               >
-                <p className="font-medium text-amber-800">
+                <p className="font-medium text-amber-800 dark:text-amber-300">
                   If: {path.condition}
                 </p>
-                <p className="mt-1 text-amber-700">→ {path.action}</p>
+                <p className="mt-1 text-amber-700 dark:text-amber-300">→ {path.action}</p>
                 {path.contact_role && (
-                  <p className="mt-1 text-xs text-amber-600">
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
                     Contact: {path.contact_role.replace(/_/g, " ")}
                   </p>
                 )}

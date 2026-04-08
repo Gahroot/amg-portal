@@ -48,7 +48,7 @@ export default function ProgramTimelinePage() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         ctx.scale(scale, scale);
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-card').trim() || '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
         URL.revokeObjectURL(url);
@@ -74,7 +74,7 @@ export default function ProgramTimelinePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-7xl space-y-4">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-12 w-full" />
@@ -86,7 +86,7 @@ export default function ProgramTimelinePage() {
 
   if (!program) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-muted-foreground">Program not found.</p>
         </div>
@@ -98,7 +98,7 @@ export default function ProgramTimelinePage() {
   const totalItems = ganttData.items.length;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-[1400px] space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">

@@ -102,14 +102,14 @@ export default function CapabilityRefreshPage() {
           </Button>
         </div>
 
-        <Card className="border-green-200 bg-green-50/50">
+        <Card className="border-green-200 dark:border-green-800 bg-green-50/50">
           <CardContent className="flex items-center gap-4 py-8">
-            <div className="p-3 bg-green-100 rounded-full">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-green-900">Capability refresh up to date</h2>
-              <p className="text-sm text-green-700 mt-1">
+              <h2 className="text-lg font-semibold text-green-900 dark:text-green-300">Capability refresh up to date</h2>
+              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                 Last confirmed on {refreshedDate}.
                 {dueDate && ` Next refresh due ${dueDate}.`}
               </p>
@@ -143,7 +143,7 @@ export default function CapabilityRefreshPage() {
             <Badge variant="destructive">Overdue</Badge>
           )}
           {refreshStatus?.is_due_soon && !refreshStatus.is_overdue && (
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+            <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
               Due Soon
             </Badge>
           )}
@@ -156,9 +156,9 @@ export default function CapabilityRefreshPage() {
 
       {/* Status banner */}
       {refreshStatus?.is_overdue && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
+        <Alert className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <AlertDescription className="text-red-800 dark:text-red-300">
             Your annual capability refresh is overdue. Please complete it to remain active in our
             partner network.
           </AlertDescription>
@@ -218,16 +218,16 @@ export default function CapabilityRefreshPage() {
       <Card
         className={
           accreditationsConfirmed
-            ? "border-green-200 bg-green-50/30"
+            ? "border-green-200 dark:border-green-800 bg-green-50/30"
             : "hover:border-primary/40 transition-colors"
         }
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${accreditationsConfirmed ? "bg-green-100" : "bg-blue-100"}`}>
+              <div className={`p-2 rounded-lg ${accreditationsConfirmed ? "bg-green-100 dark:bg-green-900/30" : "bg-blue-100 dark:bg-blue-900/30"}`}>
                 <ShieldCheck
-                  className={`h-5 w-5 ${accreditationsConfirmed ? "text-green-600" : "text-blue-600"}`}
+                  className={`h-5 w-5 ${accreditationsConfirmed ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"}`}
                 />
               </div>
               <div>
@@ -238,7 +238,7 @@ export default function CapabilityRefreshPage() {
               </div>
             </div>
             {accreditationsConfirmed && (
-              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
             )}
           </div>
         </CardHeader>
@@ -278,16 +278,16 @@ export default function CapabilityRefreshPage() {
       <Card
         className={
           insuranceConfirmed
-            ? "border-green-200 bg-green-50/30"
+            ? "border-green-200 dark:border-green-800 bg-green-50/30"
             : "hover:border-primary/40 transition-colors"
         }
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${insuranceConfirmed ? "bg-green-100" : "bg-purple-100"}`}>
+              <div className={`p-2 rounded-lg ${insuranceConfirmed ? "bg-green-100 dark:bg-green-900/30" : "bg-purple-100 dark:bg-purple-900/30"}`}>
                 <FileCheck2
-                  className={`h-5 w-5 ${insuranceConfirmed ? "text-green-600" : "text-purple-600"}`}
+                  className={`h-5 w-5 ${insuranceConfirmed ? "text-green-600 dark:text-green-400" : "text-purple-600 dark:text-purple-400"}`}
                 />
               </div>
               <div>
@@ -298,7 +298,7 @@ export default function CapabilityRefreshPage() {
               </div>
             </div>
             {insuranceConfirmed && (
-              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
             )}
           </div>
         </CardHeader>
@@ -338,16 +338,16 @@ export default function CapabilityRefreshPage() {
       <Card
         className={
           capacityConfirmed
-            ? "border-green-200 bg-green-50/30"
+            ? "border-green-200 dark:border-green-800 bg-green-50/30"
             : "hover:border-primary/40 transition-colors"
         }
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${capacityConfirmed ? "bg-green-100" : "bg-orange-100"}`}>
+              <div className={`p-2 rounded-lg ${capacityConfirmed ? "bg-green-100 dark:bg-green-900/30" : "bg-orange-100 dark:bg-orange-900/30"}`}>
                 <Users
-                  className={`h-5 w-5 ${capacityConfirmed ? "text-green-600" : "text-orange-600"}`}
+                  className={`h-5 w-5 ${capacityConfirmed ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"}`}
                 />
               </div>
               <div>
@@ -358,7 +358,7 @@ export default function CapabilityRefreshPage() {
               </div>
             </div>
             {capacityConfirmed && (
-              <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
             )}
           </div>
         </CardHeader>
@@ -395,15 +395,15 @@ export default function CapabilityRefreshPage() {
       </Card>
 
       {/* Submit */}
-      <Card className={allConfirmed ? "border-green-200 bg-green-50/30" : ""}>
+      <Card className={allConfirmed ? "border-green-200 dark:border-green-800 bg-green-50/30" : ""}>
         <CardContent className="pt-4">
           {allConfirmed ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                 <div>
-                  <p className="font-medium text-green-900">All sections confirmed</p>
-                  <p className="text-sm text-green-700">
+                  <p className="font-medium text-green-900 dark:text-green-300">All sections confirmed</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Your next refresh will be due in 12 months.
                   </p>
                 </div>

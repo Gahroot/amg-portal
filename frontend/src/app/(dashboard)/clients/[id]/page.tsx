@@ -89,7 +89,7 @@ export default function ClientDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">Loading profile...</p>
         </div>
@@ -99,7 +99,7 @@ export default function ClientDetailPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Client profile not found.</p>
         </div>
@@ -151,7 +151,7 @@ export default function ClientDetailPage() {
   const familyMembers = familyMembersData?.family_members || [];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-start gap-2">
@@ -740,7 +740,7 @@ function SecurityProfileTab({
   return (
     <div className="space-y-4">
       {/* Need-to-know disclaimer */}
-      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+      <Alert className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
         <AlertDescription className="text-sm font-medium">
           ⚠ Security information is strictly need-to-know. Access to this tab
           is logged and audited. Do not share or export this data.

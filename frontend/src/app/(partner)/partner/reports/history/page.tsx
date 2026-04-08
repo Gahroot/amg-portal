@@ -86,9 +86,9 @@ export default function EngagementHistoryPage() {
 
       {/* Performance rating callout */}
       {report.performance_rating !== null && (
-        <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
-          <div className="p-2 bg-amber-100 rounded-lg">
-            <Star className="h-5 w-5 text-amber-600" />
+        <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+            <Star className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
             <p className="font-medium">Your Performance Rating</p>

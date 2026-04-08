@@ -34,7 +34,7 @@ export default function ComplianceQueuePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <h1 className="font-serif text-3xl font-bold tracking-tight">
           Compliance Queue
@@ -43,7 +43,7 @@ export default function ComplianceQueuePage() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

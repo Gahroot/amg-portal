@@ -87,8 +87,8 @@ function DocuSignSigning({
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg shrink-0">
-              <FileText className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg shrink-0">
+              <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="min-w-0">
               <CardTitle className="font-serif text-lg leading-snug break-words">
@@ -242,8 +242,8 @@ export default function DocumentSigningPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-red-50 rounded-lg shrink-0">
-              <FileText className="h-6 w-6 text-red-600" />
+            <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg shrink-0">
+              <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="min-w-0">
               <CardTitle className="font-serif text-lg leading-snug break-words">

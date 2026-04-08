@@ -16,14 +16,14 @@ import { Button } from "@/components/ui/button";
 function DaysBadge({ daysUntil }: { daysUntil: number }) {
   if (daysUntil === 0) {
     return (
-      <Badge className="bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100">
+      <Badge className="bg-amber-100 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 dark:bg-amber-900/30">
         Today
       </Badge>
     );
   }
   if (daysUntil === 1) {
     return (
-      <Badge className="bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-100">
+      <Badge className="bg-blue-100 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30 dark:bg-blue-900/30">
         Tomorrow
       </Badge>
     );

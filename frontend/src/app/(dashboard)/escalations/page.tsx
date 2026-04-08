@@ -190,7 +190,7 @@ function EscalationsPageContent() {
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Metrics Cards */}
         <EscalationMetrics />
@@ -284,7 +284,7 @@ function EscalationsPageContent() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading escalations...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -302,7 +302,7 @@ function EscalationsPageContent() {
                 {data?.escalations.map((esc) => (
                   <TableRow
                     key={esc.id}
-                    className={`cursor-pointer ${esc.is_overdue ? "bg-red-50 hover:bg-red-100" : ""}`}
+                    className={`cursor-pointer ${esc.is_overdue ? "bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/30" : ""}`}
                     onClick={() => router.push(`/escalations/${esc.id}`)}
                   >
                     <TableCell>
@@ -311,7 +311,7 @@ function EscalationsPageContent() {
                     <TableCell className="font-medium">
                       {esc.title}
                       {esc.is_overdue && (
-                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:text-red-300">
                           Overdue
                         </span>
                       )}

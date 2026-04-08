@@ -119,7 +119,7 @@ export default function NewProgramPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <h1 className="font-serif text-3xl font-bold tracking-tight">
           New Program

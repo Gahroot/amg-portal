@@ -32,8 +32,8 @@ function getDueDateDisplay(dateStr: string | null) {
   const now = new Date();
   const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return { text: "Overdue", color: "text-destructive" };
-  if (diffDays === 0) return { text: "Today", color: "text-orange-600" };
-  if (diffDays <= 3) return { text: diffDays + "d left", color: "text-orange-600" };
+  if (diffDays === 0) return { text: "Today", color: "text-orange-600 dark:text-orange-400" };
+  if (diffDays <= 3) return { text: diffDays + "d left", color: "text-orange-600 dark:text-orange-400" };
   return { text: date.toLocaleDateString(), color: "text-muted-foreground" };
 }
 
@@ -125,10 +125,10 @@ export default function PartnerDeliverablesPage() {
           <TabsTrigger value="submitted">Under Review ({submitted.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="all"><div className="rounded-md border bg-white"><DeliverableTable deliverables={filtered} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
-        <TabsContent value="pending"><div className="rounded-md border bg-white"><DeliverableTable deliverables={pending} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
-        <TabsContent value="submitted"><div className="rounded-md border bg-white"><DeliverableTable deliverables={submitted} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
-        <TabsContent value="completed"><div className="rounded-md border bg-white"><DeliverableTable deliverables={completed} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
+        <TabsContent value="all"><div className="rounded-md border bg-card"><DeliverableTable deliverables={filtered} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
+        <TabsContent value="pending"><div className="rounded-md border bg-card"><DeliverableTable deliverables={pending} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
+        <TabsContent value="submitted"><div className="rounded-md border bg-card"><DeliverableTable deliverables={submitted} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
+        <TabsContent value="completed"><div className="rounded-md border bg-card"><DeliverableTable deliverables={completed} uploadingId={uploadingId} handleFileUpload={handleFileUpload} /></div></TabsContent>
       </Tabs>
 
       {data && <p className="text-sm text-muted-foreground">{data.total} deliverable{data.total !== 1 ? "s" : ""} total</p>}
@@ -170,7 +170,7 @@ function DeliverableTable({ deliverables, uploadingId, handleFileUpload }: {
                     <p className="text-xs text-muted-foreground line-clamp-1">{deliverable.description}</p>
                   )}
                   {deliverable.review_comments && (
-                    <p className="text-xs text-orange-600">Review: {deliverable.review_comments}</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">Review: {deliverable.review_comments}</p>
                   )}
                 </div>
               </TableCell>

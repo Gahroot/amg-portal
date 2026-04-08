@@ -204,7 +204,7 @@ export function APIKeysManager() {
       <Dialog open={!!newKeyData} onOpenChange={(open) => !open && setNewKeyData(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-5 w-5" />
               API Key Created
             </DialogTitle>
@@ -213,7 +213,7 @@ export function APIKeysManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="rounded-md bg-amber-50 dark:bg-amber-950 p-4 text-sm text-amber-800 dark:text-amber-200">
+            <div className="rounded-md bg-amber-50/30 dark:bg-amber-950 p-4 text-sm text-amber-800 dark:text-amber-300">
               <p className="font-medium mb-2">⚠️ Important Security Notice</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>Store this key securely - it cannot be retrieved later</li>

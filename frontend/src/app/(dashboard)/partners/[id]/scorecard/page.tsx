@@ -82,7 +82,7 @@ function RatingGauge({
             {/* background track */}
             <RadialBar
               dataKey="value"
-              background={{ fill: "#e2e8f0" }}
+              background={{ fill: "var(--color-muted)" }}
               cornerRadius={6}
               isAnimationActive={false}
             />
@@ -132,7 +132,7 @@ export default function PartnerScorecardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-5xl">
           <p className="text-sm text-muted-foreground">Loading scorecard…</p>
         </div>
@@ -142,7 +142,7 @@ export default function PartnerScorecardPage() {
 
   if (!scorecard) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-5xl">
           <p className="text-muted-foreground">Partner not found.</p>
         </div>
@@ -153,7 +153,7 @@ export default function PartnerScorecardPage() {
   const overallColor = ratingColor(scorecard.avg_overall);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -315,7 +315,7 @@ export default function PartnerScorecardPage() {
                     data={trendData}
                     margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis
                       dataKey="label"
                       tick={{ fontSize: 11 }}
@@ -334,7 +334,7 @@ export default function PartnerScorecardPage() {
                       contentStyle={{
                         fontSize: 12,
                         borderRadius: 8,
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid var(--color-border)",
                       }}
                     />
                     <Line

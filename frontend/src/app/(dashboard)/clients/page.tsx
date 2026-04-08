@@ -277,7 +277,7 @@ function ClientsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -394,7 +394,7 @@ function ClientsPageContent() {
         {isLoading ? (
           <TableSkeleton rows={6} columns={5} />
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -503,7 +503,7 @@ export default function ClientsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FDFBF7] p-8">
+        <div className="min-h-screen bg-background p-8">
           <div className="mx-auto max-w-6xl space-y-6">
             <TableSkeleton rows={6} columns={5} />
           </div>

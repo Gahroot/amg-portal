@@ -99,7 +99,7 @@ export default function SLATrackerPage() {
   const isLoading = activeTab === "all" ? trackersLoading : breachesLoading;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -108,13 +108,13 @@ export default function SLATrackerPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex rounded-lg border bg-white p-1">
+          <div className="flex rounded-lg border bg-card p-1">
             <button
               onClick={() => setActiveTab("all")}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "all"
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/50"
               }`}
             >
               All SLAs
@@ -123,8 +123,8 @@ export default function SLATrackerPage() {
               onClick={() => setActiveTab("breaches")}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${
                 activeTab === "breaches"
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/50"
               }`}
             >
               Breaches / At Risk
@@ -161,7 +161,7 @@ export default function SLATrackerPage() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading SLA trackers...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

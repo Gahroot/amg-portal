@@ -24,18 +24,18 @@ const SEVERITY_CONFIG: Record<
   { icon: React.ReactNode; badge: string; border: string }
 > = {
   critical: {
-    icon: <AlertCircle className="h-4 w-4 text-red-600" />,
-    badge: "border-red-200 bg-red-50 text-red-800",
+    icon: <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />,
+    badge: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300",
     border: "border-l-red-500",
   },
   warning: {
-    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
-    badge: "border-amber-200 bg-amber-50 text-amber-800",
+    icon: <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
+    badge: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300",
     border: "border-l-amber-500",
   },
   info: {
-    icon: <Info className="h-4 w-4 text-blue-600" />,
-    badge: "border-blue-200 bg-blue-50 text-blue-800",
+    icon: <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
+    badge: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300",
     border: "border-l-blue-500",
   },
 };

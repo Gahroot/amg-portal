@@ -19,8 +19,8 @@ const statusConfig: Record<string, { icon: React.ComponentType<{ className?: str
   pending: { icon: Clock, color: "text-orange-500", label: "Pending" },
   responded: { icon: CheckCircle, color: "text-green-500", label: "Responded" },
   declined: { icon: XCircle, color: "text-red-500", label: "Declined" },
-  expired: { icon: Hourglass, color: "text-gray-500", label: "Expired" },
-  cancelled: { icon: XCircle, color: "text-gray-500", label: "Cancelled" },
+  expired: { icon: Hourglass, color: "text-muted-foreground", label: "Expired" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground", label: "Cancelled" },
 };
 
 export function DecisionRequestCard({ decision, onResponse, onViewDetails }: DecisionRequestCardProps) {

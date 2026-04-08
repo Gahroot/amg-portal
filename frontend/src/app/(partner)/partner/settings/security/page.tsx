@@ -140,7 +140,7 @@ export default function PartnerSecurityPage() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 MFA is currently{" "}
-                <span className="font-medium text-green-600">enabled</span>.
+                <span className="font-medium text-green-600 dark:text-green-400">enabled</span>.
               </p>
               <Button
                 variant="destructive"

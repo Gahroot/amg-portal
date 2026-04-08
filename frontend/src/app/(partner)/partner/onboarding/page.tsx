@@ -184,7 +184,7 @@ export default function PartnerOnboardingPage() {
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     isCompleted
-                      ? "bg-green-100 text-green-600"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                       : isCurrent
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
@@ -298,9 +298,9 @@ export default function PartnerOnboardingPage() {
 
       {/* Completed State */}
       {onboarding.current_stage === "completed" && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
           <CardContent className="py-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Onboarding Complete!</h2>
@@ -331,7 +331,7 @@ export default function PartnerOnboardingPage() {
                     key={stageId}
                     className="flex items-center gap-2 text-sm text-muted-foreground"
                   >
-                    <Check className="h-4 w-4 text-green-600" />
+                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                     <span>{stage.label}</span>
                   </div>
                 );

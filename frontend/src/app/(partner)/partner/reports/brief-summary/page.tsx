@@ -100,7 +100,7 @@ export default function BriefSummaryPage() {
                           </p>
                         )}
                         {item.sla_terms && (
-                          <p className="text-xs text-amber-600 line-clamp-1">
+                          <p className="text-xs text-amber-600 dark:text-amber-400 line-clamp-1">
                             SLA: {item.sla_terms}
                           </p>
                         )}

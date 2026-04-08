@@ -151,7 +151,7 @@ export default function EscalationDetailPage({
   const availableTransitions = STATUS_TRANSITIONS[data.status] || [];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-center gap-4">
           <Button
@@ -183,7 +183,7 @@ export default function EscalationDetailPage({
             {data.response_deadline && (
               <Badge
                 variant="outline"
-                className={`gap-1 ${data.is_overdue ? "border-red-400 text-red-600" : "text-muted-foreground"}`}
+                className={`gap-1 ${data.is_overdue ? "border-red-400 dark:border-red-600 text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
               >
                 <Clock className="h-3 w-3" />
                 Deadline: {new Date(data.response_deadline).toLocaleString()}

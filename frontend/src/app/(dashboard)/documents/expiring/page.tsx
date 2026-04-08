@@ -63,7 +63,7 @@ function daysLabel(days: number): string {
 function ExpiryStatusBadge({ status, days }: { status: ExpiryStatus; days: number }) {
   if (status === "expired") {
     return (
-      <Badge className="gap-1 border-red-300 bg-red-100 text-red-800 dark:border-red-700 dark:bg-red-950/50 dark:text-red-300">
+      <Badge className="gap-1 border-red-300 bg-red-100 dark:bg-red-900/30 text-red-800 dark:border-red-700 dark:text-red-300">
         <span className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block" />
         Expired — {daysLabel(days)}
       </Badge>
@@ -71,14 +71,14 @@ function ExpiryStatusBadge({ status, days }: { status: ExpiryStatus; days: numbe
   }
   if (status === "expiring_30") {
     return (
-      <Badge className="gap-1 border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+      <Badge className="gap-1 border-amber-300 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:border-amber-700 dark:text-amber-300">
         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
         Expiring — {daysLabel(days)}
       </Badge>
     );
   }
   return (
-    <Badge className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300">
+    <Badge className="gap-1 border-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 text-yellow-800 dark:border-yellow-700 dark:text-yellow-300">
       <span className="h-1.5 w-1.5 rounded-full bg-yellow-500 inline-block" />
       Expiring — {daysLabel(days)}
     </Badge>

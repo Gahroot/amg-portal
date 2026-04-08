@@ -145,7 +145,7 @@ export default function KYCVerificationsPage() {
   const clients = clientsData?.profiles ?? [];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -209,7 +209,7 @@ export default function KYCVerificationsPage() {
         {clientsLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -45,10 +45,10 @@ const BOOKING_TYPE_CONFIG: Record<
   TravelBookingType,
   { icon: React.ElementType; label: string; color: string }
 > = {
-  flight: { icon: Plane, label: "Flight", color: "bg-blue-100 text-blue-800" },
-  hotel: { icon: Building2, label: "Hotel", color: "bg-purple-100 text-purple-800" },
-  transfer: { icon: Car, label: "Transfer", color: "bg-green-100 text-green-800" },
-  venue: { icon: MapPin, label: "Venue", color: "bg-amber-100 text-amber-800" },
+  flight: { icon: Plane, label: "Flight", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300" },
+  hotel: { icon: Building2, label: "Hotel", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300" },
+  transfer: { icon: Car, label: "Transfer", color: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300" },
+  venue: { icon: MapPin, label: "Venue", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300" },
 };
 
 const STATUS_CONFIG: Record<

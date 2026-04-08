@@ -87,7 +87,7 @@ function getFrequencyBadgeVariant(
 
 function LoadingSkeleton() {
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -136,7 +136,7 @@ export function ScheduledReportsList({
 
   if (!schedules || schedules.length === 0) {
     return (
-      <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed bg-white p-8 text-center">
+      <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed bg-card p-8 text-center">
         <FileText className="mb-3 h-10 w-10 text-muted-foreground/40" />
         <h3 className="font-medium text-muted-foreground">
           No scheduled reports
@@ -151,7 +151,7 @@ export function ScheduledReportsList({
 
   return (
     <TooltipProvider>
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

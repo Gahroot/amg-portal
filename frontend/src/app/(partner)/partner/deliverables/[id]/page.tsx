@@ -49,25 +49,25 @@ const STATUS_CONFIG: Record<
   submitted: {
     label: "Submitted",
     icon: <Upload className="h-5 w-5" />,
-    color: "text-blue-600",
+    color: "text-blue-600 dark:text-blue-400",
     description: "Your deliverable has been submitted and is awaiting review.",
   },
   under_review: {
     label: "Under Review",
     icon: <AlertCircle className="h-5 w-5" />,
-    color: "text-yellow-600",
+    color: "text-yellow-600 dark:text-yellow-400",
     description: "Your deliverable is currently being reviewed by the coordinator.",
   },
   approved: {
     label: "Approved",
     icon: <CheckCircle2 className="h-5 w-5" />,
-    color: "text-green-600",
+    color: "text-green-600 dark:text-green-400",
     description: "Your deliverable has been approved. Great work!",
   },
   returned: {
     label: "Returned",
     icon: <XCircle className="h-5 w-5" />,
-    color: "text-orange-600",
+    color: "text-orange-600 dark:text-orange-400",
     description: "Your deliverable needs revisions. Please review the feedback and resubmit.",
   },
   rejected: {
@@ -330,8 +330,8 @@ export default function PartnerDeliverableDetailPage() {
             {/* Submitted */}
             {deliverable.submitted_at && (
               <div className="flex gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                  <Upload className="h-4 w-4 text-blue-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">Submitted</p>
@@ -348,18 +348,18 @@ export default function PartnerDeliverableDetailPage() {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full ${
                     deliverable.status === "approved"
-                      ? "bg-green-100"
+                      ? "bg-green-100 dark:bg-green-900/30"
                       : deliverable.status === "returned"
-                        ? "bg-orange-100"
-                        : "bg-red-100"
+                        ? "bg-orange-100 dark:bg-orange-900/30"
+                        : "bg-red-100 dark:bg-red-900/30"
                   }`}
                 >
                   {deliverable.status === "approved" ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                   ) : (
                     <XCircle
                       className={`h-4 w-4 ${
-                        deliverable.status === "returned" ? "text-orange-600" : "text-red-600"
+                        deliverable.status === "returned" ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"
                       }`}
                     />
                   )}

@@ -29,8 +29,8 @@ const STATUS_CONFIG: Record<
 > = {
   responded: { icon: CheckCircle, color: "text-green-600 dark:text-green-400", label: "Responded" },
   declined: { icon: XCircle, color: "text-red-500 dark:text-red-400", label: "Declined" },
-  expired: { icon: Hourglass, color: "text-gray-500", label: "Expired" },
-  cancelled: { icon: XCircle, color: "text-gray-400", label: "Cancelled" },
+  expired: { icon: Hourglass, color: "text-muted-foreground", label: "Expired" },
+  cancelled: { icon: XCircle, color: "text-muted-foreground/60", label: "Cancelled" },
 };
 
 function formatResponseText(item: DecisionHistoryItem): string {
@@ -128,12 +128,12 @@ function DecisionHistoryRow({ decision }: { decision: DecisionHistoryItem }) {
                       className={cn(
                         "flex items-center gap-2 rounded-md border px-3 py-2 text-sm",
                         decision.response?.option_id === opt.id
-                          ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300"
+                          ? "border-green-300 dark:border-green-700 bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-300"
                           : "border-border bg-muted/30",
                       )}
                     >
                       {decision.response?.option_id === opt.id && (
-                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-600" />
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
                       )}
                       <span>{opt.label}</span>
                       {opt.description && (

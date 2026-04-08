@@ -84,7 +84,7 @@ export function EscalationMetrics() {
       </Card>
 
       {/* Overdue Count */}
-      <Card className={data.overdue_count > 0 ? "border-red-200 bg-red-50" : undefined}>
+      <Card className={data.overdue_count > 0 ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30" : undefined}>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <AlertTriangle
@@ -95,7 +95,7 @@ export function EscalationMetrics() {
         </CardHeader>
         <CardContent>
           <p
-            className={`text-2xl font-bold ${data.overdue_count > 0 ? "text-red-600" : ""}`}
+            className={`text-2xl font-bold ${data.overdue_count > 0 ? "text-red-600 dark:text-red-400" : ""}`}
           >
             {data.overdue_count}
           </p>
@@ -118,7 +118,7 @@ export function EscalationMetrics() {
               trendDiff > 0
                 ? "text-red-500"
                 : trendDiff < 0
-                  ? "text-green-600"
+                  ? "text-green-600 dark:text-green-400"
                   : "text-muted-foreground"
             }`}
           >
@@ -141,10 +141,10 @@ export function EscalationMetrics() {
               <p
                 className={`text-2xl font-bold ${
                   data.sla_compliance_pct >= 90
-                    ? "text-green-600"
+                    ? "text-green-600 dark:text-green-400"
                     : data.sla_compliance_pct >= 70
-                      ? "text-amber-600"
-                      : "text-red-600"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-red-600 dark:text-red-400"
                 }`}
               >
                 {data.sla_compliance_pct}%

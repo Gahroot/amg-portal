@@ -101,9 +101,9 @@ export function ReportMetric({ label, value, change, trend }: ReportMetricProps)
         <p
           className={`text-xs ${
             trend === "up"
-              ? "text-green-600"
+              ? "text-green-600 dark:text-green-400"
               : trend === "down"
-              ? "text-red-600"
+              ? "text-red-600 dark:text-red-400"
               : "text-muted-foreground"
           }`}
         >
@@ -120,16 +120,16 @@ interface StatusBadgeProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  green: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  amber: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  active: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  green: "bg-green-100 text-green-800 dark:text-green-300 dark:bg-green-900/30",
+  amber: "bg-amber-100 text-amber-800 dark:text-amber-300 dark:bg-amber-900/30",
+  red: "bg-red-100 text-red-800 dark:text-red-300 dark:bg-red-900/30",
+  active: "bg-blue-100 text-blue-800 dark:text-blue-300 dark:bg-blue-900/30",
+  completed: "bg-green-100 text-green-800 dark:text-green-300 dark:bg-green-900/30",
+  pending: "bg-yellow-100 text-yellow-800 dark:text-yellow-300 dark:bg-yellow-900/30",
+  in_progress: "bg-blue-100 text-blue-800 dark:text-blue-300 dark:bg-blue-900/30",
   intake: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-  design: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  on_hold: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  design: "bg-purple-100 text-purple-800 dark:text-purple-300 dark:bg-purple-900/30",
+  on_hold: "bg-orange-100 text-orange-800 dark:text-orange-300 dark:bg-orange-900/30",
   closed: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400",
 };
 

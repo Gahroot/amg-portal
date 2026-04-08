@@ -51,11 +51,11 @@ const UPDATE_TYPE_ICONS: Record<UpdateType, React.ReactNode> = {
 };
 
 const UPDATE_TYPE_BADGE_CLASSES: Record<UpdateType, string> = {
-  program_status: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  milestone_completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  document_delivered: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  program_status: "bg-blue-100 text-blue-700 dark:text-blue-300 dark:bg-blue-900/30",
+  milestone_completed: "bg-green-100 text-green-700 dark:text-green-300 dark:bg-green-900/30",
+  document_delivered: "bg-purple-100 text-purple-700 dark:text-purple-300 dark:bg-purple-900/30",
   message_received: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-  decision_resolved: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  decision_resolved: "bg-orange-100 text-orange-700 dark:text-orange-300 dark:bg-orange-900/30",
 };
 
 const DATE_RANGE_OPTIONS = [

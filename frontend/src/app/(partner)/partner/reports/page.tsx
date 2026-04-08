@@ -18,8 +18,8 @@ const REPORT_CARDS = [
       "View all your active assignments with task lists, deadlines, submission requirements, and coordinator contact details.",
     href: "/partner/reports/brief-summary",
     icon: FileText,
-    color: "bg-blue-100",
-    iconColor: "text-blue-600",
+    color: "bg-blue-100 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
     title: "Deliverable Feedback",
@@ -27,8 +27,8 @@ const REPORT_CARDS = [
       "Review the complete history of your deliverable submissions with review status, reviewer comments, and approval dates.",
     href: "/partner/reports/feedback",
     icon: MessageSquare,
-    color: "bg-amber-100",
-    iconColor: "text-amber-600",
+    color: "bg-amber-100 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
   },
   {
     title: "Engagement History",
@@ -36,8 +36,8 @@ const REPORT_CARDS = [
       "See all past engagements including assignment titles, dates, completion status, deliverable counts, and your performance rating.",
     href: "/partner/reports/history",
     icon: History,
-    color: "bg-green-100",
-    iconColor: "text-green-600",
+    color: "bg-green-100 dark:bg-green-900/30",
+    iconColor: "text-green-600 dark:text-green-400",
   },
 ];
 

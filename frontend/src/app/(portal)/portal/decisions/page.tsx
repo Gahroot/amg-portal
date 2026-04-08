@@ -57,7 +57,7 @@ export default function PortalDecisionsPage() {
               <h2 className="text-lg font-semibold">
                 Awaiting Your Response
                 {pendingDecisions.length > 0 && (
-                  <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-sm font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                  <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-sm font-medium text-orange-700 dark:text-orange-300 dark:bg-orange-900/30">
                     {pendingDecisions.length}
                   </span>
                 )}
@@ -66,12 +66,12 @@ export default function PortalDecisionsPage() {
 
             {pendingDecisions.length > 0 ? (
               <>
-                <Alert className="border-orange-200 bg-orange-50 dark:border-orange-900/50 dark:bg-orange-950/20">
+                <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30">
                   <Scale className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   <AlertTitle className="text-orange-800 dark:text-orange-300">
                     Action Required
                   </AlertTitle>
-                  <AlertDescription className="text-orange-700 dark:text-orange-400">
+                  <AlertDescription className="text-orange-700 dark:text-orange-300">
                     You have {pendingDecisions.length} pending decision
                     {pendingDecisions.length !== 1 ? "s" : ""} that require your response. Please
                     review and respond promptly to avoid delays to your program.

@@ -26,7 +26,7 @@ function CommunicationLogPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl">
         <CommunicationLogList />
       </div>
@@ -38,7 +38,7 @@ export default function CommunicationLogPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FDFBF7] p-8">
+        <div className="min-h-screen bg-background p-8">
           <div className="mx-auto max-w-6xl space-y-6">
             <TableSkeleton rows={6} columns={7} />
           </div>

@@ -240,7 +240,7 @@ export default function AccessAuditDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -261,21 +261,21 @@ export default function AccessAuditDetailPage() {
 
         {/* Statistics */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="rounded-lg border bg-white p-4">
+          <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Users Reviewed</p>
             <p className="text-2xl font-bold">{audit.users_reviewed}</p>
           </div>
-          <div className="rounded-lg border bg-white p-4">
+          <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Permissions Verified</p>
             <p className="text-2xl font-bold">{audit.permissions_verified}</p>
           </div>
-          <div className="rounded-lg border bg-white p-4">
+          <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Findings</p>
-            <p className="text-2xl font-bold text-red-600">{audit.anomalies_found}</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{audit.anomalies_found}</p>
           </div>
-          <div className="rounded-lg border bg-white p-4">
+          <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Open Findings</p>
-            <p className="text-2xl font-bold text-yellow-600">
+            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {audit.findings.filter((f) =>
                 ["open", "acknowledged", "in_progress"].includes(f.status)
               ).length}

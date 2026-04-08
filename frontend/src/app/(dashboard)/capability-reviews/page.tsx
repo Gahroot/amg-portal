@@ -108,7 +108,7 @@ export default function CapabilityReviewsPage() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -127,25 +127,25 @@ export default function CapabilityReviewsPage() {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Total</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">
+              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                 {stats.pending + stats.scheduled}
               </p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.completed}
               </p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Overdue</p>
-              <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.overdue}</p>
             </div>
           </div>
         )}
@@ -200,7 +200,7 @@ export default function CapabilityReviewsPage() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading reviews...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -166,16 +166,16 @@ export default function PortalDashboardPage() {
       {/* Survey prompt */}
       {activeSurvey && (
         <Link href="/portal/survey">
-          <Card className="border-amber-200 bg-amber-50 hover:shadow-md transition-shadow cursor-pointer dark:border-amber-900/50 dark:bg-amber-950/20">
+          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="flex items-center gap-4 py-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
                 <BarChart2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-amber-900 dark:text-amber-200">
+                <p className="font-medium text-amber-900 dark:text-amber-300">
                   Your quarterly feedback survey is ready
                 </p>
-                <p className="text-sm text-amber-700 dark:text-amber-400">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
                   Share your experience — it takes less than a minute
                 </p>
               </div>
@@ -241,7 +241,7 @@ export default function PortalDashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {activePrograms.map((program) => {
                 const ragColor =
-                  RAG_COLORS[program.rag_status] ?? "bg-gray-400";
+                  RAG_COLORS[program.rag_status] ?? "bg-muted-foreground";
                 const badgeVariant =
                   RAG_BADGE_VARIANTS[program.rag_status] ?? "outline";
                 const progress =

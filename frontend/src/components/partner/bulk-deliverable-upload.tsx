@@ -368,7 +368,7 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
                 </span>
               )}
               {unassignedCount > 0 && (
-                <span className="ml-2 text-orange-600">
+                <span className="ml-2 text-orange-600 dark:text-orange-400">
                   · {unassignedCount} unassigned
                 </span>
               )}
@@ -415,7 +415,7 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
       {/* Completion summary */}
       {summary && allDone && (
         <Card
-          className={summary.failed === 0 ? "border-green-200 bg-green-50" : "border-orange-200 bg-orange-50"}
+          className={summary.failed === 0 ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30" : "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30"}
         >
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="text-base">Upload Complete</CardTitle>
@@ -423,7 +423,7 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
           <CardContent className="pb-4">
             <div className="flex gap-6">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                 <span className="font-semibold">{summary.succeeded}</span>
                 <span className="text-sm text-muted-foreground">succeeded</span>
               </div>
@@ -499,7 +499,7 @@ function FileRow({ item, assignments, disabled, onRemove, onUpdate, onToggleExpa
   const statusIcon = {
     pending: null,
     uploading: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
-    success: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+    success: <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />,
     error: <XCircle className="h-4 w-4 text-destructive" />,
     invalid: <XCircle className="h-4 w-4 text-destructive" />,
   }[item.status];
@@ -507,9 +507,9 @@ function FileRow({ item, assignments, disabled, onRemove, onUpdate, onToggleExpa
   const rowBg = {
     pending: "",
     uploading: "bg-primary/5",
-    success: "bg-green-50",
-    error: "bg-red-50",
-    invalid: "bg-red-50",
+    success: "bg-green-50 dark:bg-green-950/30",
+    error: "bg-red-50 dark:bg-red-950/30",
+    invalid: "bg-red-50 dark:bg-red-950/30",
   }[item.status];
 
   const isDone = item.status === "success" || item.status === "error" || item.status === "invalid";

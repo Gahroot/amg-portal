@@ -32,11 +32,11 @@ const TYPE_ICONS: Record<SearchEntityType, React.ElementType> = {
 
 // Color mapping for entity type badges
 const TYPE_COLORS: Record<SearchEntityType, string> = {
-  program: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  client: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  partner: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-  document: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
-  task: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+  program: "bg-blue-100/30 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  client: "bg-green-100/30 text-green-700 dark:bg-green-900 dark:text-green-300",
+  partner: "bg-purple-100/30 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  document: "bg-orange-100/30 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+  task: "bg-yellow-100/30 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
 };
 
 interface GlobalSearchResultsProps {

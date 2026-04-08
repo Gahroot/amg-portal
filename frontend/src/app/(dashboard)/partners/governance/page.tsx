@@ -4,7 +4,7 @@ import { PartnerGovernanceDashboard } from "@/components/partners/partner-govern
 
 export default function GovernanceDashboardPage() {
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div>
           <h1 className="font-serif text-3xl font-bold tracking-tight">

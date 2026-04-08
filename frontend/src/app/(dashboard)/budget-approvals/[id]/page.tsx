@@ -85,7 +85,7 @@ function StepStatusIcon({
 }) {
   switch (status) {
     case "approved":
-      return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+      return <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />;
     case "rejected":
       return <XCircle className="h-5 w-5 text-destructive" />;
     case "skipped":
@@ -274,7 +274,7 @@ export default function BudgetApprovalDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-sm text-muted-foreground">Loading…</p>
         </div>
@@ -284,7 +284,7 @@ export default function BudgetApprovalDetailPage() {
 
   if (!request) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-muted-foreground">Request not found.</p>
         </div>
@@ -308,7 +308,7 @@ export default function BudgetApprovalDetailPage() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
@@ -457,8 +457,8 @@ export default function BudgetApprovalDetailPage() {
                 <p
                   className={`text-lg font-semibold tabular-nums ${
                     request.budget_impact > 0
-                      ? "text-amber-600"
-                      : "text-green-600"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-green-600 dark:text-green-400"
                   }`}
                 >
                   {request.budget_impact > 0 ? "+" : ""}

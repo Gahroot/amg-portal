@@ -57,7 +57,7 @@ export default function MDApprovalReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
@@ -67,7 +67,7 @@ export default function MDApprovalReviewPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-muted-foreground">Profile not found.</p>
         </div>
@@ -114,7 +114,7 @@ export default function MDApprovalReviewPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <h1 className="font-serif text-3xl font-bold tracking-tight">
           MD Approval Review

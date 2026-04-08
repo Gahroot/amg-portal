@@ -69,19 +69,19 @@ const MILESTONE_STATUS_CONFIG: Record<
   in_progress: {
     label: "In Progress",
     icon: <Clock className="h-3.5 w-3.5 text-amber-500" />,
-    color: "text-amber-600",
+    color: "text-amber-600 dark:text-amber-400",
     dotColor: "bg-amber-500",
   },
   at_risk: {
     label: "At Risk",
     icon: <AlertCircle className="h-3.5 w-3.5 text-red-500" />,
-    color: "text-red-600",
+    color: "text-red-600 dark:text-red-400",
     dotColor: "bg-red-500",
   },
   completed: {
     label: "Completed",
-    icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />,
-    color: "text-green-600",
+    icon: <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />,
+    color: "text-green-600 dark:text-green-400",
     dotColor: "bg-green-500",
   },
   cancelled: {
@@ -215,7 +215,7 @@ export function MilestoneCalendar() {
   }, [programs]);
 
   const getMilestoneColor = (programId: string) =>
-    programColorMap.get(programId) ?? "bg-gray-500";
+    programColorMap.get(programId) ?? "bg-muted-foreground";
 
   // Date range for calendar grid
   const dateRange = useMemo(() => {

@@ -104,7 +104,7 @@ export default function PortalProgramsPage() {
                     </CardTitle>
                     <div className="flex items-center gap-2 shrink-0">
                       <div
-                        className={`w-2.5 h-2.5 rounded-full ${RAG_COLORS[program.rag_status] ?? "bg-gray-400"}`}
+                        className={`w-2.5 h-2.5 rounded-full ${RAG_COLORS[program.rag_status] ?? "bg-muted-foreground"}`}
                         title={RAG_LABELS[program.rag_status]}
                       />
                       <Badge variant={STATUS_VARIANTS[program.status] ?? "outline"}>

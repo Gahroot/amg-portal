@@ -18,11 +18,11 @@ interface DecisionDetailPageProps {
 }
 
 const statusConfig: Record<string, { color: string; label: string }> = {
-  pending: { color: "text-orange-500 border-orange-300 bg-orange-50 dark:bg-orange-950/20", label: "Pending" },
-  responded: { color: "text-green-600 border-green-300 bg-green-50 dark:bg-green-950/20", label: "Responded" },
-  declined: { color: "text-red-500 border-red-300 bg-red-50 dark:bg-red-950/20", label: "Declined" },
-  expired: { color: "text-gray-500 border-gray-300 bg-gray-50 dark:bg-gray-900/20", label: "Expired" },
-  cancelled: { color: "text-gray-500 border-gray-300 bg-gray-50 dark:bg-gray-900/20", label: "Cancelled" },
+  pending: { color: "text-orange-500 border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/30", label: "Pending" },
+  responded: { color: "text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30", label: "Responded" },
+  declined: { color: "text-red-500 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30", label: "Declined" },
+  expired: { color: "text-muted-foreground border-border bg-muted/50 dark:bg-gray-900/20", label: "Expired" },
+  cancelled: { color: "text-muted-foreground border-border bg-muted/50 dark:bg-gray-900/20", label: "Cancelled" },
 };
 
 export default function DecisionDetailPage({ params }: DecisionDetailPageProps) {

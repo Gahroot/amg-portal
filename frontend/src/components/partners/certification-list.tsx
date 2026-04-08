@@ -250,7 +250,7 @@ export function CertificationList({
                       {certification.is_expiring_soon && !certification.is_expired && (
                         <Badge
                           variant="outline"
-                          className="bg-orange-50 text-orange-700 border-orange-200"
+                          className="bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
                         >
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           Expiring Soon
@@ -310,7 +310,7 @@ export function CertificationList({
                         variant="ghost"
                         size="sm"
                         onClick={() => openVerifyDialog(certification)}
-                        className="text-green-600"
+                        className="text-green-600 dark:text-green-400"
                         title="Verify certification"
                       >
                         <Check className="h-4 w-4" />

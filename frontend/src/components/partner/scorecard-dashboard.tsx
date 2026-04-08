@@ -43,7 +43,7 @@ const PERIODS: { value: ScorecardPeriod; label: string }[] = [
 
 function scoreColor(score: number | null): string {
   if (score === null) return "text-muted-foreground";
-  if (score >= 80) return "text-green-700 dark:text-green-400";
+  if (score >= 80) return "text-green-700 dark:text-green-300";
   if (score >= 60) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
 }
@@ -65,8 +65,8 @@ function progressColor(score: number | null): string {
 function trendIndicator(current: number | null, avg: number | null) {
   if (current === null || avg === null) return null;
   const diff = current - avg;
-  if (diff > 2) return { icon: TrendingUp, label: `+${diff.toFixed(1)} vs avg`, color: "text-green-600" };
-  if (diff < -2) return { icon: TrendingDown, label: `${diff.toFixed(1)} vs avg`, color: "text-red-600" };
+  if (diff > 2) return { icon: TrendingUp, label: `+${diff.toFixed(1)} vs avg`, color: "text-green-600 dark:text-green-400" };
+  if (diff < -2) return { icon: TrendingDown, label: `${diff.toFixed(1)} vs avg`, color: "text-red-600 dark:text-red-400" };
   return { icon: Minus, label: "On par with avg", color: "text-muted-foreground" };
 }
 
@@ -255,7 +255,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="sla_compliance_pct"
           name="SLA Compliance"
-          stroke="#8b7d5e"
+          stroke="var(--color-primary)"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -265,7 +265,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="avg_quality"
           name="Quality Score"
-          stroke="#c4a060"
+          stroke="var(--color-accent)"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -275,7 +275,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="avg_overall"
           name="Overall Rating"
-          stroke="#1B2A4A"
+          stroke="var(--color-charcoal)"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -284,7 +284,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           yAxisId="pct"
           dataKey="assignments_completed"
           name="Assignments"
-          fill="#D4CFC5"
+          fill="var(--color-muted)"
           opacity={0.35}
           radius={[2, 2, 0, 0]}
         />
@@ -452,8 +452,8 @@ export function ScorecardDashboard() {
                     <p
                       className={`text-lg font-semibold tabular-nums ${
                         data.totals.total_sla_breached > 0
-                          ? "text-red-600"
-                          : "text-green-600"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-green-600 dark:text-green-400"
                       }`}
                     >
                       {data.totals.total_sla_breached}
@@ -487,7 +487,7 @@ export function ScorecardDashboard() {
               icon={ShieldCheck}
               score={data.metrics.sla_compliance_pct}
               avgScore={data.averages.sla_compliance_pct}
-              iconColor="text-indigo-600"
+              iconColor="text-indigo-600 dark:text-indigo-400"
             />
             <MetricCard
               title="Response Time"
@@ -518,7 +518,7 @@ export function ScorecardDashboard() {
               icon={PackageCheck}
               score={data.metrics.on_time_delivery_rate}
               avgScore={null}
-              iconColor="text-emerald-600"
+              iconColor="text-emerald-600 dark:text-emerald-400"
             />
             <MetricCard
               title="Client Satisfaction"

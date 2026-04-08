@@ -222,14 +222,14 @@ export function DraftRecoveryBanner({
     <div
       data-slot="draft-recovery-banner"
       className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-900/20",
+        "flex items-center justify-between gap-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3",
         className
       )}
       role="alert"
     >
       <div className="flex items-center gap-2">
-        <FileText className="size-4 text-amber-600 dark:text-amber-500" />
-        <span className="text-sm text-amber-800 dark:text-amber-200">
+        <FileText className="size-4 text-amber-600 dark:text-amber-400" />
+        <span className="text-sm text-amber-800 dark:text-amber-300">
           Draft available
           {formattedTime && (
             <span className="ml-1 text-amber-600 dark:text-amber-400">
@@ -243,7 +243,7 @@ export function DraftRecoveryBanner({
           variant="ghost"
           size="sm"
           onClick={() => setDismissed(true)}
-          className="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40"
+          className="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-800 dark:text-amber-300"
         >
           Ignore
         </Button>
@@ -251,7 +251,7 @@ export function DraftRecoveryBanner({
           variant="ghost"
           size="sm"
           onClick={onDiscard}
-          className="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40"
+          className="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30 dark:bg-amber-900/30 hover:text-amber-800 dark:text-amber-300"
         >
           Discard
         </Button>

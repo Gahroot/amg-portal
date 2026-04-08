@@ -696,7 +696,7 @@ function ChainDetail({ chainId, onBack }: ChainDetailProps) {
         </Badge>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -874,7 +874,7 @@ export default function BudgetThresholdsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-8">
         {/* Header */}
         <div className="flex items-start gap-4">
@@ -891,9 +891,9 @@ export default function BudgetThresholdsPage() {
         </div>
 
         {/* Reference Card */}
-        <Card className="border-amber-200 bg-amber-50/60">
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-amber-900">
+            <CardTitle className="text-sm font-semibold text-amber-900 dark:text-amber-300">
               Governance Reference — Program Approval Tiers
             </CardTitle>
           </CardHeader>
@@ -923,15 +923,15 @@ export default function BudgetThresholdsPage() {
               ].map((row) => (
                 <div
                   key={row.tier}
-                  className="rounded-md border border-amber-200 bg-white/80 p-3"
+                  className="rounded-md border border-amber-200 dark:border-amber-800 bg-card/80 p-3"
                 >
-                  <p className="font-semibold text-amber-900 text-sm">
+                  <p className="font-semibold text-amber-900 dark:text-amber-300 text-sm">
                     {row.tier}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {row.rule}
                   </p>
-                  <p className="text-xs mt-1 text-amber-800">{row.approver}</p>
+                  <p className="text-xs mt-1 text-amber-800 dark:text-amber-300">{row.approver}</p>
                 </div>
               ))}
             </div>
@@ -970,7 +970,7 @@ export default function BudgetThresholdsPage() {
                 Loading thresholds…
               </p>
             ) : (
-              <div className="rounded-md border bg-white">
+              <div className="rounded-md border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1091,7 +1091,7 @@ export default function BudgetThresholdsPage() {
                 Loading chains…
               </p>
             ) : (
-              <div className="rounded-md border bg-white">
+              <div className="rounded-md border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>

@@ -206,14 +206,14 @@ export function EscalationCreateDialog({
 
             {/* Suggested actions from template */}
             {suggestedActions.length > 0 && (
-              <div className="rounded-md bg-amber-50 border border-amber-200 p-3 space-y-2">
-                <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-2">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wide">
                   Suggested Actions
                 </p>
                 <ul className="space-y-1">
                   {suggestedActions.map((action, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-amber-900">
-                      <span className="mt-0.5 flex-shrink-0 text-amber-600 font-bold">
+                    <li key={i} className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-300">
+                      <span className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400 font-bold">
                         {i + 1}.
                       </span>
                       {action}

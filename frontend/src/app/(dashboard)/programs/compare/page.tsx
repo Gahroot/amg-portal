@@ -26,7 +26,7 @@ function ProgramCompareContent() {
 
   if (ids.length < 2 || ids.length > 4) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
             <p className="text-muted-foreground">
@@ -42,7 +42,7 @@ function ProgramCompareContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between print:hidden">
           <div className="flex items-center gap-4">
@@ -82,7 +82,7 @@ export default function ProgramComparePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FDFBF7] p-8">
+        <div className="min-h-screen bg-background p-8">
           <div className="mx-auto max-w-7xl space-y-6">
             <TableSkeleton rows={8} columns={3} />
           </div>

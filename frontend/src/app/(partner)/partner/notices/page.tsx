@@ -55,17 +55,17 @@ function NoticeCard({ notice }: { notice: PerformanceNotice }) {
   const isOpen = notice.status === "open";
 
   return (
-    <Card className={isOpen ? "border-red-200" : "border-muted"}>
+    <Card className={isOpen ? "border-red-200 dark:border-red-800" : "border-muted"}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
               className={`mt-0.5 shrink-0 rounded-full p-1.5 ${
-                isOpen ? "bg-red-100" : "bg-muted"
+                isOpen ? "bg-red-100 dark:bg-red-900/30" : "bg-muted"
               }`}
             >
               {isOpen ? (
-                <ShieldAlert className="h-4 w-4 text-red-600" />
+                <ShieldAlert className="h-4 w-4 text-red-600 dark:text-red-400" />
               ) : (
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               )}
@@ -88,7 +88,7 @@ function NoticeCard({ notice }: { notice: PerformanceNotice }) {
               {SEVERITY_LABELS[notice.severity]}
             </Badge>
             {!isOpen && (
-              <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+              <Badge variant="outline" className="text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30">
                 Acknowledged
               </Badge>
             )}
@@ -112,9 +112,9 @@ function NoticeCard({ notice }: { notice: PerformanceNotice }) {
 
         {/* Required action */}
         {notice.required_action && (
-          <div className="rounded-md border border-orange-200 bg-orange-50 px-4 py-3">
-            <p className="text-sm font-medium text-orange-800 mb-1">Required Action</p>
-            <p className="text-sm text-orange-700 leading-relaxed">{notice.required_action}</p>
+          <div className="rounded-md border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 px-4 py-3">
+            <p className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-1">Required Action</p>
+            <p className="text-sm text-orange-700 dark:text-orange-300 leading-relaxed">{notice.required_action}</p>
           </div>
         )}
 
@@ -224,7 +224,7 @@ export default function PerformanceNoticesPage() {
 
       {/* Open notices alert */}
       {unacknowledged > 0 && (
-        <Alert variant="destructive" className="border-red-300 bg-red-50">
+        <Alert variant="destructive" className="border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Action required</AlertTitle>
           <AlertDescription>
@@ -239,8 +239,8 @@ export default function PerformanceNoticesPage() {
       {notices.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-green-100 p-4 mb-4">
-              <Bell className="h-8 w-8 text-green-600" />
+            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-4 mb-4">
+              <Bell className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <h2 className="text-lg font-semibold mb-1">No notices on record</h2>
             <p className="text-sm text-muted-foreground text-center max-w-sm">

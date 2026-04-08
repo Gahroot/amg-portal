@@ -167,7 +167,7 @@ export function CapabilityMatrix({
           <div
             key={i}
             className={`w-2 h-2 rounded-full ${
-              i < dotCount ? "bg-current" : "bg-gray-200"
+              i < dotCount ? "bg-current" : "bg-muted"
             }`}
           />
         ))}
@@ -214,7 +214,7 @@ export function CapabilityMatrix({
                         {capability.capability_name}
                       </p>
                       {capability.verified && (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                           <Check className="h-3 w-3 mr-1" />
                           Verified
                         </Badge>
@@ -243,7 +243,7 @@ export function CapabilityMatrix({
                       onClick={() => handleVerify(capability.id)}
                       title="Verify capability"
                     >
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </Button>
                   )}
                   {canEdit && (
@@ -262,7 +262,7 @@ export function CapabilityMatrix({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(capability.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 dark:text-red-400 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

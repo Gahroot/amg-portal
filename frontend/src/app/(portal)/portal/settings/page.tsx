@@ -32,7 +32,7 @@ export default function PortalSettingsLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-card">
       <div className="mx-auto max-w-4xl space-y-8 p-8">
         <h1 className="font-serif text-3xl font-bold tracking-tight">Settings</h1>
 

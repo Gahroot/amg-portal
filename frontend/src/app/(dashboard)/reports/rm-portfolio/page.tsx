@@ -75,7 +75,7 @@ export default function RMPortfolioReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -121,7 +121,7 @@ export default function RMPortfolioReportPage() {
         {report && (
           <>
             {/* RM identity */}
-            <div className="rounded-md border bg-white px-5 py-4">
+            <div className="rounded-md border bg-card px-5 py-4">
               <p className="font-semibold">{report.rm_name}</p>
               <p className="text-sm text-muted-foreground">{report.rm_email}</p>
             </div>
@@ -185,7 +185,7 @@ export default function RMPortfolioReportPage() {
             {/* Client table */}
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">Client Portfolio</h2>
-              <div className="rounded-md border bg-white">
+              <div className="rounded-md border bg-card">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -277,7 +277,7 @@ export default function RMPortfolioReportPage() {
                   <h3 className="text-base font-semibold text-muted-foreground">
                     {client.client_name} — Programs
                   </h3>
-                  <div className="rounded-md border bg-white">
+                  <div className="rounded-md border bg-card">
                     <Table>
                       <TableHeader>
                         <TableRow>

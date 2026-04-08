@@ -40,7 +40,7 @@ function getTimelineIcon(action: string) {
     case "level_upgraded":
       return <ArrowUpRight className="h-4 w-4 text-orange-500" />;
     case "risk_check":
-      return <RotateCcw className="h-4 w-4 text-slate-500" />;
+      return <RotateCcw className="h-4 w-4 text-muted-foreground" />;
     default:
       return <Clock className="h-4 w-4 text-muted-foreground" />;
   }

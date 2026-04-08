@@ -62,9 +62,9 @@ const STATUS_BADGE: Record<
 const STATUS_ICON: Record<DocumentRequestStatus, React.ReactNode> = {
   pending: <Clock className="h-4 w-4 text-yellow-500" />,
   in_progress: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
-  received: <CheckCircle2 className="h-4 w-4 text-green-600" />,
-  processing: <Clock className="h-4 w-4 text-blue-600" />,
-  complete: <PackageCheck className="h-4 w-4 text-green-700" />,
+  received: <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />,
+  processing: <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
+  complete: <PackageCheck className="h-4 w-4 text-green-700 dark:text-green-300" />,
   cancelled: <XCircle className="h-4 w-4 text-muted-foreground" />,
   overdue: <AlertTriangle className="h-4 w-4 text-destructive" />,
 };
@@ -370,7 +370,7 @@ function RequestCard({ request }: { request: DocumentRequestItem }) {
                   </span>
                 )}
                 {request.estimated_completion && !isTerminal && (
-                  <span className="flex items-center gap-1 text-blue-600">
+                  <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                     <Clock className="h-3 w-3" />
                     Est. completion {formatDate(request.estimated_completion)}
                   </span>

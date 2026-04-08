@@ -81,7 +81,7 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FDFBF7]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center space-y-2">
             <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FDFBF7]">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
           <h1 className="font-serif text-3xl font-bold tracking-tight">

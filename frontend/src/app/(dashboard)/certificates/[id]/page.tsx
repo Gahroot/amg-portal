@@ -33,10 +33,10 @@ import { toast } from "sonner";
 const ALLOWED_ROLES = ["finance_compliance", "managing_director", "relationship_manager", "coordinator"];
 
 const statusColors: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  issued: "bg-green-100 text-green-800",
-  revoked: "bg-red-100 text-red-800",
-  expired: "bg-yellow-100 text-yellow-800",
+  draft: "bg-muted text-foreground",
+  issued: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+  revoked: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
+  expired: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300",
 };
 
 export default function CertificateDetailPage() {

@@ -348,7 +348,7 @@ export function TaskDependencyGraph({
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         {[
-          { color: "bg-slate-400", label: "To Do" },
+          { color: "bg-muted-foreground", label: "To Do" },
           { color: "bg-blue-500", label: "In Progress" },
           { color: "bg-red-500", label: "Blocked" },
           { color: "bg-green-500", label: "Done" },

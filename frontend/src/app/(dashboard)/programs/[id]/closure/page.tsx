@@ -41,7 +41,7 @@ function StarRating({
           className={`text-lg ${
             star <= value
               ? "text-yellow-500"
-              : "text-gray-300"
+              : "text-muted-foreground/50"
           }`}
         >
           ★
@@ -118,7 +118,7 @@ export default function ProgramClosurePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-sm text-muted-foreground">
             Loading closure status...
@@ -130,7 +130,7 @@ export default function ProgramClosurePage() {
 
   if (hasNoClosure) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl space-y-6">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
             Program Closure
@@ -210,7 +210,7 @@ export default function ProgramClosurePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

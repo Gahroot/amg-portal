@@ -86,7 +86,7 @@ export default function TemplatesPage() {
       {isLoading ? (
         <p className="text-muted-foreground text-sm">Loading...</p>
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

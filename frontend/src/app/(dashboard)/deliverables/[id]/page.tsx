@@ -100,7 +100,7 @@ export default function DeliverableDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">
             Loading deliverable...
@@ -112,7 +112,7 @@ export default function DeliverableDetailPage() {
 
   if (!deliverable) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Deliverable not found.</p>
         </div>
@@ -122,7 +122,7 @@ export default function DeliverableDetailPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">

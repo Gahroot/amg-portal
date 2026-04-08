@@ -177,7 +177,7 @@ export default function KYCVerificationDetailPage() {
 
   if (!clientId) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-3xl">
           <Alert>
             <AlertDescription>
@@ -192,7 +192,7 @@ export default function KYCVerificationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <p className="text-sm text-muted-foreground">Loading document...</p>
       </div>
     );
@@ -200,7 +200,7 @@ export default function KYCVerificationDetailPage() {
 
   if (!doc) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-3xl">
           <Alert>
             <AlertDescription>KYC document not found.</AlertDescription>
@@ -211,7 +211,7 @@ export default function KYCVerificationDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* Back button */}
         <Button

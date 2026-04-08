@@ -329,7 +329,7 @@ export default function PartnerWebhooksPage() {
     }
     if (webhook.failure_count > 0) {
       return (
-        <Badge variant="outline" className="gap-1 border-yellow-500 text-yellow-600">
+        <Badge variant="outline" className="gap-1 border-yellow-500 text-yellow-600 dark:text-yellow-400">
           <AlertCircle className="h-3 w-3" />
           {webhook.failure_count} failures
         </Badge>
@@ -831,7 +831,7 @@ export default function PartnerWebhooksPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           {delivery.success ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                           ) : (
                             <XCircle className="h-4 w-4 text-destructive" />
                           )}

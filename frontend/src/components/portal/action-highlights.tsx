@@ -122,7 +122,7 @@ export function ActionHighlights({
         <div
           className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-shadow hover:shadow-sm cursor-pointer ${
             primaryAction.urgent
-              ? "border-orange-200 bg-orange-50 dark:border-orange-900/40 dark:bg-orange-950/20"
+              ? "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30"
               : "bg-muted/40"
           }`}
         >
@@ -130,7 +130,7 @@ export function ActionHighlights({
           <div className="min-w-0 flex-1">
             <p
               className={`text-sm font-semibold ${
-                primaryAction.urgent ? "text-orange-900 dark:text-orange-200" : ""
+                primaryAction.urgent ? "text-orange-900 dark:text-orange-300" : ""
               }`}
             >
               {primaryAction.label}
@@ -138,7 +138,7 @@ export function ActionHighlights({
             <p
               className={`text-xs ${
                 primaryAction.urgent
-                  ? "text-orange-700 dark:text-orange-400"
+                  ? "text-orange-700 dark:text-orange-300"
                   : "text-muted-foreground"
               }`}
             >

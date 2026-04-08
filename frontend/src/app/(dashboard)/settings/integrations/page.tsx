@@ -204,7 +204,7 @@ export default function IntegrationsPage() {
       </div>
 
       {noApiKey && !apiKey && (
-        <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 text-sm text-yellow-700 dark:text-yellow-400">
+        <div className="rounded-md bg-yellow-50 dark:bg-yellow-950/30 p-4 text-sm text-yellow-700 dark:text-yellow-300">
           <p className="font-medium">API key required</p>
           <p className="mt-1">
             You need an active API key to manage webhooks.{" "}
@@ -229,7 +229,7 @@ export default function IntegrationsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100/30 dark:bg-orange-900">
                     <Zap className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
@@ -263,7 +263,7 @@ export default function IntegrationsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100/30 dark:bg-purple-900">
                     <Layers className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
@@ -298,7 +298,7 @@ export default function IntegrationsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100/30 dark:bg-blue-900">
                   <Code className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
@@ -443,11 +443,11 @@ export default function IntegrationsPage() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{webhook.description || "Webhook"}</p>
                           {webhook.is_active ? (
-                            <Badge variant="outline" className="text-green-600">
+                            <Badge variant="outline" className="text-green-600 dark:text-green-400">
                               Active
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-red-600">
+                            <Badge variant="outline" className="text-red-600 dark:text-red-400">
                               Inactive
                             </Badge>
                           )}
@@ -466,7 +466,7 @@ export default function IntegrationsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:text-red-600"
+                        className="text-red-500 hover:text-red-600 dark:text-red-400"
                         onClick={() => handleDeleteWebhook(webhook.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -482,7 +482,7 @@ export default function IntegrationsPage() {
           {newSecret && (
             <Card className="border-green-500">
               <CardHeader>
-                <CardTitle className="text-green-600">Webhook Secret</CardTitle>
+                <CardTitle className="text-green-600 dark:text-green-400">Webhook Secret</CardTitle>
                 <CardDescription>
                   Copy this secret now - it won&apos;t be shown again!
                 </CardDescription>

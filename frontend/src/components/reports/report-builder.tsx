@@ -89,12 +89,12 @@ const FILTER_OPERATORS: { value: FilterOperator; label: string }[] = [
 ];
 
 const FIELD_TYPE_COLORS: Record<FieldType, string> = {
-  text: "bg-blue-100 text-blue-700",
-  number: "bg-purple-100 text-purple-700",
-  date: "bg-green-100 text-green-700",
-  status: "bg-amber-100 text-amber-700",
-  rag: "bg-red-100 text-red-700",
-  boolean: "bg-gray-100 text-gray-700",
+  text: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+  number: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300",
+  date: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300",
+  status: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+  rag: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300",
+  boolean: "bg-muted text-foreground/80",
   calculated: "bg-pink-100 text-pink-700",
 };
 
@@ -830,12 +830,12 @@ function renderCellValue(value: unknown, type: string): React.ReactNode {
   if (type === "rag") {
     const color =
       str === "green"
-        ? "bg-green-100 text-green-700"
+        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
         : str === "amber"
-          ? "bg-amber-100 text-amber-700"
+          ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
           : str === "red"
-            ? "bg-red-100 text-red-700"
-            : "bg-gray-100 text-gray-600";
+            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+            : "bg-muted text-muted-foreground";
     return (
       <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", color)}>
         {str}

@@ -235,7 +235,7 @@ function RequestTable({
   }
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -333,7 +333,7 @@ export default function DeletionRequestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">

@@ -36,18 +36,18 @@ function getScoreButtonClass(score: number, selected: number | null): string {
     // Detractor range — red/orange tones
     return isSelected
       ? base + "bg-red-500 border-red-500 text-white shadow-md scale-110"
-      : base + "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950";
+      : base + "border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-50/30 dark:bg-red-950/30 dark:hover:bg-red-950";
   }
   if (score <= 8) {
     // Passive range — amber tones
     return isSelected
-      ? base + "bg-amber-400 border-amber-400 text-white shadow-md scale-110"
-      : base + "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950";
+      ? base + "bg-amber-400 border-amber-400 dark:border-amber-600 text-white shadow-md scale-110"
+      : base + "border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50/30 dark:bg-amber-950/30 dark:hover:bg-amber-950";
   }
   // Promoter range — green tones
   return isSelected
     ? base + "bg-green-500 border-green-500 text-white shadow-md scale-110"
-    : base + "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950";
+    : base + "border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-50/30 dark:bg-green-950/30 dark:hover:bg-green-950";
 }
 
 interface CategoryInfo {

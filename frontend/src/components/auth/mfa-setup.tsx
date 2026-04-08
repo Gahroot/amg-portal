@@ -128,7 +128,7 @@ export function MFASetup({
           Google Authenticator, Authy).
         </p>
         {setupData && (
-          <div className="flex justify-center rounded-lg border bg-white p-4">
+          <div className="flex justify-center rounded-lg border bg-card p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`data:image/png;base64,${setupData.qr_code_base64}`}

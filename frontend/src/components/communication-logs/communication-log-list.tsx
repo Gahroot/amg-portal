@@ -209,7 +209,7 @@ export function CommunicationLogList() {
       {isLoading ? (
         <TableSkeleton rows={6} columns={7} />
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

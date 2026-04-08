@@ -38,10 +38,10 @@ const CATEGORY_OPTIONS: { value: EscalationTemplateCategory; label: string }[] =
   ];
 
 const SEVERITY_COLORS: Record<string, string> = {
-  task: "bg-blue-100 text-blue-800",
-  milestone: "bg-amber-100 text-amber-800",
-  program: "bg-orange-100 text-orange-800",
-  client_impact: "bg-red-100 text-red-800",
+  task: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
+  milestone: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
+  program: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300",
+  client_impact: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
 };
 
 interface TemplatePickerProps {
@@ -166,7 +166,7 @@ function TemplateCard({ template, isSelected, onSelect }: TemplateCardProps) {
         "w-full text-left rounded-lg border p-4 transition-colors hover:bg-muted/50",
         isSelected
           ? "border-primary bg-primary/5 ring-1 ring-primary"
-          : "border-border bg-white",
+          : "border-border bg-card",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -189,7 +189,7 @@ function TemplateCard({ template, isSelected, onSelect }: TemplateCardProps) {
               className={cn(
                 "text-xs px-1.5 py-0.5 rounded font-medium",
                 SEVERITY_COLORS[template.severity] ??
-                  "bg-gray-100 text-gray-700",
+                  "bg-muted text-foreground/80",
               )}
             >
               {SEVERITY_LABELS[template.severity]}

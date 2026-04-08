@@ -28,10 +28,10 @@ function formatBytes(bytes: number) {
 }
 
 function getFileIcon(contentType: string) {
-  if (contentType.startsWith("image/")) return <FileImage className="h-5 w-5 text-purple-600" />;
-  if (contentType.includes("spreadsheet") || contentType.includes("excel")) return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
-  if (contentType.includes("pdf")) return <FileText className="h-5 w-5 text-red-600" />;
-  if (contentType.includes("zip") || contentType.includes("archive")) return <FileArchive className="h-5 w-5 text-yellow-600" />;
+  if (contentType.startsWith("image/")) return <FileImage className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
+  if (contentType.includes("spreadsheet") || contentType.includes("excel")) return <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />;
+  if (contentType.includes("pdf")) return <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />;
+  if (contentType.includes("zip") || contentType.includes("archive")) return <FileArchive className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
   return <File className="h-5 w-5 text-muted-foreground" />;
 }
 
@@ -103,8 +103,8 @@ export default function PartnerDocumentsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card><CardContent className="pt-4"><div className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Folder className="h-5 w-5 text-primary" /></div><div><p className="text-sm text-muted-foreground">Total Documents</p><p className="text-2xl font-bold">{docs.length}</p></div></div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="flex items-center gap-3"><div className="p-2 bg-blue-100 rounded-lg"><FileText className="h-5 w-5 text-blue-600" /></div><div><p className="text-sm text-muted-foreground">Assignments</p><p className="text-2xl font-bold">{assignmentsData?.total ?? 0}</p></div></div></CardContent></Card>
-        <Card><CardContent className="pt-4"><div className="flex items-center gap-3"><div className="p-2 bg-green-100 rounded-lg"><FileText className="h-5 w-5 text-green-600" /></div><div><p className="text-sm text-muted-foreground">Categories</p><p className="text-2xl font-bold">{categories.length}</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="flex items-center gap-3"><div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div><div><p className="text-sm text-muted-foreground">Assignments</p><p className="text-2xl font-bold">{assignmentsData?.total ?? 0}</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-4"><div className="flex items-center gap-3"><div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg"><FileText className="h-5 w-5 text-green-600 dark:text-green-400" /></div><div><p className="text-sm text-muted-foreground">Categories</p><p className="text-2xl font-bold">{categories.length}</p></div></div></CardContent></Card>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -137,7 +137,7 @@ export default function PartnerDocumentsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

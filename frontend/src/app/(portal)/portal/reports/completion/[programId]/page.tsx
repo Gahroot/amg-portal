@@ -152,7 +152,7 @@ export default function CompletionReportPage() {
                         ? "bg-green-500"
                         : milestone.status === "in_progress"
                         ? "bg-blue-500"
-                        : "bg-gray-400"
+                        : "bg-muted-foreground"
                     }`}
                   />
                   <div>
@@ -174,7 +174,7 @@ export default function CompletionReportPage() {
                   {milestone.on_time !== null && (
                     <span
                       className={`text-xs ${
-                        milestone.on_time ? "text-green-600" : "text-red-600"
+                        milestone.on_time ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {milestone.on_time ? "On Time" : "Late"}

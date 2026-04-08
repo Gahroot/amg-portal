@@ -11,7 +11,7 @@ const HEADER_HEIGHT = 56;
 const BAR_HEIGHT = 20;
 const BAR_RADIUS = 4;
 const BAR_VERTICAL_OFFSET = (ROW_HEIGHT - BAR_HEIGHT) / 2;
-const ARROW_COLOR = "#94a3b8"; // slate-400
+const ARROW_COLOR = "var(--color-muted-foreground)";
 const ARROW_HEAD_SIZE = 6;
 const TODAY_COLOR = "#ef4444"; // red-500
 
@@ -267,7 +267,8 @@ export function GanttChart({
               y={HEADER_HEIGHT + i * ROW_HEIGHT}
               width={svgWidth}
               height={ROW_HEIGHT}
-              fill={i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.018)"}
+              fill={i % 2 === 0 ? "transparent" : "var(--color-muted)"}
+              fillOpacity={i % 2 === 0 ? 0 : 0.5}
             />
           ))}
 
@@ -279,18 +280,19 @@ export function GanttChart({
               y1={HEADER_HEIGHT}
               x2={LABEL_WIDTH + tick.x}
               y2={svgHeight}
-              stroke={tick.isMajor ? "#cbd5e1" : "#e2e8f0"}
+              stroke="var(--color-border)"
               strokeWidth={tick.isMajor ? 1 : 0.5}
+              strokeOpacity={tick.isMajor ? 1 : 0.6}
             />
           ))}
 
           {/* ── Header background ── */}
           <rect x={0} y={0} width={svgWidth} height={HEADER_HEIGHT} fill="hsl(var(--muted))" />
-          <line x1={0} y1={HEADER_HEIGHT} x2={svgWidth} y2={HEADER_HEIGHT} stroke="#e2e8f0" strokeWidth={1} />
+          <line x1={0} y1={HEADER_HEIGHT} x2={svgWidth} y2={HEADER_HEIGHT} stroke="var(--color-border)" strokeWidth={1} />
 
           {/* ── Label panel background ── */}
           <rect x={0} y={0} width={LABEL_WIDTH} height={svgHeight} fill="hsl(var(--card))" />
-          <line x1={LABEL_WIDTH} y1={0} x2={LABEL_WIDTH} y2={svgHeight} stroke="#e2e8f0" strokeWidth={1} />
+          <line x1={LABEL_WIDTH} y1={0} x2={LABEL_WIDTH} y2={svgHeight} stroke="var(--color-border)" strokeWidth={1} />
 
           {/* ── Header: time labels ── */}
           <text x={8} y={HEADER_HEIGHT / 2 + 5} fontSize={11} fill="hsl(var(--muted-foreground))" fontWeight={600}>
@@ -463,7 +465,7 @@ export function GanttChart({
               y1={HEADER_HEIGHT + (i + 1) * ROW_HEIGHT}
               x2={svgWidth}
               y2={HEADER_HEIGHT + (i + 1) * ROW_HEIGHT}
-              stroke="#e2e8f0"
+              stroke="var(--color-border)"
               strokeWidth={0.5}
             />
           ))}

@@ -52,17 +52,17 @@ interface CapacityHeatmapProps {
 function getStatusColor(status: CapacityStatus, utilisation: number): string {
   switch (status) {
     case "blocked":
-      return "bg-slate-400 text-white border-slate-500";
+      return "bg-muted-foreground text-card border-border";
     case "full":
       return "bg-red-500 text-white border-red-600";
     case "partial": {
       if (utilisation >= 0.75) return "bg-orange-400 text-white border-orange-500";
-      return "bg-yellow-300 text-yellow-900 border-yellow-400";
+      return "bg-yellow-300 text-yellow-900 dark:text-yellow-300 border-yellow-400 dark:border-yellow-600";
     }
     case "available":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
     default:
-      return "bg-gray-100 text-gray-500 border-gray-200";
+      return "bg-muted text-muted-foreground border-border";
   }
 }
 
@@ -243,7 +243,7 @@ export function CapacityHeatmap({
               return (
                 <div
                   key={iso}
-                  className="h-10 rounded border bg-gray-50 flex items-center justify-center text-xs text-muted-foreground"
+                  className="h-10 rounded border bg-muted/50 flex items-center justify-center text-xs text-muted-foreground"
                 >
                   {format(day, "d")}
                 </div>
@@ -341,7 +341,7 @@ export function CapacityHeatmap({
             )}
           </div>
           {selectedEntry.status !== "blocked" && (
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div className="w-full bg-muted rounded-full h-1.5">
               <div
                 className={cn("h-1.5 rounded-full transition-all", {
                   "bg-emerald-500": selectedEntry.utilisation === 0,

@@ -114,7 +114,7 @@ export default function NewAuditFindingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <Button

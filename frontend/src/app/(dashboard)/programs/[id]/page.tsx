@@ -131,7 +131,7 @@ export default function ProgramDashboardPage() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         ctx.scale(scale, scale);
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-card').trim() || '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
         URL.revokeObjectURL(url);
@@ -188,7 +188,7 @@ export default function ProgramDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">Loading program...</p>
         </div>
@@ -198,7 +198,7 @@ export default function ProgramDashboardPage() {
 
   if (!program) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Program not found.</p>
         </div>
@@ -247,7 +247,7 @@ export default function ProgramDashboardPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Retrospective-due banner */}
         {showRetrospectiveBanner && (
@@ -396,14 +396,14 @@ export default function ProgramDashboardPage() {
 
             {/* Security Considerations — MD/RM only, executive-level clients */}
             {isInternalSenior && securityBrief && (
-              <Card className="border-amber-200 bg-amber-50/50">
+              <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50">
                 <CardHeader>
-                  <CardTitle className="font-serif text-xl text-amber-900">
+                  <CardTitle className="font-serif text-xl text-amber-900 dark:text-amber-300">
                     Security Considerations
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                  <Alert className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
                     <AlertDescription className="text-xs font-medium">
                       Security information is strictly need-to-know. This data
                       is not visible to the client or partner portal.
@@ -441,13 +441,13 @@ export default function ProgramDashboardPage() {
                     <>
                       <Separator />
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-amber-900">
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
                           Travel Advisories
                         </p>
                         {securityBrief.travel_advisories.map((adv) => (
                           <div
                             key={adv.destination}
-                            className="flex items-center justify-between rounded border border-amber-200 bg-white px-3 py-2 text-sm"
+                            className="flex items-center justify-between rounded border border-amber-200 dark:border-amber-800 bg-card px-3 py-2 text-sm"
                           >
                             <span className="font-medium">{adv.destination}</span>
                             <Badge
@@ -633,7 +633,7 @@ export default function ProgramDashboardPage() {
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
-            <div className="rounded-md border bg-white">
+            <div className="rounded-md border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>

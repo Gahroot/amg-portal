@@ -129,8 +129,8 @@ export function TaskDependencyField({
                           task.status === "done" && "bg-green-500",
                           task.status === "in_progress" && "bg-blue-500",
                           task.status === "blocked" && "bg-red-500",
-                          task.status === "todo" && "bg-slate-400",
-                          task.status === "cancelled" && "bg-gray-400",
+                          task.status === "todo" && "bg-muted-foreground",
+                          task.status === "cancelled" && "bg-muted-foreground",
                         )}
                       />
                       <span className="flex-1 truncate">{task.title}</span>

@@ -103,9 +103,9 @@ export function AutoSaveIndicator({
         };
       case "saved":
         return {
-          icon: <Check className={cn(iconSize, "text-green-600")} />,
+          icon: <Check className={cn(iconSize, "text-green-600 dark:text-green-400")} />,
           text: showTimestamp && relativeTime ? `Saved ${relativeTime}` : "Saved",
-          className: "text-green-600",
+          className: "text-green-600 dark:text-green-400",
         };
       case "error":
         return {
@@ -117,7 +117,7 @@ export function AutoSaveIndicator({
         return {
           icon: <CircleDot className={cn(iconSize, "text-amber-500")} />,
           text: "Unsaved changes",
-          className: "text-amber-600",
+          className: "text-amber-600 dark:text-amber-400",
         };
       case "idle":
       default:
@@ -179,7 +179,7 @@ export function AutoSaveIndicatorCompact({
       case "saving":
         return <Loader2 className="size-4 animate-spin text-primary" />;
       case "saved":
-        return <Check className="size-4 text-green-600" />;
+        return <Check className="size-4 text-green-600 dark:text-green-400" />;
       case "error":
         return <AlertCircle className="size-4 text-destructive" />;
       case "unsaved":
@@ -242,13 +242,13 @@ export function AutoSaveBadge({
   const getBadgeStyles = () => {
     switch (status) {
       case "saving":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+        return "bg-blue-100 text-blue-700 dark:text-blue-300 dark:bg-blue-900/30";
       case "saved":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+        return "bg-green-100 text-green-700 dark:text-green-300 dark:bg-green-900/30";
       case "error":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+        return "bg-red-100 text-red-700 dark:text-red-300 dark:bg-red-900/30";
       case "unsaved":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+        return "bg-amber-100 text-amber-700 dark:text-amber-300 dark:bg-amber-900/30";
       default:
         return "bg-muted text-muted-foreground";
     }

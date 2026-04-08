@@ -91,7 +91,7 @@ export default function ComplianceReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
@@ -101,7 +101,7 @@ export default function ComplianceReviewPage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-4xl">
           <p className="text-muted-foreground">Profile not found.</p>
         </div>
@@ -159,7 +159,7 @@ export default function ComplianceReviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center gap-4">
           <Button

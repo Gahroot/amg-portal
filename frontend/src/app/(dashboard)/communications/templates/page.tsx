@@ -127,10 +127,10 @@ interface TemplateStatusBadgeProps {
 
 function TemplateStatusBadge({ status }: TemplateStatusBadgeProps) {
   const configs: Record<TemplateStatus, { label: string; className: string }> = {
-    draft: { label: "Draft", className: "bg-gray-100 text-gray-700 border-gray-200" },
-    pending: { label: "Pending Review", className: "bg-amber-100 text-amber-700 border-amber-200" },
-    approved: { label: "Approved", className: "bg-green-100 text-green-700 border-green-200" },
-    rejected: { label: "Rejected", className: "bg-red-100 text-red-700 border-red-200" },
+    draft: { label: "Draft", className: "bg-muted text-foreground/80 border-border" },
+    pending: { label: "Pending Review", className: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800" },
+    approved: { label: "Approved", className: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800" },
+    rejected: { label: "Rejected", className: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800" },
   };
   const config = configs[status] ?? configs.draft;
   return (
@@ -378,7 +378,7 @@ function PreviewDialog({ template, onClose }: PreviewDialogProps) {
 
           {/* Rejection reason */}
           {template.status === "rejected" && template.rejection_reason && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
               <span className="font-medium">Rejection reason:</span> {template.rejection_reason}
             </div>
           )}
@@ -559,7 +559,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -635,7 +635,7 @@ export default function TemplatesPage() {
             Loading templates…
           </div>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -663,7 +663,7 @@ export default function TemplatesPage() {
                       <TableCell className="font-medium">
                         {t.name}
                         {t.status === "rejected" && t.rejection_reason && (
-                          <p className="text-xs text-red-600 mt-0.5 truncate max-w-[200px]" title={t.rejection_reason}>
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-0.5 truncate max-w-[200px]" title={t.rejection_reason}>
                             {t.rejection_reason}
                           </p>
                         )}
@@ -758,14 +758,14 @@ export default function TemplatesPage() {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => openApprovalDialog(t, "approve")}
-                                      className="text-green-700 focus:text-green-700"
+                                      className="text-green-700 focus:text-green-700 dark:text-green-300"
                                     >
                                       <CheckCircle className="mr-2 h-4 w-4" />
                                       Approve
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       onClick={() => openApprovalDialog(t, "reject")}
-                                      className="text-red-700 focus:text-red-700"
+                                      className="text-red-700 focus:text-red-700 dark:text-red-300"
                                     >
                                       <XCircle className="mr-2 h-4 w-4" />
                                       Reject

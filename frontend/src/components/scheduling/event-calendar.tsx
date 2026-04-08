@@ -28,7 +28,7 @@ const statusColors: Record<string, string> = {
   scheduled: "bg-blue-500",
   confirmed: "bg-green-500",
   cancelled: "bg-red-500",
-  completed: "bg-gray-500",
+  completed: "bg-muted-foreground",
 };
 
 interface EventCalendarProps {
@@ -155,7 +155,7 @@ export function EventCalendar({ onEventClick }: EventCalendarProps) {
                       >
                         <div className="flex items-center gap-1">
                           <div
-                            className={`h-2 w-2 rounded-full shrink-0 ${statusColors[event.status] || "bg-gray-500"}`}
+                            className={`h-2 w-2 rounded-full shrink-0 ${statusColors[event.status] || "bg-muted-foreground"}`}
                           />
                           <span className="text-xs truncate">
                             {format(new Date(event.start_time), "HH:mm")}{" "}
@@ -204,7 +204,7 @@ export function EventCalendar({ onEventClick }: EventCalendarProps) {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div
-                              className={`h-3 w-3 rounded-full ${statusColors[event.status] || "bg-gray-500"}`}
+                              className={`h-3 w-3 rounded-full ${statusColors[event.status] || "bg-muted-foreground"}`}
                             />
                             <span className="font-medium text-sm">
                               {event.title}

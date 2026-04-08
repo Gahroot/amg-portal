@@ -159,7 +159,7 @@ function PreviewWithDataDialog({
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-4">
-            <div className="flex-1 overflow-hidden rounded-md border bg-white min-h-[400px]">
+            <div className="flex-1 overflow-hidden rounded-md border bg-card min-h-[400px]">
               <iframe
                 srcDoc={previewHtml}
                 title="Certificate preview with data"

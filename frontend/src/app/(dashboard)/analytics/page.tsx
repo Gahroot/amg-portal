@@ -33,7 +33,7 @@ function SummaryCard({
       </CardHeader>
       <CardContent>
         <p
-          className={`text-3xl font-bold ${variant === "destructive" ? "text-red-600" : ""}`}
+          className={`text-3xl font-bold ${variant === "destructive" ? "text-red-600 dark:text-red-400" : ""}`}
         >
           {value}
         </p>
@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -109,13 +109,13 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-red-600">
+                    <span className="text-sm font-medium text-red-600 dark:text-red-400">
                       R: {summary.rag_breakdown.red ?? 0}
                     </span>
-                    <span className="text-sm font-medium text-amber-600">
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
                       A: {summary.rag_breakdown.amber ?? 0}
                     </span>
-                    <span className="text-sm font-medium text-green-600">
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
                       G: {summary.rag_breakdown.green ?? 0}
                     </span>
                   </div>

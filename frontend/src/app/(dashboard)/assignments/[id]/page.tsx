@@ -185,7 +185,7 @@ export default function AssignmentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">
             Loading assignment...
@@ -197,7 +197,7 @@ export default function AssignmentDetailPage() {
 
   if (!assignment) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Assignment not found.</p>
         </div>
@@ -206,7 +206,7 @@ export default function AssignmentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -236,10 +236,10 @@ export default function AssignmentDetailPage() {
         )}
 
         {assignedPartner?.is_on_probation && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
-            <ShieldAlert className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-900">Enhanced Oversight Required</AlertTitle>
-            <AlertDescription className="text-amber-800">
+          <Alert className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
+            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-900 dark:text-amber-300">Enhanced Oversight Required</AlertTitle>
+            <AlertDescription className="text-amber-800 dark:text-amber-300">
               <span className="font-semibold">{assignedPartner.firm_name}</span> is a probationary
               partner ({assignedPartner.completed_assignments} of 3 qualifying engagements
               completed). Apply additional review steps to all deliverables, communications, and
@@ -485,7 +485,7 @@ export default function AssignmentDetailPage() {
             </Dialog>
           </div>
 
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

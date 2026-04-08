@@ -69,10 +69,10 @@ const SEVERITY_OPTIONS: { value: EscalationTemplateSeverity; label: string }[] =
   ];
 
 const SEVERITY_COLORS: Record<string, string> = {
-  task: "bg-blue-100 text-blue-800",
-  milestone: "bg-amber-100 text-amber-800",
-  program: "bg-orange-100 text-orange-800",
-  client_impact: "bg-red-100 text-red-800",
+  task: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
+  milestone: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300",
+  program: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300",
+  client_impact: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
 };
 
 const ALLOWED_ROLES = ["managing_director"];
@@ -220,7 +220,7 @@ export default function EscalationTemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -282,7 +282,7 @@ export default function EscalationTemplatesPage() {
                 </Badge>
               </div>
               {customTemplates.length === 0 ? (
-                <div className="rounded-md border bg-white p-8 text-center">
+                <div className="rounded-md border bg-card p-8 text-center">
                   <p className="text-sm text-muted-foreground">
                     No custom templates yet.
                     {isAdmin && (
@@ -488,7 +488,7 @@ function TemplateTable({
   onDelete,
 }: TemplateTableProps) {
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -520,7 +520,7 @@ function TemplateTable({
               <TableCell>
                 <span
                   className={`text-xs px-2 py-0.5 rounded font-medium ${
-                    SEVERITY_COLORS[tpl.severity] ?? "bg-gray-100 text-gray-700"
+                    SEVERITY_COLORS[tpl.severity] ?? "bg-muted text-foreground/80"
                   }`}
                 >
                   {SEVERITY_LABELS[tpl.severity]}

@@ -27,7 +27,7 @@ function StarRating({ score }: { score: number | null }) {
       ))}
       {hasHalf && <span className="text-amber-500">★</span>}
       {Array.from({ length: emptyStars }, (_, i) => (
-        <span key={`empty-${i.toString()}`} className="text-gray-300">
+        <span key={`empty-${i.toString()}`} className="text-muted-foreground/50">
           ★
         </span>
       ))}

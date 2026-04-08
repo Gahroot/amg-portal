@@ -103,9 +103,9 @@ const SCORE_CATEGORY_VARIANT: Record<
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function getNPSColor(score: number): string {
-  if (score >= 70) return "text-green-600";
-  if (score >= 50) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 70) return "text-green-600 dark:text-green-400";
+  if (score >= 50) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function getTrendIcon(direction: "up" | "down" | "stable"): string {
@@ -115,8 +115,8 @@ function getTrendIcon(direction: "up" | "down" | "stable"): string {
 }
 
 function getTrendColor(direction: "up" | "down" | "stable"): string {
-  if (direction === "up") return "text-green-600";
-  if (direction === "down") return "text-red-600";
+  if (direction === "up") return "text-green-600 dark:text-green-400";
+  if (direction === "down") return "text-red-600 dark:text-red-400";
   return "text-muted-foreground";
 }
 
@@ -465,17 +465,17 @@ function SurveyStatsPanel({ surveyId }: { surveyId: string }) {
           <ScoreBar
             label="Promoters"
             percent={stats.promoters_percent}
-            colorClass="text-green-600"
+            colorClass="text-green-600 dark:text-green-400"
           />
           <ScoreBar
             label="Passives"
             percent={stats.passives_percent}
-            colorClass="text-amber-600"
+            colorClass="text-amber-600 dark:text-amber-400"
           />
           <ScoreBar
             label="Detractors"
             percent={stats.detractors_percent}
-            colorClass="text-red-600"
+            colorClass="text-red-600 dark:text-red-400"
           />
         </CardContent>
       </Card>
@@ -552,7 +552,7 @@ function SurveysTab({
           No surveys found. Create your first NPS survey.
         </p>
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -681,7 +681,7 @@ function ResponsesTab({
           No responses yet for this survey.
         </p>
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -707,10 +707,10 @@ function ResponsesTab({
                     <span
                       className={`text-lg font-bold ${
                         r.score >= 9
-                          ? "text-green-600"
+                          ? "text-green-600 dark:text-green-400"
                           : r.score >= 7
-                            ? "text-amber-600"
-                            : "text-red-600"
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {r.score}
@@ -853,7 +853,7 @@ function FollowUpsTab({
           No follow-ups found.
         </p>
       ) : (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -973,7 +973,7 @@ export default function NPSSurveysPage() {
   const surveys = surveysData?.surveys ?? [];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1087,7 +1087,7 @@ export default function NPSSurveysPage() {
             <h2 className="mb-3 font-serif text-xl font-semibold">
               NPS Trend History
             </h2>
-            <div className="rounded-md border bg-white">
+            <div className="rounded-md border bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1115,13 +1115,13 @@ export default function NPSSurveysPage() {
                       <TableCell className="text-right text-muted-foreground">
                         {t.response_count}
                       </TableCell>
-                      <TableCell className="text-right text-green-600">
+                      <TableCell className="text-right text-green-600 dark:text-green-400">
                         {t.promoters_percent.toFixed(0)}%
                       </TableCell>
-                      <TableCell className="text-right text-amber-600">
+                      <TableCell className="text-right text-amber-600 dark:text-amber-400">
                         {t.passives_percent.toFixed(0)}%
                       </TableCell>
-                      <TableCell className="text-right text-red-600">
+                      <TableCell className="text-right text-red-600 dark:text-red-400">
                         {t.detractors_percent.toFixed(0)}%
                       </TableCell>
                     </TableRow>

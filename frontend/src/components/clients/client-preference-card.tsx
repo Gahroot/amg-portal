@@ -174,7 +174,7 @@ export function ClientPreferenceCard({
         {outsideHours && (
           <Badge
             variant="outline"
-            className="gap-1 border-amber-400 text-amber-700 bg-amber-50"
+            className="gap-1 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30"
           >
             <AlertTriangle className="h-3 w-3" />
             Outside Preferred Hours
@@ -261,8 +261,8 @@ export function ClientPreferenceCard({
         )}
 
         {outsideHours && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <Alert className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <AlertDescription>
               Outside preferred contact hours — client&apos;s local time is{" "}
               <span className="font-semibold">{clientTime}</span>.

@@ -19,7 +19,7 @@ export default function ProgramSummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground text-sm">Loading summary...</p>
         </div>
@@ -29,7 +29,7 @@ export default function ProgramSummaryPage() {
 
   if (!program) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-muted-foreground">Program not found.</p>
         </div>
@@ -40,7 +40,7 @@ export default function ProgramSummaryPage() {
   const overallProgress = Math.round(program.milestone_progress);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-3xl font-bold tracking-tight">

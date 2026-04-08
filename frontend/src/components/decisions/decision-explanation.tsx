@@ -103,7 +103,7 @@ export function DecisionExplanation({
   return (
     <div className={cn("space-y-5", className)}>
       {/* Context banner */}
-      <div className="flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/30">
+      <div className="flex gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 p-4 dark:bg-blue-950/30">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
         <div className="text-sm text-blue-800 dark:text-blue-300">
           <p className="font-medium">Your advisory team needs your input</p>
@@ -116,7 +116,7 @@ export function DecisionExplanation({
 
       {/* Deadline / consequence */}
       {(decision.deadline_date || decision.consequence_text) && (
-        <div className="flex gap-3 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-900/40 dark:bg-orange-950/30">
+        <div className="flex gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 p-4 dark:bg-orange-950/30">
           <Clock className="mt-0.5 h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
           <div className="text-sm text-orange-800 dark:text-orange-300">
             {decision.deadline_date && (
@@ -151,7 +151,7 @@ export function DecisionExplanation({
 
       {/* Recommended option callout */}
       {recommendedOption && (
-        <div className="flex gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+        <div className="flex gap-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 p-4 dark:bg-emerald-950/30">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <div className="text-sm text-emerald-800 dark:text-emerald-300">
             <p className="font-medium">Advisory team recommendation</p>
@@ -189,7 +189,7 @@ export function DecisionExplanation({
                     {option.recommended && (
                       <Badge
                         variant="outline"
-                        className="border-emerald-400 text-emerald-700 dark:text-emerald-400 text-xs"
+                        className="border-emerald-400 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 text-xs"
                       >
                         Recommended
                       </Badge>

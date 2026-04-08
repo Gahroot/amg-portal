@@ -286,7 +286,7 @@ export function BulkUpload({ entityType, entityId, onComplete }: BulkUploadProps
                     <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
                   )}
                   {item.status === "success" && (
-                    <CheckCircle2 className="size-3.5 shrink-0 text-green-600" />
+                    <CheckCircle2 className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />
                   )}
                   {item.status === "error" && (
                     <XCircle className="size-3.5 shrink-0 text-destructive" />
@@ -315,7 +315,7 @@ export function BulkUpload({ entityType, entityId, onComplete }: BulkUploadProps
           {/* Summary badges */}
           <div className="flex flex-wrap items-center gap-2">
             {successCount > 0 && (
-              <Badge variant="secondary" className="gap-1 text-green-700">
+              <Badge variant="secondary" className="gap-1 text-green-700 dark:text-green-300">
                 <CheckCircle2 className="size-3" />
                 {successCount} uploaded
               </Badge>
@@ -339,7 +339,7 @@ export function BulkUpload({ entityType, entityId, onComplete }: BulkUploadProps
               >
                 <div className="flex items-center gap-2">
                   {item.status === "success" && (
-                    <CheckCircle2 className="size-3.5 shrink-0 text-green-600" />
+                    <CheckCircle2 className="size-3.5 shrink-0 text-green-600 dark:text-green-400" />
                   )}
                   {item.status === "error" && (
                     <XCircle className="size-3.5 shrink-0 text-destructive" />

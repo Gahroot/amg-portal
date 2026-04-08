@@ -199,7 +199,7 @@ export function ValidatedInput({
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             )}
             {showCheckIcon && (
-              <Check className="h-4 w-4 text-green-600" />
+              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
             )}
             {showErrorIcon && (
               <AlertCircle className="h-4 w-4 text-destructive" />

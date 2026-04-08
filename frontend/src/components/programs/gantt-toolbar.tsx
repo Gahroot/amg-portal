@@ -124,7 +124,7 @@ export function GanttToolbar({
           <span className="text-xs text-muted-foreground">Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-6 rounded-sm bg-slate-400" />
+          <div className="h-3 w-6 rounded-sm bg-muted-foreground" />
           <span className="text-xs text-muted-foreground">Pending</span>
         </div>
         <div className="flex items-center gap-1.5">

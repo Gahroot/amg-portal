@@ -540,19 +540,19 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">{valid_rows}</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{valid_rows}</div>
               <p className="text-sm text-muted-foreground">Valid Rows</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-red-600">{invalid_rows}</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{invalid_rows}</div>
               <p className="text-sm text-muted-foreground">Invalid Rows</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-yellow-600">{rows_with_warnings}</div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{rows_with_warnings}</div>
               <p className="text-sm text-muted-foreground">Rows with Warnings</p>
             </CardContent>
           </Card>
@@ -588,14 +588,14 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
                   {errors.slice(0, 50).map((error, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3"
+                      className="flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3"
                     >
-                      <XCircle className="mt-0.5 h-4 w-4 text-red-600" />
+                      <XCircle className="mt-0.5 h-4 w-4 text-red-600 dark:text-red-400" />
                       <div>
-                        <p className="font-medium text-red-800">
+                        <p className="font-medium text-red-800 dark:text-red-300">
                           Row {error.row_number}: {error.field || "Unknown field"}
                         </p>
-                        <p className="text-sm text-red-600">{error.message}</p>
+                        <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>
                         {error.value !== undefined && error.value !== null && (
                           <p className="mt-1 text-xs text-red-500">
                             Value: {String(error.value)}
@@ -627,16 +627,16 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
                   {warnings.slice(0, 50).map((warning, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3"
+                      className="flex items-start gap-3 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30 p-3"
                     >
-                      <AlertTriangle className="mt-0.5 h-4 w-4 text-yellow-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                       <div>
-                        <p className="font-medium text-yellow-800">
+                        <p className="font-medium text-yellow-800 dark:text-yellow-300">
                           Row {warning.row_number}: {warning.field || "Warning"}
                         </p>
-                        <p className="text-sm text-yellow-700">{warning.message}</p>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">{warning.message}</p>
                         {warning.existing_name && (
-                          <p className="mt-1 text-xs text-yellow-600">
+                          <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
                             Existing: {warning.existing_name}
                           </p>
                         )}
@@ -665,20 +665,20 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
                     <TableRow
                       key={row.row_number}
                       className={cn(
-                        !row.is_valid && "bg-red-50",
-                        row.is_valid && row.warnings.length > 0 && "bg-yellow-50"
+                        !row.is_valid && "bg-red-50 dark:bg-red-950/30",
+                        row.is_valid && row.warnings.length > 0 && "bg-yellow-50 dark:bg-yellow-950/30"
                       )}
                     >
                       <TableCell>{row.row_number}</TableCell>
                       <TableCell>
                         {row.is_valid ? (
                           row.warnings.length > 0 ? (
-                            <Badge variant="outline" className="border-yellow-500 text-yellow-700">
+                            <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-300">
                               <AlertTriangle className="mr-1 h-3 w-3" />
                               Warning
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="border-green-500 text-green-700">
+                            <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-300">
                               <Check className="mr-1 h-3 w-3" />
                               Valid
                             </Badge>
@@ -752,8 +752,8 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
         <div className="flex flex-col items-center py-8 text-center">
           {isSuccess ? (
             <>
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-2xl font-semibold">Import Complete!</h2>
               <p className="mt-2 text-muted-foreground">
@@ -762,8 +762,8 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
             </>
           ) : (
             <>
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                <XCircle className="h-8 w-8 text-red-600" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
               <h2 className="text-2xl font-semibold">Import Failed</h2>
               <p className="mt-2 text-muted-foreground">
@@ -783,19 +783,19 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">{importResult.imported_rows}</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{importResult.imported_rows}</div>
               <p className="text-sm text-muted-foreground">Imported</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-gray-600">{importResult.skipped_rows}</div>
+              <div className="text-2xl font-bold text-muted-foreground">{importResult.skipped_rows}</div>
               <p className="text-sm text-muted-foreground">Skipped</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-red-600">{importResult.failed_rows}</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{importResult.failed_rows}</div>
               <p className="text-sm text-muted-foreground">Failed</p>
             </CardContent>
           </Card>

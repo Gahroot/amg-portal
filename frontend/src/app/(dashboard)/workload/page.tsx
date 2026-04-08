@@ -88,7 +88,7 @@ export default function WorkloadPage() {
   const selectedStaff = data?.staff.find((s) => s.user_id === selectedStaffId);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-full space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -102,8 +102,8 @@ export default function WorkloadPage() {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-blue-100 p-2">
-                    <Users className="h-4 w-4 text-blue-600" />
+                  <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2">
+                    <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Staff</p>
@@ -117,8 +117,8 @@ export default function WorkloadPage() {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-green-100 p-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Available</p>
@@ -132,8 +132,8 @@ export default function WorkloadPage() {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-amber-100 p-2">
-                    <Clock className="h-4 w-4 text-amber-600" />
+                  <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-2">
+                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">At Capacity</p>
@@ -147,8 +147,8 @@ export default function WorkloadPage() {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-red-100 p-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
@@ -185,7 +185,7 @@ export default function WorkloadPage() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading workload...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

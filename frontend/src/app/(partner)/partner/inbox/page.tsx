@@ -51,9 +51,9 @@ function getDueDateDisplay(dateStr: string | null) {
   const now = new Date();
   const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return { text: "Overdue by " + Math.abs(diffDays) + " days", color: "text-destructive font-medium" };
-  if (diffDays === 0) return { text: "Due today", color: "text-orange-600 font-medium" };
-  if (diffDays === 1) return { text: "Due tomorrow", color: "text-orange-600 font-medium" };
-  if (diffDays <= 7) return { text: "Due in " + diffDays + " days", color: "text-yellow-600 font-medium" };
+  if (diffDays === 0) return { text: "Due today", color: "text-orange-600 dark:text-orange-400 font-medium" };
+  if (diffDays === 1) return { text: "Due tomorrow", color: "text-orange-600 dark:text-orange-400 font-medium" };
+  if (diffDays <= 7) return { text: "Due in " + diffDays + " days", color: "text-yellow-600 dark:text-yellow-400 font-medium" };
   return { text: date.toLocaleDateString(), color: "text-muted-foreground" };
 }
 
@@ -182,10 +182,10 @@ export default function PartnerInboxPage() {
           <TabsTrigger value="completed">Completed ({grouped.completedItems.length})</TabsTrigger>
           <TabsTrigger value="all">All ({filtered.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="new"><div className="rounded-md border bg-white"><AssignmentTable items={grouped.newItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
-        <TabsContent value="active"><div className="rounded-md border bg-white"><AssignmentTable items={grouped.activeItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
-        <TabsContent value="completed"><div className="rounded-md border bg-white"><AssignmentTable items={grouped.completedItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
-        <TabsContent value="all"><div className="rounded-md border bg-white"><AssignmentTable items={filtered} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
+        <TabsContent value="new"><div className="rounded-md border bg-card"><AssignmentTable items={grouped.newItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
+        <TabsContent value="active"><div className="rounded-md border bg-card"><AssignmentTable items={grouped.activeItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
+        <TabsContent value="completed"><div className="rounded-md border bg-card"><AssignmentTable items={grouped.completedItems} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
+        <TabsContent value="all"><div className="rounded-md border bg-card"><AssignmentTable items={filtered} onAccept={(id) => acceptMutation.mutate(id)} isAccepting={acceptMutation.isPending} /></div></TabsContent>
       </Tabs>
 
       {data && <p className="text-sm text-muted-foreground">{data.total} assignment{data.total !== 1 ? "s" : ""} total</p>}

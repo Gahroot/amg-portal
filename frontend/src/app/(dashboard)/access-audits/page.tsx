@@ -113,7 +113,7 @@ export default function AccessAuditsPage() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
@@ -127,7 +127,7 @@ export default function AccessAuditsPage() {
         {/* Current Quarter Alert */}
         {currentAudit && (
           <div
-            className="rounded-lg border bg-blue-50 p-4 cursor-pointer"
+            className="rounded-lg border bg-blue-50 dark:bg-blue-950/30 p-4 cursor-pointer"
             onClick={() => router.push(`/access-audits/${currentAudit.id}`)}
           >
             <div className="flex items-center justify-between">
@@ -147,23 +147,23 @@ export default function AccessAuditsPage() {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Total Audits</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Total Findings</p>
               <p className="text-2xl font-bold">{stats.total_findings}</p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Open Findings</p>
-              <p className="text-2xl font-bold text-yellow-600">
+              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                 {stats.open_findings}
               </p>
             </div>
-            <div className="rounded-lg border bg-white p-4">
+            <div className="rounded-lg border bg-card p-4">
               <p className="text-sm text-muted-foreground">Remediated</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.remediated_findings}
               </p>
             </div>
@@ -218,7 +218,7 @@ export default function AccessAuditsPage() {
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading audits...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -251,7 +251,7 @@ export default function AccessAuditsPage() {
                       <span
                         className={
                           audit.anomalies_found > 0
-                            ? "text-red-600 font-medium"
+                            ? "text-red-600 dark:text-red-400 font-medium"
                             : ""
                         }
                       >

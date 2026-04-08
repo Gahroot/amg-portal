@@ -66,7 +66,7 @@ export default function NewUserPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-xl">
         <Card>
           <CardHeader>

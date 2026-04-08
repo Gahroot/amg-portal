@@ -14,9 +14,9 @@ import type { ProgramHealthItem } from "@/lib/api/dashboard";
 
 function RAGBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
-    red: "bg-red-100 text-red-800 border-red-200",
-    amber: "bg-amber-100 text-amber-800 border-amber-200",
-    green: "bg-green-100 text-green-800 border-green-200",
+    red: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800",
+    amber: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    green: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800",
   };
 
   return (
@@ -40,7 +40,7 @@ export function ProgramHealthTable({ programs }: ProgramHealthTableProps) {
   }
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

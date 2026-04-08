@@ -49,7 +49,7 @@ const RAG_LABELS: Record<string, string> = {
 };
 
 const MILESTONE_STATUS_ICONS: Record<string, React.ReactNode> = {
-  completed: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+  completed: <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />,
   in_progress: <Clock className="h-4 w-4 text-amber-500" />,
   cancelled: <XCircle className="h-4 w-4 text-muted-foreground" />,
   pending: <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -124,7 +124,7 @@ export default function PortalProgramDetailPage({
         <h1 className="font-serif text-3xl font-bold tracking-tight">{program.title}</h1>
         <div className="flex items-center gap-2 shrink-0">
           <div
-            className={`w-3 h-3 rounded-full ${RAG_COLORS[program.rag_status] ?? "bg-gray-400"}`}
+            className={`w-3 h-3 rounded-full ${RAG_COLORS[program.rag_status] ?? "bg-muted-foreground"}`}
             title={RAG_LABELS[program.rag_status]}
           />
           <Badge variant={STATUS_VARIANTS[program.status] ?? "outline"}>
@@ -171,7 +171,7 @@ export default function PortalProgramDetailPage({
               </CardHeader>
               <CardContent className="flex items-center gap-3">
                 <div
-                  className={`w-4 h-4 rounded-full shrink-0 ${RAG_COLORS[program.rag_status] ?? "bg-gray-400"}`}
+                  className={`w-4 h-4 rounded-full shrink-0 ${RAG_COLORS[program.rag_status] ?? "bg-muted-foreground"}`}
                 />
                 <span className="text-sm font-medium">
                   {RAG_LABELS[program.rag_status] ?? program.rag_status}

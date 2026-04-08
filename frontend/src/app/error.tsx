@@ -19,7 +19,7 @@ export default function RootError({
   }, [error]);
 
   return (
-    <div className="flex min-h-[50vh] items-center justify-center bg-[#FDFBF7] p-8">
+    <div className="flex min-h-[50vh] items-center justify-center bg-background p-8">
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">

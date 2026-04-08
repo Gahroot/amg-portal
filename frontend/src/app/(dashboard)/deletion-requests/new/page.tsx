@@ -136,7 +136,7 @@ export default function NewDeletionRequestPage() {
     };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="space-y-1">
           <h1 className="font-serif text-3xl font-bold tracking-tight">

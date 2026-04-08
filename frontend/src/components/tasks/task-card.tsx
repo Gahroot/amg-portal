@@ -165,7 +165,7 @@ export function TaskCard({
               className={cn(
                 "mt-2 flex items-center gap-1 text-xs",
                 hasIncompleteDeps
-                  ? "text-amber-600 hover:text-amber-700"
+                  ? "text-amber-600 dark:text-amber-400 hover:text-amber-700"
                   : "text-muted-foreground hover:text-foreground",
               )}
               title={

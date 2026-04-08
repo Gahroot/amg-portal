@@ -129,8 +129,8 @@ export default function ProgramStatusPage() {
 
           {/* Pending Decisions — prominent CTA */}
           {hasPendingDecisions && (
-            <Alert variant="destructive" className="border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
-              <AlertTriangle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
+            <Alert variant="destructive" className="border-amber-400 dark:border-amber-600 bg-amber-50 text-amber-900 dark:text-amber-300 dark:bg-amber-950/30">
+              <AlertTriangle className="h-4 w-4 !text-amber-600 dark:text-amber-400 dark:!text-amber-400" />
               <AlertTitle className="font-semibold">
                 {report.pending_decisions.length} Decision
                 {report.pending_decisions.length > 1 ? "s" : ""} Awaiting Your Response
@@ -202,11 +202,11 @@ export default function ProgramStatusPage() {
                 {upcomingMilestones.map((milestone) => (
                   <div
                     key={milestone.id}
-                    className="flex items-start justify-between p-4 border rounded-lg border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20"
+                    className="flex items-start justify-between p-4 border rounded-lg border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                        <h4 className="font-medium text-blue-900 dark:text-blue-300">
                           {milestone.title}
                         </h4>
                         <ReportStatusBadge status={milestone.status} />
@@ -360,10 +360,10 @@ export default function ProgramStatusPage() {
                 {report.pending_decisions.map((decision) => (
                   <div
                     key={decision.id}
-                    className="flex items-start justify-between p-4 border rounded-lg border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20"
+                    className="flex items-start justify-between p-4 border rounded-lg border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
                   >
                     <div className="flex-1">
-                      <h4 className="font-medium text-amber-900 dark:text-amber-100">
+                      <h4 className="font-medium text-amber-900 dark:text-amber-300">
                         {decision.title}
                       </h4>
                       {decision.description && (

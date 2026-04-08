@@ -67,7 +67,7 @@ function PendingTab() {
   const items = data?.items ?? [];
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -137,7 +137,7 @@ function AllTab() {
 
   return (
     <>
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -215,7 +215,7 @@ function AllTab() {
 
 export default function BudgetApprovalsPage() {
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center gap-3">
           <DollarSign className="h-7 w-7 text-muted-foreground" />

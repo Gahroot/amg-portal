@@ -22,10 +22,10 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 const PRIORITY_COLOR: Record<string, string> = {
-  low: "text-slate-500 border-slate-300",
-  medium: "text-blue-600 border-blue-300",
-  high: "text-orange-600 border-orange-300",
-  urgent: "text-red-600 border-red-300",
+  low: "text-muted-foreground border-border",
+  medium: "text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700",
+  high: "text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700",
+  urgent: "text-red-600 dark:text-red-400 border-red-300 dark:border-red-700",
 };
 
 function formatDate(dateString: string | null): string {
@@ -83,7 +83,7 @@ export default function TaskDetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <Button variant="ghost" asChild>
           <Link href="/tasks">

@@ -118,21 +118,21 @@ function RagBreakdown({ breakdown }: RagBreakdownProps) {
         <div className="flex flex-wrap gap-3">
           <Badge
             variant="outline"
-            className="gap-1.5 border-red-200 bg-red-50 px-3 py-1 text-sm text-red-800"
+            className="gap-1.5 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-3 py-1 text-sm text-red-800 dark:text-red-300"
           >
             <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
             Red — {red} program{red !== 1 ? "s" : ""}
           </Badge>
           <Badge
             variant="outline"
-            className="gap-1.5 border-amber-200 bg-amber-50 px-3 py-1 text-sm text-amber-800"
+            className="gap-1.5 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 text-sm text-amber-800 dark:text-amber-300"
           >
             <span className="h-2 w-2 rounded-full bg-amber-500 inline-block" />
             Amber — {amber} program{amber !== 1 ? "s" : ""}
           </Badge>
           <Badge
             variant="outline"
-            className="gap-1.5 border-green-200 bg-green-50 px-3 py-1 text-sm text-green-800"
+            className="gap-1.5 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-1 text-sm text-green-800 dark:text-green-300"
           >
             <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
             Green — {green} program{green !== 1 ? "s" : ""}
@@ -221,20 +221,20 @@ function MetricCard({
   return (
     <Card
       className={
-        alert && value > 0 ? "border-red-300 bg-red-50 dark:bg-red-950/20" : ""
+        alert && value > 0 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30" : ""
       }
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle
           className={`text-sm font-medium ${
-            alert && value > 0 ? "text-red-700" : "text-muted-foreground"
+            alert && value > 0 ? "text-red-700 dark:text-red-300" : "text-muted-foreground"
           }`}
         >
           {title}
         </CardTitle>
         <span
           className={`h-4 w-4 ${
-            alert && value > 0 ? "text-red-600" : "text-muted-foreground"
+            alert && value > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
           }`}
         >
           {icon}
@@ -243,7 +243,7 @@ function MetricCard({
       <CardContent>
         <p
           className={`text-2xl font-bold ${
-            alert && value > 0 ? "text-red-700" : ""
+            alert && value > 0 ? "text-red-700 dark:text-red-300" : ""
           }`}
         >
           {value}

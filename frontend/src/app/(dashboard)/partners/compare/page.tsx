@@ -43,7 +43,7 @@ interface PartnerChipProps {
 
 function PartnerChip({ partner, onRemove }: PartnerChipProps) {
   return (
-    <div className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-1.5 text-sm shadow-sm">
+    <div className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm shadow-sm">
       <span className="font-medium">{partner.firm_name}</span>
       <span className="text-muted-foreground">·</span>
       <Badge
@@ -148,7 +148,7 @@ function ComparePageContent() {
   const availableToAdd = allPartners.filter((p) => !selectedIds.includes(p.id));
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ function ComparePageContent() {
         </div>
 
         {/* Selection bar */}
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
+        <div className="rounded-lg border bg-card p-4 shadow-sm">
           <div className="flex flex-wrap items-center gap-2">
             {selectedPartners.map((p) => (
               <PartnerChip
@@ -256,7 +256,7 @@ function ComparePageContent() {
 
         {/* Comparison results */}
         {!canCompare && (
-          <div className="rounded-lg border border-dashed bg-white p-12 text-center text-muted-foreground">
+          <div className="rounded-lg border border-dashed bg-card p-12 text-center text-muted-foreground">
             <p>Select at least 2 partners above to start comparing.</p>
           </div>
         )}
@@ -280,7 +280,7 @@ export default function ComparePartnersPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FDFBF7] p-8">
+        <div className="min-h-screen bg-background p-8">
           <div className="mx-auto max-w-7xl">
             <TableSkeleton rows={3} columns={4} />
           </div>

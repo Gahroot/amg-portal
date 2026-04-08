@@ -35,7 +35,7 @@ function JsonDiff({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <h3 className="text-sm font-semibold mb-2">Before</h3>
-        <pre className="rounded-md border bg-gray-50 p-4 text-xs overflow-auto max-h-[500px]">
+        <pre className="rounded-md border bg-muted/50 p-4 text-xs overflow-auto max-h-[500px]">
           {before
             ? Array.from(allKeys)
                 .sort()
@@ -48,9 +48,9 @@ function JsonDiff({
                   return (
                     <div
                       key={key}
-                      className={changed ? "bg-red-100 -mx-4 px-4" : ""}
+                      className={changed ? "bg-red-100 dark:bg-red-900/30 -mx-4 px-4" : ""}
                     >
-                      <span className="text-gray-500">{key}: </span>
+                      <span className="text-muted-foreground">{key}: </span>
                       {JSON.stringify(val, null, 2)}
                     </div>
                   );
@@ -60,7 +60,7 @@ function JsonDiff({
       </div>
       <div>
         <h3 className="text-sm font-semibold mb-2">After</h3>
-        <pre className="rounded-md border bg-gray-50 p-4 text-xs overflow-auto max-h-[500px]">
+        <pre className="rounded-md border bg-muted/50 p-4 text-xs overflow-auto max-h-[500px]">
           {after
             ? Array.from(allKeys)
                 .sort()
@@ -74,9 +74,9 @@ function JsonDiff({
                   return (
                     <div
                       key={key}
-                      className={changed ? "bg-green-100 -mx-4 px-4" : ""}
+                      className={changed ? "bg-green-100 dark:bg-green-900/30 -mx-4 px-4" : ""}
                     >
-                      <span className="text-gray-500">{key}: </span>
+                      <span className="text-muted-foreground">{key}: </span>
                       {JSON.stringify(val, null, 2)}
                     </div>
                   );
@@ -112,7 +112,7 @@ export default function AuditLogDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <p className="text-muted-foreground text-sm">Loading...</p>
       </div>
     );
@@ -120,14 +120,14 @@ export default function AuditLogDetailPage() {
 
   if (!log) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] p-8">
+      <div className="min-h-screen bg-background p-8">
         <p className="text-muted-foreground">Audit log not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" onClick={() => router.back()}>
@@ -138,7 +138,7 @@ export default function AuditLogDetailPage() {
           </h1>
         </div>
 
-        <div className="rounded-md border bg-white p-6 space-y-4">
+        <div className="rounded-md border bg-card p-6 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">ID</span>
@@ -183,7 +183,7 @@ export default function AuditLogDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-md border bg-white p-6">
+        <div className="rounded-md border bg-card p-6">
           <h2 className="font-serif text-xl font-semibold mb-4">
             State Changes
           </h2>

@@ -359,7 +359,7 @@ function ContactSupportForm({ onBack }: ContactSupportFormProps) {
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="mb-4 rounded-full bg-green-100 p-3 dark:bg-green-900">
+        <div className="mb-4 rounded-full bg-green-100/30 p-3 dark:bg-green-900">
           <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
         </div>
         <h3 className="mb-2 text-lg font-medium">Message Sent!</h3>

@@ -90,7 +90,7 @@ export default function EscalationLogReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div>
@@ -191,7 +191,7 @@ export default function EscalationLogReportPage() {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading escalation log...</p>
         ) : (
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -168,7 +168,7 @@ export default function PartnerAssignmentDetailPage() {
       <div className="space-y-4">
         <h2 className="font-serif text-xl font-semibold">Deliverables</h2>
 
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

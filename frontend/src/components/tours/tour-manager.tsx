@@ -214,7 +214,7 @@ function TourListItem({
               </Badge>
             )}
             {isCompleted && (
-              <Badge variant="outline" className="text-xs text-green-600 border-green-200">
+              <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400 border-green-200 dark:border-green-800">
                 Completed
               </Badge>
             )}
