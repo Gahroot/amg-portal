@@ -1,5 +1,7 @@
 import base64
 import hashlib
+import secrets
+from typing import Any
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,8 +15,9 @@ class Settings(BaseSettings):
     SQL_ECHO: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://amg:amg_dev_password@localhost:5433/amg_portal"
+    # Database — no password in default; set DATABASE_URL via env var or .env file.
+    # Local dev: docker-compose.yml and backend/.env provide the full connection string.
+    DATABASE_URL: str = "postgresql+asyncpg://postgres@localhost:5432/amg_portal"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6380/0"
@@ -28,10 +31,10 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
-    # MinIO / S3
+    # MinIO / S3 — credentials must be provided via env var or .env file.
     MINIO_ENDPOINT: str = "localhost:9000"
-    MINIO_ACCESS_KEY: str = "amg_minio"
-    MINIO_SECRET_KEY: str = "amg_minio_secret"
+    MINIO_ACCESS_KEY: str = ""
+    MINIO_SECRET_KEY: str = ""
     MINIO_SECURE: bool = False
     MINIO_BUCKET: str = "amg-portal"
     # Public-facing MinIO hostname for presigned URLs served to browsers.
@@ -118,23 +121,29 @@ class Settings(BaseSettings):
     DOCUSIGN_BASE_URI: str = "https://demo.docusign.net/restapi"
     DOCUSIGN_AUTH_SERVER: str = "account-d.docusign.com"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # Require SECRET_KEY to be set in non-debug environments
+        # --- SECRET_KEY ---
         _secret_key_placeholder = "change-me-in-production"
         if not self.DEBUG and (not self.SECRET_KEY or _secret_key_placeholder == self.SECRET_KEY):
             raise ValueError(
                 "SECRET_KEY must be set in production. "
                 "Set a secure random string via the SECRET_KEY environment variable."
             )
-        # Use a development key only in DEBUG mode
+        # In DEBUG mode, generate a random key if none is provided so we never
+        # ship a hardcoded secret — even for local dev.
         if not self.SECRET_KEY:
-            self.SECRET_KEY = "dev-secret-key-change-in-production-do-not-use-in-prod"
-        # Require MINIO_SECRET_KEY to be overridden in non-debug environments
-        if not self.DEBUG and self.MINIO_SECRET_KEY == "amg_minio_secret":
+            self.SECRET_KEY = secrets.token_hex(64)
+        # --- MINIO credentials ---
+        if not self.DEBUG and not self.MINIO_SECRET_KEY:
             raise ValueError(
-                "MINIO_SECRET_KEY must be changed from the default in production. "
+                "MINIO_SECRET_KEY must be set in production. "
                 "Set a secure value via the MINIO_SECRET_KEY environment variable."
+            )
+        if not self.DEBUG and not self.MINIO_ACCESS_KEY:
+            raise ValueError(
+                "MINIO_ACCESS_KEY must be set in production. "
+                "Set a value via the MINIO_ACCESS_KEY environment variable."
             )
         # Validate JWT algorithm
         if self.ALGORITHM not in ("HS256", "HS384", "HS512"):
