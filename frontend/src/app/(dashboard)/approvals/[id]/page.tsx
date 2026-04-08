@@ -92,13 +92,9 @@ export default function MDApprovalReviewPage() {
       });
       toast.success(approved === "approve" ? "Client approved" : "Client rejected");
       router.push("/approvals");
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : String(err);
-      if (message.toLowerCase().includes("cannot approve profile")) {
-        toast.error("This profile has already been processed");
-        router.push("/approvals");
-      }
+    } catch {
+      toast.error("This profile has already been processed");
+      router.push("/approvals");
     }
   };
 
