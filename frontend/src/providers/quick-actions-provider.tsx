@@ -233,7 +233,7 @@ export function getDefaultActionsForContext(
       description: "Log a communication",
       icon: Mail,
       category: "communication",
-      handler: () => router.push("/communications/new"),
+      handler: () => router.push("/communications"),
       order: 20,
     });
 
@@ -243,7 +243,7 @@ export function getDefaultActionsForContext(
       description: "Create an escalation",
       icon: AlertTriangle,
       category: "communication",
-      handler: () => router.push("/escalations/new"),
+      handler: () => router.push("/escalations"),
       order: 21,
     });
   }

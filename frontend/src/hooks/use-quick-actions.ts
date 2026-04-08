@@ -223,7 +223,7 @@ export function getDefaultActionsForContext(
       icon: Mail,
       category: "communication",
       handler: () => {
-        window.location.href = "/communications/new";
+        window.location.href = "/communications";
       },
       order: 20,
     });
@@ -235,7 +235,7 @@ export function getDefaultActionsForContext(
       icon: AlertTriangle,
       category: "communication",
       handler: () => {
-        window.location.href = "/escalations/new";
+        window.location.href = "/escalations";
       },
       order: 21,
     });

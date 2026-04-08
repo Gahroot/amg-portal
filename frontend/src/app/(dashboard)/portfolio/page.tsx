@@ -144,7 +144,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     label: "New Communication",
-    href: "/communications/new",
+    href: "/communications",
     icon: <Mail className="mr-1.5 h-3.5 w-3.5" />,
     variant: "secondary",
     roles: [
@@ -156,7 +156,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     label: "New Escalation",
-    href: "/escalations/new",
+    href: "/escalations",
     icon: <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />,
     variant: "secondary",
     roles: ["managing_director", "relationship_manager", "coordinator"],
