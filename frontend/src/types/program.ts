@@ -1,155 +1,43 @@
 /**
- * Program types - manually maintained.
+ * Program types — re-exported from generated OpenAPI types where possible.
  *
- * MIGRATION NOTE:
- *   Types in this file should gradually migrate to src/types/generated.ts
- *   which is auto-generated from the FastAPI OpenAPI schema.
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (UI state, constants, query params) remain manual.
  *
- *   Run `npm run generate:types` to update generated types.
- *   Then re-export from generated.ts:
- *     export type Program = components["schemas"]["Program"];
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
  *
- *   Keep frontend-specific extensions (UI state, computed fields) here.
+ * @see backend/app/schemas/program.py
  */
-import type { TaskStatus, TaskPriority } from "@/types/task";
+import type { components } from "./generated";
 
-export type { TaskStatus, TaskPriority };
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export type ProgramStatus =
-  | "intake"
-  | "design"
-  | "active"
-  | "on_hold"
-  | "completed"
-  | "closed"
-  | "archived";
+export type ProgramStatus = components["schemas"]["ProgramStatus"];
+export type MilestoneStatus = components["schemas"]["MilestoneStatus"];
+export type TaskStatus = components["schemas"]["TaskStatus"];
+export type TaskPriority = components["schemas"]["TaskPriority"];
 
-export type MilestoneStatus =
-  | "pending"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type Program = components["schemas"]["ProgramResponse"];
+export type ProgramCreate = components["schemas"]["ProgramCreate"];
+export type ProgramUpdate = components["schemas"]["ProgramUpdate"];
+export type ProgramListResponse = components["schemas"]["ProgramListResponse"];
+export type ProgramDetail = components["schemas"]["ProgramDetailResponse"];
+export type ProgramSummary = components["schemas"]["ProgramSummary"];
+export type ProgramSummaryMilestone = components["schemas"]["ProgramSummaryMilestone"];
 
-export interface Program {
-  id: string;
-  client_id: string;
-  client_name: string;
-  title: string;
-  objectives: string | null;
-  scope: string | null;
-  budget_envelope: number | null;
-  start_date: string | null;
-  end_date: string | null;
-  status: ProgramStatus;
-  rag_status: "green" | "amber" | "red";
-  milestone_count: number;
-  completed_milestone_count: number;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
+export type Milestone = components["schemas"]["MilestoneResponse"];
+export type MilestoneCreate = components["schemas"]["MilestoneCreate"];
+export type MilestoneUpdate = components["schemas"]["MilestoneUpdate"];
 
-export interface ProgramCreate {
-  client_id: string;
-  title: string;
-  objectives?: string;
-  scope?: string;
-  budget_envelope?: number;
-  start_date?: string;
-  end_date?: string;
-  milestones?: MilestoneCreate[];
-}
+export type Task = components["schemas"]["TaskResponse"];
+export type TaskCreate = components["schemas"]["TaskCreate"];
+export type TaskUpdate = components["schemas"]["TaskUpdate"];
 
-export interface ProgramUpdate {
-  title?: string;
-  objectives?: string;
-  scope?: string;
-  budget_envelope?: number;
-  start_date?: string;
-  end_date?: string;
-  status?: ProgramStatus;
-}
-
-export interface ProgramSummary {
-  id: string;
-  title: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
-  milestone_progress: number;
-  milestones: ProgramSummaryMilestone[];
-}
-
-export interface ProgramSummaryMilestone {
-  title: string;
-  status: string;
-  due_date: string | null;
-}
-
-export interface Milestone {
-  id: string;
-  program_id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  status: MilestoneStatus;
-  position: number;
-  tasks: Task[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MilestoneCreate {
-  title: string;
-  description?: string;
-  due_date?: string;
-  position?: number;
-}
-
-export interface MilestoneUpdate {
-  title?: string;
-  description?: string;
-  due_date?: string;
-  status?: MilestoneStatus;
-  position?: number;
-}
-
-export interface Task {
-  id: string;
-  milestone_id: string;
-  milestone_title: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  assigned_to: string | null;
-  assigned_to_name: string | null;
-  status: TaskStatus;
-  priority: TaskPriority;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TaskCreate {
-  title: string;
-  description?: string;
-  due_date?: string;
-  assigned_to?: string;
-  priority?: TaskPriority;
-}
-
-export interface TaskUpdate {
-  title?: string;
-  description?: string;
-  due_date?: string;
-  assigned_to?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-}
-
-export interface ProgramListResponse {
-  programs: Program[];
-  total: number;
-}
+// ---------------------------------------------------------------------------
+// Frontend-only types — query params
+// ---------------------------------------------------------------------------
 
 export interface ProgramListParams {
   status?: ProgramStatus;
@@ -157,10 +45,4 @@ export interface ProgramListParams {
   search?: string;
   skip?: number;
   limit?: number;
-}
-
-export interface ProgramDetail extends Program {
-  emergency_reason: string | null;
-  retrospective_due_at: string | null;
-  milestones: Milestone[];
 }

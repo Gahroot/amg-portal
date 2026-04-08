@@ -1,24 +1,36 @@
 /**
- * Client types - manually maintained.
+ * Client types — re-exported from generated OpenAPI types where possible.
  *
- * MIGRATION NOTE:
- *   Types in this file should gradually migrate to src/types/generated.ts
- *   which is auto-generated from the FastAPI OpenAPI schema.
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (UI state, constants, query params) remain manual.
  *
- *   Run `npm run generate:types` to update generated types.
- *   Then re-export from generated.ts:
- *     export type ClientProfile = components["schemas"]["ClientProfile"];
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
  *
- *   Keep frontend-specific extensions (UI state, computed fields) here.
+ * @see backend/app/schemas/client.py
+ * @see backend/app/schemas/client_profile.py
  */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type ClientProfile = components["schemas"]["ClientProfileResponse"];
+export type ClientProfileListResponse = components["schemas"]["ClientProfileListResponse"];
+export type ClientProfileCreateData = components["schemas"]["ClientProfileCreate"];
+export type ClientProfileUpdateData = components["schemas"]["ClientProfileUpdate"];
+export type ClientPortalProfile = components["schemas"]["ClientPortalProfileResponse"];
+export type ClientProvisionData = components["schemas"]["ClientProvisionRequest"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, structured sub-types, query params
+// ---------------------------------------------------------------------------
 
 export type ComplianceStatus = "pending_review" | "under_review" | "cleared" | "flagged" | "rejected";
 export type ApprovalStatus = "draft" | "pending_compliance" | "compliance_cleared" | "pending_md_approval" | "approved" | "rejected";
 export type SecurityProfileLevel = "standard" | "elevated" | "executive";
 
-// ---------------------------------------------------------------------------
-// Intelligence File structured types
-// ---------------------------------------------------------------------------
+// Intelligence File structured types (frontend display helpers)
 
 export interface KeyRelationship {
   name: string;
@@ -57,63 +69,8 @@ export interface UpcomingDateItem {
   date_type: string;
   label: string;
   days_until: number;
-  occurs_on: string; // ISO date string
+  occurs_on: string;
   years_since: number | null;
-}
-
-export interface ClientProfile {
-  id: string;
-  legal_name: string;
-  display_name: string | null;
-  entity_type: string | null;
-  jurisdiction: string | null;
-  tax_id: string | null;
-  primary_email: string;
-  secondary_email: string | null;
-  phone: string | null;
-  address: string | null;
-  communication_preference: string | null;
-  sensitivities: string | null;
-  special_instructions: string | null;
-  compliance_status: ComplianceStatus;
-  approval_status: ApprovalStatus;
-  compliance_notes: string | null;
-  compliance_reviewed_by: string | null;
-  compliance_reviewed_at: string | null;
-  approved_by: string | null;
-  approved_at: string | null;
-  assigned_rm_id: string | null;
-  security_profile_level: SecurityProfileLevel;
-  intelligence_file: IntelligenceFile | null;
-  user_id: string | null;
-  welcome_email_sent: boolean;
-  portal_access_enabled: boolean;
-  birth_date: string | null;
-  important_dates: ImportantDate[] | null;
-  birthday_reminders_enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-}
-
-export interface ClientProfileListResponse {
-  profiles: ClientProfile[];
-  total: number;
-}
-
-export interface ClientProfileCreateData {
-  legal_name: string;
-  display_name?: string;
-  entity_type?: string;
-  jurisdiction?: string;
-  tax_id?: string;
-  primary_email: string;
-  secondary_email?: string;
-  phone?: string;
-  address?: string;
-  communication_preference?: string;
-  sensitivities?: string;
-  special_instructions?: string;
 }
 
 export interface ClientProfileDatesUpdateData {
@@ -121,8 +78,6 @@ export interface ClientProfileDatesUpdateData {
   important_dates?: ImportantDate[] | null;
   birthday_reminders_enabled?: boolean;
 }
-
-export type ClientProfileUpdateData = Partial<ClientProfileCreateData> & ClientProfileDatesUpdateData;
 
 export interface ComplianceReviewData {
   status: "cleared" | "flagged" | "rejected";
@@ -135,11 +90,6 @@ export interface MDApprovalData {
   assigned_rm_id?: string;
 }
 
-export interface ClientProvisionData {
-  send_welcome_email: boolean;
-  password?: string;
-}
-
 export interface ComplianceCertificate {
   profile_id: string;
   legal_name: string;
@@ -147,18 +97,6 @@ export interface ComplianceCertificate {
   reviewed_by: string | null;
   reviewed_at: string | null;
   certificate_date: string;
-}
-
-export interface ClientPortalProfile {
-  id: string;
-  legal_name: string;
-  display_name: string | null;
-  entity_type: string | null;
-  jurisdiction: string | null;
-  primary_email: string;
-  compliance_status: ComplianceStatus;
-  approval_status: ApprovalStatus;
-  created_at: string;
 }
 
 export interface ClientListParams {
@@ -170,9 +108,7 @@ export interface ClientListParams {
   limit?: number;
 }
 
-// ---------------------------------------------------------------------------
-// Security & Intelligence Feed types (Phase 2 — need-to-know only)
-// ---------------------------------------------------------------------------
+// Security & Intelligence Feed types
 
 export interface ThreatAlert {
   alert_id: string | null;
@@ -219,9 +155,7 @@ export interface SecurityProfileLevelUpdate {
   security_profile_level: SecurityProfileLevel;
 }
 
-// ---------------------------------------------------------------------------
 // Duplicate detection types
-// ---------------------------------------------------------------------------
 
 export interface DuplicateCheckRequest {
   legal_name?: string | null;

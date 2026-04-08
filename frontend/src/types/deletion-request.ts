@@ -1,27 +1,21 @@
-export interface DeletionRequest {
-  id: string;
-  entity_type: string;
-  entity_id: string;
-  requested_by: string;
-  requested_at: string;
-  reason: string;
-  approved_by: string | null;
-  approved_at: string | null;
-  rejection_reason: string | null;
-  status: "pending" | "approved" | "rejected" | "expired";
-  executed_at: string | null;
-}
+/**
+ * Deletion request types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/deletion_request.py
+ */
+import type { components } from "./generated";
 
-export interface DeletionRequestListResponse {
-  requests: DeletionRequest[];
-  total: number;
-}
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export interface DeletionRequestCreate {
-  entity_type: string;
-  entity_id: string;
-  reason: string;
-}
+export type DeletionRequest = components["schemas"]["DeletionRequestResponse"];
+export type DeletionRequestListResponse = components["schemas"]["DeletionRequestListResponse"];
+export type DeletionRequestCreate = components["schemas"]["DeletionRequestCreate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — query params
+// ---------------------------------------------------------------------------
 
 export interface RejectDeletionRequest {
   reason: string;

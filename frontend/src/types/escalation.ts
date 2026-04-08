@@ -1,49 +1,30 @@
+/**
+ * Escalation types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (query params, metrics display) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/escalation.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type Escalation = components["schemas"]["EscalationResponse"];
+export type EscalationListResponse = components["schemas"]["EscalationListResponse"];
+export type EscalationCreate = components["schemas"]["EscalationCreate"];
+export type EscalationMetrics = components["schemas"]["EscalationMetricsResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, query params, display helpers
+// ---------------------------------------------------------------------------
+
 export type EscalationLevel = "task" | "milestone" | "program" | "client_impact";
 export type EscalationStatus = "open" | "acknowledged" | "investigating" | "resolved" | "closed";
-
-export interface Escalation {
-  id: string;
-  level: EscalationLevel;
-  status: EscalationStatus;
-  title: string;
-  description: string | null;
-  entity_type: string;
-  entity_id: string;
-  owner_id: string;
-  owner_email: string | null;
-  owner_name: string | null;
-  program_id: string | null;
-  client_id: string | null;
-  triggered_at: string;
-  acknowledged_at: string | null;
-  resolved_at: string | null;
-  closed_at: string | null;
-  triggered_by: string;
-  triggered_by_email: string | null;
-  triggered_by_name: string | null;
-  risk_factors: Record<string, unknown> | null;
-  escalation_chain: Record<string, unknown>[] | null;
-  resolution_notes: string | null;
-  created_at: string;
-  updated_at: string;
-  response_deadline: string | null;
-  is_overdue: boolean;
-}
-
-export interface EscalationListResponse {
-  escalations: Escalation[];
-  total: number;
-}
-
-export interface EscalationCreate {
-  title: string;
-  description?: string;
-  entity_type: string;
-  entity_id: string;
-  level: EscalationLevel;
-  program_id?: string;
-  client_id?: string;
-}
 
 export interface EscalationUpdate {
   status?: EscalationStatus;
@@ -65,8 +46,6 @@ export interface EscalationListParams {
   program_id?: string;
   client_id?: string;
 }
-
-// ── Metrics ──────────────────────────────────────────────────────────────────
 
 export interface EscalationMetricsParams {
   date_from?: string;
@@ -123,19 +102,6 @@ export interface EscalationRecurringPattern {
   level: EscalationLevel;
   count: number;
 }
-
-export interface EscalationMetrics {
-  summary: EscalationMetricsSummary;
-  by_level: EscalationByLevel[];
-  by_status: EscalationByStatus[];
-  by_entity_type: EscalationByEntityType[];
-  by_assignee: EscalationByAssignee[];
-  trend: EscalationTrendPoint[];
-  recurring_patterns: EscalationRecurringPattern[];
-  insights: string[];
-}
-
-// ── Simple/Concise Metrics ────────────────────────────────────────────────────
 
 export interface EscalationSimpleMetrics {
   open_by_level: Record<EscalationLevel, number>;

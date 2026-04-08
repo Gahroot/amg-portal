@@ -1,3 +1,38 @@
+/**
+ * Report types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (display helpers) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/report.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type ProgramStatusReport = components["schemas"]["ProgramStatusReport"];
+export type AnnualProgramSummary = components["schemas"]["AnnualProgramSummary"];
+export type AnnualReviewReport = components["schemas"]["AnnualReviewReport"];
+export type PartnerBriefSummaryItem = components["schemas"]["PartnerBriefSummaryItem"];
+export type PartnerBriefSummaryReport = components["schemas"]["PartnerBriefSummaryReport"];
+export type PartnerDeliverableFeedbackItem = components["schemas"]["PartnerDeliverableFeedbackItem"];
+export type PartnerDeliverableFeedbackReport = components["schemas"]["PartnerDeliverableFeedbackReport"];
+export type PartnerEngagementHistoryItem = components["schemas"]["PartnerEngagementHistoryItem"];
+export type PartnerEngagementHistoryReport = components["schemas"]["PartnerEngagementHistoryReport"];
+export type EscalationLogItem = components["schemas"]["EscalationLogItem"];
+export type EscalationLogReport = components["schemas"]["EscalationLogReport"];
+export type ClientKYCStatus = components["schemas"]["ClientKYCStatus"];
+export type AccessAnomalySummary = components["schemas"]["AccessAnomalySummary"];
+export type UserAccountStatus = components["schemas"]["UserAccountStatus"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — display helpers, report sub-types
+// ---------------------------------------------------------------------------
+
 export type RAGStatus = "green" | "amber" | "red";
 
 export interface ReportMilestone {
@@ -63,21 +98,6 @@ export interface PortfolioOverviewReport {
   generated_at: string;
 }
 
-export interface ProgramStatusReport {
-  program_id: string;
-  program_title: string;
-  program_status: string;
-  rag_status: RAGStatus;
-  start_date: string | null;
-  end_date: string | null;
-  milestone_progress: number;
-  active_milestones: ReportMilestone[];
-  completed_deliverables: ReportDeliverable[];
-  pending_decisions: ReportPendingDecision[];
-  assigned_partners: ReportPartner[];
-  generated_at: string;
-}
-
 export interface CompletionMilestoneTimeline {
   id: string;
   title: string;
@@ -126,105 +146,7 @@ export interface PartnerPerformanceSummary {
   avg_performance_rating: number | null;
 }
 
-export interface AnnualProgramSummary {
-  id: string;
-  title: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
-  budget_envelope: number | null;
-  rag_status: RAGStatus;
-}
-
-export interface AnnualReviewReport {
-  client_id: string;
-  client_name: string;
-  year: number;
-  total_programs: number;
-  new_programs: number;
-  completed_programs: number;
-  active_programs: number;
-  total_engagement_value: number | null;
-  total_budget_consumed: number | null;
-  programs_by_status: Record<string, number>;
-  programs_by_month: MonthlyProgramCount[];
-  partner_performance: PartnerPerformanceSummary[];
-  programs: AnnualProgramSummary[];
-  generated_at: string;
-}
-
-// ============================================================================
-// Partner Reports (Class C) — partner-facing, scoped to own data only
-// ============================================================================
-
-export interface PartnerBriefSummaryItem {
-  assignment_id: string;
-  assignment_title: string;
-  status: string;
-  brief: string | null;
-  sla_terms: string | null;
-  due_date: string | null;
-  accepted_at: string | null;
-  program_title: string | null;
-  coordinator_name: string | null;
-  coordinator_email: string | null;
-}
-
-export interface PartnerBriefSummaryReport {
-  partner_id: string;
-  firm_name: string;
-  total_active: number;
-  assignments: PartnerBriefSummaryItem[];
-  generated_at: string;
-}
-
-export interface PartnerDeliverableFeedbackItem {
-  deliverable_id: string;
-  title: string;
-  deliverable_type: string;
-  assignment_id: string;
-  assignment_title: string | null;
-  status: string;
-  submitted_at: string | null;
-  reviewed_at: string | null;
-  review_comments: string | null;
-  due_date: string | null;
-}
-
-export interface PartnerDeliverableFeedbackReport {
-  partner_id: string;
-  firm_name: string;
-  total_deliverables: number;
-  deliverables: PartnerDeliverableFeedbackItem[];
-  generated_at: string;
-}
-
-export interface PartnerEngagementHistoryItem {
-  assignment_id: string;
-  title: string;
-  program_title: string | null;
-  status: string;
-  created_at: string;
-  accepted_at: string | null;
-  completed_at: string | null;
-  due_date: string | null;
-  deliverable_count: number;
-  approved_deliverable_count: number;
-}
-
-export interface PartnerEngagementHistoryReport {
-  partner_id: string;
-  firm_name: string;
-  total_engagements: number;
-  completed_engagements: number;
-  performance_rating: number | null;
-  assignments: PartnerEngagementHistoryItem[];
-  generated_at: string;
-}
-
-// ============================================================================
-// RM Portfolio Report (Class B — internal, MD review)
-// ============================================================================
+// RM Portfolio Report
 
 export interface RMClientProgramSummary {
   id: string;
@@ -266,74 +188,7 @@ export interface RMPortfolioReport {
   generated_at: string;
 }
 
-// ============================================================================
-// Escalation Log Report (Class B — internal operational)
-// ============================================================================
-
-export interface EscalationLogItem {
-  id: string;
-  title: string;
-  description: string | null;
-  level: string;
-  status: string;
-  entity_type: string;
-  entity_id: string;
-  program_id: string | null;
-  client_id: string | null;
-  owner_id: string;
-  owner_name: string | null;
-  owner_email: string | null;
-  triggered_at: string;
-  acknowledged_at: string | null;
-  resolved_at: string | null;
-  age_days: number;
-  resolution_time_days: number | null;
-  resolution_notes: string | null;
-}
-
-export interface EscalationLogReport {
-  total_escalations: number;
-  open_escalations: number;
-  avg_resolution_time_days: number | null;
-  escalations: EscalationLogItem[];
-  generated_at: string;
-}
-
-// ============================================================================
-// Compliance Audit Report (Class B — internal operational)
-// ============================================================================
-
-export interface ClientKYCStatus {
-  client_id: string;
-  client_name: string;
-  client_type: string;
-  total_documents: number;
-  current: number;
-  expiring_30d: number;
-  expired: number;
-  pending: number;
-  document_completeness_pct: number;
-  kyc_status: "current" | "expiring" | "expired" | "pending" | "incomplete";
-}
-
-export interface AccessAnomalySummary {
-  id: string;
-  audit_period: string;
-  finding_type: string;
-  severity: string;
-  description: string;
-  status: string;
-  user_id: string | null;
-}
-
-export interface UserAccountStatus {
-  user_id: string;
-  full_name: string;
-  email: string;
-  role: string;
-  status: string;
-  created_at: string;
-}
+// Compliance Audit Report
 
 export interface ComplianceAuditReport {
   total_clients: number;

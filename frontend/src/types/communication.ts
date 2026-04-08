@@ -1,3 +1,28 @@
+/**
+ * Communication types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (WebSocket messages, UI constants, query params) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/communication.py
+ * @see backend/app/schemas/notification.py
+ * @see backend/app/schemas/conversation.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type Communication = components["schemas"]["CommunicationResponse"];
+export type CommunicationListResponse = components["schemas"]["CommunicationListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, display types, WebSocket messages
+// ---------------------------------------------------------------------------
+
 export type CommunicationChannel = "email" | "in_portal" | "sms" | "whatsapp" | "phone" | "in_person" | "other";
 export type CommunicationStatus = "draft" | "sending" | "sent" | "delivered" | "failed" | "read" | "archived";
 export type CommunicationApprovalStatus = "draft" | "pending_review" | "approved" | "rejected" | "sent";
@@ -49,41 +74,12 @@ export interface ConversationUpdateData {
   participant_ids?: string[];
 }
 
-// Communication types
+// Communication send types
 export interface Recipient {
   user_id: string;
-  role: string; // to, cc, bcc
+  role: string;
   email?: string;
   name?: string;
-}
-
-export interface Communication {
-  id: string;
-  conversation_id?: string;
-  channel: CommunicationChannel;
-  status: CommunicationStatus;
-  sender_id?: string;
-  sender_name?: string;
-  recipients?: Record<string, unknown>;
-  subject?: string;
-  body: string;
-  attachment_ids?: string[];
-  client_id?: string;
-  program_id?: string;
-  partner_id?: string;
-  read_receipts?: Record<string, { read_at: string }>;
-  approval_status: CommunicationApprovalStatus;
-  reviewer_id?: string;
-  reviewed_at?: string;
-  reviewer_notes?: string;
-  sent_at?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CommunicationListResponse {
-  communications: Communication[];
-  total: number;
 }
 
 export interface SendMessageData {
@@ -118,12 +114,11 @@ export interface Notification {
   created_at: string;
 }
 
-// Snooze duration presets (in minutes)
 export type SnoozeDurationPreset = 60 | 240 | 1440 | 1441 | 10080;
 
 export interface SnoozeRequestData {
   snooze_duration_minutes?: SnoozeDurationPreset;
-  snooze_until?: string; // ISO datetime string
+  snooze_until?: string;
 }
 
 export const SNOOZE_PRESETS: { value: SnoozeDurationPreset; label: string }[] = [
@@ -191,13 +186,9 @@ export interface DecisionOption {
   id: string;
   label: string;
   description?: string;
-  /** Plain-language explanation of what this choice means for the client */
   impact_description?: string;
-  /** What will happen next if this option is selected */
   what_happens_next?: string;
-  /** Key points the client should consider before choosing */
   considerations?: string[];
-  /** Whether the advisory team recommends this option */
   recommended?: boolean;
 }
 
@@ -361,7 +352,7 @@ export interface DigestPreviewResponse {
   period_end: string;
 }
 
-// WebSocket message types
+// WebSocket message types (frontend-only)
 export interface WSMessage {
   type: string;
   data?: unknown;

@@ -1,4 +1,27 @@
-/** Types for the meeting scheduler. */
+/**
+ * Meeting types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/meeting.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type Meeting = components["schemas"]["MeetingResponse"];
+export type MeetingListResponse = components["schemas"]["MeetingListResponse"];
+export type AvailableSlot = components["schemas"]["AvailableSlot"];
+export type AvailableSlotsResponse = components["schemas"]["AvailableSlotsResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types
+// ---------------------------------------------------------------------------
 
 export type MeetingStatus = "pending" | "confirmed" | "cancelled" | "completed";
 
@@ -15,8 +38,8 @@ export interface MeetingType {
 export interface RMAvailability {
   id: string;
   rm_id: string;
-  day_of_week: number; // 0 = Monday … 6 = Sunday
-  start_time: string; // "HH:MM:SS"
+  day_of_week: number;
+  start_time: string;
   end_time: string;
   buffer_minutes: number;
   is_active: boolean;
@@ -34,7 +57,7 @@ export interface RMAvailabilityCreate {
 export interface RMBlackout {
   id: string;
   rm_id: string;
-  blackout_date: string; // "YYYY-MM-DD"
+  blackout_date: string;
   reason: string | null;
   created_at: string;
   updated_at: string;
@@ -45,23 +68,9 @@ export interface RMBlackoutCreate {
   reason?: string;
 }
 
-export interface AvailableSlot {
-  start_time: string; // ISO datetime
-  end_time: string;
-  date: string; // "YYYY-MM-DD"
-  rm_id: string;
-}
-
-export interface AvailableSlotsResponse {
-  slots: AvailableSlot[];
-  rm_id: string;
-  from_date: string;
-  to_date: string;
-}
-
 export interface MeetingBook {
   meeting_type_id: string;
-  start_time: string; // ISO datetime
+  start_time: string;
   timezone?: string;
   agenda?: string;
 }
@@ -81,31 +90,4 @@ export interface MeetingTypeNested {
   slug: string;
   label: string;
   duration_minutes: number;
-}
-
-export interface Meeting {
-  id: string;
-  meeting_type_id: string;
-  meeting_type: MeetingTypeNested | null;
-  rm_id: string;
-  client_id: string;
-  booked_by_user_id: string;
-  start_time: string;
-  end_time: string;
-  timezone: string;
-  status: MeetingStatus;
-  agenda: string | null;
-  notes: string | null;
-  virtual_link: string | null;
-  cancelled_by_id: string | null;
-  cancellation_reason: string | null;
-  reschedule_of_id: string | null;
-  scheduled_event_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MeetingListResponse {
-  meetings: Meeting[];
-  total: number;
 }

@@ -1,3 +1,20 @@
+/**
+ * Escalation rule types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/escalation.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type EscalationChainResponse = components["schemas"]["EscalationChainResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes, query params
+// ---------------------------------------------------------------------------
+
 export type EscalationTriggerType =
   | "sla_breach"
   | "milestone_overdue"
@@ -51,13 +68,6 @@ export interface EscalationChainEntry {
   notes?: string;
   from_level?: string;
   to_level?: string;
-}
-
-export interface EscalationChainResponse {
-  escalation_id: string;
-  current_level: string;
-  chain: Record<string, unknown>[];
-  total_entries: number;
 }
 
 export interface EscalationRuleListParams {

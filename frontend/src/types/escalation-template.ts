@@ -1,3 +1,21 @@
+/**
+ * Escalation template types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/escalation_template.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type EscalationTemplate = components["schemas"]["EscalationTemplateResponse"];
+export type EscalationTemplateListResponse = components["schemas"]["EscalationTemplateListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes, constants
+// ---------------------------------------------------------------------------
+
 export type EscalationTemplateCategory =
   | "partner_sla_breach"
   | "client_dissatisfaction"
@@ -11,25 +29,6 @@ export type EscalationTemplateSeverity =
   | "milestone"
   | "program"
   | "client_impact";
-
-export interface EscalationTemplate {
-  id: string;
-  name: string;
-  category: EscalationTemplateCategory;
-  severity: EscalationTemplateSeverity;
-  description_template: string | null;
-  suggested_actions: string[] | null;
-  notification_template: string | null;
-  is_system: boolean;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface EscalationTemplateListResponse {
-  templates: EscalationTemplate[];
-  total: number;
-}
 
 export interface EscalationTemplateCreate {
   name: string;

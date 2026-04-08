@@ -1,29 +1,23 @@
-/** Types for scheduling and coordination. */
+/**
+ * Scheduling types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/scheduled_event.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type ScheduledEvent = components["schemas"]["ScheduledEventResponse"];
+export type ScheduledEventListResponse = components["schemas"]["ScheduledEventListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes
+// ---------------------------------------------------------------------------
 
 export type EventType = "meeting" | "call" | "site_visit" | "review" | "deadline";
 export type EventStatus = "scheduled" | "confirmed" | "cancelled" | "completed";
-
-export interface ScheduledEvent {
-  id: string;
-  title: string;
-  description: string | null;
-  event_type: EventType;
-  start_time: string;
-  end_time: string;
-  timezone: string;
-  location: string | null;
-  virtual_link: string | null;
-  organizer_id: string;
-  program_id: string | null;
-  client_id: string | null;
-  attendee_ids: string[] | null;
-  status: EventStatus;
-  recurrence_rule: string | null;
-  reminder_minutes: number;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface ScheduledEventCreate {
   title: string;
@@ -58,11 +52,6 @@ export interface ScheduledEventUpdate {
   recurrence_rule?: string;
   reminder_minutes?: number;
   notes?: string;
-}
-
-export interface ScheduledEventListResponse {
-  events: ScheduledEvent[];
-  total: number;
 }
 
 export interface ConflictCheckResponse {

@@ -1,3 +1,23 @@
+/**
+ * Communication audit types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/communication_audit.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type CommunicationAuditRecord = components["schemas"]["CommunicationAuditResponse"];
+export type CommunicationAuditListResponse = components["schemas"]["CommunicationAuditListResponse"];
+export type CommunicationPreferences = components["schemas"]["CommunicationPreferencesResponse"];
+export type CommunicationPreferencesUpdate = components["schemas"]["CommunicationPreferencesUpdate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, query params
+// ---------------------------------------------------------------------------
+
 export type CommunicationAuditAction =
   | "created"
   | "sent"
@@ -10,25 +30,6 @@ export type CommunicationAuditAction =
 
 export type PreferredChannel = "email" | "phone" | "portal" | "sms";
 
-export interface CommunicationAuditRecord {
-  id: string;
-  communication_id: string | null;
-  conversation_id: string | null;
-  action: CommunicationAuditAction;
-  actor_id: string;
-  actor_name: string | null;
-  actor_email: string | null;
-  details: Record<string, unknown> | null;
-  ip_address: string | null;
-  user_agent: string | null;
-  created_at: string;
-}
-
-export interface CommunicationAuditListResponse {
-  audits: CommunicationAuditRecord[];
-  total: number;
-}
-
 export interface CommunicationAuditSearchParams {
   action?: CommunicationAuditAction;
   actor_id?: string;
@@ -38,30 +39,6 @@ export interface CommunicationAuditSearchParams {
   end_date?: string;
   skip?: number;
   limit?: number;
-}
-
-export interface CommunicationPreferences {
-  preferred_channels: PreferredChannel[] | null;
-  contact_hours_start: string | null;
-  contact_hours_end: string | null;
-  contact_timezone: string | null;
-  language_preference: string | null;
-  do_not_contact: boolean;
-  opt_out_marketing: boolean;
-  communication_preference: string | null;
-  special_instructions: string | null;
-}
-
-export interface CommunicationPreferencesUpdate {
-  preferred_channels?: PreferredChannel[] | null;
-  contact_hours_start?: string | null;
-  contact_hours_end?: string | null;
-  contact_timezone?: string | null;
-  language_preference?: string | null;
-  do_not_contact?: boolean;
-  opt_out_marketing?: boolean;
-  communication_preference?: string | null;
-  special_instructions?: string | null;
 }
 
 export interface ChannelCheckResponse {

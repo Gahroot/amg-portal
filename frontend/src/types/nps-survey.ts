@@ -1,4 +1,21 @@
-// NPS Survey Types
+/**
+ * NPS survey types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/nps_survey.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type NPSSurvey = components["schemas"]["NPSSurveyResponse"];
+export type NPSSurveyListResponse = components["schemas"]["NPSSurveyListResponse"];
+export type NPSTrendAnalysis = components["schemas"]["NPSTrendAnalysis"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes, query params, analytics
+// ---------------------------------------------------------------------------
 
 export type NPSSurveyStatus = "draft" | "scheduled" | "active" | "closed" | "archived";
 export type NPSScoreCategory = "detractor" | "passive" | "promoter";
@@ -10,34 +27,6 @@ export type NPSFollowUpActionType =
   | "service_review"
   | "management_intervention"
   | "process_improvement";
-
-// ==================== Survey Types ====================
-
-export interface NPSSurvey {
-  id: string;
-  name: string;
-  description: string | null;
-  quarter: number;
-  year: string;
-  status: NPSSurveyStatus;
-  questions: Record<string, unknown>;
-  distribution_method: string;
-  reminder_enabled: boolean;
-  reminder_days: number;
-  scheduled_at: string | null;
-  sent_at: string | null;
-  closes_at: string | null;
-  target_client_types: string[] | null;
-  target_client_ids: string[] | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface NPSSurveyListResponse {
-  surveys: NPSSurvey[];
-  total: number;
-}
 
 export interface NPSSurveyCreateData {
   name: string;
@@ -57,8 +46,6 @@ export interface NPSSurveyCreateData {
 export type NPSSurveyUpdateData = Partial<NPSSurveyCreateData> & {
   status?: NPSSurveyStatus;
 };
-
-// ==================== Response Types ====================
 
 export interface NPSResponse {
   id: string;
@@ -86,8 +73,6 @@ export interface NPSResponseCreateData {
   custom_responses?: Record<string, unknown>;
   response_channel?: string;
 }
-
-// ==================== Follow-Up Types ====================
 
 export interface NPSFollowUp {
   id: string;
@@ -121,8 +106,6 @@ export interface NPSFollowUpUpdateData {
   due_at?: string;
 }
 
-// ==================== Analytics Types ====================
-
 export interface NPSSurveyStats {
   survey_id: string;
   survey_name: string;
@@ -154,15 +137,6 @@ export interface NPSTrendPoint {
   detractors_percent: number;
 }
 
-export interface NPSTrendAnalysis {
-  trends: NPSTrendPoint[];
-  current_nps: number;
-  previous_nps: number | null;
-  change: number | null;
-  trend_direction: "up" | "down" | "stable";
-}
-
-// Query params
 export interface NPSSurveyListParams {
   status?: NPSSurveyStatus;
   year?: number;
