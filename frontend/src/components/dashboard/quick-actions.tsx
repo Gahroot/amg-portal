@@ -22,7 +22,7 @@ export function QuickActionsBar({ role }: QuickActionsBarProps) {
     <div className="flex flex-wrap gap-2">
       {(isMD || isRM || isCoordinator) && (
         <Button size="sm" asChild>
-          <Link href="/communications/new">
+          <Link href="/communications">
             <Mail className="mr-1.5 h-3.5 w-3.5" />
             New Communication
           </Link>
@@ -30,7 +30,7 @@ export function QuickActionsBar({ role }: QuickActionsBarProps) {
       )}
       {(isMD || isRM || isCoordinator) && (
         <Button size="sm" variant="secondary" asChild>
-          <Link href="/escalations/new">
+          <Link href="/escalations">
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
             New Escalation
           </Link>

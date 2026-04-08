@@ -450,7 +450,7 @@ export function CommandPalette({
               {isInternal && (
                 <CommandItem
                   value="create new communication"
-                  onSelect={() => handleAction("/communications/new")}
+                  onSelect={() => handleAction("/communications")}
                 >
                   <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span>New Communication</span>
@@ -460,7 +460,7 @@ export function CommandPalette({
               {isInternal && (
                 <CommandItem
                   value="create new escalation"
-                  onSelect={() => handleAction("/escalations/new")}
+                  onSelect={() => handleAction("/escalations")}
                 >
                   <AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span>New Escalation</span>
