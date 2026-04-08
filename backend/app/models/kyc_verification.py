@@ -99,7 +99,7 @@ class KYCAlert(Base):
     severity = Column(String(20), nullable=False, default="warning")
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    metadata = Column(JSONB, nullable=True)
+    alert_metadata = Column("metadata", JSONB, nullable=True)
     is_read = Column(Integer, nullable=False, default=0)
     is_resolved = Column(Integer, nullable=False, default=0)
     resolved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
