@@ -11,10 +11,16 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+)
 from app.db.session import get_db
 from app.models.api_key import APIKey
 from app.models.enums import UserRole
@@ -62,27 +68,18 @@ async def get_api_key_user(
     api_key = result.scalar_one_or_none()
 
     if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
+        raise UnauthorizedException("Invalid API key")
 
     # Verify the full key
     if not api_key.verify_key(x_api_key):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
+        raise UnauthorizedException("Invalid API key")
 
     # Get the user
     user_result = await db.execute(select(User).where(User.id == api_key.user_id))
     user = user_result.scalar_one_or_none()
 
     if not user or user.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive",
-        )
+        raise UnauthorizedException("User not found or inactive")
 
     # Record usage
     api_key.record_usage()
@@ -194,10 +191,7 @@ async def create_webhook(
     # Validate events
     invalid = [e for e in data.events if e not in PUBLIC_API_EVENT_TYPES]
     if invalid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid event types: {invalid}",
-        )
+        raise BadRequestException(f"Invalid event types: {invalid}")
 
     webhook = PublicWebhook.create(
         user_id=user.id,
@@ -231,10 +225,7 @@ async def delete_webhook(
     """Delete a webhook subscription."""
     deleted = PublicWebhook.delete(webhook_id, user.id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Webhook not found",
-        )
+        raise NotFoundException("Webhook not found")
     logger.info(f"Deleted webhook {webhook_id}")
 
 
@@ -409,10 +400,7 @@ async def create_task(
         result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
         milestone = result.scalar_one_or_none()
         if not milestone:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Milestone not found",
-            )
+            raise NotFoundException("Milestone not found")
     # If program_id provided but no milestone, create/find a default milestone
     elif data.program_id:
         program_result = await db.execute(
@@ -420,10 +408,7 @@ async def create_task(
         )
         program = program_result.scalar_one_or_none()
         if not program:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Program not found",
-            )
+            raise NotFoundException("Program not found")
 
         # Find or create "Integrations" milestone
         result = await db.execute(
@@ -444,10 +429,7 @@ async def create_task(
             await db.flush()
         milestone_id = milestone.id
     else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either milestone_id or program_id is required",
-        )
+        raise BadRequestException("Either milestone_id or program_id is required")
 
     # Parse due date
     due_date = None
@@ -455,9 +437,8 @@ async def create_task(
         try:
             due_date = datetime.fromisoformat(data.due_date).date()
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid due_date format. Use ISO format (YYYY-MM-DD)",
+            raise BadRequestException(
+                "Invalid due_date format. Use ISO format (YYYY-MM-DD)"
             ) from None
 
     # Create task
@@ -509,17 +490,13 @@ async def update_task_status(
     task = result.scalar_one_or_none()
 
     if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
-        )
+        raise NotFoundException("Task not found")
 
     try:
         task.status = TaskStatus(data.status)
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status. Valid values: {[s.value for s in TaskStatus]}",
+        raise BadRequestException(
+            f"Invalid status. Valid values: {[s.value for s in TaskStatus]}"
         ) from None
 
     await db.commit()
@@ -554,24 +531,17 @@ async def update_assignment_status(
     assignment = result.scalar_one_or_none()
 
     if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assignment not found",
-        )
+        raise NotFoundException("Assignment not found")
 
     # Verify user has access (is the assigned partner)
     if user.role == UserRole.partner and assignment.partner_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this assignment",
-        )
+        raise ForbiddenException("You don't have access to this assignment")
 
     try:
         assignment.status = AssignmentStatus(data.status)
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status. Valid values: {[s.value for s in AssignmentStatus]}",
+        raise BadRequestException(
+            f"Invalid status. Valid values: {[s.value for s in AssignmentStatus]}"
         ) from None
 
     await db.commit()

@@ -1,5 +1,19 @@
 import { z } from "zod/v4";
 
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain an uppercase letter")
+  .regex(/[a-z]/, "Password must contain a lowercase letter")
+  .regex(/[0-9]/, "Password must contain a number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain a special character");
+
+// Raw field (not wrapped in an object) — used inside mfaSetupSchema, mfaDisableSchema, mfaCodeSchema
+export const mfaCodeField = z
+  .string()
+  .min(6, "Code must be at least 6 characters")
+  .max(8);
+
 // Login form schema
 export const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -16,13 +30,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Reset token is required"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain an uppercase letter")
-      .regex(/[a-z]/, "Password must contain a lowercase letter")
-      .regex(/[0-9]/, "Password must contain a number")
-      .regex(/[^A-Za-z0-9]/, "Password must contain a special character"),
+    password: passwordSchema,
     confirm_password: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirm_password, {
@@ -32,12 +40,12 @@ export const resetPasswordSchema = z
 
 // MFA setup schema
 export const mfaSetupSchema = z.object({
-  code: z.string().min(6, "Code must be at least 6 characters").max(8),
+  code: mfaCodeField,
 });
 
 // MFA disable schema
 export const mfaDisableSchema = z.object({
-  code: z.string().min(6, "Code must be at least 6 characters").max(8),
+  code: mfaCodeField,
 });
 
 // Type exports

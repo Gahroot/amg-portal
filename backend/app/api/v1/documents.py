@@ -9,6 +9,7 @@ from uuid import UUID
 import bcrypt
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
     DB,
@@ -20,7 +21,7 @@ from app.api.deps import (
     require_internal,
 )
 from app.core.config import settings
-from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.exceptions import BadRequestException, GoneException, NotFoundException
 from app.models.document import Document
 from app.models.document_share import DocumentShare
 from app.schemas.document import (
@@ -438,7 +439,7 @@ async def delete_document(
         raise NotFoundException("Document not found")
 
     with contextlib.suppress(Exception):
-        storage_service.delete_file(str(doc.file_path))
+        await storage_service.delete_file(str(doc.file_path))
 
     await db.delete(doc)
     await db.commit()
@@ -594,6 +595,22 @@ def _verify_code(code: str, hashed: str) -> bool:
 
 def _share_access_url(token: str) -> str:
     return f"{settings.FRONTEND_URL}/portal/documents/shared/{token}"
+
+
+async def _resolve_share(token: str, db: AsyncSession) -> DocumentShare:
+    """Fetch a share by token and validate it is active and not expired.
+
+    Raises NotFoundException if not found, GoneException if revoked or expired.
+    """
+    result = await db.execute(select(DocumentShare).where(DocumentShare.share_token == token))
+    share = result.scalar_one_or_none()
+    if not share:
+        raise NotFoundException("Share not found")
+    if not share.is_active:
+        raise GoneException("This share has been revoked")
+    if share.expires_at and share.expires_at < datetime.now(UTC):
+        raise GoneException("This share link has expired")
+    return share
 
 
 @router.post(
@@ -758,19 +775,8 @@ async def request_share_verification_code(
     Anyone with the share token can trigger a new code to be sent to the
     originally registered email address. The previous code is invalidated.
     """
-    result = await db.execute(
-        select(DocumentShare).where(DocumentShare.share_token == token)
-    )
-    share = result.scalar_one_or_none()
-    if not share:
-        raise HTTPException(status_code=404, detail="Share not found")
-
-    if not share.is_active:
-        raise HTTPException(status_code=410, detail="This share has been revoked")
-
+    share = await _resolve_share(token, db)
     now = datetime.now(UTC)
-    if share.expires_at and share.expires_at < now:
-        raise HTTPException(status_code=410, detail="This share link has expired")
 
     # Generate new OTP
     otp = _generate_otp()
@@ -820,34 +826,17 @@ async def access_shared_document(
     Public endpoint — no authentication required. Verifying the OTP
     constitutes the access control check. Access is logged.
     """
-    result = await db.execute(
-        select(DocumentShare).where(DocumentShare.share_token == token)
-    )
-    share = result.scalar_one_or_none()
-    if not share:
-        raise HTTPException(status_code=404, detail="Share not found")
-
-    if not share.is_active:
-        raise HTTPException(status_code=410, detail="This share has been revoked")
-
+    share = await _resolve_share(token, db)
     now = datetime.now(UTC)
-    if share.expires_at and share.expires_at < now:
-        raise HTTPException(status_code=410, detail="This share link has expired")
 
     if not share.verification_code_hash:
-        raise HTTPException(
-            status_code=400,
-            detail="No verification code issued. Request a new code.",
-        )
+        raise BadRequestException("No verification code issued. Request a new code.")
 
     if share.verification_code_expires_at and share.verification_code_expires_at < now:
-        raise HTTPException(
-            status_code=400,
-            detail="Verification code has expired. Please request a new code.",
-        )
+        raise BadRequestException("Verification code has expired. Please request a new code.")
 
     if not _verify_code(body.verification_code, share.verification_code_hash):
-        raise HTTPException(status_code=400, detail="Invalid verification code")
+        raise BadRequestException("Invalid verification code")
 
     # Fetch document
     doc_result = await db.execute(
@@ -855,7 +844,7 @@ async def access_shared_document(
     )
     doc = doc_result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise NotFoundException("Document not found")
 
     # Generate presigned URL (view-only; the caller cannot get a download URL separately)
     try:
@@ -888,19 +877,7 @@ async def get_shared_document_info(
 
     Used by the frontend to render the share access page before the OTP is entered.
     """
-    result = await db.execute(
-        select(DocumentShare).where(DocumentShare.share_token == token)
-    )
-    share = result.scalar_one_or_none()
-    if not share:
-        raise HTTPException(status_code=404, detail="Share not found")
-
-    if not share.is_active:
-        raise HTTPException(status_code=410, detail="This share has been revoked")
-
-    now = datetime.now(UTC)
-    if share.expires_at and share.expires_at < now:
-        raise HTTPException(status_code=410, detail="This share link has expired")
+    share = await _resolve_share(token, db)
 
     doc_result = await db.execute(
         select(Document).where(Document.id == share.document_id)

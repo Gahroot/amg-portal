@@ -5,16 +5,17 @@ import io
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import Response
 
-from app.api.deps import CurrentUser, DB, RLSContext, require_coordinator_or_above
-from app.schemas.import import (
+from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above
+from app.core.exceptions import BadRequestException, NotFoundException
+from app.schemas.import_schemas import (
     ColumnMapping,
     ImportConfirmRequest,
     ImportConfirmResponse,
-    ImportErrorReportResponse,
     ImportEntityType,
+    ImportErrorReportResponse,
     ImportJobListResponse,
     ImportJobResponse,
     ImportMapColumnsRequest,
@@ -105,17 +106,13 @@ async def upload_import_file(
     Next step: call /map-columns to confirm or adjust mappings.
     """
     if not file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No filename provided",
-        )
+        raise BadRequestException("No filename provided")
 
     # Validate file type
     lower_name = file.filename.lower()
     if not (lower_name.endswith(".csv") or lower_name.endswith((".xlsx", ".xls"))):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported file format. Please upload a CSV or Excel file (.csv, .xlsx, .xls)",
+        raise BadRequestException(
+            "Unsupported file format. Please upload a CSV or Excel file (.csv, .xlsx, .xls)"
         )
 
     # Read file content
@@ -124,10 +121,7 @@ async def upload_import_file(
     # Validate file size (max 10MB)
     max_size = 10 * 1024 * 1024
     if len(content) > max_size:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File too large. Maximum size is {max_size // (1024 * 1024)}MB",
-        )
+        raise BadRequestException(f"File too large. Maximum size is {max_size // (1024 * 1024)}MB")
 
     return await import_service.upload_file(content, file.filename, entity_type)
 
@@ -222,10 +216,7 @@ async def get_import_job(
     """Get import job details by ID."""
     job = await import_service.get_job(import_id)
     if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Import job not found",
-        )
+        raise NotFoundException("Import job not found")
     return job
 
 

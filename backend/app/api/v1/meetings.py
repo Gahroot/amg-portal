@@ -4,10 +4,10 @@ import logging
 import uuid
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import DB, CurrentUser, require_client, require_internal, require_rm_or_above
-from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.schemas.meeting import (
     AvailableSlotsResponse,
     MeetingBook,
@@ -332,7 +332,7 @@ async def get_meeting(
     is_rm = meeting.rm_id == current_user.id
     is_client = meeting.booked_by_user_id == current_user.id
     if not (is_rm or is_client):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise ForbiddenException("Access denied")
 
     return MeetingResponse.model_validate(meeting)
 
@@ -373,7 +373,7 @@ async def cancel_meeting(
     is_rm = meeting.rm_id == current_user.id
     is_client = meeting.booked_by_user_id == current_user.id
     if not (is_rm or is_client):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise ForbiddenException("Access denied")
 
     if meeting.status in ("cancelled", "completed"):
         raise BadRequestException(f"Cannot cancel a meeting with status '{meeting.status}'")
@@ -404,7 +404,7 @@ async def reschedule_meeting(
     is_rm = meeting.rm_id == current_user.id
     is_client = meeting.booked_by_user_id == current_user.id
     if not (is_rm or is_client):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise ForbiddenException("Access denied")
 
     if meeting.status in ("cancelled", "completed"):
         raise BadRequestException(
