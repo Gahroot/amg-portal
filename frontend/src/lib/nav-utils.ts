@@ -30,7 +30,7 @@ export function getNavConfigForRole(role: UserRole): PortalNavConfig {
  */
 export function getFlatNavItems(
   config: PortalNavConfig,
-  role: string,
+  role: UserRole,
 ): FlatNavItem[] {
   const items: FlatNavItem[] = [];
 
@@ -77,7 +77,7 @@ export function getFlatNavItems(
  */
 export function getGroupedNavItems(
   config: PortalNavConfig,
-  role: string,
+  role: UserRole,
 ): Record<string, FlatNavItem[]> {
   const flat = getFlatNavItems(config, role);
   const grouped: Record<string, FlatNavItem[]> = {};

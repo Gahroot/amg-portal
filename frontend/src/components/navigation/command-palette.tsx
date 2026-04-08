@@ -17,10 +17,7 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { dashboardNavConfig } from "@/config/dashboard-nav";
-import { portalNavConfig } from "@/config/portal-nav";
-import { partnerNavConfig } from "@/config/partner-nav";
+import { getNavConfigForRole, getGroupedNavItems } from "@/lib/nav-utils";
 import {
   CommandDialog,
   CommandEmpty,
@@ -32,13 +29,6 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAuth } from "@/providers/auth-provider";
 import { useGlobalSearch, parseSearchQuery } from "@/hooks/use-global-search";
 import {
@@ -50,7 +40,6 @@ import {
   type SearchType,
 } from "@/hooks/use-recent-searches";
 import { RecentSearches } from "@/components/search/recent-searches";
-import { CompactSearchResults } from "@/components/search/global-search-results";
 import { useKeyboardShortcutsDialog } from "@/components/ui/keyboard-shortcuts-dialog";
 import type { SearchResultItem, SearchEntityType } from "@/lib/api/search";
 
@@ -86,14 +75,6 @@ const TYPE_FILTERS: { type: SearchEntityType | "all"; label: string; icon: React
   { type: "task", label: "Tasks", icon: CheckSquare },
   { type: "document", label: "Documents", icon: FileText },
 ];
-
-interface NavCommandItem {
-  title: string;
-  href: string;
-  icon: LucideIcon;
-  searchValue: string;
-  isSubItem: boolean;
-}
 
 interface CommandPaletteProps {
   /** Control the open state from outside */
@@ -141,55 +122,11 @@ export function CommandPalette({
 
   const hasQuery = debouncedQuery.trim().length > 0;
 
-  // Build config-driven navigation items based on user role
   const navGroups = React.useMemo(() => {
     if (!user) return {};
-
-    const config =
-      user.role === "client"
-        ? portalNavConfig
-        : user.role === "partner"
-          ? partnerNavConfig
-          : dashboardNavConfig;
-
-    const result: Record<string, NavCommandItem[]> = {};
-
-    for (const group of config.groups) {
-      const items: NavCommandItem[] = [];
-
-      for (const item of group.items) {
-        if (item.roles && !item.roles.includes(user.role)) continue;
-
-        const Icon = item.icon;
-        items.push({
-          title: item.title,
-          href: item.href,
-          icon: Icon,
-          searchValue: `navigate ${group.label} ${item.title} ${item.tooltip ?? ""}`,
-          isSubItem: false,
-        });
-
-        // Flatten subItems
-        if (item.subItems) {
-          for (const sub of item.subItems) {
-            items.push({
-              title: `${item.title} > ${sub.title}`,
-              href: sub.href,
-              icon: Icon,
-              searchValue: `navigate ${group.label} ${item.title} ${sub.title}`,
-              isSubItem: true,
-            });
-          }
-        }
-      }
-
-      if (items.length > 0) {
-        result[group.label] = items;
-      }
-    }
-
-    return result;
-  }, [user]);
+    const config = getNavConfigForRole(user.role);
+    return getGroupedNavItems(config, user.role);
+  }, [user?.role]);
 
   // Track if a search has been performed (for recording to recent searches)
   const hasPerformedSearch = React.useRef(false);

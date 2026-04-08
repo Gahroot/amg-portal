@@ -16,9 +16,7 @@ import {
   ClipboardList,
   type LucideIcon,
 } from "lucide-react";
-import { dashboardNavConfig } from "@/config/dashboard-nav";
-import { portalNavConfig } from "@/config/portal-nav";
-import { partnerNavConfig } from "@/config/partner-nav";
+import { getNavConfigForRole, getFlatNavItems } from "@/lib/nav-utils";
 
 /**
  * Quick action definition
@@ -100,6 +98,15 @@ export type PageType =
   | "partner-programs"
   | "partner-assignments"
   | "unknown";
+
+const HARDCODED_ACTION_HREFS = new Set([
+  "/programs/new",
+  "/clients/new",
+  "/partners/new",
+  "/communications",
+  "/escalations",
+  "/approvals",
+]);
 
 /**
  * Detect page type from pathname
@@ -292,41 +299,21 @@ export function getDefaultActionsForContext(
   }
 
   // Navigation actions from nav configs
-  const navConfig =
-    userRole === "client"
-      ? portalNavConfig
-      : userRole === "partner"
-        ? partnerNavConfig
-        : dashboardNavConfig;
+  const navConfig = getNavConfigForRole(userRole);
+  const navItems = getFlatNavItems(navConfig, userRole)
+    .filter((item) => !item.isSubItem && !HARDCODED_ACTION_HREFS.has(item.href));
 
-  // Hrefs already covered by hardcoded actions above — skip to avoid duplicates
-  const hardcodedHrefs = new Set([
-    "/programs/new",
-    "/clients/new",
-    "/partners/new",
-    "/communications",
-    "/escalations",
-    "/approvals",
-  ]);
-
-  let navIndex = 0;
-  for (const group of navConfig.groups) {
-    for (const item of group.items) {
-      if (item.roles && !item.roles.includes(userRole)) continue;
-      if (hardcodedHrefs.has(item.href)) continue;
-
-      actions.push({
-        id: `nav-${item.href}`,
-        label: item.title,
-        description: item.tooltip || `Go to ${item.title}`,
-        icon: item.icon,
-        category: "navigation",
-        handler: () => router.push(item.href),
-        order: 50 + navIndex,
-      });
-      navIndex++;
-    }
-  }
+  navItems.forEach((item, index) => {
+    actions.push({
+      id: `nav-${item.href}`,
+      label: item.title,
+      description: item.tooltip || `Go to ${item.title}`,
+      icon: item.icon,
+      category: "navigation",
+      handler: () => router.push(item.href),
+      order: 50 + index,
+    });
+  });
 
   return actions;
 }
