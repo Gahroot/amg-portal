@@ -11,7 +11,7 @@ import {
 import {
   AssignmentActions,
   AssignmentStatusBadge,
-} from "@/components/partner/assignment-actions";
+} from "@/components/partners/assignment-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";

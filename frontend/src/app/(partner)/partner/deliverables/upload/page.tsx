@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BulkDeliverableUpload } from "@/components/partner/bulk-deliverable-upload";
+import { BulkDeliverableUpload } from "@/components/partners/bulk-deliverable-upload";
 
 export default function BulkDeliverableUploadPage() {
   const router = useRouter();

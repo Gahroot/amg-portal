@@ -1,4 +1,4 @@
-import { PaymentHistory } from "@/components/partner/payment-history";
+import { PaymentHistory } from "@/components/partners/payment-history";
 
 export const metadata = {
   title: "Payment History | AMG Partner Portal",
