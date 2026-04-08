@@ -3,8 +3,9 @@ import { Geist, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/providers/providers";
 import { ErrorBoundary } from "@/components/error/error-boundary";
+import { ErrorLoggerProvider } from "@/providers/error-logger-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/navigation/command-palette";
-import { KeyboardShortcutsDialogProvider } from "@/components/ui/keyboard-shortcuts-dialog";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,13 +50,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+          <Toaster />
           <ErrorBoundary>
-            <KeyboardShortcutsDialogProvider>
+            <ErrorLoggerProvider>
               <Providers>
                 <CommandPalette />
                 {children}
               </Providers>
-            </KeyboardShortcutsDialogProvider>
+            </ErrorLoggerProvider>
           </ErrorBoundary>
         </ThemeProvider>
       </body>
