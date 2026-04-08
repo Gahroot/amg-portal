@@ -270,6 +270,35 @@ async def create_task(
     )
 
 
+@router.get("/{task_id}", response_model=TaskBoardResponse)
+async def get_task(
+    task_id: uuid.UUID,
+    db: DB,
+    _rls: RLSContext,
+    _: None = Depends(require_internal),
+):
+    """Get a single task by ID."""
+    result = await db.execute(
+        select(Task)
+        .options(
+            selectinload(Task.assignee),
+            selectinload(Task.milestone).selectinload(Milestone.program),
+        )
+        .where(Task.id == task_id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise NotFoundException("Task not found")
+    return TaskBoardResponse(
+        **build_task_response(
+            task,
+            task.assignee,
+            task.milestone.program if task.milestone else None,
+            task.milestone,
+        )
+    )
+
+
 @router.patch("/{task_id}", response_model=TaskBoardResponse)
 async def update_task(
     task_id: uuid.UUID,
