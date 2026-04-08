@@ -91,7 +91,7 @@ export const queryKeys = {
     grouped: (params?: unknown) => ["notifications", "grouped", params] as const,
     unreadCount: () => ["notifications", "unread-count"] as const,
     snoozed: (params?: unknown) => ["notifications", "snoozed", params] as const,
-    preferences: () => ["notification-preferences"] as const,
+    preferences: () => ["notifications", "preferences"] as const,
   },
 
   // ── Users ──────────────────────────────────────────────────────────────────
@@ -425,7 +425,7 @@ export const queryKeys = {
 
   // ── Settings / Preferences ─────────────────────────────────────────────────
   settings: {
-    notificationPreferences: () => ["notification-preferences"] as const,
+    notificationPreferences: () => ["notifications", "preferences"] as const,
     clientPreferences: () => ["client-preferences"] as const,
     preferences: () => ["preferences"] as const,
   },
