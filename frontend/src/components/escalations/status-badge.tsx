@@ -24,5 +24,5 @@ export function EscalationStatusBadge({ status }: EscalationStatusBadgeProps) {
       label: status,
       variant: "outline" as const,
     };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} dot>{config.label}</Badge>;
 }

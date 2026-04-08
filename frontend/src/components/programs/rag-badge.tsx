@@ -25,7 +25,7 @@ interface RagBadgeProps {
 export function RagBadge({ status }: RagBadgeProps) {
   const config = RAG_CONFIG[status] ?? RAG_CONFIG.green;
   return (
-    <Badge variant="outline" className={config.className}>
+    <Badge variant="outline" className={config.className} dot>
       {config.label}
     </Badge>
   );
