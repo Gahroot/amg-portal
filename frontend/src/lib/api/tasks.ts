@@ -36,6 +36,11 @@ export async function getTasks(filters?: TaskFilters): Promise<TaskBoardListResp
   return response.data;
 }
 
+export async function getTask(id: string): Promise<TaskBoard> {
+  const response = await api.get<TaskBoard>(`/api/v1/tasks/${id}`);
+  return response.data;
+}
+
 export async function createTask(data: TaskCreate): Promise<TaskBoard> {
   const response = await api.post<TaskBoard>("/api/v1/tasks", data);
   return response.data;
