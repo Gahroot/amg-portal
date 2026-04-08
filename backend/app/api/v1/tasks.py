@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above, require_internal
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -60,7 +60,7 @@ def build_task_response(
     if assignee:
         response["assignee"] = AssigneeInfo(
             id=assignee.id,
-            name=assignee.name,
+            name=assignee.full_name,
             email=assignee.email,
         ).model_dump()
 
@@ -515,8 +515,6 @@ async def update_task_dependencies(
     _: None = Depends(require_coordinator_or_above),
 ):
     """Set the full list of dependencies for a task. Validates for circular deps."""
-    from fastapi import HTTPException
-
     result = await db.execute(
         select(Task)
         .options(
@@ -532,7 +530,7 @@ async def update_task_dependencies(
     # Validate all dependency IDs exist
     new_deps = list(dict.fromkeys(data.depends_on))  # deduplicate preserving order
     if task_id in new_deps:
-        raise HTTPException(status_code=400, detail="A task cannot depend on itself")
+        raise BadRequestException("A task cannot depend on itself")
 
     if new_deps:
         dep_result = await db.execute(
@@ -541,10 +539,7 @@ async def update_task_dependencies(
         found_ids = {row[0] for row in dep_result.all()}
         missing = [str(d) for d in new_deps if d not in found_ids]
         if missing:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Dependency tasks not found: {', '.join(missing)}",
-            )
+            raise BadRequestException(f"Dependency tasks not found: {', '.join(missing)}")
 
     # Load all tasks to check for cycles
     all_tasks_result = await db.execute(select(Task.id, Task.depends_on))
@@ -553,10 +548,7 @@ async def update_task_dependencies(
     }
 
     if _detect_cycle(task_id, new_deps, all_tasks_deps):
-        raise HTTPException(
-            status_code=400,
-            detail="Setting these dependencies would create a circular dependency",
-        )
+        raise BadRequestException("Setting these dependencies would create a circular dependency")
 
     task.depends_on = new_deps
     await db.commit()
@@ -610,11 +602,11 @@ async def list_assignees_for_filter(
     result = await db.execute(
         select(User)
         .where(User.role.in_([r.value for r in INTERNAL_ROLES]))
-        .where(User.is_active.is_(True))
-        .order_by(User.name)
+        .where(User.status == "active")
+        .order_by(User.full_name)
     )
     users = result.scalars().all()
     return [
-        AssigneeInfo(id=u.id, name=u.name, email=u.email)
+        AssigneeInfo(id=u.id, name=u.full_name, email=u.email)
         for u in users
     ]

@@ -5,12 +5,13 @@ import io
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.core.exceptions import NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.communication import Communication
 from app.models.communication_log import CommunicationLog
@@ -537,9 +538,7 @@ async def export_resource(
 ) -> StreamingResponse:
     """Stream a CSV or Excel export of the requested resource."""
     if resource not in _SUPPORTED:
-        raise HTTPException(
-            status_code=404, detail=f"Unknown resource '{resource}'"
-        )
+        raise NotFoundException(f"Unknown resource '{resource}'")
 
     if resource == "programs":
         headers, rows = await _export_programs(

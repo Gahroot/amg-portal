@@ -6,12 +6,16 @@ This module provides a hierarchy of custom exceptions that allow for:
 3. Better separation of business logic errors from HTTP errors
 """
 
+import logging
+import re
 from typing import Any
 
-from fastapi import status
+from fastapi import HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
+
+logger = logging.getLogger(__name__)
 
 
 class AppException(Exception):  # noqa: N818
@@ -71,6 +75,13 @@ class ValidationException(AppException):
         super().__init__(message, status.HTTP_422_UNPROCESSABLE_CONTENT, details)
 
 
+class GoneException(AppException):
+    """Gone exception — resource permanently unavailable (e.g. expired/revoked links)."""
+
+    def __init__(self, message: str = "Gone", details: dict[str, Any] | None = None):
+        super().__init__(message, status.HTTP_410_GONE, details)
+
+
 def _sanitize_error_message(message: str) -> str:
     """Remove potentially sensitive information from error messages.
 
@@ -80,16 +91,16 @@ def _sanitize_error_message(message: str) -> str:
     - Internal implementation details
     """
     # Remove file paths
-    message = __import__("re").sub(r"[/\\][\w/\\.-]+\.pyw?", "<file>", message)
+    message = re.sub(r"[/\\][\w/\\.-]+\.pyw?", "<file>", message)
     # Remove database table/column details
-    message = __import__("re").sub(r'relation "[\w.]+"', "relation", message)
-    message = __import__("re").sub(r"column [\w.]+", "column", message)
+    message = re.sub(r'relation "[\w.]+"', "relation", message)
+    message = re.sub(r"column [\w.]+", "column", message)
     # Remove SQL query details
-    message = __import__("re").sub(
+    message = re.sub(
         r"(SELECT|INSERT|UPDATE|DELETE).*?(FROM|INTO|VALUES)",
         "<query>",
         message,
-        flags=__import__("re").IGNORECASE,
+        flags=re.IGNORECASE,
     )
     return message
 
@@ -128,13 +139,19 @@ async def validation_exception_handler(
     )
 
 
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Handler for FastAPI HTTPException — normalises shape to match AppException."""
+    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": _sanitize_error_message(detail), "details": None},
+        headers=getattr(exc, "headers", None),
+    )
+
+
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for unexpected exceptions - prevents information disclosure."""
-    # Log the full error for debugging (in production, use proper logging)
-    # But don't expose internal details to the client
-    import logging
-
-    logger = logging.getLogger(__name__)
+    # Log the full error for debugging, but don't expose internal details to the client
     logger.error(f"Unexpected error: {exc}", exc_info=True)
 
     return JSONResponse(

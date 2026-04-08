@@ -4,11 +4,12 @@ import uuid
 from datetime import UTC, datetime
 
 import bcrypt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB
+from app.core.exceptions import NotFoundException, UnauthorizedException
 from app.models.shared_report import SharedReport
 from app.schemas.shared_report import (
     PublicReportAccessRequest,
@@ -30,7 +31,7 @@ async def _resolve_share(token: str, db: DB) -> SharedReport:
     share = result.scalar_one_or_none()
 
     if not share or not share.is_active:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share not found")
+        raise NotFoundException("Share not found")
 
     if share.expires_at is not None:
         expires_at = share.expires_at
@@ -39,7 +40,7 @@ async def _resolve_share(token: str, db: DB) -> SharedReport:
 
             expires_at = expires_at.replace(tzinfo=UTC)
         if expires_at < datetime.now(UTC):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share not found")
+            raise NotFoundException("Share not found")
 
     return share
 
@@ -78,17 +79,12 @@ async def access_shared_report(
     if share.password_hash is not None:
         provided = body.password or ""
         if not bcrypt.checkpw(provided.encode(), share.password_hash.encode()):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password"
-            )
+            raise UnauthorizedException("Incorrect password")
 
     # Fetch report data based on type
     data = await _fetch_report_data(share, db)
     if data is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report data not found for this share",
-        )
+        raise NotFoundException("Report data not found for this share")
 
     # Increment access count
     share.access_count += 1
@@ -103,18 +99,24 @@ async def access_shared_report(
 
 
 async def _fetch_report_data(share: SharedReport, db: DB) -> dict | None:
-    """Dispatch to the appropriate report service method."""
+    """Dispatch to the appropriate report service method.
+
+    Only report types that are scoped to a specific entity (client, program, or the
+    creating RM) are served here.  Org-wide internal reports (escalation_log,
+    compliance) are not suitable for unauthenticated public sharing and always return
+    None (→ 404) so they are never accidentally exposed via a share token.
+    """
     report_type = share.report_type
     entity_id = share.entity_id
 
     if report_type == "rm_portfolio":
-        return await report_service.get_rm_portfolio_report(db)
+        # Scope to the RM who created the share link — never expose the full org portfolio.
+        return await report_service.get_rm_portfolio_report(db, share.created_by)
 
-    if report_type == "escalation_log":
-        return await report_service.get_escalation_log_report(db)
-
-    if report_type == "compliance":
-        return await report_service.get_compliance_audit_report(db)
+    # escalation_log and compliance are org-wide internal reports; they must not be
+    # accessible via unauthenticated share tokens regardless of who created the link.
+    if report_type in ("escalation_log", "compliance"):
+        return None
 
     if report_type == "annual_review":
         year = int(entity_id) if entity_id else datetime.now(UTC).year

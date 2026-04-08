@@ -2,9 +2,10 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from app.api.deps import DB, CurrentUser
+from app.core.exceptions import NotFoundException
 from app.schemas.sync import (
     BatchReadStatusUpdate,
     DeviceListResponse,
@@ -167,10 +168,7 @@ async def get_read_status(
     read_status_record = result.scalar_one_or_none()
 
     if not read_status_record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Read status not found",
-        )
+        raise NotFoundException("Read status not found")
 
     return ReadStatusResponse(
         id=read_status_record.id,
@@ -240,7 +238,4 @@ async def deactivate_device(
     """Deactivate a device session."""
     success = await sync_service.deactivate_device(db, current_user.id, device_id)
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Device not found",
-        )
+        raise NotFoundException("Device not found")

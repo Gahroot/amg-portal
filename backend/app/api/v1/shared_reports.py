@@ -5,11 +5,12 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Request, status
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
 from app.core.config import settings
+from app.core.exceptions import NotFoundException, ValidationException
 from app.models.shared_report import SharedReport
 from app.schemas.shared_report import SharedReportCreate, SharedReportResponse
 
@@ -71,17 +72,13 @@ async def create_shared_report(
 ) -> SharedReportResponse:
     """Create a new shareable link for a report."""
     if body.report_type not in VALID_SHARE_REPORT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_SHARE_REPORT_TYPES))}",
+        raise ValidationException(
+            f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_SHARE_REPORT_TYPES))}"
         )
 
     expires_in = body.expires_in or "never"
     if expires_in not in _EXPIRY_DELTAS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="expires_in must be one of: 1d, 1w, 1m, never",
-        )
+        raise ValidationException("expires_in must be one of: 1d, 1w, 1m, never")
 
     delta = _EXPIRY_DELTAS[expires_in]
     expires_at = datetime.now(UTC) + delta if delta is not None else None
@@ -155,7 +152,7 @@ async def revoke_shared_report(
     )
     share = result.scalar_one_or_none()
     if not share:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share not found")
+        raise NotFoundException("Share not found")
 
     share.is_active = False
     await db.commit()
