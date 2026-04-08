@@ -9,6 +9,8 @@ import {
   reviewDeliverable,
   submitDeliverable,
 } from "@/lib/api/deliverables";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   DeliverableListParams,
   DeliverableCreateData,
@@ -18,28 +20,24 @@ import type {
 
 export function useDeliverables(params?: DeliverableListParams) {
   return useQuery({
-    queryKey: ["deliverables", params],
+    queryKey: queryKeys.deliverables.list(params),
     queryFn: () => listDeliverables(params),
   });
 }
 
 export function useDeliverable(id: string) {
   return useQuery({
-    queryKey: ["deliverables", id],
+    queryKey: queryKeys.deliverables.detail(id),
     queryFn: () => getDeliverable(id),
     enabled: !!id,
   });
 }
 
 export function useCreateDeliverable() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: DeliverableCreateData) => createDeliverable(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deliverables"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create deliverable"),
+    invalidateKeys: [queryKeys.deliverables.all],
+    errorMessage: "Failed to create deliverable",
   });
 }
 
@@ -54,9 +52,9 @@ export function useUpdateDeliverable() {
       data: DeliverableUpdateData;
     }) => updateDeliverable(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["deliverables"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.deliverables.all });
       queryClient.invalidateQueries({
-        queryKey: ["deliverables", variables.id],
+        queryKey: queryKeys.deliverables.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -70,9 +68,9 @@ export function useSubmitDeliverable() {
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       submitDeliverable(id, file),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["deliverables"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.deliverables.all });
       queryClient.invalidateQueries({
-        queryKey: ["deliverables", variables.id],
+        queryKey: queryKeys.deliverables.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -91,9 +89,9 @@ export function useReviewDeliverable() {
       data: DeliverableReviewData;
     }) => reviewDeliverable(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["deliverables"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.deliverables.all });
       queryClient.invalidateQueries({
-        queryKey: ["deliverables", variables.id],
+        queryKey: queryKeys.deliverables.detail(variables.id),
       });
     },
     onError: (error: Error) =>

@@ -1,6 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   listSLATrackers,
   getSLABreaches,
@@ -8,18 +7,20 @@ import {
   respondToSLA,
   getEntitySLATrackers,
 } from "@/lib/api/sla";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { SLACreate, SLAListParams } from "@/types/sla";
 
 export function useSLATrackers(params?: SLAListParams) {
   return useQuery({
-    queryKey: ["sla", params],
+    queryKey: queryKeys.sla.list(params),
     queryFn: () => listSLATrackers(params),
   });
 }
 
 export function useSLABreaches(includeApproaching = true) {
   return useQuery({
-    queryKey: ["sla", "breaches", includeApproaching],
+    queryKey: queryKeys.sla.breaches(includeApproaching),
     queryFn: () => getSLABreaches(includeApproaching),
     refetchInterval: 60 * 1000, // Refetch every minute
   });
@@ -31,31 +32,24 @@ export function useEntitySLATrackers(
   params?: SLAListParams,
 ) {
   return useQuery({
-    queryKey: ["sla", "entity", entityType, entityId, params],
+    queryKey: queryKeys.sla.entity(entityType, entityId, params),
     queryFn: () => getEntitySLATrackers(entityType, entityId, params),
     enabled: !!entityType && !!entityId,
   });
 }
 
 export function useStartSLA() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: SLACreate) => startSLAClock(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sla"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to start SLA tracker"),
+    invalidateKeys: [queryKeys.sla.all],
+    errorMessage: "Failed to start SLA tracker",
   });
 }
 
 export function useRespondToSLA() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => respondToSLA(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sla"] });
-      queryClient.invalidateQueries({ queryKey: ["sla", "breaches"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to respond to SLA"),
+    invalidateKeys: [queryKeys.sla.all],
+    errorMessage: "Failed to respond to SLA",
   });
 }

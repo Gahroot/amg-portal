@@ -1,25 +1,25 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   listKYCDocuments,
   uploadKYCDocument,
   verifyKYCDocument,
   listExpiringKYCDocuments,
 } from "@/lib/api/kyc-documents";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { KYCVerifyData } from "@/types/document";
 
 export function useKYCDocuments(clientId: string) {
   return useQuery({
-    queryKey: ["kyc-documents", clientId],
+    queryKey: queryKeys.kycDocuments.byClient(clientId),
     queryFn: () => listKYCDocuments(clientId),
     enabled: !!clientId,
   });
 }
 
 export function useUploadKYCDocument(clientId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (params: {
       file: File;
       documentType: string;
@@ -27,28 +27,23 @@ export function useUploadKYCDocument(clientId: string) {
       notes?: string;
     }) =>
       uploadKYCDocument(clientId, params.file, params.documentType, params.expiryDate, params.notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kyc-documents"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to upload KYC document"),
+    invalidateKeys: [queryKeys.kycDocuments.all],
+    errorMessage: "Failed to upload KYC document",
   });
 }
 
 export function useVerifyKYCDocument(clientId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (params: { kycId: string; data: KYCVerifyData }) =>
       verifyKYCDocument(clientId, params.kycId, params.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kyc-documents"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to verify document"),
+    invalidateKeys: [queryKeys.kycDocuments.all],
+    errorMessage: "Failed to verify document",
   });
 }
 
 export function useExpiringKYCDocuments(days?: number) {
   return useQuery({
-    queryKey: ["kyc-documents", "expiring", days],
+    queryKey: queryKeys.kycDocuments.expiring(days),
     queryFn: () => listExpiringKYCDocuments(days),
   });
 }

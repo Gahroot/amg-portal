@@ -9,13 +9,14 @@ import {
   type RecentItemType,
   type RecordRecentItemData,
 } from "@/lib/api/recent-items";
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * Hook to fetch the current user's recent items
  */
 export function useRecentItems(limit: number = 20, itemType?: RecentItemType) {
   return useQuery({
-    queryKey: ["recent-items", limit, itemType],
+    queryKey: queryKeys.recentItems.list(limit, itemType),
     queryFn: () => getRecentItems(limit, itemType),
     staleTime: 60_000, // 1 minute
   });
@@ -32,7 +33,7 @@ export function useRecordRecentItem() {
     mutationFn: (data: RecordRecentItemData) => recordRecentItem(data),
     onSuccess: () => {
       // Invalidate recent items to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["recent-items"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentItems.all });
     },
     onError: (error: Error) => {
       // Silently fail - this is not critical functionality
@@ -50,7 +51,7 @@ export function useDeleteRecentItem() {
   return useMutation({
     mutationFn: (itemId: string) => deleteRecentItem(itemId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recent-items"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentItems.all });
       toast.success("Item removed from recent items");
     },
     onError: (error: Error) => {
@@ -68,7 +69,7 @@ export function useClearRecentItems() {
   return useMutation({
     mutationFn: () => clearRecentItems(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["recent-items"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentItems.all });
       toast.success("Recent items cleared");
     },
     onError: (error: Error) => {

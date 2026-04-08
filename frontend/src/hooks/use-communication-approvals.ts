@@ -7,6 +7,8 @@ import {
   getPendingReviews,
   getCommunicationsByStatus,
 } from "@/lib/api/communications";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { ReviewAction } from "@/types/communication";
 
 export function usePendingReviews(params?: {
@@ -14,7 +16,7 @@ export function usePendingReviews(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["communications", "pending-reviews", params],
+    queryKey: queryKeys.communications.pendingReviews(params),
     queryFn: () => getPendingReviews(params),
   });
 }
@@ -24,23 +26,18 @@ export function useCommunicationsByStatus(
   params?: { skip?: number; limit?: number }
 ) {
   return useQuery({
-    queryKey: ["communications", "by-status", status, params],
+    queryKey: queryKeys.communications.byStatus(status, params),
     queryFn: () => getCommunicationsByStatus(status, params),
     enabled: !!status,
   });
 }
 
 export function useSubmitForReview() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => submitForReview(id),
-    onSuccess: () => {
-      toast.success("Communication submitted for review");
-      queryClient.invalidateQueries({ queryKey: ["communications"] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to submit for review");
-    },
+    invalidateKeys: [queryKeys.communications.all],
+    successMessage: "Communication submitted for review",
+    errorMessage: "Failed to submit for review",
   });
 }
 
@@ -52,7 +49,7 @@ export function useReviewCommunication() {
     onSuccess: (_data, variables) => {
       const action = variables.data.action === "approve" ? "approved" : "rejected";
       toast.success(`Communication ${action}`);
-      queryClient.invalidateQueries({ queryKey: ["communications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.communications.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to review communication");

@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { comparePrograms, compareClients } from "@/lib/api/comparison";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useProgramComparison(ids: string[]) {
   return useQuery({
-    queryKey: ["programs", "compare", ids],
+    queryKey: queryKeys.programs.compare(ids),
     queryFn: () => comparePrograms(ids),
     enabled: ids.length >= 2 && ids.length <= 4,
   });
@@ -11,7 +12,7 @@ export function useProgramComparison(ids: string[]) {
 
 export function useClientComparison(ids: string[]) {
   return useQuery({
-    queryKey: ["clients", "compare", ids],
+    queryKey: queryKeys.clients.compare(ids),
     queryFn: () => compareClients(ids),
     enabled: ids.length >= 2 && ids.length <= 4,
   });

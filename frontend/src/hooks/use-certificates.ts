@@ -16,6 +16,8 @@ import {
   deleteCertificate,
   previewCertificate,
 } from "@/lib/api/clearance-certificates";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   CertificateTemplateType,
   CertificateStatus,
@@ -36,14 +38,14 @@ export function useCertificateTemplates(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["certificates", "templates", params],
+    queryKey: queryKeys.certificates.templates.list(params),
     queryFn: () => listTemplates(params),
   });
 }
 
 export function useCertificateTemplate(id: string) {
   return useQuery({
-    queryKey: ["certificates", "templates", id],
+    queryKey: queryKeys.certificates.templates.detail(id),
     queryFn: () => getTemplate(id),
     enabled: !!id,
   });
@@ -51,28 +53,24 @@ export function useCertificateTemplate(id: string) {
 
 export function useCertificates(params?: ClearanceCertificateListParams) {
   return useQuery({
-    queryKey: ["certificates", params],
+    queryKey: queryKeys.certificates.list(params),
     queryFn: () => listCertificates(params),
   });
 }
 
 export function useCertificate(id: string) {
   return useQuery({
-    queryKey: ["certificates", id],
+    queryKey: queryKeys.certificates.detail(id),
     queryFn: () => getCertificate(id),
     enabled: !!id,
   });
 }
 
 export function useCreateCertificateTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: CertificateTemplateCreate) => createTemplate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["certificates", "templates"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create certificate template"),
+    invalidateKeys: [queryKeys.certificates.templates.all],
+    errorMessage: "Failed to create certificate template",
   });
 }
 
@@ -87,9 +85,9 @@ export function useUpdateCertificateTemplate() {
       data: CertificateTemplateUpdate;
     }) => updateTemplate(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["certificates", "templates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.templates.all });
       queryClient.invalidateQueries({
-        queryKey: ["certificates", "templates", variables.id],
+        queryKey: queryKeys.certificates.templates.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -98,26 +96,18 @@ export function useUpdateCertificateTemplate() {
 }
 
 export function useDeleteCertificateTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteTemplate(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["certificates", "templates"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to delete certificate template"),
+    invalidateKeys: [queryKeys.certificates.templates.all],
+    errorMessage: "Failed to delete certificate template",
   });
 }
 
 export function useCreateCertificate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ClearanceCertificateCreate) => createCertificate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create certificate"),
+    invalidateKeys: [queryKeys.certificates.all],
+    errorMessage: "Failed to create certificate",
   });
 }
 
@@ -132,9 +122,9 @@ export function useUpdateCertificate() {
       data: ClearanceCertificateUpdate;
     }) => updateCertificate(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.all });
       queryClient.invalidateQueries({
-        queryKey: ["certificates", variables.id],
+        queryKey: queryKeys.certificates.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -153,9 +143,9 @@ export function useIssueCertificate() {
       data: ClearanceCertificateIssue;
     }) => issueCertificate(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.all });
       queryClient.invalidateQueries({
-        queryKey: ["certificates", variables.id],
+        queryKey: queryKeys.certificates.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -174,9 +164,9 @@ export function useRevokeCertificate() {
       data: ClearanceCertificateRevoke;
     }) => revokeCertificate(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.certificates.all });
       queryClient.invalidateQueries({
-        queryKey: ["certificates", variables.id],
+        queryKey: queryKeys.certificates.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -185,14 +175,10 @@ export function useRevokeCertificate() {
 }
 
 export function useDeleteCertificate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteCertificate(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["certificates"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to delete certificate"),
+    invalidateKeys: [queryKeys.certificates.all],
+    errorMessage: "Failed to delete certificate",
   });
 }
 

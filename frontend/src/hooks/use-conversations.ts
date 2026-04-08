@@ -11,38 +11,35 @@ import {
   markConversationRead,
   addParticipant,
 } from "@/lib/api/conversations";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
-  Conversation,
   ConversationCreateData,
   ConversationUpdateData,
-  Communication,
   SendMessageData,
 } from "@/types/communication";
 
 // Conversations
 export function useConversations(params?: { skip?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["conversations", params],
+    queryKey: queryKeys.conversations.list(params),
     queryFn: () => listConversations(params),
   });
 }
 
 export function useConversation(id: string) {
   return useQuery({
-    queryKey: ["conversation", id],
+    queryKey: queryKeys.conversations.detail(id),
     queryFn: () => getConversation(id),
     enabled: !!id,
   });
 }
 
 export function useCreateConversation() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ConversationCreateData) => createConversation(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to create conversation"),
+    invalidateKeys: [queryKeys.conversations.all],
+    errorMessage: "Failed to create conversation",
   });
 }
 
@@ -52,8 +49,8 @@ export function useUpdateConversation() {
     mutationFn: ({ id, data }: { id: string; data: ConversationUpdateData }) =>
       updateConversation(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["conversation", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to update conversation"),
   });
@@ -62,7 +59,7 @@ export function useUpdateConversation() {
 // Messages
 export function useMessages(conversationId: string, params?: { skip?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["messages", conversationId, params],
+    queryKey: queryKeys.conversations.messages(conversationId, params),
     queryFn: () => getMessages({ conversation_id: conversationId, ...params }),
     enabled: !!conversationId,
     refetchInterval: 5000, // Poll for new messages every 5 seconds
@@ -75,8 +72,8 @@ export function useSendMessage() {
     mutationFn: ({ conversationId, data }: { conversationId: string; data: SendMessageData }) =>
       sendMessage(conversationId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.messagesAll(variables.conversationId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to send message"),
   });
@@ -87,8 +84,8 @@ export function useMarkConversationRead() {
   return useMutation({
     mutationFn: (conversationId: string) => markConversationRead(conversationId),
     onSuccess: (_, conversationId) => {
-      queryClient.invalidateQueries({ queryKey: ["conversation", conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.detail(conversationId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to mark conversation as read"),
   });
@@ -100,8 +97,8 @@ export function useAddParticipant() {
     mutationFn: ({ conversationId, userId }: { conversationId: string; userId: string }) =>
       addParticipant(conversationId, userId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["conversation", variables.conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.detail(variables.conversationId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to add participant"),
   });
@@ -110,7 +107,7 @@ export function useAddParticipant() {
 // Unread count
 export function useUnreadCount() {
   return useQuery({
-    queryKey: ["unread-count"],
+    queryKey: queryKeys.conversations.unreadCount(),
     queryFn: async () => {
       const response = await fetch("/api/v1/communications/unread-count", {
         credentials: "include",
@@ -128,12 +125,12 @@ export function useUnreadCount() {
 // Unread message count for navigation badges
 export function useUnreadMessageCount() {
   const { data } = useConversations({ limit: 100 });
-  
+
   // Calculate total unread from conversations
   const totalUnread = data?.conversations.reduce(
     (sum, conv) => sum + (conv.unread_count || 0),
     0
   ) ?? 0;
-  
+
   return totalUnread;
 }

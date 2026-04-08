@@ -1,37 +1,34 @@
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   acknowledgePortalDocument,
   getMyPortalDocument,
   getMyPortalDocuments,
 } from "@/lib/api/client-portal";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 
 export function usePortalDocuments() {
   return useQuery({
-    queryKey: ["portal", "documents"],
+    queryKey: queryKeys.portal.documents.all,
     queryFn: getMyPortalDocuments,
   });
 }
 
 export function usePortalDocument(id: string) {
   return useQuery({
-    queryKey: ["portal", "documents", id],
+    queryKey: queryKeys.portal.documents.detail(id),
     queryFn: () => getMyPortalDocument(id),
     enabled: !!id,
   });
 }
 
 export function useAcknowledgeDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ documentId, signerName }: { documentId: string; signerName: string }) =>
       acknowledgePortalDocument(documentId, signerName),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["portal", "documents"] });
-      toast.success("Document acknowledged successfully.");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to acknowledge document"),
+    invalidateKeys: [queryKeys.portal.documents.all],
+    successMessage: "Document acknowledged successfully.",
+    errorMessage: "Failed to acknowledge document",
   });
 }

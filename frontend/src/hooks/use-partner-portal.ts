@@ -33,11 +33,13 @@ import {
 import type { CapabilityRefreshRequest } from "@/types/partner";
 import { submitDeliverable } from "@/lib/api/deliverables";
 import { getPartnerOnboarding } from "@/lib/api/partner-capabilities";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 
 // Profile
 export function usePartnerProfile() {
   return useQuery({
-    queryKey: ["partner-portal", "profile"],
+    queryKey: queryKeys.partnerPortal.profile(),
     queryFn: getMyProfile,
   });
 }
@@ -45,14 +47,14 @@ export function usePartnerProfile() {
 // Assignments
 export function usePartnerAssignments(params?: AssignmentListParams) {
   return useQuery({
-    queryKey: ["partner-portal", "assignments", params],
+    queryKey: queryKeys.partnerPortal.assignments.list(params),
     queryFn: () => getMyAssignments(params),
   });
 }
 
 export function usePartnerAssignment(id: string) {
   return useQuery({
-    queryKey: ["partner-portal", "assignments", id],
+    queryKey: queryKeys.partnerPortal.assignments.detail(id),
     queryFn: () => getMyAssignment(id),
     enabled: !!id,
   });
@@ -61,35 +63,32 @@ export function usePartnerAssignment(id: string) {
 // Deliverables
 export function usePartnerDeliverables(params?: DeliverableListParams) {
   return useQuery({
-    queryKey: ["partner-portal", "deliverables", params],
+    queryKey: queryKeys.partnerPortal.deliverables.list(params),
     queryFn: () => getMyDeliverables(params),
   });
 }
 
 export function usePartnerDeliverable(id: string) {
   return useQuery({
-    queryKey: ["partner-portal", "deliverables", id],
+    queryKey: queryKeys.partnerPortal.deliverables.detail(id),
     queryFn: () => getMyDeliverable(id),
     enabled: !!id,
   });
 }
 
 export function useSubmitPartnerDeliverable() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => submitDeliverable(id, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "deliverables"] });
-      toast.success("Deliverable submitted successfully");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to submit deliverable"),
+    invalidateKeys: [queryKeys.partnerPortal.deliverables.all],
+    successMessage: "Deliverable submitted successfully",
+    errorMessage: "Failed to submit deliverable",
   });
 }
 
 // Documents
 export function useAssignmentDocuments(assignmentId: string) {
   return useQuery({
-    queryKey: ["partner-portal", "assignments", assignmentId, "documents"],
+    queryKey: queryKeys.partnerPortal.assignments.documents(assignmentId),
     queryFn: () => getAssignmentDocuments(assignmentId),
     enabled: !!assignmentId,
   });
@@ -108,14 +107,14 @@ export function useDownloadDocument() {
 // Conversations
 export function usePartnerConversations(params?: { limit?: number }) {
   return useQuery({
-    queryKey: ["partner-portal", "conversations", params],
+    queryKey: queryKeys.partnerPortal.conversations.list(params),
     queryFn: () => getMyConversations(params),
   });
 }
 
 export function usePartnerConversation(conversationId: string) {
   return useQuery({
-    queryKey: ["partner-portal", "conversations", conversationId],
+    queryKey: queryKeys.partnerPortal.conversations.detail(conversationId),
     queryFn: () => getMyConversation(conversationId),
     enabled: !!conversationId,
   });
@@ -123,7 +122,7 @@ export function usePartnerConversation(conversationId: string) {
 
 export function usePartnerMessages(conversationId: string, params?: { skip?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["partner-portal", "conversations", conversationId, "messages", params],
+    queryKey: queryKeys.partnerPortal.conversations.messages(conversationId, params),
     queryFn: () => getConversationMessages(conversationId, params),
     enabled: !!conversationId,
     refetchInterval: 5000,
@@ -138,9 +137,9 @@ function usePartnerMessageMutation<T extends { conversationId: string }>(
     mutationFn: (vars: T) => sendMessageToConversation(vars.conversationId, extractBody(vars)),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["partner-portal", "conversations", variables.conversationId, "messages"],
+        queryKey: queryKeys.partnerPortal.conversations.messagesAll(variables.conversationId),
       });
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partnerPortal.conversations.all });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to send message"),
   });
@@ -164,9 +163,9 @@ export function useMarkPartnerConversationRead() {
     mutationFn: (conversationId: string) => markConversationAsRead(conversationId),
     onSuccess: (_, conversationId) => {
       queryClient.invalidateQueries({
-        queryKey: ["partner-portal", "conversations", conversationId],
+        queryKey: queryKeys.partnerPortal.conversations.detail(conversationId),
       });
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "conversations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partnerPortal.conversations.all });
     },
   });
 }
@@ -174,21 +173,21 @@ export function useMarkPartnerConversationRead() {
 // Partner Reports (Class C)
 export function usePartnerBriefSummary() {
   return useQuery({
-    queryKey: ["partner-portal", "reports", "brief-summary"],
+    queryKey: queryKeys.partnerPortal.reports.briefSummary(),
     queryFn: getPartnerBriefSummary,
   });
 }
 
 export function usePartnerDeliverableFeedback(assignmentId?: string) {
   return useQuery({
-    queryKey: ["partner-portal", "reports", "deliverable-feedback", assignmentId],
+    queryKey: queryKeys.partnerPortal.reports.deliverableFeedback(assignmentId),
     queryFn: () => getPartnerDeliverableFeedback(assignmentId),
   });
 }
 
 export function usePartnerEngagementHistory() {
   return useQuery({
-    queryKey: ["partner-portal", "reports", "engagement-history"],
+    queryKey: queryKeys.partnerPortal.reports.engagementHistory(),
     queryFn: getPartnerEngagementHistory,
   });
 }
@@ -196,49 +195,44 @@ export function usePartnerEngagementHistory() {
 // Performance Notices
 export function useMyPerformanceNotices() {
   return useQuery({
-    queryKey: ["partner-portal", "performance-notices"],
+    queryKey: queryKeys.partnerPortal.performanceNotices(),
     queryFn: getMyPerformanceNotices,
   });
 }
 
 export function useAcknowledgePerformanceNotice() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (noticeId: string) => acknowledgePerformanceNotice(noticeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "performance-notices"] });
-      toast.success("Notice acknowledged");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to acknowledge notice"),
+    invalidateKeys: [queryKeys.partnerPortal.performanceNotices()],
+    successMessage: "Notice acknowledged",
+    errorMessage: "Failed to acknowledge notice",
   });
 }
 
 // Capability Refresh
 export function useCapabilityRefreshStatus() {
   return useQuery({
-    queryKey: ["partner-portal", "capability-refresh", "status"],
+    queryKey: queryKeys.partnerPortal.capabilityRefresh.status(),
     queryFn: getCapabilityRefreshStatus,
   });
 }
 
 export function useSubmitCapabilityRefresh() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: CapabilityRefreshRequest) => submitCapabilityRefresh(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "capability-refresh"] });
-      queryClient.invalidateQueries({ queryKey: ["partner-portal", "profile"] });
-      toast.success("Annual capability refresh submitted successfully");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to submit capability refresh"),
+    invalidateKeys: [
+      queryKeys.partnerPortal.capabilityRefresh.all,
+      queryKeys.partnerPortal.profile(),
+    ],
+    successMessage: "Annual capability refresh submitted successfully",
+    errorMessage: "Failed to submit capability refresh",
   });
 }
 
 // Scorecard
 export function useMyScorecard(period: ScorecardPeriod = "90d") {
   return useQuery({
-    queryKey: ["partner-portal", "scorecard", period],
+    queryKey: queryKeys.partnerPortal.scorecard(period),
     queryFn: () => getMyScorecard(period),
   });
 }
@@ -249,7 +243,7 @@ export function usePartnerOnboarding() {
   const partnerId = profile?.id;
 
   return useQuery({
-    queryKey: ["partner-portal", "onboarding", partnerId],
+    queryKey: queryKeys.partnerPortal.onboarding(partnerId),
     queryFn: () => getPartnerOnboarding(partnerId!),
     enabled: !!partnerId,
   });
@@ -258,7 +252,7 @@ export function usePartnerOnboarding() {
 // Performance status vs thresholds
 export function useMyPerformanceStatus() {
   return useQuery({
-    queryKey: ["partner-portal", "performance-status"],
+    queryKey: queryKeys.partnerPortal.performanceStatus(),
     queryFn: getMyPerformanceStatus,
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
@@ -267,14 +261,14 @@ export function useMyPerformanceStatus() {
 // Payments
 export function useMyPayments(params?: PaymentListParams) {
   return useQuery({
-    queryKey: ["partner-portal", "payments", params],
+    queryKey: queryKeys.partnerPortal.payments.list(params),
     queryFn: () => getMyPayments(params),
   });
 }
 
 export function useMyPaymentSummary() {
   return useQuery({
-    queryKey: ["partner-portal", "payments", "summary"],
+    queryKey: queryKeys.partnerPortal.payments.summary(),
     queryFn: getMyPaymentSummary,
   });
 }

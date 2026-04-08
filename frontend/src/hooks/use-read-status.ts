@@ -6,15 +6,12 @@ import { updateReadStatus, batchUpdateReadStatus, getReadStatus } from "@/lib/ap
 import { useDeviceId } from "@/stores/preferences-store";
 import type { ReadStatusResponse, ReadStatusUpdateRequest, EntityType } from "@/types/preferences";
 
+import { queryKeys } from "@/lib/query-keys";
+
 /**
- * Query key factory for read status
+ * Query key factory for read status — delegates to centralized queryKeys
  */
-const readStatusKeys = {
-  all: ["read-status"] as const,
-  entity: (entityType: string, entityId: string) =>
-    ["read-status", entityType, entityId] as const,
-  list: (entityType: string) => ["read-status", entityType] as const,
-};
+const readStatusKeys = queryKeys.readStatus;
 
 /**
  * Hook for managing read status of a single entity

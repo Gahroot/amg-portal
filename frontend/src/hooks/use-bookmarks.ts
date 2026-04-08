@@ -8,15 +8,14 @@ import {
   type BookmarkCreateData,
   type BookmarkEntityType,
 } from "@/lib/api/bookmarks";
-
-const QUERY_KEY = ["bookmarks"];
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * Fetch all bookmarks for the current user.
  */
 export function useBookmarks(entityType?: BookmarkEntityType) {
   return useQuery({
-    queryKey: [...QUERY_KEY, entityType],
+    queryKey: queryKeys.bookmarks.byType(entityType),
     queryFn: () => getBookmarks(entityType),
     staleTime: 60_000, // 1 minute
   });
@@ -46,7 +45,7 @@ export function useToggleBookmark() {
   const addMutation = useMutation({
     mutationFn: (data: BookmarkCreateData) => addBookmark(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all });
       toast.success("Pinned");
     },
     onError: (error: Error) => {
@@ -63,7 +62,7 @@ export function useToggleBookmark() {
       entityId: string;
     }) => removeBookmark(entityType, entityId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.all });
       toast.success("Unpinned");
     },
     onError: (error: Error) => {

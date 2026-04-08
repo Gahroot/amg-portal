@@ -17,17 +17,18 @@ import {
   downloadCompletionPDF,
   downloadAnnualReviewPDF,
 } from "@/lib/api/reports";
+import { queryKeys } from "@/lib/query-keys";
 
 export function usePortfolioOverview() {
   return useQuery({
-    queryKey: ["reports", "portfolio"],
+    queryKey: queryKeys.reports.portfolio(),
     queryFn: () => getPortfolioOverview(),
   });
 }
 
 export function useProgramStatusReport(programId: string) {
   return useQuery({
-    queryKey: ["reports", "program-status", programId],
+    queryKey: queryKeys.reports.programStatus(programId),
     queryFn: () => getProgramStatusReport(programId),
     enabled: !!programId,
   });
@@ -35,7 +36,7 @@ export function useProgramStatusReport(programId: string) {
 
 export function useCompletionReport(programId: string) {
   return useQuery({
-    queryKey: ["reports", "completion", programId],
+    queryKey: queryKeys.reports.completion(programId),
     queryFn: () => getCompletionReport(programId),
     enabled: !!programId,
   });
@@ -43,7 +44,7 @@ export function useCompletionReport(programId: string) {
 
 export function useAnnualReview(year: number) {
   return useQuery({
-    queryKey: ["reports", "annual", year],
+    queryKey: queryKeys.reports.annual(year),
     queryFn: () => getAnnualReview(year),
     enabled: !!year,
   });
@@ -103,14 +104,14 @@ export function useExportAnnualReview() {
 
 export function usePortalProgramStatuses() {
   return useQuery({
-    queryKey: ["portal", "program-statuses"],
+    queryKey: queryKeys.portal.programStatuses(),
     queryFn: () => getPortalProgramStatuses(),
   });
 }
 
 export function usePortalProgramStatus(programId: string) {
   return useQuery({
-    queryKey: ["portal", "program-status", programId],
+    queryKey: queryKeys.portal.programStatus(programId),
     queryFn: () => getPortalProgramStatus(programId),
     enabled: !!programId,
   });

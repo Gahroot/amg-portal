@@ -11,6 +11,7 @@ import {
   getPartnerRankings,
   type ProgramHealthResponse,
 } from "@/lib/api/dashboard";
+import { queryKeys } from "@/lib/query-keys";
 
 interface QueryOptions {
   enabled?: boolean;
@@ -18,14 +19,14 @@ interface QueryOptions {
 
 export function useProgramHealth() {
   return useQuery({
-    queryKey: ["dashboard", "program-health"],
+    queryKey: queryKeys.dashboard.programHealth(),
     queryFn: () => getProgramHealth(),
   });
 }
 
 export function usePortfolioSummary(options?: QueryOptions) {
   return useQuery({
-    queryKey: ["dashboard", "portfolio-summary"],
+    queryKey: queryKeys.dashboard.portfolioSummary(),
     queryFn: () => getPortfolioSummary(),
     enabled: options?.enabled,
   });
@@ -37,7 +38,7 @@ export function usePortfolioSummary(options?: QueryOptions) {
  */
 export function useAtRiskPrograms(options?: QueryOptions) {
   const health = useQuery({
-    queryKey: ["dashboard", "program-health"],
+    queryKey: queryKeys.dashboard.programHealth(),
     queryFn: () => getProgramHealth(),
     enabled: options?.enabled,
   });
@@ -55,7 +56,7 @@ export function useAtRiskPrograms(options?: QueryOptions) {
 
 export function usePartnerScorecard(partnerId: string) {
   return useQuery({
-    queryKey: ["partner-scoring", "scorecard", partnerId],
+    queryKey: queryKeys.partnerScoring.scorecard(partnerId),
     queryFn: () => getPartnerScorecard(partnerId),
     enabled: !!partnerId,
   });
@@ -63,14 +64,14 @@ export function usePartnerScorecard(partnerId: string) {
 
 export function usePartnerRankings(skip = 0, limit = 50) {
   return useQuery({
-    queryKey: ["partner-scoring", "rankings", skip, limit],
+    queryKey: queryKeys.partnerScoring.rankings(skip, limit),
     queryFn: () => getPartnerRankings(skip, limit),
   });
 }
 
 export function useRealTimeStats(options?: QueryOptions) {
   return useQuery({
-    queryKey: ["dashboard", "real-time-stats"],
+    queryKey: queryKeys.dashboard.realTimeStats(),
     queryFn: () => getRealTimeStats(),
     refetchOnWindowFocus: true,
     enabled: options?.enabled,
@@ -81,7 +82,7 @@ export function useActivityFeed(options?: QueryOptions & { skip?: number; limit?
   const skip = options?.skip ?? 0;
   const limit = options?.limit ?? 50;
   return useQuery({
-    queryKey: ["dashboard", "activity-feed", skip, limit],
+    queryKey: queryKeys.dashboard.activityFeed(skip, limit),
     queryFn: () => getActivityFeed(skip, limit),
     refetchOnWindowFocus: true,
     enabled: options?.enabled,
@@ -90,7 +91,7 @@ export function useActivityFeed(options?: QueryOptions & { skip?: number; limit?
 
 export function useDashboardAlerts(options?: QueryOptions) {
   return useQuery({
-    queryKey: ["dashboard", "alerts"],
+    queryKey: queryKeys.dashboard.alerts(),
     queryFn: () => getDashboardAlerts(),
     refetchOnWindowFocus: true,
     enabled: options?.enabled,

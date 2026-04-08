@@ -10,11 +10,12 @@ import {
   getPartnerRatings,
   completeClosure,
 } from "@/lib/api/closure";
+import { queryKeys } from "@/lib/query-keys";
 import type { ChecklistItem, PartnerRatingCreate } from "@/lib/api/closure";
 
 export function useClosureStatus(programId: string) {
   return useQuery({
-    queryKey: ["closure", programId],
+    queryKey: queryKeys.closure.detail(programId),
     queryFn: () => getClosureStatus(programId),
     enabled: !!programId,
     retry: false,
@@ -23,7 +24,7 @@ export function useClosureStatus(programId: string) {
 
 export function usePartnerRatings(programId: string) {
   return useQuery({
-    queryKey: ["closure", programId, "ratings"],
+    queryKey: queryKeys.closure.ratings(programId),
     queryFn: () => getPartnerRatings(programId),
     enabled: !!programId,
   });
@@ -45,7 +46,7 @@ export function useInitiateClosure() {
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["closure", variables.programId],
+        queryKey: queryKeys.closure.detail(variables.programId),
       });
       toast.success("Closure initiated successfully");
     },
@@ -66,7 +67,7 @@ export function useUpdateChecklist() {
     }) => updateChecklist(programId, items),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["closure", variables.programId],
+        queryKey: queryKeys.closure.detail(variables.programId),
       });
     },
     onError: (error: Error) =>
@@ -86,10 +87,10 @@ export function useSubmitPartnerRating() {
     }) => submitPartnerRating(programId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["closure", variables.programId],
+        queryKey: queryKeys.closure.detail(variables.programId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["closure", variables.programId, "ratings"],
+        queryKey: queryKeys.closure.ratings(variables.programId),
       });
       toast.success("Partner rating submitted");
     },
@@ -110,7 +111,7 @@ export function useSaveDebriefNotes() {
     }) => saveDebriefNotes(programId, notes),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["closure", variables.programId],
+        queryKey: queryKeys.closure.detail(variables.programId),
       });
       toast.success("Debrief notes saved");
     },
@@ -125,10 +126,10 @@ export function useCompleteClosure() {
     mutationFn: (programId: string) => completeClosure(programId),
     onSuccess: (_, programId) => {
       queryClient.invalidateQueries({
-        queryKey: ["closure", programId],
+        queryKey: queryKeys.closure.detail(programId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["programs", programId],
+        queryKey: queryKeys.programs.detail(programId),
       });
       toast.success("Program closure completed");
     },

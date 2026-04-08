@@ -12,6 +12,8 @@ import {
   getOverdueReviews,
   generateAnnualReviews,
 } from "@/lib/api/capability-reviews";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   CapabilityReviewListParams,
   CreateCapabilityReviewRequest,
@@ -22,14 +24,14 @@ import type {
 
 export function useCapabilityReviews(params?: CapabilityReviewListParams) {
   return useQuery({
-    queryKey: ["capability-reviews", params],
+    queryKey: queryKeys.capabilityReviews.list(params),
     queryFn: () => listCapabilityReviews(params),
   });
 }
 
 export function useCapabilityReview(id: string) {
   return useQuery({
-    queryKey: ["capability-reviews", id],
+    queryKey: queryKeys.capabilityReviews.detail(id),
     queryFn: () => getCapabilityReview(id),
     enabled: !!id,
   });
@@ -37,7 +39,7 @@ export function useCapabilityReview(id: string) {
 
 export function useCapabilityReviewStatistics() {
   return useQuery({
-    queryKey: ["capability-reviews", "statistics"],
+    queryKey: queryKeys.capabilityReviews.statistics(),
     queryFn: () => getCapabilityReviewStatistics(),
   });
 }
@@ -47,28 +49,24 @@ export function usePendingCapabilityReviews(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["capability-reviews", "pending", params],
+    queryKey: queryKeys.capabilityReviews.pending(params),
     queryFn: () => getPendingReviews(params),
   });
 }
 
 export function useOverdueCapabilityReviews() {
   return useQuery({
-    queryKey: ["capability-reviews", "overdue"],
+    queryKey: queryKeys.capabilityReviews.overdue(),
     queryFn: () => getOverdueReviews(),
   });
 }
 
 export function useCreateCapabilityReview() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: CreateCapabilityReviewRequest) =>
       createCapabilityReview(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["capability-reviews"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create capability review"),
+    invalidateKeys: [queryKeys.capabilityReviews.all],
+    errorMessage: "Failed to create capability review",
   });
 }
 
@@ -83,9 +81,9 @@ export function useUpdateCapabilityReview() {
       data: UpdateCapabilityReviewRequest;
     }) => updateCapabilityReview(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["capability-reviews"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.capabilityReviews.all });
       queryClient.invalidateQueries({
-        queryKey: ["capability-reviews", variables.id],
+        queryKey: queryKeys.capabilityReviews.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -104,9 +102,9 @@ export function useCompleteCapabilityReview() {
       data: CompleteCapabilityReviewRequest;
     }) => completeCapabilityReview(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["capability-reviews"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.capabilityReviews.all });
       queryClient.invalidateQueries({
-        queryKey: ["capability-reviews", variables.id],
+        queryKey: queryKeys.capabilityReviews.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -115,14 +113,10 @@ export function useCompleteCapabilityReview() {
 }
 
 export function useGenerateAnnualReviews() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: GenerateAnnualReviewsRequest) =>
       generateAnnualReviews(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["capability-reviews"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to generate annual reviews"),
+    invalidateKeys: [queryKeys.capabilityReviews.all],
+    errorMessage: "Failed to generate annual reviews",
   });
 }

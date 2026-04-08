@@ -7,6 +7,8 @@ import {
   decideApproval,
   getProgramApprovals,
 } from "@/lib/api/approvals";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   ApprovalListParams,
   ApprovalRequest,
@@ -15,28 +17,24 @@ import type {
 
 export function useApprovals(params?: ApprovalListParams) {
   return useQuery({
-    queryKey: ["approvals", params],
+    queryKey: queryKeys.approvals.list(params),
     queryFn: () => listApprovals(params),
   });
 }
 
 export function useProgramApprovals(programId: string) {
   return useQuery({
-    queryKey: ["approvals", "program", programId],
+    queryKey: queryKeys.approvals.program(programId),
     queryFn: () => getProgramApprovals(programId),
     enabled: !!programId,
   });
 }
 
 export function useSubmitApproval() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ApprovalRequest) => requestApproval(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approvals"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to submit approval request"),
+    invalidateKeys: [queryKeys.approvals.all],
+    errorMessage: "Failed to submit approval request",
   });
 }
 
@@ -46,8 +44,8 @@ export function useDecideApproval() {
     mutationFn: ({ id, data }: { id: string; data: ApprovalDecision }) =>
       decideApproval(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["approvals"] });
-      queryClient.invalidateQueries({ queryKey: ["approvals", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.approvals.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.approvals.detail(variables.id) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to decide approval"),

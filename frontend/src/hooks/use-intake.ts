@@ -7,12 +7,14 @@ import {
   saveIntakeStep,
   submitCompletedIntake,
 } from "@/lib/api/intake";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { IntakeFormData } from "@/lib/validations/client";
-import type { IntakeDraftData, IntakeFormResponse } from "@/types/intake-form";
+import type { IntakeDraftData } from "@/types/intake-form";
 
 export function useDraftIntake(profileId: string) {
   return useQuery({
-    queryKey: ["intake", profileId],
+    queryKey: queryKeys.intake.draft(profileId),
     queryFn: () => getDraftIntake(profileId),
     enabled: !!profileId,
   });
@@ -24,8 +26,8 @@ export function useSaveIntakeStep(profileId: string) {
     mutationFn: ({ step, data }: { step: number; data: IntakeDraftData }) =>
       saveIntakeStep(profileId, step, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["intake", profileId] });
-      queryClient.invalidateQueries({ queryKey: ["clients", profileId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.intake.draft(profileId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.profile(profileId) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to save"),
@@ -33,15 +35,11 @@ export function useSaveIntakeStep(profileId: string) {
 }
 
 export function useSubmitIntake() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: IntakeFormData) => submitIntakeForm(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("Client intake submitted successfully");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to submit intake"),
+    invalidateKeys: [queryKeys.clients.all],
+    successMessage: "Client intake submitted successfully",
+    errorMessage: "Failed to submit intake",
   });
 }
 
@@ -50,8 +48,8 @@ export function useSubmitCompletedIntake(profileId: string) {
   return useMutation({
     mutationFn: () => submitCompletedIntake(profileId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["intake", profileId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.intake.draft(profileId) });
       toast.success("Intake submitted for compliance review");
     },
     onError: (error: Error) =>

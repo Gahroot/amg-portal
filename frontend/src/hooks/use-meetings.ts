@@ -12,30 +12,21 @@ import {
   rescheduleMeeting,
   type GetAvailableSlotsParams,
 } from "@/lib/api/meetings";
+import { queryKeys } from "@/lib/query-keys";
 import type {
   MeetingBook,
   MeetingCancelRequest,
   MeetingRescheduleRequest,
 } from "@/types/meeting";
 
-// ─── Keys ─────────────────────────────────────────────────────────────────────
-
-export const meetingKeys = {
-  all: ["meetings"] as const,
-  types: () => [...meetingKeys.all, "types"] as const,
-  myList: (params?: object) =>
-    [...meetingKeys.all, "my", params] as const,
-  rmList: (params?: object) =>
-    [...meetingKeys.all, "rm", params] as const,
-  slots: (params: GetAvailableSlotsParams) =>
-    [...meetingKeys.all, "slots", params] as const,
-};
+// Re-export for backward compat if anything imports meetingKeys
+export const meetingKeys = queryKeys.meetings;
 
 // ─── Meeting Types ─────────────────────────────────────────────────────────────
 
 export function useMeetingTypes() {
   return useQuery({
-    queryKey: meetingKeys.types(),
+    queryKey: queryKeys.meetings.types(),
     queryFn: listMeetingTypes,
     staleTime: 5 * 60 * 1000, // types rarely change
   });
@@ -48,7 +39,7 @@ export function useAvailableSlots(
   enabled = true
 ) {
   return useQuery({
-    queryKey: meetingKeys.slots(params),
+    queryKey: queryKeys.meetings.slots(params),
     queryFn: () => getAvailableSlots(params),
     enabled: enabled && !!params.meeting_type_id,
   });
@@ -62,7 +53,7 @@ export function useMyMeetings(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: meetingKeys.myList(params),
+    queryKey: queryKeys.meetings.myList(params),
     queryFn: () => listMyMeetings(params),
   });
 }
@@ -75,7 +66,7 @@ export function useRMMeetings(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: meetingKeys.rmList(params),
+    queryKey: queryKeys.meetings.rmList(params),
     queryFn: () => listRMMeetings(params),
   });
 }
@@ -87,7 +78,7 @@ export function useBookMeeting() {
   return useMutation({
     mutationFn: (data: MeetingBook) => bookMeeting(data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.meetings.all });
     },
   });
 }
@@ -105,7 +96,7 @@ export function useCancelMeeting() {
       data?: MeetingCancelRequest;
     }) => cancelMeeting(meetingId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.meetings.all });
     },
   });
 }
@@ -123,7 +114,7 @@ export function useRescheduleMeeting() {
       data: MeetingRescheduleRequest;
     }) => rescheduleMeeting(meetingId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.meetings.all });
     },
   });
 }
@@ -135,7 +126,7 @@ export function useConfirmMeeting() {
   return useMutation({
     mutationFn: (meetingId: string) => confirmMeeting(meetingId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: meetingKeys.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.meetings.all });
     },
   });
 }

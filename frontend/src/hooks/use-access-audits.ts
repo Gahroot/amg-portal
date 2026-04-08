@@ -16,6 +16,8 @@ import {
   remediateFinding,
   waiveFinding,
 } from "@/lib/api/access-audits";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   AccessAuditListParams,
   AuditFindingListParams,
@@ -29,14 +31,14 @@ import type {
 
 export function useAccessAudits(params?: AccessAuditListParams) {
   return useQuery({
-    queryKey: ["access-audits", params],
+    queryKey: queryKeys.accessAudits.list(params),
     queryFn: () => listAccessAudits(params),
   });
 }
 
 export function useAccessAudit(id: string) {
   return useQuery({
-    queryKey: ["access-audits", id],
+    queryKey: queryKeys.accessAudits.detail(id),
     queryFn: () => getAccessAudit(id),
     enabled: !!id,
   });
@@ -44,34 +46,30 @@ export function useAccessAudit(id: string) {
 
 export function useAccessAuditStatistics() {
   return useQuery({
-    queryKey: ["access-audits", "statistics"],
+    queryKey: queryKeys.accessAudits.statistics(),
     queryFn: () => getAccessAuditStatistics(),
   });
 }
 
 export function useCurrentQuarterAudit() {
   return useQuery({
-    queryKey: ["access-audits", "current"],
+    queryKey: queryKeys.accessAudits.current(),
     queryFn: () => getCurrentQuarterAudit(),
   });
 }
 
 export function useAuditFindings(params?: AuditFindingListParams) {
   return useQuery({
-    queryKey: ["access-audits", "findings", params],
+    queryKey: queryKeys.accessAudits.findings(params),
     queryFn: () => listAuditFindings(params),
   });
 }
 
 export function useCreateAccessAudit() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: CreateAccessAuditRequest) => createAccessAudit(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create access audit"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to create access audit",
   });
 }
 
@@ -86,9 +84,9 @@ export function useUpdateAccessAudit() {
       data: UpdateAccessAuditRequest;
     }) => updateAccessAudit(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.accessAudits.all });
       queryClient.invalidateQueries({
-        queryKey: ["access-audits", variables.id],
+        queryKey: queryKeys.accessAudits.detail(variables.id),
       });
     },
     onError: (error: Error) =>
@@ -97,14 +95,10 @@ export function useUpdateAccessAudit() {
 }
 
 export function useCompleteAccessAudit() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => completeAccessAudit(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to complete access audit"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to complete access audit",
   });
 }
 
@@ -119,9 +113,9 @@ export function useCreateAuditFinding() {
       data: CreateAccessAuditFindingRequest;
     }) => createAuditFinding(auditId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.accessAudits.all });
       queryClient.invalidateQueries({
-        queryKey: ["access-audits", variables.auditId],
+        queryKey: queryKeys.accessAudits.detail(variables.auditId),
       });
     },
     onError: (error: Error) =>
@@ -130,8 +124,7 @@ export function useCreateAuditFinding() {
 }
 
 export function useUpdateAuditFinding() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       findingId,
       data,
@@ -139,17 +132,13 @@ export function useUpdateAuditFinding() {
       findingId: string;
       data: UpdateAccessAuditFindingRequest;
     }) => updateAuditFinding(findingId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update audit finding"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to update audit finding",
   });
 }
 
 export function useAcknowledgeFinding() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       findingId,
       notes,
@@ -157,17 +146,13 @@ export function useAcknowledgeFinding() {
       findingId: string;
       notes?: string;
     }) => acknowledgeFinding(findingId, { notes }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to acknowledge finding"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to acknowledge finding",
   });
 }
 
 export function useRemediateFinding() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       findingId,
       data,
@@ -175,17 +160,13 @@ export function useRemediateFinding() {
       findingId: string;
       data: RemediateFindingRequest;
     }) => remediateFinding(findingId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to remediate finding"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to remediate finding",
   });
 }
 
 export function useWaiveFinding() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       findingId,
       data,
@@ -193,10 +174,7 @@ export function useWaiveFinding() {
       findingId: string;
       data: WaiveFindingRequest;
     }) => waiveFinding(findingId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-audits"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to waive finding"),
+    invalidateKeys: [queryKeys.accessAudits.all],
+    errorMessage: "Failed to waive finding",
   });
 }

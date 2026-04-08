@@ -11,6 +11,8 @@ import {
   updateTemplate,
   updateTemplateStatus,
 } from "@/lib/api/templates";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   CommunicationTemplate,
   SendFromTemplateRequest,
@@ -22,7 +24,7 @@ import type {
 
 export function useTemplates(templateType?: string) {
   return useQuery({
-    queryKey: ["templates", templateType],
+    queryKey: queryKeys.templates.byType(templateType),
     queryFn: () => listTemplates(templateType ? { template_type: templateType } : undefined),
     staleTime: 5 * 60 * 1000, // Templates change rarely; cache for 5 minutes
   });
@@ -31,7 +33,7 @@ export function useTemplates(templateType?: string) {
 /** Fetches ALL templates including inactive ones — for the management page. */
 export function useAllTemplates(params?: { template_type?: string }) {
   return useQuery({
-    queryKey: ["templates-all", params?.template_type],
+    queryKey: queryKeys.templates.allIncludingInactive(params?.template_type),
     queryFn: () =>
       listTemplates({
         include_inactive: true,
@@ -43,42 +45,30 @@ export function useAllTemplates(params?: { template_type?: string }) {
 }
 
 export function useCreateTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: TemplateCreateData) => createTemplate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["templates"] });
-      queryClient.invalidateQueries({ queryKey: ["templates-all"] });
-      toast.success("Template created");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to create template"),
+    invalidateKeys: [queryKeys.templates.all],
+    successMessage: "Template created",
+    errorMessage: "Failed to create template",
   });
 }
 
 export function useUpdateTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TemplateCreateData> & { is_active?: boolean } }) =>
       updateTemplate(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["templates"] });
-      queryClient.invalidateQueries({ queryKey: ["templates-all"] });
-      toast.success("Template updated");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to update template"),
+    invalidateKeys: [queryKeys.templates.all],
+    successMessage: "Template updated",
+    errorMessage: "Failed to update template",
   });
 }
 
 export function useDeleteTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteTemplate(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["templates"] });
-      queryClient.invalidateQueries({ queryKey: ["templates-all"] });
-      toast.success("Template deleted");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to delete template"),
+    invalidateKeys: [queryKeys.templates.all],
+    successMessage: "Template deleted",
+    errorMessage: "Failed to delete template",
   });
 }
 
@@ -96,14 +86,11 @@ export function usePreviewTemplate() {
 }
 
 export function useSendFromTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: SendFromTemplateRequest) => sendFromTemplate(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      toast.success("Message sent successfully");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to send message"),
+    invalidateKeys: [queryKeys.conversations.all],
+    successMessage: "Message sent successfully",
+    errorMessage: "Failed to send message",
   });
 }
 
@@ -113,8 +100,7 @@ export function useUpdateTemplateStatus() {
     mutationFn: ({ id, data }: { id: string; data: TemplateStatusActionData }) =>
       updateTemplateStatus(id, data),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["templates"] });
-      queryClient.invalidateQueries({ queryKey: ["templates-all"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
       const labels: Record<string, string> = {
         submit: "Template submitted for approval",
         approve: "Template approved",

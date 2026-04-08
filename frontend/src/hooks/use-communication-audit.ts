@@ -1,6 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   getCommunicationAuditTrail,
   searchCommunicationAudits,
@@ -8,6 +7,8 @@ import {
   updateClientCommunicationPreferences,
   checkChannelAllowed,
 } from "@/lib/api/communication-audit";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   CommunicationAuditSearchParams,
   CommunicationPreferencesUpdate,
@@ -18,7 +19,7 @@ export function useCommunicationAuditTrail(
   params?: { skip?: number; limit?: number }
 ) {
   return useQuery({
-    queryKey: ["communication-audit", communicationId, params],
+    queryKey: queryKeys.communicationAudit.trail(communicationId, params),
     queryFn: () => getCommunicationAuditTrail(communicationId, params),
     enabled: !!communicationId,
   });
@@ -28,38 +29,32 @@ export function useCommunicationAuditSearch(
   params?: CommunicationAuditSearchParams
 ) {
   return useQuery({
-    queryKey: ["communication-audit", "search", params],
+    queryKey: queryKeys.communicationAudit.search(params),
     queryFn: () => searchCommunicationAudits(params),
   });
 }
 
 export function useClientCommunicationPreferences(clientId: string) {
   return useQuery({
-    queryKey: ["client-communication-preferences", clientId],
+    queryKey: queryKeys.communicationAudit.clientPreferences(clientId),
     queryFn: () => getClientCommunicationPreferences(clientId),
     enabled: !!clientId,
   });
 }
 
 export function useUpdateClientCommunicationPreferences(clientId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: CommunicationPreferencesUpdate) =>
       updateClientCommunicationPreferences(clientId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["client-communication-preferences", clientId],
-      });
-      toast.success("Communication preferences updated");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update communication preferences"),
+    invalidateKeys: [queryKeys.communicationAudit.clientPreferences(clientId)],
+    successMessage: "Communication preferences updated",
+    errorMessage: "Failed to update communication preferences",
   });
 }
 
 export function useCheckChannelAllowed(clientId: string, channel: string) {
   return useQuery({
-    queryKey: ["channel-check", clientId, channel],
+    queryKey: queryKeys.communicationAudit.channelCheck(clientId, channel),
     queryFn: () => checkChannelAllowed(clientId, channel),
     enabled: !!clientId && !!channel,
   });

@@ -15,18 +15,20 @@ import {
   getOverdueEscalations,
   reassignEscalation,
 } from "@/lib/api/escalations";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { EscalationCreate, EscalationUpdate, EscalationListParams } from "@/types/escalation";
 
 export function useEscalations(params?: EscalationListParams) {
   return useQuery({
-    queryKey: ["escalations", params],
+    queryKey: queryKeys.escalations.list(params),
     queryFn: () => listEscalations(params),
   });
 }
 
 export function useEscalation(id: string) {
   return useQuery({
-    queryKey: ["escalations", id],
+    queryKey: queryKeys.escalations.detail(id),
     queryFn: () => getEscalation(id),
     enabled: !!id,
   });
@@ -34,20 +36,17 @@ export function useEscalation(id: string) {
 
 export function useEntityEscalations(entityType: string, entityId: string) {
   return useQuery({
-    queryKey: ["escalations", "entity", entityType, entityId],
+    queryKey: queryKeys.escalations.entity(entityType, entityId),
     queryFn: () => getEntityEscalations(entityType, entityId),
     enabled: !!entityType && !!entityId,
   });
 }
 
 export function useCreateEscalation() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: EscalationCreate) => createEscalation(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to create escalation"),
+    invalidateKeys: [queryKeys.escalations.all],
+    errorMessage: "Failed to create escalation",
   });
 }
 
@@ -57,39 +56,32 @@ export function useUpdateEscalation() {
     mutationFn: ({ id, data }: { id: string; data: EscalationUpdate }) =>
       updateEscalation(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-      queryClient.invalidateQueries({ queryKey: ["escalations", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.escalations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.escalations.detail(variables.id) });
     },
     onError: (error: Error) => toast.error(error.message || "Failed to update escalation"),
   });
 }
 
 export function useAcknowledgeEscalation() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => acknowledgeEscalation(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to acknowledge escalation"),
+    invalidateKeys: [queryKeys.escalations.all],
+    errorMessage: "Failed to acknowledge escalation",
   });
 }
 
 export function useResolveEscalation() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
       resolveEscalation(id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to resolve escalation"),
+    invalidateKeys: [queryKeys.escalations.all],
+    errorMessage: "Failed to resolve escalation",
   });
 }
 
 export function useTriggerRiskCheck() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       entityType,
       entityId,
@@ -101,10 +93,8 @@ export function useTriggerRiskCheck() {
       level: string;
       reason: string;
     }) => triggerRiskCheck(entityType, entityId, level, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to trigger risk check"),
+    invalidateKeys: [queryKeys.escalations.all],
+    errorMessage: "Failed to trigger risk check",
   });
 }
 
@@ -117,7 +107,7 @@ export function useExportEscalations() {
 
 export function useSimpleEscalationMetrics() {
   return useQuery({
-    queryKey: ["escalations", "simple-metrics"],
+    queryKey: queryKeys.escalations.simpleMetrics(),
     queryFn: () => getSimpleEscalationMetrics(),
     staleTime: 60_000, // 1 minute
   });
@@ -125,7 +115,7 @@ export function useSimpleEscalationMetrics() {
 
 export function useOverdueEscalations(params?: { skip?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["escalations", "overdue", params],
+    queryKey: queryKeys.escalations.overdue(params),
     queryFn: () => getOverdueEscalations(params),
   });
 }
@@ -136,8 +126,8 @@ export function useReassignEscalation() {
     mutationFn: ({ id, newOwnerId }: { id: string; newOwnerId: string }) =>
       reassignEscalation(id, newOwnerId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["escalations"] });
-      queryClient.invalidateQueries({ queryKey: ["escalations", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.escalations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.escalations.detail(variables.id) });
       toast.success("Escalation reassigned");
     },
     onError: (error: Error) => toast.error(error.message || "Failed to reassign escalation"),
