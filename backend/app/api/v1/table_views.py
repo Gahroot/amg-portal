@@ -1,15 +1,13 @@
 """API endpoints for saved table views."""
 
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 from sqlalchemy import or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_active_user, get_db
+from app.api.deps import DB, CurrentUser
+from app.core.exceptions import ForbiddenException, NotFoundException
 from app.models.table_view import TableView
-from app.models.user import User
 from app.schemas.table_view import (
     TableViewCreate,
     TableViewListResponse,
@@ -60,8 +58,8 @@ def _build_view_summary(view: TableView, current_user_id: UUID) -> TableViewSumm
 
 @router.get("/table-views", response_model=TableViewListResponse)
 async def list_table_views(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
     table_id: str | None = Query(None, description="Filter by table ID"),
     include_shared: bool = Query(True, description="Include shared views from others"),
 ) -> TableViewListResponse:
@@ -104,8 +102,8 @@ async def list_table_views(
 @router.get("/table-views/{view_id}", response_model=TableViewResponse)
 async def get_table_view(
     view_id: UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse:
     """Get a specific saved table view by ID.
 
@@ -115,17 +113,11 @@ async def get_table_view(
     view = result.scalar_one_or_none()
 
     if not view:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table view not found",
-        )
+        raise NotFoundException("Table view not found")
 
     # Check access: owner or shared
     if view.user_id != current_user.id and not view.is_shared:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this view",
-        )
+        raise ForbiddenException("You do not have access to this view")
 
     return _build_view_response(view, current_user.id)
 
@@ -135,20 +127,12 @@ async def get_table_view(
 )
 async def create_table_view(
     data: TableViewCreate,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse:
     """Create a new saved table view."""
     # If setting as default, unset any existing default for this table/user
     if data.is_default:
-        await db.execute(
-            select(TableView)
-            .where(
-                TableView.user_id == current_user.id,
-                TableView.table_id == data.table_id,
-                TableView.is_default == True,  # noqa: E712
-            )
-        )
         existing_result = await db.execute(
             select(TableView).where(
                 TableView.user_id == current_user.id,
@@ -184,8 +168,8 @@ async def create_table_view(
 async def update_table_view(
     view_id: UUID,
     data: TableViewUpdate,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse:
     """Update a saved table view.
 
@@ -195,16 +179,10 @@ async def update_table_view(
     view = result.scalar_one_or_none()
 
     if not view:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table view not found",
-        )
+        raise NotFoundException("Table view not found")
 
     if view.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the owner can update this view",
-        )
+        raise ForbiddenException("Only the owner can update this view")
 
     # Update fields
     update_data = data.model_dump(exclude_unset=True)
@@ -235,8 +213,8 @@ async def update_table_view(
 @router.delete("/table-views/{view_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_table_view(
     view_id: UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> None:
     """Delete a saved table view.
 
@@ -246,16 +224,10 @@ async def delete_table_view(
     view = result.scalar_one_or_none()
 
     if not view:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table view not found",
-        )
+        raise NotFoundException("Table view not found")
 
     if view.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the owner can delete this view",
-        )
+        raise ForbiddenException("Only the owner can delete this view")
 
     await db.delete(view)
     await db.commit()
@@ -264,8 +236,8 @@ async def delete_table_view(
 @router.post("/table-views/{view_id}/set-default", response_model=TableViewResponse)
 async def set_default_view(
     view_id: UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse:
     """Set a view as the default for its table.
 
@@ -276,16 +248,10 @@ async def set_default_view(
     view = result.scalar_one_or_none()
 
     if not view:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table view not found",
-        )
+        raise NotFoundException("Table view not found")
 
     if view.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the owner can set this as default",
-        )
+        raise ForbiddenException("Only the owner can set this as default")
 
     # Unset any existing default for this table/user
     existing_result = await db.execute(
@@ -312,8 +278,8 @@ async def set_default_view(
 )
 async def get_default_view(
     table_id: str,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse | None:
     """Get the default view for a specific table.
 
@@ -337,8 +303,8 @@ async def get_default_view(
 @router.post("/table-views/{view_id}/duplicate", response_model=TableViewResponse)
 async def duplicate_view(
     view_id: UUID,
-    current_user: Annotated[User, Depends(get_current_active_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: CurrentUser,
+    db: DB,
 ) -> TableViewResponse:
     """Duplicate a view (creates a new view owned by the current user).
 
@@ -348,17 +314,11 @@ async def duplicate_view(
     view = result.scalar_one_or_none()
 
     if not view:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Table view not found",
-        )
+        raise NotFoundException("Table view not found")
 
     # Check access: owner or shared
     if view.user_id != current_user.id and not view.is_shared:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this view",
-        )
+        raise ForbiddenException("You do not have access to this view")
 
     # Create a copy
     new_view = TableView(
