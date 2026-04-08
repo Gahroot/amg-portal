@@ -8,7 +8,6 @@ import { useAuth } from "@/providers/auth-provider";
 import { useSubmitIntake } from "@/hooks/use-intake";
 import { intakeFormSchema, type IntakeFormData } from "@/lib/validations/client";
 import { checkClientDuplicates } from "@/lib/api/clients";
-import type { DuplicateMatch } from "@/types/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -17,7 +16,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DuplicateWarningDialog } from "@/components/clients/duplicate-warning-dialog";
+import {
+  DuplicateWarningDialog,
+  type ClientDuplicateMatch,
+} from "@/components/common/duplicate-warning-dialog";
 import { IntakeStepIdentity } from "./intake-step-identity";
 import { IntakeStepContact } from "./intake-step-contact";
 import { IntakeStepPreferences } from "./intake-step-preferences";
@@ -56,7 +58,7 @@ export function IntakeWizard({
   const { user } = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = React.useState(1);
-  const [duplicates, setDuplicates] = React.useState<DuplicateMatch[]>([]);
+  const [duplicates, setDuplicates] = React.useState<ClientDuplicateMatch[]>([]);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = React.useState(false);
   const [pendingNextStep, setPendingNextStep] = React.useState<number | null>(null);
   const submitMutation = useSubmitIntake();
@@ -89,7 +91,7 @@ export function IntakeWizard({
    * Only runs when advancing from steps 1 or 2 (where name/email/phone are entered).
    * Returns the list of matches found (empty array = no duplicates).
    */
-  const runDuplicateCheck = async (): Promise<DuplicateMatch[]> => {
+  const runDuplicateCheck = async (): Promise<ClientDuplicateMatch[]> => {
     if (!DUPLICATE_CHECK_STEPS.has(currentStep) || isEditing) return [];
 
     const values = methods.getValues();
@@ -321,6 +323,7 @@ export function IntakeWizard({
       <DuplicateWarningDialog
         open={duplicateDialogOpen}
         onOpenChange={setDuplicateDialogOpen}
+        entityType="client"
         duplicates={duplicates}
         onCreateAnyway={handleCreateAnywayAndSubmit}
       />
