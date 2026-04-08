@@ -3,7 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import (
     DB,
@@ -19,6 +19,7 @@ from app.schemas.program_template import (
     ProgramTemplateResponse,
     ProgramTemplateUpdate,
 )
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -41,12 +42,8 @@ async def list_program_templates(
     if is_system is not None:
         query = query.where(ProgramTemplate.is_system_template.is_(is_system))
 
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar_one()
-
-    result = await db.execute(query.order_by(ProgramTemplate.created_at).offset(skip).limit(limit))
-    templates = list(result.scalars().all())
+    query = query.order_by(ProgramTemplate.created_at)
+    templates, total = await paginate(db, query, skip=skip, limit=limit)
 
     return ProgramTemplateListResponse(
         templates=[ProgramTemplateResponse.model_validate(t) for t in templates],

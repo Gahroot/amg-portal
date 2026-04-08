@@ -3,7 +3,7 @@
 import uuid
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,21 @@ from app.db.session import apply_rls_context, get_db
 from app.models.enums import UserRole
 from app.models.user import User
 from app.services.budget_approval_service import BudgetApprovalService
+
+
+class PaginationParams:
+    """Reusable pagination dependency for list endpoints."""
+
+    def __init__(
+        self,
+        skip: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=200),
+    ):
+        self.skip = skip
+        self.limit = limit
+
+
+Pagination = Annotated[PaginationParams, Depends()]
 
 if TYPE_CHECKING:
     from app.models.partner import PartnerProfile

@@ -20,6 +20,7 @@ from app.schemas.kyc_document import (
     KYCDocumentResponse,
     KYCVerifyRequest,
 )
+from app.services.crud_base import paginate
 from app.services.storage import storage_service
 
 router = APIRouter()
@@ -124,17 +125,10 @@ async def list_kyc_documents(
         select(KYCDocument)
         .options(selectinload(KYCDocument.document))
         .where(KYCDocument.client_id == client_id)
-    )
-    count_query = (
-        select(func.count()).select_from(KYCDocument).where(KYCDocument.client_id == client_id)
+        .order_by(KYCDocument.created_at.desc())
     )
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(KYCDocument.created_at.desc())
-    result = await db.execute(query)
-    kyc_docs = result.scalars().all()
+    kyc_docs, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCDocumentListResponse(
         kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],
@@ -224,23 +218,10 @@ async def list_expiring_kyc_documents(
             KYCDocument.expiry_date <= expiry_limit,
             KYCDocument.status == "verified",
         )
-    )
-    count_query = (
-        select(func.count())
-        .select_from(KYCDocument)
-        .where(
-            KYCDocument.expiry_date.isnot(None),
-            KYCDocument.expiry_date <= expiry_limit,
-            KYCDocument.status == "verified",
-        )
+        .order_by(KYCDocument.expiry_date.asc())
     )
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(KYCDocument.expiry_date.asc())
-    result = await db.execute(query)
-    kyc_docs = result.scalars().all()
+    kyc_docs, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCDocumentListResponse(
         kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],

@@ -4,7 +4,7 @@ import contextlib
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, require_compliance, require_internal
@@ -32,6 +32,7 @@ from app.schemas.clearance_certificate import (
     ClearanceCertificateUpdate,
 )
 from app.services.certificate_service import certificate_service
+from app.services.crud_base import paginate
 from app.services.storage import storage_service
 
 router = APIRouter()
@@ -76,21 +77,14 @@ async def list_templates(
 ) -> CertificateTemplateListResponse:
     """List certificate templates."""
     query = select(CertificateTemplate)
-    count_query = select(func.count()).select_from(CertificateTemplate)
 
     if template_type:
         query = query.where(CertificateTemplate.template_type == template_type)
-        count_query = count_query.where(CertificateTemplate.template_type == template_type)
     if is_active is not None:
         query = query.where(CertificateTemplate.is_active == is_active)
-        count_query = count_query.where(CertificateTemplate.is_active == is_active)
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(CertificateTemplate.created_at.desc())
-    result = await db.execute(query)
-    templates = result.scalars().all()
+    query = query.order_by(CertificateTemplate.created_at.desc())
+    templates, total = await paginate(db, query, skip=skip, limit=limit)
 
     return CertificateTemplateListResponse(
         templates=[CertificateTemplateResponse.model_validate(t) for t in templates],
@@ -340,29 +334,18 @@ async def list_certificates(
             selectinload(ClearanceCertificate.creator),
         )
     )
-    count_query = select(func.count()).select_from(ClearanceCertificate)
 
     if client_id:
         query = query.where(ClearanceCertificate.client_id == client_id)
-        count_query = count_query.where(ClearanceCertificate.client_id == client_id)
     if program_id:
         query = query.where(ClearanceCertificate.program_id == program_id)
-        count_query = count_query.where(ClearanceCertificate.program_id == program_id)
     if status:
         query = query.where(ClearanceCertificate.status == status)
-        count_query = count_query.where(ClearanceCertificate.status == status)
     if certificate_type:
         query = query.where(ClearanceCertificate.certificate_type == certificate_type)
-        count_query = count_query.where(
-            ClearanceCertificate.certificate_type == certificate_type
-        )
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(ClearanceCertificate.created_at.desc())
-    result = await db.execute(query)
-    certificates = result.scalars().all()
+    query = query.order_by(ClearanceCertificate.created_at.desc())
+    certificates, total = await paginate(db, query, skip=skip, limit=limit)
 
     return ClearanceCertificateListResponse(
         certificates=[

@@ -1,13 +1,14 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, require_internal, require_rm_or_above
 from app.core.exceptions import NotFoundException
 from app.models.client import Client
 from app.models.enums import UserRole
 from app.schemas.client import ClientCreate, ClientListResponse, ClientResponse, ClientUpdate
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -40,15 +41,12 @@ async def list_clients(
     _: None = Depends(require_internal),
 ):
     query = select(Client)
-    count_query = select(func.count()).select_from(Client)
 
     if current_user.role == UserRole.relationship_manager.value:
         query = query.where(Client.rm_id == current_user.id)
-        count_query = count_query.where(Client.rm_id == current_user.id)
 
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(query.order_by(Client.created_at.desc()).offset(skip).limit(limit))
-    clients = result.scalars().all()
+    query = query.order_by(Client.created_at.desc())
+    clients, total = await paginate(db, query, skip=skip, limit=limit)
     return ClientListResponse(clients=clients, total=total)
 
 

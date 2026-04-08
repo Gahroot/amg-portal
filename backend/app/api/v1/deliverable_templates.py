@@ -28,6 +28,7 @@ from app.schemas.deliverable_template import (
     DeliverableTemplateUpdate,
     TemplateCategoryInfo,
 )
+from app.services.crud_base import paginate
 from app.services.storage import ALLOWED_MIME_TYPES, MAX_FILE_SIZE, storage_service
 
 logger = logging.getLogger(__name__)
@@ -82,12 +83,8 @@ async def list_templates(
             )
         )
 
-    count_q = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(count_q)).scalar_one()
-
     query = query.order_by(DeliverableTemplate.category, DeliverableTemplate.name)
-    result = await db.execute(query.offset(skip).limit(limit))
-    templates = list(result.scalars().all())
+    templates, total = await paginate(db, query, skip=skip, limit=limit)
 
     return DeliverableTemplateListResponse(
         templates=[_build_response(t) for t in templates],

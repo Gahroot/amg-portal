@@ -27,6 +27,7 @@ from app.schemas.task import (
     TaskDependencyUpdate,
     TaskReorder,
 )
+from app.services.crud_base import paginate
 
 logger = logging.getLogger(__name__)
 
@@ -135,25 +136,16 @@ async def list_tasks(
         .join(Program, Milestone.program_id == Program.id)
     )
 
-    count_query = (
-        select(func.count())
-        .select_from(Task)
-        .join(Milestone, Task.milestone_id == Milestone.id)
-        .join(Program, Milestone.program_id == Program.id)
-    )
-
-    # Apply filters
-    filters = []
     if program_id:
-        filters.append(Milestone.program_id == program_id)
+        query = query.where(Milestone.program_id == program_id)
     if assignee_id:
-        filters.append(Task.assigned_to == assignee_id)
+        query = query.where(Task.assigned_to == assignee_id)
     if status_filter:
-        filters.append(Task.status == status_filter)
+        query = query.where(Task.status == status_filter)
     if priority:
-        filters.append(Task.priority == priority)
+        query = query.where(Task.priority == priority)
     if overdue_only:
-        filters.append(
+        query = query.where(
             and_(
                 Task.due_date < datetime.now(UTC).date(),
                 Task.status != "done",
@@ -161,21 +153,14 @@ async def list_tasks(
             )
         )
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
-
-    total = (await db.execute(count_query)).scalar_one()
-
     # Order by status column order, then by position
     query = query.order_by(
         Task.status,
         Task.position,
         Task.created_at.desc(),
-    ).offset(skip).limit(limit)
+    )
 
-    result = await db.execute(query)
-    tasks = result.scalars().unique().all()
+    tasks, total = await paginate(db, query, skip=skip, limit=limit, unique=True)
 
     # Build blocked_by map: for each task, find which tasks depend on it
     blocked_by_map: dict[uuid.UUID, list[uuid.UUID]] = {}

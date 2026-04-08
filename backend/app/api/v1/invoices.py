@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
@@ -18,6 +18,7 @@ from app.schemas.invoice import (
     InvoiceResponse,
     InvoiceUpdate,
 )
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -70,28 +71,18 @@ async def list_invoices(
     status: str | None = None,
 ) -> InvoiceListResponse:
     query = select(Invoice)
-    count_query = select(func.count()).select_from(Invoice)
 
-    filters = []
     if client_id:
-        filters.append(Invoice.client_id == client_id)
+        query = query.where(Invoice.client_id == client_id)
     if program_id:
-        filters.append(Invoice.program_id == program_id)
+        query = query.where(Invoice.program_id == program_id)
     if status:
-        filters.append(Invoice.status == status)
+        query = query.where(Invoice.status == status)
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
+    query = query.order_by(Invoice.created_at.desc())
+    invoices, total = await paginate(db, query, skip=skip, limit=limit)
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(Invoice.created_at.desc())
-    result = await db.execute(query)
-    invoices = result.scalars().all()
-
-    return InvoiceListResponse(invoices=list(invoices), total=total)  # type: ignore[arg-type]
+    return InvoiceListResponse(invoices=invoices, total=total)  # type: ignore[arg-type]
 
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)

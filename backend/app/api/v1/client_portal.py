@@ -41,6 +41,7 @@ from app.schemas.document_request import (
 from app.schemas.report import ProgramStatusReport
 from app.services import document_request_service
 from app.services.client_service import client_service
+from app.services.crud_base import paginate
 from app.services.report_service import report_service
 from app.services.storage import storage_service
 from app.utils.rag import compute_rag_status
@@ -994,15 +995,11 @@ async def get_my_decision_history(
         search=search,
     )
 
-    count_q = select(func.count()).select_from(base_q.subquery())
-    total = (await db.execute(count_q)).scalar_one()
-
     data_q = base_q.order_by(
         DecisionRequestModel.responded_at.desc().nullslast(),
         DecisionRequestModel.created_at.desc(),
     )
-    result = await db.execute(data_q.offset(skip).limit(limit))
-    decisions = list(result.scalars().all())
+    decisions, total = await paginate(db, data_q, skip=skip, limit=limit)
 
     return DecisionHistoryResponse(
         decisions=[DecisionHistoryItem.model_validate(d) for d in decisions],

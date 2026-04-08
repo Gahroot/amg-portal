@@ -13,6 +13,7 @@ from app.api.deps import DB, require_compliance
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogListResponse, AuditLogResponse
+from app.services.crud_base import paginate
 
 EXPORT_ROW_LIMIT = 10_000
 
@@ -65,14 +66,11 @@ async def list_audit_logs(
     search: str | None = None,
 ) -> AuditLogListResponse:
     base = _build_query(entity_type, action, user_id, entity_id, start_date, end_date, search)
+    base = base.order_by(AuditLog.created_at.desc())
 
-    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
-    total = count_result.scalar_one()
+    logs, total = await paginate(db, base, skip=skip, limit=limit)
 
-    result = await db.execute(base.order_by(AuditLog.created_at.desc()).offset(skip).limit(limit))
-    logs = result.scalars().all()
-
-    return AuditLogListResponse(logs=list(logs), total=total)  # type: ignore[arg-type]
+    return AuditLogListResponse(logs=logs, total=total)  # type: ignore[arg-type]
 
 
 @router.get("/export", dependencies=[Depends(require_compliance)])
@@ -158,15 +156,15 @@ async def get_entity_history(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ) -> AuditLogListResponse:
-    base = select(AuditLog).where(
-        AuditLog.entity_type == entity_type,
-        AuditLog.entity_id == entity_id,
+    base = (
+        select(AuditLog)
+        .where(
+            AuditLog.entity_type == entity_type,
+            AuditLog.entity_id == entity_id,
+        )
+        .order_by(AuditLog.created_at.desc())
     )
 
-    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
-    total = count_result.scalar_one()
+    logs, total = await paginate(db, base, skip=skip, limit=limit)
 
-    result = await db.execute(base.order_by(AuditLog.created_at.desc()).offset(skip).limit(limit))
-    logs = result.scalars().all()
-
-    return AuditLogListResponse(logs=list(logs), total=total)  # type: ignore[arg-type]
+    return AuditLogListResponse(logs=logs, total=total)  # type: ignore[arg-type]

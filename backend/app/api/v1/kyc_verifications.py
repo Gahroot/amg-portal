@@ -32,6 +32,7 @@ from app.schemas.kyc_verification import (
     KYCVerificationSummary,
     KYCVerificationUpdate,
 )
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -78,7 +79,6 @@ async def list_verifications(
 ) -> KYCVerificationListResponse:
     """List KYC verifications with filtering."""
     query = select(KYCVerification).options(selectinload(KYCVerification.checks))
-    count_query = select(func.count()).select_from(KYCVerification)
 
     conditions = []
     if status:
@@ -92,14 +92,9 @@ async def list_verifications(
 
     if conditions:
         query = query.where(and_(*conditions))
-        count_query = count_query.where(and_(*conditions))
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(KYCVerification.created_at.desc())
-    result = await db.execute(query)
-    verifications = result.scalars().all()
+    query = query.order_by(KYCVerification.created_at.desc())
+    verifications, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCVerificationListResponse(
         verifications=[
@@ -422,7 +417,6 @@ async def list_alerts(
 ) -> KYCAlertListResponse:
     """List KYC alerts with filtering."""
     query = select(KYCAlert)
-    count_query = select(func.count()).select_from(KYCAlert)
 
     conditions = []
     if client_id:
@@ -438,21 +432,16 @@ async def list_alerts(
 
     if conditions:
         query = query.where(and_(*conditions))
-        count_query = count_query.where(and_(*conditions))
 
-    # Get unread count
-    unread_query = select(func.count()).select_from(KYCAlert).where(KYCAlert.is_read == 0)
+    # Get unread count (uses the same base filters + is_read==0)
+    unread_base = select(KYCAlert).where(KYCAlert.is_read == 0)
     if conditions:
-        unread_query = unread_query.where(and_(*conditions))
-    unread_result = await db.execute(unread_query)
-    unread_count = unread_result.scalar() or 0
+        unread_base = unread_base.where(and_(*conditions))
+    unread_count_q = select(func.count()).select_from(unread_base.subquery())
+    unread_count = (await db.execute(unread_count_q)).scalar_one()
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(KYCAlert.created_at.desc())
-    result = await db.execute(query)
-    alerts = result.scalars().all()
+    query = query.order_by(KYCAlert.created_at.desc())
+    alerts, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCAlertListResponse(
         alerts=[KYCAlertResponse.model_validate(a) for a in alerts],
@@ -543,7 +532,6 @@ async def list_reports(
 ) -> KYCReportListResponse:
     """List KYC reports with filtering."""
     query = select(KYCReport)
-    count_query = select(func.count()).select_from(KYCReport)
 
     conditions = []
     if client_id:
@@ -555,14 +543,9 @@ async def list_reports(
 
     if conditions:
         query = query.where(and_(*conditions))
-        count_query = count_query.where(and_(*conditions))
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(KYCReport.created_at.desc())
-    result = await db.execute(query)
-    reports = result.scalars().all()
+    query = query.order_by(KYCReport.created_at.desc())
+    reports, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCReportListResponse(
         reports=[KYCReportResponse.model_validate(r) for r in reports],

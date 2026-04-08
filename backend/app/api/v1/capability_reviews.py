@@ -3,7 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, require_internal
@@ -21,6 +21,7 @@ from app.schemas.capability_review import (
     UpdateCapabilityReviewRequest,
 )
 from app.services.capability_review_service import capability_review_service
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -73,15 +74,8 @@ async def list_capability_reviews(
     if year:
         base = base.where(CapabilityReview.review_year == year)
 
-    count_query = select(func.count()).select_from(base.subquery())
-    total = (await db.execute(count_query)).scalar_one()
-
-    result = await db.execute(
-        base.order_by(CapabilityReview.review_year.desc(), CapabilityReview.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
-    reviews = result.scalars().all()
+    base = base.order_by(CapabilityReview.review_year.desc(), CapabilityReview.created_at.desc())
+    reviews, total = await paginate(db, base, skip=skip, limit=limit)
 
     return CapabilityReviewListResponse(
         reviews=[CapabilityReviewResponse(**_enrich_review(r)) for r in reviews],

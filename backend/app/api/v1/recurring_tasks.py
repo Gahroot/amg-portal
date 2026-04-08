@@ -9,7 +9,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import (
     DB,
@@ -27,6 +27,7 @@ from app.schemas.recurring_task import (
     RecurringTaskTemplateResponse,
     RecurringTaskTemplateUpdate,
 )
+from app.services.crud_base import paginate
 from app.services.recurring_task_service import initialize_next_due
 
 logger = logging.getLogger(__name__)
@@ -84,12 +85,8 @@ async def list_recurring_task_templates(
     if milestone_id:
         query = query.where(RecurringTaskTemplate.milestone_id == milestone_id)
 
-    count_q = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(count_q)).scalar_one()
-
     query = query.order_by(RecurringTaskTemplate.name)
-    result = await db.execute(query.offset(skip).limit(limit))
-    templates = list(result.scalars().all())
+    templates, total = await paginate(db, query, skip=skip, limit=limit)
 
     return RecurringTaskTemplateListResponse(
         templates=[await _build_response(db, t) for t in templates],

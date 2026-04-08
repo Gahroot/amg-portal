@@ -6,7 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
@@ -27,6 +27,7 @@ from app.schemas.partner_assignment import (
     AssignmentResponse,
     AssignmentUpdate,
 )
+from app.services.crud_base import paginate
 
 logger = logging.getLogger(__name__)
 
@@ -154,28 +155,18 @@ async def list_assignments(
         selectinload(PartnerAssignment.partner),
         selectinload(PartnerAssignment.program),
     )
-    count_query = select(func.count()).select_from(PartnerAssignment)
 
-    filters = []
     if partner_id:
-        filters.append(PartnerAssignment.partner_id == partner_id)
+        query = query.where(PartnerAssignment.partner_id == partner_id)
     if program_id:
-        filters.append(PartnerAssignment.program_id == program_id)
+        query = query.where(PartnerAssignment.program_id == program_id)
     if status:
-        filters.append(PartnerAssignment.status == status)
+        query = query.where(PartnerAssignment.status == status)
     if search:
-        filters.append(PartnerAssignment.title.ilike(f"%{search}%"))
+        query = query.where(PartnerAssignment.title.ilike(f"%{search}%"))
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
-
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
-    query = query.offset(skip).limit(limit).order_by(PartnerAssignment.created_at.desc())
-    result = await db.execute(query)
-    assignments = result.scalars().all()
+    query = query.order_by(PartnerAssignment.created_at.desc())
+    assignments, total = await paginate(db, query, skip=skip, limit=limit)
 
     return AssignmentListResponse(
         assignments=[build_assignment_response(a) for a in assignments],

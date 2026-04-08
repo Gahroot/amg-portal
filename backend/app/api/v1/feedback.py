@@ -20,6 +20,7 @@ from app.schemas.portal_feedback import (
     PortalFeedbackUpdate,
     get_feedback_type_options,
 )
+from app.services.crud_base import paginate
 from app.services.email_service import send_email
 
 router = APIRouter()
@@ -97,23 +98,13 @@ async def list_my_feedback(
         .order_by(PortalFeedback.created_at.desc())
     )
 
-    count_query = (
-        select(func.count())
-        .select_from(PortalFeedback)
-        .where(PortalFeedback.user_id == current_user.id)
-    )
-
     if status:
         query = query.where(PortalFeedback.status == status)
-        count_query = count_query.where(PortalFeedback.status == status)
 
     if feedback_type:
         query = query.where(PortalFeedback.feedback_type == feedback_type)
-        count_query = count_query.where(PortalFeedback.feedback_type == feedback_type)
 
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(query.offset(skip).limit(limit))
-    feedback_list = list(result.scalars().all())
+    feedback_list, total = await paginate(db, query, skip=skip, limit=limit)
 
     return PortalFeedbackListResponse(
         feedback=[
@@ -175,32 +166,18 @@ async def list_all_feedback(
         selectinload(PortalFeedback.assignee),
     ).order_by(PortalFeedback.created_at.desc())
 
-    count_query = select(func.count()).select_from(PortalFeedback)
-
     if status:
         query = query.where(PortalFeedback.status == status)
-        count_query = count_query.where(PortalFeedback.status == status)
-
     if feedback_type:
         query = query.where(PortalFeedback.feedback_type == feedback_type)
-        count_query = count_query.where(PortalFeedback.feedback_type == feedback_type)
-
     if priority:
         query = query.where(PortalFeedback.priority == priority)
-        count_query = count_query.where(PortalFeedback.priority == priority)
-
     if assigned_to:
         query = query.where(PortalFeedback.assigned_to == assigned_to)
-        count_query = count_query.where(PortalFeedback.assigned_to == assigned_to)
-
     if search:
-        search_term = f"%{search}%"
-        query = query.where(PortalFeedback.description.ilike(search_term))
-        count_query = count_query.where(PortalFeedback.description.ilike(search_term))
+        query = query.where(PortalFeedback.description.ilike(f"%{search}%"))
 
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(query.offset(skip).limit(limit))
-    feedback_list = list(result.scalars().all())
+    feedback_list, total = await paginate(db, query, skip=skip, limit=limit)
 
     return PortalFeedbackListResponse(
         feedback=[
