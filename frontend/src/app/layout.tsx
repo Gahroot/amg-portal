@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
+import { Plus_Jakarta_Sans, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/providers/providers";
 import { ErrorBoundary } from "@/components/error/error-boundary";
@@ -8,9 +8,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/navigation/command-palette";
 import "./globals.css";
 
-const geistSans = Geist({
+const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -47,7 +49,7 @@ export default function RootLayout({
         <link rel="help" href="/accessibility" title="Accessibility Statement" />
       </head>
       <body
-        className={`${geistSans.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
+        className={`${plusJakarta.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
           <Toaster />
