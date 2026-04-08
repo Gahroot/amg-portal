@@ -6,14 +6,24 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentPartner, CurrentUser, RLSContext
+from app.api.deps import DB, CurrentPartner, CurrentUser, RLSContext, require_partner
+from app.api.v1.partner_assignments import build_assignment_response
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
+from app.models.conversation import Conversation
 from app.models.deliverable import Deliverable
 from app.models.partner_assignment import AssignmentHistory, PartnerAssignment
+from app.models.user import User
+from app.schemas.communication import CommunicationResponse, SendMessageRequest
+from app.schemas.conversation import (
+    ConversationListResponse,
+    ConversationResponse,
+    MessageListResponse,
+    ParticipantInfo,
+)
 from app.schemas.deliverable import BulkSubmitResponse, DeliverableListResponse
 from app.schemas.partner import (
     CapabilityRefreshRequest,
@@ -31,6 +41,8 @@ from app.schemas.report import (
     PartnerDeliverableFeedbackReport,
     PartnerEngagementHistoryReport,
 )
+from app.services.communication_service import communication_service
+from app.services.conversation_service import MessageScopeError, conversation_service
 from app.services.partner_scorecard_service import get_partner_scorecard as _get_scorecard
 from app.services.partner_trends_service import get_partner_trends
 from app.services.report_service import partner_report_service
@@ -39,30 +51,6 @@ from app.services.storage import ALLOWED_MIME_TYPES, MAX_FILE_SIZE, storage_serv
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _build_assignment_response(a: PartnerAssignment) -> dict[str, Any]:
-    return {
-        "id": a.id,
-        "partner_id": a.partner_id,
-        "program_id": a.program_id,
-        "assigned_by": a.assigned_by,
-        "title": a.title,
-        "brief": a.brief,
-        "sla_terms": a.sla_terms,
-        "status": a.status,
-        "due_date": a.due_date,
-        "offer_expires_at": a.offer_expires_at,
-        "accepted_at": a.accepted_at,
-        "completed_at": a.completed_at,
-        "declined_at": a.declined_at,
-        "decline_reason": a.decline_reason,
-        "created_at": a.created_at,
-        "updated_at": a.updated_at,
-        "brief_pdf_path": getattr(a, "brief_pdf_path", None),
-        "partner_firm_name": a.partner.firm_name if a.partner else None,
-        "program_title": a.program.title if a.program else None,
-    }
 
 
 @router.get("/profile", response_model=PartnerProfileResponse)
@@ -89,7 +77,7 @@ async def get_my_assignments(
     )
     assignments = result.scalars().all()
     return AssignmentListResponse(
-        assignments=[_build_assignment_response(a) for a in assignments],
+        assignments=[build_assignment_response(a) for a in assignments],
         total=len(assignments),
     )
 
@@ -116,7 +104,7 @@ async def get_my_assignment(
         raise NotFoundException("Assignment not found")
     if assignment.partner_id != partner.id:
         raise ForbiddenException("Not your assignment")
-    return _build_assignment_response(assignment)
+    return build_assignment_response(assignment)
 
 
 @router.post("/assignments/{assignment_id}/accept", response_model=AssignmentResponse)
@@ -167,13 +155,31 @@ async def accept_my_assignment(
             "Failed to send assignment_accepted notification for %s", assignment.id
         )
 
+    try:
+        from app.services.webhook_service import trigger_partner_webhooks
+
+        await trigger_partner_webhooks(
+            db,
+            partner_id=assignment.partner_id,
+            event_type="assignment.accepted",
+            data={
+                "assignment_id": str(assignment.id),
+                "program_id": str(assignment.program_id),
+                "accepted_at": now.isoformat(),
+            },
+        )
+    except Exception:
+        logger.exception(
+            "Failed to trigger webhook for assignment_accepted %s", assignment.id
+        )
+
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
         .where(PartnerAssignment.id == assignment.id)
     )
     assignment = result.scalar_one()
-    return _build_assignment_response(assignment)
+    return build_assignment_response(assignment)
 
 
 @router.post("/assignments/{assignment_id}/decline", response_model=AssignmentResponse)
@@ -227,13 +233,32 @@ async def decline_my_assignment(
             "Failed to send assignment_declined notification for %s", assignment.id
         )
 
+    try:
+        from app.services.webhook_service import trigger_partner_webhooks
+
+        await trigger_partner_webhooks(
+            db,
+            partner_id=assignment.partner_id,
+            event_type="assignment.declined",
+            data={
+                "assignment_id": str(assignment.id),
+                "program_id": str(assignment.program_id),
+                "declined_at": now.isoformat(),
+                "reason": data.reason,
+            },
+        )
+    except Exception:
+        logger.exception(
+            "Failed to trigger webhook for assignment_declined %s", assignment.id
+        )
+
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
         .where(PartnerAssignment.id == assignment.id)
     )
     assignment = result.scalar_one()
-    return _build_assignment_response(assignment)
+    return build_assignment_response(assignment)
 
 
 @router.get(
@@ -823,3 +848,184 @@ async def get_my_performance_status(
             for a in status.alerts
         ],
     }
+
+
+# ============================================================================
+# Partner Conversations / Messages
+# ============================================================================
+
+
+async def _resolve_partner_participants(
+    db: DB, conversations: list[Conversation],
+) -> dict[str, list[ParticipantInfo]]:
+    """Resolve participant_ids to ParticipantInfo for a batch of conversations."""
+    all_ids: set[UUID] = set()
+    for conv in conversations:
+        all_ids.update(conv.participant_ids)
+    if not all_ids:
+        return {}
+
+    result = await db.execute(
+        select(User.id, User.full_name, User.role).where(User.id.in_(all_ids))
+    )
+    user_map: dict[UUID, ParticipantInfo] = {}
+    for row in result.all():
+        user_map[row.id] = ParticipantInfo(
+            id=row.id, full_name=row.full_name, role=row.role,
+        )
+
+    out: dict[str, list[ParticipantInfo]] = {}
+    for conv in conversations:
+        out[str(conv.id)] = [
+            user_map[pid] for pid in conv.participant_ids if pid in user_map
+        ]
+    return out
+
+
+@router.get(
+    "/conversations",
+    response_model=ConversationListResponse,
+    dependencies=[Depends(require_partner)],
+)
+async def get_partner_conversations(
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    limit: int = Query(50, ge=1, le=100),
+) -> ConversationListResponse:
+    """List conversations where the current partner user is a participant."""
+    conversations, total = await conversation_service.get_conversations_for_user(
+        db,
+        user_id=current_user.id,
+        user_role=current_user.role,
+        skip=0,
+        limit=limit,
+    )
+
+    participants_map = await _resolve_partner_participants(db, conversations)
+
+    conv_ids = [c.id for c in conversations]
+    unread_counts = await communication_service.get_unread_counts_for_conversations(
+        db, conv_ids, current_user.id,
+    )
+
+    conv_responses: list[ConversationResponse] = []
+    for conv in conversations:
+        resp = ConversationResponse.model_validate(conv)
+        resp.unread_count = unread_counts.get(str(conv.id), 0)
+        resp.participants = participants_map.get(str(conv.id), [])
+        conv_responses.append(resp)
+
+    return ConversationListResponse(conversations=conv_responses, total=total)
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+    dependencies=[Depends(require_partner)],
+)
+async def get_partner_conversation(
+    conversation_id: UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+) -> ConversationResponse:
+    """Get a specific conversation for the partner user."""
+    conversation = await conversation_service.get(db, conversation_id)
+    if not conversation:
+        raise NotFoundException("Conversation not found")
+
+    if current_user.id not in conversation.participant_ids:
+        raise ForbiddenException("Not a participant in this conversation")
+
+    participants_map = await _resolve_partner_participants(db, [conversation])
+    resp = ConversationResponse.model_validate(conversation)
+    resp.participants = participants_map.get(str(conversation.id), [])
+    unread_counts = await communication_service.get_unread_counts_for_conversations(
+        db, [conversation.id], current_user.id,
+    )
+    resp.unread_count = unread_counts.get(str(conversation.id), 0)
+    return resp
+
+
+@router.get(
+    "/conversations/{conversation_id}/messages",
+    response_model=MessageListResponse,
+    dependencies=[Depends(require_partner)],
+)
+async def get_partner_conversation_messages(
+    conversation_id: UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+) -> MessageListResponse:
+    """Get messages for a partner conversation."""
+    conversation = await conversation_service.get(db, conversation_id)
+    if not conversation:
+        raise NotFoundException("Conversation not found")
+
+    if current_user.id not in conversation.participant_ids:
+        raise ForbiddenException("Not a participant in this conversation")
+
+    messages, total = await communication_service.get_messages_for_conversation(
+        db, conversation_id, current_user.id, skip=skip, limit=limit,
+    )
+    return MessageListResponse(
+        communications=[CommunicationResponse.model_validate(m) for m in messages],
+        total=total,
+    )
+
+
+@router.post(
+    "/conversations/{conversation_id}/messages",
+    response_model=CommunicationResponse,
+    dependencies=[Depends(require_partner)],
+)
+async def send_partner_message(
+    conversation_id: UUID,
+    data: SendMessageRequest,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+) -> CommunicationResponse:
+    """Send a message in a partner conversation."""
+    conversation = await conversation_service.get(db, conversation_id)
+    if not conversation:
+        raise NotFoundException("Conversation not found")
+
+    try:
+        await conversation_service.validate_message_scope(
+            db, conversation_id, current_user.id,
+        )
+    except MessageScopeError as exc:
+        raise ForbiddenException(exc.detail) from exc
+
+    data.conversation_id = conversation_id
+    message = await communication_service.send_message(
+        db, sender_id=current_user.id, data=data,
+    )
+    return CommunicationResponse.model_validate(message)
+
+
+@router.post(
+    "/conversations/{conversation_id}/mark-read",
+    status_code=204,
+    dependencies=[Depends(require_partner)],
+)
+async def mark_partner_conversation_read(
+    conversation_id: UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+) -> None:
+    """Mark all messages in a conversation as read for the partner."""
+    conversation = await conversation_service.get(db, conversation_id)
+    if not conversation:
+        raise NotFoundException("Conversation not found")
+
+    if current_user.id not in conversation.participant_ids:
+        raise ForbiddenException("Not a participant in this conversation")
+
+    await communication_service.mark_messages_read(db, conversation_id, current_user.id)
