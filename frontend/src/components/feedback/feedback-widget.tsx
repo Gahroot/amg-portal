@@ -28,7 +28,7 @@ export function FeedbackWidget({ className }: FeedbackWidgetProps) {
         variant="default"
         size="lg"
         className={cn(
-          "fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg",
+          "fixed bottom-20 right-6 z-40 h-14 w-14 rounded-full shadow-lg",
           "hover:scale-105 transition-transform",
           "bg-primary text-primary-foreground",
           className
