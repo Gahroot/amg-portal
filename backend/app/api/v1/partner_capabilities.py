@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -69,7 +69,7 @@ ONBOARDING_STAGES = [
 async def list_service_categories(
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
     active_only: bool = Query(True),
 ):
     """List all service categories."""
@@ -91,7 +91,7 @@ async def create_service_category(
     data: ServiceCategoryCreate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_admin,
+    _: None = Depends(require_admin),
 ):
     """Create a new service category (admin only)."""
     # Check if name already exists
@@ -118,7 +118,7 @@ async def update_service_category(
     data: ServiceCategoryUpdate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_admin,
+    _: None = Depends(require_admin),
 ):
     """Update a service category (admin only)."""
     result = await db.execute(
@@ -147,7 +147,7 @@ async def get_partner_capabilities(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
 ):
     """Get all capabilities for a partner."""
     result = await db.execute(
@@ -169,7 +169,7 @@ async def add_partner_capability(
     data: CapabilityCreate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Add a capability to a partner."""
     # Verify partner exists
@@ -209,7 +209,7 @@ async def update_partner_capability(
     data: CapabilityUpdate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Update a partner capability."""
     result = await db.execute(
@@ -237,7 +237,7 @@ async def delete_partner_capability(
     capability_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Delete a partner capability."""
     result = await db.execute(
@@ -260,7 +260,7 @@ async def verify_partner_capability(
     capability_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_rm_or_above,
+    _: None = Depends(require_rm_or_above),
 ):
     """Verify a partner capability (RM or above only)."""
     result = await db.execute(
@@ -292,7 +292,7 @@ async def get_partner_qualifications(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
 ):
     """Get all qualifications for a partner."""
     result = await db.execute(
@@ -330,7 +330,7 @@ async def submit_qualification(
     data: QualificationCreate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Submit a qualification request for a partner."""
     # Verify partner and category exist
@@ -390,7 +390,7 @@ async def approve_qualification(
     data: QualificationApproval,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_rm_or_above,
+    _: None = Depends(require_rm_or_above),
 ):
     """Approve or reject a qualification (RM or above only)."""
     result = await db.execute(
@@ -440,7 +440,7 @@ async def get_partner_certifications(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
 ):
     """Get all certifications for a partner."""
     result = await db.execute(
@@ -491,7 +491,7 @@ async def add_partner_certification(
     data: CertificationCreate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Add a certification for a partner."""
     # Verify partner exists
@@ -549,7 +549,7 @@ async def upload_certification_document(
     db: DB,
     current_user: CurrentUser,
     file: UploadFile = File(...),
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Upload a document for a certification."""
     result = await db.execute(
@@ -603,7 +603,7 @@ async def verify_partner_certification(
     data: CertificationVerification,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_rm_or_above,
+    _: None = Depends(require_rm_or_above),
 ):
     """Verify a partner certification (RM or above only)."""
     result = await db.execute(
@@ -662,7 +662,7 @@ async def get_partner_onboarding(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
 ):
     """Get onboarding status for a partner."""
     result = await db.execute(
@@ -702,7 +702,7 @@ async def start_onboarding(
     data: OnboardingCreate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Start the onboarding process for a partner."""
     # Verify partner exists
@@ -785,7 +785,7 @@ async def complete_onboarding_stage(
     data: OnboardingStageComplete,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Complete an onboarding stage and advance to the next."""
     result = await db.execute(
@@ -872,7 +872,7 @@ async def update_onboarding(
     data: OnboardingUpdate,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_coordinator_or_above,
+    _: None = Depends(require_coordinator_or_above),
 ):
     """Update onboarding progress."""
     result = await db.execute(
@@ -932,7 +932,7 @@ async def get_capability_matrix(
     partner_id: UUID,
     db: DB,
     current_user: CurrentUser,
-    _: None = require_internal,
+    _: None = Depends(require_internal),
 ):
     """Get the full capability matrix for a partner."""
     # Get partner

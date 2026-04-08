@@ -10,7 +10,7 @@ import uuid as _uuid
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy import func, or_, select
 
 from app.api.deps import (
@@ -237,7 +237,7 @@ async def create_template(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    _: None = require_internal,  # type: ignore[assignment]
+    _: None = Depends(require_internal),
     name: str = Form(...),
     category: str = Form(...),
     description: str | None = Form(None),
@@ -279,7 +279,7 @@ async def update_template(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    _: None = require_internal,  # type: ignore[assignment]
+    _: None = Depends(require_internal),
 ) -> DeliverableTemplateResponse:
     result = await db.execute(
         select(DeliverableTemplate).where(DeliverableTemplate.id == template_id)
@@ -302,7 +302,7 @@ async def upload_template_file(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    _: None = require_internal,  # type: ignore[assignment]
+    _: None = Depends(require_internal),
     file: UploadFile = File(...),
 ) -> DeliverableTemplateResponse:
     """Replace or attach a file for an existing template."""
@@ -335,7 +335,7 @@ async def delete_template(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    _: None = require_internal,  # type: ignore[assignment]
+    _: None = Depends(require_internal),
 ) -> None:
     result = await db.execute(
         select(DeliverableTemplate).where(DeliverableTemplate.id == template_id)
