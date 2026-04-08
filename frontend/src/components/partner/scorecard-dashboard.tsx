@@ -89,7 +89,7 @@ function ScoreRing({ score }: { score: number | null }) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const strokeDash = (value / 100) * circumference;
-  const color = value >= 80 ? "#16a34a" : value >= 60 ? "#d97706" : "#dc2626";
+  const color = value >= 80 ? "#4A7A5A" : value >= 60 ? "#c4a060" : "#8B2020";
 
   return (
     <div className="relative flex items-center justify-center w-36 h-36">
@@ -205,7 +205,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+        <CartesianGrid strokeDasharray="1 4" strokeOpacity={0.4} stroke="hsl(var(--border))" vertical={false} />
         <XAxis
           dataKey="week"
           tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -233,6 +233,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           contentStyle={{
             background: "hsl(var(--background))",
             border: "1px solid hsl(var(--border))",
+            borderTop: "2px solid hsl(var(--primary))",
             borderRadius: "8px",
             fontSize: 12,
           }}
@@ -254,7 +255,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="sla_compliance_pct"
           name="SLA Compliance"
-          stroke="#6366f1"
+          stroke="#8b7d5e"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -264,7 +265,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="avg_quality"
           name="Quality Score"
-          stroke="#d97706"
+          stroke="#c4a060"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -274,7 +275,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           type="monotone"
           dataKey="avg_overall"
           name="Overall Rating"
-          stroke="#16a34a"
+          stroke="#1B2A4A"
           strokeWidth={2}
           dot={false}
           connectNulls
@@ -283,7 +284,7 @@ function TrendChart({ data }: { data: ScorecardDataPoint[] }) {
           yAxisId="pct"
           dataKey="assignments_completed"
           name="Assignments"
-          fill="#94a3b8"
+          fill="#D4CFC5"
           opacity={0.35}
           radius={[2, 2, 0, 0]}
         />
