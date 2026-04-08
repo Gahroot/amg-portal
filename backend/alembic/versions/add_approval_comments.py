@@ -3,9 +3,7 @@
 Adds the approval_comments table for threaded comment history on approval items.
 
 Revision ID: add_approval_comments
-Revises: add_shared_reports, add_partner_capacity, add_communication_logs,
-         add_notification_snooze_fields, add_quiet_hours_fields,
-         add_status_to_communication_template
+Revises: add_shared_reports
 Create Date: 2026-03-23
 
 """
@@ -19,14 +17,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_approval_comments"
-down_revision: str | Sequence[str] | None = (
-    "add_shared_reports",
-    "add_partner_capacity",
-    "add_communication_logs",
-    "add_notification_snooze_fields",
-    "add_quiet_hours_fields",
-    "add_status_to_communication_template",
-)
+down_revision: str | Sequence[str] | None = "add_shared_reports"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

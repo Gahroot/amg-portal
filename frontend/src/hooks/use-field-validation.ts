@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { z } from "zod/v4";
 
 /**
@@ -252,8 +252,8 @@ export function useFieldValidation<T = string>(
     onValidationChange,
   } = options;
 
-  const [value, setValue] = React.useState<T>((initialValue ?? "") as T);
-  const [state, setState] = React.useState<FieldValidationState>({
+  const [value, setValue] = useState<T>((initialValue ?? "") as T);
+  const [state, setState] = useState<FieldValidationState>({
     isTouched: false,
     isDirty: false,
     error: null,
@@ -262,14 +262,14 @@ export function useFieldValidation<T = string>(
   });
 
   // Refs for debouncing
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Track previous state for callback
-  const prevStateRef = React.useRef<FieldValidationState>(state);
+  const prevStateRef = useRef<FieldValidationState>(state);
 
   // Notify on state changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       onValidationChange &&
       JSON.stringify(prevStateRef.current) !== JSON.stringify(state)
@@ -280,7 +280,7 @@ export function useFieldValidation<T = string>(
   }, [state, onValidationChange]);
 
   // Run validation
-  const runValidation = React.useCallback(
+  const runValidation = useCallback(
     async (val: unknown) => {
       // Cancel any pending validation
       if (abortControllerRef.current) {
@@ -313,14 +313,14 @@ export function useFieldValidation<T = string>(
   );
 
   // Validate on mount if requested
-  React.useEffect(() => {
+  useEffect(() => {
     if (validateOnMount) {
       runValidation(value);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle value change
-  const handleChange = React.useCallback(
+  const handleChange = useCallback(
     (newValue: T) => {
       setValue(newValue);
       setState((prev) => ({ ...prev, isDirty: true }));
@@ -341,7 +341,7 @@ export function useFieldValidation<T = string>(
   );
 
   // Handle blur
-  const handleBlur = React.useCallback(() => {
+  const handleBlur = useCallback(() => {
     setState((prev) => ({ ...prev, isTouched: true }));
 
     // Clear any pending debounce
@@ -356,12 +356,12 @@ export function useFieldValidation<T = string>(
   }, [mode, value, runValidation]);
 
   // Manual validate function
-  const validate = React.useCallback(() => {
+  const validate = useCallback(() => {
     return runValidation(value);
   }, [value, runValidation]);
 
   // Reset field
-  const reset = React.useCallback(() => {
+  const reset = useCallback(() => {
     setValue((initialValue ?? "") as T);
     setState({
       isTouched: false,
@@ -379,12 +379,12 @@ export function useFieldValidation<T = string>(
   }, [initialValue, validateOnMount]);
 
   // Clear error
-  const clearError = React.useCallback(() => {
+  const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   // Set error manually
-  const setError = React.useCallback((error: string | null) => {
+  const setError = useCallback((error: string | null) => {
     setState((prev) => ({
       ...prev,
       error,
@@ -394,7 +394,7 @@ export function useFieldValidation<T = string>(
   }, []);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
@@ -435,7 +435,7 @@ export function useFieldsValidation<T extends Record<string, unknown>>(
     [K in keyof T]?: UseFieldValidationOptions;
   }
 ) {
-  const fieldValidations = React.useMemo(() => {
+  const fieldValidations = useMemo(() => {
     const validations: Partial<{
       [K in keyof T]: ReturnType<typeof useFieldValidation>;
     }> = {};
@@ -448,24 +448,24 @@ export function useFieldsValidation<T extends Record<string, unknown>>(
     return validations;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const validateAll = React.useCallback(async () => {
+  const validateAll = useCallback(async () => {
     const results = await Promise.all(
       Object.values(fieldValidations).map((field) => field?.validate())
     );
     return results.every(Boolean);
   }, [fieldValidations]);
 
-  const resetAll = React.useCallback(() => {
+  const resetAll = useCallback(() => {
     Object.values(fieldValidations).forEach((field) => field?.reset());
   }, [fieldValidations]);
 
-  const isValid = React.useMemo(() => {
+  const isValid = useMemo(() => {
     return Object.values(fieldValidations).every(
       (field) => field?.isValid !== false
     );
   }, [fieldValidations]);
 
-  const hasErrors = React.useMemo(() => {
+  const hasErrors = useMemo(() => {
     return Object.values(fieldValidations).some((field) => field?.error !== null);
   }, [fieldValidations]);
 

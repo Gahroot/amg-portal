@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { useConversations } from "@/hooks/use-conversations";
-import type { Conversation } from "@/types/communication";
+import type { Conversation, ConversationListResponse } from "@/types/communication";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  MessageSquare,
   Search,
   Users,
   Briefcase,
@@ -19,11 +17,16 @@ import {
 interface ConversationListProps {
   selectedId?: string;
   onSelect: (conversation: Conversation) => void;
+  /** Supply external data to bypass the default useConversations hook */
+  conversations?: ConversationListResponse;
+  isLoading?: boolean;
 }
 
-export function ConversationList({ selectedId, onSelect }: ConversationListProps) {
+export function ConversationList({ selectedId, onSelect, conversations: externalData, isLoading: externalLoading }: ConversationListProps) {
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useConversations({ limit: 50 });
+  const internal = useConversations(externalData ? undefined : { limit: 50 });
+  const data = externalData ?? internal.data;
+  const isLoading = externalLoading ?? internal.isLoading;
 
   const filteredConversations = data?.conversations.filter((conv) =>
     conv.title?.toLowerCase().includes(search.toLowerCase()) ||

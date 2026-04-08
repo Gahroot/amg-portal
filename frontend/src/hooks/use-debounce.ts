@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Returns a debounced copy of `value` that only updates after `delay` ms
@@ -6,9 +6,9 @@ import * as React from "react";
  * URL updates) on every keystroke.
  */
 export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);

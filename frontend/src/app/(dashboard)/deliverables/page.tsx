@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import { DataTableExport } from "@/components/ui/data-table-export";
 import type { ExportColumn } from "@/lib/export-utils";
 import { API_BASE_URL } from "@/lib/constants";
@@ -79,6 +79,15 @@ function DeliverableTable({
   onRowClick: (id: string) => void;
   actions?: (d: DeliverableItem) => React.ReactNode;
 }) {
+  const handleDownload = (e: React.MouseEvent, deliverable: DeliverableItem) => {
+    e.stopPropagation();
+    if (deliverable.download_url) {
+      window.open(deliverable.download_url, "_blank");
+    }
+  };
+
+  const colSpan = actions ? 7 : 6;
+
   return (
     <div className="rounded-md border bg-white">
       <Table>
@@ -89,6 +98,7 @@ function DeliverableTable({
             <TableHead>Status</TableHead>
             <TableHead>Due Date</TableHead>
             <TableHead>Client Visible</TableHead>
+            <TableHead className="w-[60px]">File</TableHead>
             {actions && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
@@ -114,6 +124,20 @@ function DeliverableTable({
                   : "-"}
               </TableCell>
               <TableCell>{deliverable.client_visible ? "Yes" : "No"}</TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                {deliverable.download_url ? (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    title="Download file"
+                    onClick={(e) => handleDownload(e, deliverable)}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <span className="text-muted-foreground text-xs">—</span>
+                )}
+              </TableCell>
               {actions && (
                 <TableCell
                   className="text-right"
@@ -127,7 +151,7 @@ function DeliverableTable({
           {deliverables.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={actions ? 6 : 5}
+                colSpan={colSpan}
                 className="text-center text-muted-foreground"
               >
                 No deliverables found.

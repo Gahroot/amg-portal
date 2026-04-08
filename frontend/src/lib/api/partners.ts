@@ -62,9 +62,7 @@ export async function provisionPartner(id: string, data: PartnerProvisionData): 
 export async function uploadComplianceDoc(id: string, file: File): Promise<PartnerProfile> {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await api.post<PartnerProfile>(`/api/v1/partners/${id}/compliance-doc`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<PartnerProfile>(`/api/v1/partners/${id}/compliance-doc`, formData);
   return response.data;
 }
 

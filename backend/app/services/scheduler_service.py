@@ -1,7 +1,8 @@
 """Background job scheduler using APScheduler."""
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import TypedDict
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -381,9 +382,27 @@ async def _process_queued_notifications_job() -> None:
         logger.exception("Error in queued notifications processing job")
 
 
+class _MilestoneSnapshot(TypedDict):
+    status: str
+    due_date: date | None
+    title: str
+
+
+class _ProgramSnapshot(TypedDict):
+    id: UUID
+    title: str
+    created_by: UUID
+    milestones: list[_MilestoneSnapshot]
+
+
 async def _send_weekly_status_reports_job() -> None:
     """Friday job: send weekly status reports for active programs."""
     logger.info("Running weekly status reports job")
+
+    # Plain-Python snapshots of each program's data — extracted while the session
+    # is still open so we never touch detached ORM-managed attributes afterward.
+    snapshots: list[_ProgramSnapshot] = []
+
     try:
         async with AsyncSessionLocal() as db:
             result = await db.execute(
@@ -393,57 +412,84 @@ async def _send_weekly_status_reports_job() -> None:
             )
             programs = result.scalars().all()
 
-        for program in programs:
+            # Extract all data we need while the session is open.
+            for program in programs:
+                milestones_data: list[_MilestoneSnapshot] = [
+                    _MilestoneSnapshot(
+                        status=str(m.status),
+                        due_date=m.due_date,
+                        title=str(m.title),
+                    )
+                    for m in (program.milestones or [])
+                ]
+                snapshots.append(
+                    _ProgramSnapshot(
+                        id=UUID(str(program.id)),
+                        title=str(program.title),
+                        created_by=UUID(str(program.created_by)),
+                        milestones=milestones_data,
+                    )
+                )
+
+        for snapshot in snapshots:
             try:
                 async with AsyncSessionLocal() as db:
-                    milestones = program.milestones or []
+                    milestones = snapshot["milestones"]
                     total = len(milestones)
-                    completed = sum(1 for m in milestones if m.status == "completed")
+                    completed = sum(1 for m in milestones if m["status"] == "completed")
                     progress = f"{completed}/{total}" if total > 0 else "0/0"
 
                     # Compute RAG status
                     today = datetime.now(UTC).date()
                     rag = "green"
                     for m in milestones:
-                        if m.status != "completed" and m.due_date and m.due_date < today:
+                        if (
+                            m["status"] != "completed"
+                            and m["due_date"] is not None
+                            and m["due_date"] < today
+                        ):
                             rag = "red"
                             break
                     if rag != "red":
                         for m in milestones:
                             if (
-                                m.status != "completed"
-                                and m.due_date
-                                and m.due_date <= today + timedelta(days=7)
+                                m["status"] != "completed"
+                                and m["due_date"] is not None
+                                and m["due_date"] <= today + timedelta(days=7)
                             ):
                                 rag = "amber"
                                 break
 
-                    active = [m for m in milestones if m.status not in ("completed", "cancelled")]
-                    active_text = "\n".join(f"- {m.title} (due: {m.due_date})" for m in active)
+                    active = [
+                        m for m in milestones if m["status"] not in ("completed", "cancelled")
+                    ]
+                    active_text = "\n".join(
+                        f"- {m['title']} (due: {m['due_date']})" for m in active
+                    )
                     if not active_text:
                         active_text = "No active milestones"
 
                     await dispatch_template_message(
                         db,
                         template_type="weekly_status",
-                        recipient_user_ids=[program.created_by],
+                        recipient_user_ids=[snapshot["created_by"]],
                         variables={
-                            "program_title": program.title,
+                            "program_title": snapshot["title"],
                             "rag_status": rag,
                             "milestone_progress": progress,
                             "active_milestones": active_text,
                         },
-                        program_id=program.id,
+                        program_id=snapshot["id"],
                     )
             except Exception:
                 logger.exception(
                     "Error sending weekly status for program %s",
-                    program.id,
+                    snapshot["id"],
                 )
 
         logger.info(
             "Weekly status reports complete — %d programs processed",
-            len(programs),
+            len(snapshots),
         )
     except Exception:
         logger.exception("Error in weekly status reports job")
@@ -1553,6 +1599,19 @@ async def _send_milestone_reminder_notifications_job() -> None:
         logger.exception("Error in milestone reminder notifications job")
 
 
+async def _mark_overdue_document_requests_job() -> None:
+    """Daily job: mark document requests whose deadline has passed as overdue."""
+    logger.info("Running overdue document requests job")
+    try:
+        async with AsyncSessionLocal() as db:
+            from app.services.document_request_service import mark_overdue_requests
+
+            count = await mark_overdue_requests(db)
+            logger.info("Overdue document requests marked — %d updated", count)
+    except Exception:
+        logger.exception("Error marking overdue document requests")
+
+
 async def _cleanup_expired_refresh_tokens_job() -> None:
     """Delete expired refresh tokens to keep the table lean."""
     try:
@@ -1809,6 +1868,17 @@ def start_scheduler() -> AsyncIOScheduler | None:
         minute=5,
         id="process_recurring_tasks",
         name="Process recurring task templates",
+        replace_existing=True,
+    )
+
+    # Mark overdue document requests — daily at 00:30 AM UTC
+    _scheduler.add_job(
+        _mark_overdue_document_requests_job,
+        "cron",
+        hour=0,
+        minute=30,
+        id="mark_overdue_document_requests",
+        name="Mark overdue document requests",
         replace_existing=True,
     )
 

@@ -37,7 +37,7 @@ async def _get_report_data(
     return None
 
 
-def _generate_attachment_bytes(
+async def _generate_attachment_bytes(
     schedule: ReportSchedule,
     report_data: dict[str, object],
 ) -> bytes:
@@ -51,13 +51,13 @@ def _generate_attachment_bytes(
 
     if fmt == "pdf":
         if report_type == "portfolio":
-            return pdf_service.generate_portfolio_pdf(report_data)
+            return await pdf_service.generate_portfolio_pdf(report_data)
         elif report_type == "program_status":
-            return pdf_service.generate_program_status_pdf(report_data)
+            return await pdf_service.generate_program_status_pdf(report_data)
         elif report_type == "completion":
-            return pdf_service.generate_completion_pdf(report_data)
+            return await pdf_service.generate_completion_pdf(report_data)
         elif report_type == "annual_review":
-            return pdf_service.generate_annual_review_pdf(report_data)
+            return await pdf_service.generate_annual_review_pdf(report_data)
         return b""
 
     # CSV fallback — flatten report data
@@ -85,7 +85,7 @@ async def generate_report_for_schedule(
         logger.warning("No data for schedule %s", schedule.id)
         return None
 
-    attachment_bytes = _generate_attachment_bytes(schedule, report_data)
+    attachment_bytes = await _generate_attachment_bytes(schedule, report_data)
     if not attachment_bytes:
         logger.warning("Empty attachment for schedule %s", schedule.id)
         return None
@@ -97,14 +97,8 @@ async def generate_report_for_schedule(
     object_name = f"reports/{schedule.id}/{filename}"
 
     # Upload to MinIO
-    storage_service._ensure_bucket()
-    storage_service.client.put_object(
-        storage_service.bucket,
-        object_name,
-        io.BytesIO(attachment_bytes),
-        len(attachment_bytes),
-        content_type=content_type,
-    )
+    await storage_service._ensure_bucket()
+    await storage_service.upload_bytes(object_name, attachment_bytes, content_type)
 
     # Create Document record
     doc = Document(

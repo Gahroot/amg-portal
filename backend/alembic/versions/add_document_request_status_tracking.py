@@ -5,7 +5,7 @@ estimated_completion, rm_notes, and client_notes to support the full
 Requested → In Progress → Received → Processing → Complete status flow.
 
 Revision ID: add_doc_req_status_tracking
-Revises: a1b2c3d4e5f6
+Revises: doc_requests_01
 Create Date: 2026-03-23
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "add_doc_req_status_tracking"
-down_revision = "a1b2c3d4e5f6"
+down_revision = "doc_requests_01"
 branch_labels = None
 depends_on = None
 

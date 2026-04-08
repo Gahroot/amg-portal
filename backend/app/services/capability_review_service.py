@@ -127,16 +127,19 @@ class CapabilityReviewService(
         )
         partners = result.scalars().all()
 
+        # Batch-load all existing reviews for this year to avoid N+1
+        partner_ids = [p.id for p in partners]
+        existing_result = await db.execute(
+            select(CapabilityReview.partner_id).where(
+                CapabilityReview.partner_id.in_(partner_ids),
+                CapabilityReview.review_year == review_year,
+            )
+        )
+        already_reviewed: set[object] = {row.partner_id for row in existing_result.all()}
+
         created_reviews = []
         for partner in partners:
-            # Check if review already exists
-            existing = await db.execute(
-                select(CapabilityReview).where(
-                    CapabilityReview.partner_id == partner.id,
-                    CapabilityReview.review_year == review_year,
-                )
-            )
-            if existing.scalar_one_or_none():
+            if partner.id in already_reviewed:
                 continue
 
             review = CapabilityReview(

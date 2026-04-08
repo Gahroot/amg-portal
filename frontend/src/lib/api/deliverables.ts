@@ -41,14 +41,26 @@ export async function updateDeliverable(id: string, data: DeliverableUpdateData)
 export async function submitDeliverable(id: string, file: File): Promise<DeliverableItem> {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await api.post<DeliverableItem>(`/api/v1/deliverables/${id}/submit`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<DeliverableItem>(`/api/v1/deliverables/${id}/submit`, formData);
   return response.data;
 }
 
 export async function reviewDeliverable(id: string, data: DeliverableReviewData): Promise<DeliverableItem> {
   const response = await api.post<DeliverableItem>(`/api/v1/deliverables/${id}/review`, data);
+  return response.data;
+}
+
+export async function uploadDeliverableFile(id: string, file: File): Promise<DeliverableItem> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await api.post<DeliverableItem>(`/api/v1/deliverables/${id}/upload`, formData);
+  return response.data;
+}
+
+export async function attachDocumentToDeliverable(id: string, documentId: string): Promise<DeliverableItem> {
+  const response = await api.post<DeliverableItem>(`/api/v1/deliverables/${id}/attach-document`, {
+    document_id: documentId,
+  });
   return response.data;
 }
 

@@ -178,7 +178,6 @@ export async function uploadCertificationDocument(
   const response = await api.post<PartnerCertification>(
     `/api/v1/partners/${partnerId}/certifications/${certificationId}/document`,
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return response.data;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useRef, useCallback, useEffect, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import {
   DEFAULT_SHORTCUTS,
@@ -49,13 +49,13 @@ export function useKeyboardShortcuts({
   enabled = true,
 }: UseKeyboardShortcutsOptions = {}) {
   const router = useRouter();
-  const sequentialState = React.useRef<SequentialShortcutState>({
+  const sequentialState = useRef<SequentialShortcutState>({
     firstKeyPressed: null,
     timeoutId: null,
   });
 
   // Execute a shortcut's action - defined first as it's used by other callbacks
-  const executeShortcutAction = React.useCallback(
+  const executeShortcutAction = useCallback(
     (shortcut: KeyboardShortcut) => {
       switch (shortcut.id) {
         case "show-shortcuts":
@@ -100,8 +100,11 @@ export function useKeyboardShortcuts({
   );
 
   // Handle sequential shortcuts (g then p, etc.)
-  const handleSequentialShortcut = React.useCallback(
-    (key: string): boolean => {
+  const handleSequentialShortcut = useCallback(
+    (key: string | undefined): boolean => {
+      // Guard against undefined/empty key
+      if (!key) return false;
+
       const state = sequentialState.current;
 
       // Clear any existing timeout
@@ -151,11 +154,14 @@ export function useKeyboardShortcuts({
   );
 
   // Main keyboard event handler
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
 
     function handleKeyDown(event: KeyboardEvent) {
       const key = event.key;
+
+      // Guard against undefined key (can happen in some browser/automation contexts)
+      if (!key) return;
 
       // Handle Escape key - let dialogs handle it themselves
       if (key === "Escape") {
@@ -165,8 +171,8 @@ export function useKeyboardShortcuts({
       // Check if we're in an input element
       const inInput = isInputElement(event.target);
 
-      // First check for sequential shortcuts
-      if (handleSequentialShortcut(key)) {
+      // Skip sequential shortcuts when typing in an input/textarea/select
+      if (!inInput && handleSequentialShortcut(key)) {
         return;
       }
 
@@ -188,7 +194,7 @@ export function useKeyboardShortcuts({
   }, [enabled, shortcuts, handleSequentialShortcut, executeShortcutAction]);
 
   // Return a function to programmatically trigger a shortcut
-  const triggerShortcut = React.useCallback(
+  const triggerShortcut = useCallback(
     (shortcutId: string) => {
       const shortcut = shortcuts.find((s) => s.id === shortcutId);
       if (shortcut) {
@@ -205,9 +211,9 @@ export function useKeyboardShortcuts({
  * Hook to focus a search input when "/" is pressed
  */
 export function useFocusSearch(
-  inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>
+  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>
 ) {
-  React.useEffect(() => {
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "/" && !isInputElement(event.target)) {
         event.preventDefault();

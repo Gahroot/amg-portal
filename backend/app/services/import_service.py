@@ -1,5 +1,6 @@
 """Service for importing data from CSV/Excel files."""
 
+import asyncio
 import base64
 import contextlib
 import csv
@@ -13,7 +14,7 @@ from email.utils import parseaddr
 from typing import Any
 
 from openpyxl import load_workbook
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, NotFoundException
@@ -33,7 +34,13 @@ from app.schemas.import_schemas import (
     ImportWarning,
 )
 from app.services.client_service import client_service
-from app.services.duplicate_detection_service import check_duplicates
+from app.services.duplicate_detection_service import (
+    FUZZY_SEARCH_LIMIT,
+    _compute_match,
+    _normalize_email,
+    _normalize_name,
+    _normalize_phone,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -531,10 +538,11 @@ class ImportService:
         """Upload and parse an import file."""
         # Detect file type and parse
         lower_name = filename.lower()
+        loop = asyncio.get_event_loop()
         if lower_name.endswith(".csv"):
-            columns, rows = _parse_csv(content)
+            columns, rows = await loop.run_in_executor(None, _parse_csv, content)
         elif lower_name.endswith((".xlsx", ".xls")):
-            columns, rows = _parse_excel(content)
+            columns, rows = await loop.run_in_executor(None, _parse_excel, content)
         else:
             raise BadRequestException(
                 "Unsupported file format. Please upload a CSV or Excel file."
@@ -650,6 +658,11 @@ class ImportService:
         existing_programs = await self._load_program_titles(db)
         existing_users = await self._load_user_emails(db)
 
+        # Pre-load duplicate-check candidates once (avoids N+1 when entity_type==CLIENTS)
+        dup_candidates: list[ClientProfile] = []
+        if entity_type == ImportEntityType.CLIENTS and not skip_duplicates:
+            dup_candidates = await self._load_dup_candidates(db, job["raw_rows"], job["mappings"])
+
         for row_num, raw_row in enumerate(job["raw_rows"], start=1):
             row_errors: list[dict[str, Any]] = []
             row_warnings: list[dict[str, Any]] = []
@@ -760,15 +773,21 @@ class ImportService:
 
             # Reference validation (entity-specific)
             if entity_type == ImportEntityType.CLIENTS:
-                # Check for duplicates
-                has_name = not skip_duplicates and mapped_data.get("legal_name")
-                if has_name or mapped_data.get("primary_email"):
-                    duplicates = await check_duplicates(
-                        db,
-                        legal_name=mapped_data.get("legal_name"),
-                        primary_email=mapped_data.get("primary_email"),
-                        phone=mapped_data.get("phone"),
-                    )
+                # Check for duplicates in-memory against pre-loaded candidates
+                legal_name = mapped_data.get("legal_name")
+                primary_email = mapped_data.get("primary_email")
+                phone = mapped_data.get("phone")
+                has_name = not skip_duplicates and legal_name
+                if has_name or primary_email:
+                    matches = [
+                        _compute_match(c, legal_name, primary_email, phone)
+                        for c in dup_candidates
+                    ]
+                    duplicates = sorted(
+                        (m for m in matches if m is not None),
+                        key=lambda m: m.similarity_score,
+                        reverse=True,
+                    )[:10]
                     for dup in duplicates:
                         row_warnings.append({
                             "row_number": row_num,
@@ -778,7 +797,7 @@ class ImportService:
                                 f"Potential duplicate: {dup.legal_name} "
                                 f"({int(dup.similarity_score * 100)}% match)"
                             ),
-                            "value": mapped_data.get("legal_name"),
+                            "value": legal_name,
                             "existing_id": dup.client_id,
                             "existing_name": dup.legal_name,
                         })
@@ -972,6 +991,9 @@ class ImportService:
                 })
                 failed_count += 1
 
+        # Single commit covers the entire import as one atomic transaction
+        await db.commit()
+
         job["status"] = ImportStatus.COMPLETED if failed_count == 0 else ImportStatus.FAILED
         job["imported_rows"] = imported_count
         job["skipped_rows"] = skipped_count
@@ -1115,6 +1137,69 @@ class ImportService:
         result = await db.execute(select(User.id, User.email))
         return {row[1].lower(): row[0] for row in result.fetchall()}
 
+    async def _load_dup_candidates(  # noqa: PLR0912
+        self,
+        db: AsyncSession,
+        raw_rows: list[dict[str, str]],
+        mappings: list[dict[str, Any]],
+    ) -> list[ClientProfile]:
+        """Batch-load client duplicate candidates for all rows in the import.
+
+        Builds a broad OR filter from every name/email/phone value across all
+        rows (mirrors the per-row filter logic in check_duplicates), issues a
+        single query capped at FUZZY_SEARCH_LIMIT, and returns the candidates
+        for in-memory scoring in the validation loop.
+        """
+        mapping_lookup = {m["source_column"]: m["target_field"] for m in mappings}
+
+        names: list[str] = []
+        emails: list[str] = []
+        phones: list[str] = []
+
+        for raw_row in raw_rows:
+            for col, value in raw_row.items():
+                field = mapping_lookup.get(col)
+                if not field or not value:
+                    continue
+                v = str(value).strip()
+                if not v:
+                    continue
+                if field == "legal_name":
+                    names.append(v)
+                elif field == "primary_email":
+                    emails.append(v)
+                elif field == "phone":
+                    phones.append(v)
+
+        conditions = []
+
+        for email in emails:
+            norm = _normalize_email(email)
+            local_part = norm.split("@")[0]
+            conditions.append(ClientProfile.primary_email.ilike(norm))
+            if local_part:
+                conditions.append(ClientProfile.primary_email.ilike(f"{local_part}@%"))
+                conditions.append(ClientProfile.secondary_email.ilike(f"{local_part}@%"))
+
+        for name in names:
+            first_token = _normalize_name(name).split()
+            if first_token and len(first_token[0]) >= 3:
+                t = first_token[0]
+                conditions.append(ClientProfile.legal_name.ilike(f"%{t}%"))
+                conditions.append(ClientProfile.display_name.ilike(f"%{t}%"))
+
+        for phone in phones:
+            norm = _normalize_phone(phone)
+            if norm and len(norm) >= 7:
+                conditions.append(ClientProfile.phone.ilike(f"%{norm[-7:]}"))
+
+        if not conditions:
+            return []
+
+        stmt = select(ClientProfile).where(or_(*conditions)).limit(FUZZY_SEARCH_LIMIT)
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
     async def _import_client(
         self,
         db: AsyncSession,
@@ -1155,7 +1240,6 @@ class ImportService:
         # Update assigned RM if provided
         if assigned_rm_id and client:
             client.assigned_rm_id = assigned_rm_id
-            await db.commit()
 
         return client.id if client else None
 
@@ -1194,7 +1278,7 @@ class ImportService:
         )
 
         db.add(partner)
-        await db.commit()
+        await db.flush()
         await db.refresh(partner)
         return partner.id
 
@@ -1234,7 +1318,7 @@ class ImportService:
         )
 
         db.add(program)
-        await db.commit()
+        await db.flush()
         await db.refresh(program)
         return program.id
 
@@ -1276,7 +1360,7 @@ class ImportService:
         )
 
         db.add(task)
-        await db.commit()
+        await db.flush()
         await db.refresh(task)
         return task.id
 

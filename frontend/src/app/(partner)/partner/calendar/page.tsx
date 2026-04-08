@@ -1,4 +1,10 @@
+import { Metadata } from "next";
 import { AssignmentCalendar } from "@/components/partner/assignment-calendar";
+
+export const metadata: Metadata = {
+  title: "Assignment Calendar",
+  description: "View all your assignment and deliverable deadlines in one place.",
+};
 
 export default function PartnerCalendarPage() {
   return (

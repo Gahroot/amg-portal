@@ -536,7 +536,7 @@ function AnnualReviewPreview({
                     <TableCell>{p.completed_assignments}</TableCell>
                     <TableCell>
                       {p.avg_performance_rating !== null
-                        ? p.avg_performance_rating.toFixed(1)
+                        ? Number(p.avg_performance_rating).toFixed(1)
                         : "—"}
                     </TableCell>
                   </TableRow>

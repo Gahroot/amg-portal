@@ -282,6 +282,9 @@ export function matchesShortcut(
   // If no keys defined, can't match
   if (!shortcut.keys) return false;
 
+  // Guard against undefined key (can happen in some browser/automation contexts)
+  if (!event.key) return false;
+
   const key = event.key.toLowerCase();
   const matchesKey = shortcut.keys.some((k) => k.toLowerCase() === key);
 

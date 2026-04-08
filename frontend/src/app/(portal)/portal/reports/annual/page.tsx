@@ -1,4 +1,10 @@
+import { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Annual Reviews",
+  description: "Access your annual performance and portfolio review reports.",
+};
 import {
   Card,
   CardContent,

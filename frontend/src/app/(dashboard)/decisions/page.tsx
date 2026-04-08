@@ -7,11 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DecisionRequestCard } from "@/components/decisions/decision-request-card";
 import { DecisionResponseDialog } from "@/components/decisions/decision-response-dialog";
+import { NewDecisionDialog } from "@/components/decisions/new-decision-dialog";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
 
 export default function DecisionsPage() {
   const [selectedDecision, setSelectedDecision] = useState<string | undefined>();
+  const [newDecisionOpen, setNewDecisionOpen] = useState(false);
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [search, setSearch] = useState("");
   const { data: pendingDecisions } = usePendingDecisions();
@@ -33,7 +35,7 @@ export default function DecisionsPage() {
             Review and respond to pending decisions
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setNewDecisionOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Decision
         </Button>
@@ -100,6 +102,12 @@ export default function DecisionsPage() {
           />
         ) : null;
       })()}
+
+      {/* New Decision Dialog */}
+      <NewDecisionDialog
+        open={newDecisionOpen}
+        onOpenChange={setNewDecisionOpen}
+      />
     </div>
   );
 }

@@ -391,6 +391,7 @@ async def upload_compliance_doc(
     if not partner:
         raise NotFoundException("Partner not found")
 
+    await storage_service.validate_file(file)
     object_path, _ = await storage_service.upload_file(file, f"partners/{partner_id}/compliance")
     partner.compliance_doc_url = object_path
     await db.commit()

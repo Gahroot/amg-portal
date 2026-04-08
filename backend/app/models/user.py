@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.models.calendar_feed_token import CalendarFeedToken
     from app.models.client_profile import ClientProfile
     from app.models.dashboard_config import DashboardConfig
+    from app.models.partner import PartnerProfile
     from app.models.table_view import TableView
 
 
@@ -29,16 +30,20 @@ class User(Base, TimestampMixin):
     phone_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
     role: Mapped[UserRole] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
-    mfa_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mfa_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mfa_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
     mfa_backup_codes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Calendar integration tokens (stored as JSON with access_token, refresh_token, etc.)
     google_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     outlook_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    calendar_last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    calendar_last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Tour completion tracking: maps tour_key -> True when completed/skipped
     onboarding_completed: Mapped[dict[str, bool] | None] = mapped_column(JSON, nullable=True)
     # Favorite report types (list of report type strings, e.g. ["rm_portfolio", "escalation_log"])
@@ -52,7 +57,10 @@ class User(Base, TimestampMixin):
         "ClientProfile", foreign_keys="ClientProfile.created_by", back_populates="creator"
     )
     client_profile: Mapped["ClientProfile | None"] = relationship(
-        "ClientProfile", foreign_keys="ClientProfile.user_id", back_populates="user", uselist=False
+        "ClientProfile",
+        foreign_keys="ClientProfile.user_id",
+        back_populates="user",
+        uselist=False,
     )
     dashboard_config: Mapped["DashboardConfig | None"] = relationship(
         "DashboardConfig", back_populates="user", uselist=False
@@ -62,6 +70,12 @@ class User(Base, TimestampMixin):
     )
     table_views: Mapped[list["TableView"]] = relationship(
         "TableView", back_populates="user", cascade="all, delete-orphan"
+    )
+    partner_profile: Mapped["PartnerProfile | None"] = relationship(
+        "PartnerProfile",
+        foreign_keys="PartnerProfile.user_id",
+        back_populates="user",
+        uselist=False,
     )
 
     def __repr__(self) -> str:

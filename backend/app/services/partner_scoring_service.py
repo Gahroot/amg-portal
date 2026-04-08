@@ -344,68 +344,155 @@ async def get_governance_history(
     return list(result.scalars().all())
 
 
-async def get_governance_dashboard(
+async def get_governance_dashboard(  # noqa: PLR0912, PLR0915
     db: AsyncSession,
     skip: int = 0,
     limit: int = 50,
 ) -> tuple[list[dict[str, Any]], int]:
-    """Get governance dashboard with all partners, their scores, and status."""
-    # Total partner count
+    """Get governance dashboard with all partners, their scores, and status.
+
+    Uses 6 batch queries instead of per-partner round-trips to avoid N+7 query explosion.
+    """
+    # --- Query 1: total partner count ---
     count_result = await db.execute(select(func.count(PartnerProfile.id)))
     total = count_result.scalar_one()
 
-    # Get all partners
+    # --- Query 2: partners page ---
     partner_result = await db.execute(
         select(PartnerProfile).order_by(PartnerProfile.firm_name).offset(skip).limit(limit)
     )
     partners = partner_result.scalars().all()
 
+    if not partners:
+        return [], total
+
+    partner_ids = [p.id for p in partners]
+    user_ids = [p.user_id for p in partners if p.user_id is not None]
+
+    # --- Query 3: rating aggregates for all partners in page ---
+    rating_rows = await db.execute(
+        select(
+            PartnerRating.partner_id,
+            func.avg(PartnerRating.quality_score).label("avg_quality"),
+            func.avg(PartnerRating.timeliness_score).label("avg_timeliness"),
+            func.avg(PartnerRating.communication_score).label("avg_communication"),
+            func.avg(PartnerRating.overall_score).label("avg_overall"),
+            func.count(PartnerRating.id).label("total_ratings"),
+        )
+        .where(PartnerRating.partner_id.in_(partner_ids))
+        .group_by(PartnerRating.partner_id)
+    )
+    rating_by_pid: dict[Any, Any] = {
+        row.partner_id: row for row in rating_rows.all()
+    }
+
+    # --- Query 4: SLA aggregates keyed by user_id ---
+    sla_by_uid: dict[Any, Any] = {}
+    if user_ids:
+        sla_rows = await db.execute(
+            select(
+                SLATracker.assigned_to,
+                func.count(SLATracker.id).label("total"),
+                func.count(
+                    case((SLATracker.breach_status == "breached", SLATracker.id))
+                ).label("breached"),
+            )
+            .where(SLATracker.assigned_to.in_(user_ids))
+            .group_by(SLATracker.assigned_to)
+        )
+        sla_by_uid = {row.assigned_to: row for row in sla_rows.all()}
+
+    # --- Query 5: all governance rows for the page (fetch all, process in-memory) ---
+    gov_rows_result = await db.execute(
+        select(PartnerGovernance)
+        .where(PartnerGovernance.partner_id.in_(partner_ids))
+        .order_by(PartnerGovernance.partner_id, PartnerGovernance.created_at.desc())
+    )
+    gov_rows_all = gov_rows_result.scalars().all()
+
+    # Build per-partner governance lookups
+    now = datetime.now(UTC)
+    latest_gov_by_pid: dict[Any, PartnerGovernance] = {}      # latest overall (no expiry filter)
+    active_gov_by_pid: dict[Any, PartnerGovernance] = {}      # latest non-expired (for status)
+    for gov in gov_rows_all:
+        pid = gov.partner_id
+        # latest overall: rows are ordered DESC so first encountered wins
+        if pid not in latest_gov_by_pid:
+            latest_gov_by_pid[pid] = gov
+        # latest non-expired: first non-expired row per partner
+        if pid not in active_gov_by_pid and (
+            gov.expiry_date is None or gov.expiry_date > now
+        ):
+            active_gov_by_pid[pid] = gov
+
+    # --- Query 6: notice counts for all partners in page ---
+    notice_rows = await db.execute(
+        select(
+            PerformanceNotice.partner_id,
+            func.count(PerformanceNotice.id).label("cnt"),
+        )
+        .where(PerformanceNotice.partner_id.in_(partner_ids))
+        .group_by(PerformanceNotice.partner_id)
+    )
+    notice_by_pid: dict[Any, int] = {row.partner_id: row.cnt for row in notice_rows.all()}
+
+    # --- In-memory assembly ---
     entries: list[dict[str, Any]] = []
     for partner in partners:
-        # Composite score (lightweight calculation)
-        pid = uuid.UUID(str(partner.id))
-        score_data = await calculate_composite_score(db, pid)
+        pid = partner.id
 
-        # Latest governance action
-        gov_result = await db.execute(
-            select(PartnerGovernance)
-            .where(PartnerGovernance.partner_id == partner.id)
-            .order_by(PartnerGovernance.created_at.desc())
-            .limit(1)
-        )
-        latest_gov = gov_result.scalar_one_or_none()
+        # Rating component
+        r = rating_by_pid.get(pid)
+        avg_overall = round(float(r.avg_overall), 2) if (r and r.avg_overall) else None
 
-        # SLA breach count
-        sla_breach_count = 0
+        # SLA component
+        total_sla_tracked = 0
+        total_sla_breached = 0
+        sla_compliance_rate: float | None = None
         if partner.user_id:
-            breach_result = await db.execute(
-                select(func.count(SLATracker.id)).where(
-                    SLATracker.assigned_to == partner.user_id,
-                    SLATracker.breach_status == "breached",
+            s = sla_by_uid.get(partner.user_id)
+            if s:
+                total_sla_tracked = s.total
+                total_sla_breached = s.breached
+            if total_sla_tracked > 0:
+                sla_compliance_rate = round(
+                    (1 - total_sla_breached / total_sla_tracked) * 100, 2
                 )
-            )
-            sla_breach_count = breach_result.scalar_one()
+            else:
+                sla_compliance_rate = 100.0
 
-        # Notice count
-        notice_result = await db.execute(
-            select(func.count(PerformanceNotice.id)).where(
-                PerformanceNotice.partner_id == partner.id
-            )
-        )
-        notice_count = notice_result.scalar_one()
+        # Composite score: 60% rating + 40% SLA
+        rating_component = (avg_overall * 20) if avg_overall is not None else None
+        composite_score: float | None = None
+        if rating_component is not None and sla_compliance_rate is not None:
+            composite_score = round(0.6 * rating_component + 0.4 * sla_compliance_rate, 2)
+        elif rating_component is not None:
+            composite_score = round(rating_component, 2)
+        elif sla_compliance_rate is not None:
+            composite_score = round(sla_compliance_rate, 2)
+
+        # Latest governance for display (no expiry filter)
+        latest_gov = latest_gov_by_pid.get(pid)
+
+        # Latest non-expired governance for recommended-action evaluation
+        active_gov = active_gov_by_pid.get(pid)
+        current_governance_status = str(active_gov.action) if active_gov else "good_standing"
+        recommended_action = evaluate_recommended_action(composite_score, current_governance_status)
 
         entries.append(
             {
-                "partner_id": partner.id,
+                "partner_id": pid,
                 "firm_name": partner.firm_name,
-                "composite_score": score_data.get("composite_score"),
+                "composite_score": composite_score,
                 "current_action": latest_gov.action if latest_gov else None,
                 "current_action_date": (
                     latest_gov.effective_date.isoformat() if latest_gov else None
                 ),
-                "sla_breach_count": sla_breach_count,
-                "avg_rating": score_data.get("avg_rating_score"),
-                "notice_count": notice_count,
+                "current_governance_status": current_governance_status,
+                "recommended_action": recommended_action,
+                "sla_breach_count": total_sla_breached,
+                "avg_rating": avg_overall,
+                "notice_count": notice_by_pid.get(pid, 0),
             }
         )
 

@@ -1,8 +1,6 @@
 import axios from "axios";
 
 import {
-  getAccessToken,
-  getRefreshToken,
   setTokens,
   removeTokens,
 } from "@/lib/token-storage";
@@ -19,23 +17,13 @@ export const api = axios.create({
 });
 
 export function logout(): void {
+  // Fire-and-forget: ask the server to clear httpOnly cookies
+  api.post("/api/v1/auth/logout").catch(() => {});
   removeTokens();
   // Notify the auth provider so it can clear React state and redirect.
   // Avoids a hard window.location redirect that races with router.replace.
   window.dispatchEvent(new Event("auth:logout"));
 }
-
-// Request interceptor — attach JWT
-api.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Response interceptor — token refresh on 401
 let isRefreshing = false;
@@ -60,9 +48,13 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Extract backend error message for all errors
-    if (error.response?.data?.detail) {
-      error.message = error.response.data.detail;
+    // Extract backend error message for all errors (unified `message` field,
+    // with `detail` fallback for any non-custom responses)
+    const data = error.response?.data;
+    if (data?.message) {
+      error.message = data.message;
+    } else if (data?.detail) {
+      error.message = data.detail;
     }
 
     // Skip interceptor for the refresh endpoint itself to avoid deadlocks
@@ -79,21 +71,13 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshTokenValue = getRefreshToken();
-
-      if (!refreshTokenValue) {
-        logout();
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await api.post("/api/v1/auth/refresh", {
-          refresh_token: refreshTokenValue,
-        });
+        // Refresh token is sent automatically via httpOnly cookie
+        const response = await api.post("/api/v1/auth/refresh");
 
         const { access_token, refresh_token } = response.data;
+        // Update the session flag (actual tokens are in httpOnly cookies)
         setTokens(access_token, refresh_token);
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
 
         processQueue(null);
         isRefreshing = false;

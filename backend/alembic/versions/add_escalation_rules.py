@@ -1,7 +1,7 @@
 """Add escalation_rules table.
 
 Revision ID: add_escalation_rules
-Revises: a3b4c5d6e7f8, add_communication_logs, a1b2c3d4e5f6
+Revises: a3b4c5d6e7f8, add_communication_logs, esc_response_deadline_01
 Create Date: 2026-03-18 14:00:00.000000
 """
 
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision = "add_escalation_rules"
-down_revision = ("a3b4c5d6e7f8", "add_communication_logs", "a1b2c3d4e5f6")
+down_revision = ("a3b4c5d6e7f8", "add_communication_logs", "esc_response_deadline_01")
 branch_labels = None
 depends_on = None
 

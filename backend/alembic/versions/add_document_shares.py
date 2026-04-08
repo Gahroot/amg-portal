@@ -1,12 +1,8 @@
 """Add document_shares table for secure, time-limited document sharing.
 
 Revision ID: add_document_shares
-Revises: add_escalation_templates, ab4b71a8d1a4, add_approval_comments, add_bookmarks,
-         add_budget_approval_routing, add_capability_refresh_fields, add_clearance_certificates,
-         add_document_acknowledgments, add_escalation_playbooks, add_milestone_reminder_preferences,
-         add_notification_snooze_fields, add_onboarding_completed, add_partner_capacity,
-         add_program_archival, add_pulse_surveys, add_quiet_hours_fields, add_recurring_tasks,
-         add_status_to_communication_template, add_task_dependencies, add_task_position
+Revises: add_escalation_templates, add_approval_comments, add_escalation_playbooks,
+         add_milestone_reminder_preferences, add_pulse_surveys
 Create Date: 2026-03-23
 """
 
@@ -19,25 +15,10 @@ from alembic import op
 revision: str = "add_document_shares"
 down_revision: tuple[str, ...] = (
     "add_escalation_templates",
-    "ab4b71a8d1a4",
     "add_approval_comments",
-    "add_bookmarks",
-    "add_budget_approval_routing",
-    "add_capability_refresh_fields",
-    "add_clearance_certificates",
-    "add_document_acknowledgments",
     "add_escalation_playbooks",
     "add_milestone_reminder_preferences",
-    "add_notification_snooze_fields",
-    "add_onboarding_completed",
-    "add_partner_capacity",
-    "add_program_archival",
     "add_pulse_surveys",
-    "add_quiet_hours_fields",
-    "add_recurring_tasks",
-    "add_status_to_communication_template",
-    "add_task_dependencies",
-    "add_task_position",
 )
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

@@ -507,7 +507,7 @@ export default function PartnerDetailPage() {
                       <p className="text-sm text-muted-foreground">Rating</p>
                       <p className="font-medium">
                         {partner.performance_rating != null
-                          ? partner.performance_rating.toFixed(1)
+                          ? Number(partner.performance_rating).toFixed(1)
                           : "Not rated"}
                       </p>
                     </CardContent>

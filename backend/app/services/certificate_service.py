@@ -1,6 +1,5 @@
 """Service for compliance clearance certificate generation and management."""
 
-import io
 import logging
 from datetime import UTC, date, datetime
 from typing import Any
@@ -355,7 +354,7 @@ class CertificateService:
 </html>
 """
 
-        return pdf_service.render_html_to_pdf(full_html)
+        return await pdf_service.render_html_to_pdf(full_html)
 
     async def store_certificate_pdf(
         self,
@@ -366,14 +365,7 @@ class CertificateService:
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         object_name = f"certificates/{certificate_id}/{timestamp}.pdf"
 
-        file_data = io.BytesIO(pdf_bytes)
-        storage_service.client.put_object(
-            storage_service.bucket,
-            object_name,
-            file_data,
-            len(pdf_bytes),
-            content_type="application/pdf",
-        )
+        await storage_service.upload_bytes(object_name, pdf_bytes, "application/pdf")
         return object_name
 
     async def create_certificate(

@@ -153,7 +153,7 @@ describe("ConversationView", () => {
 
   it("renders compose area", () => {
     renderWithProviders(<ConversationView conversationId="conv-1" />);
-    expect(screen.getByTestId("compose-input")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe("ConversationView", () => {
     const user = userEvent.setup();
     renderWithProviders(<ConversationView conversationId="conv-1" />);
 
-    const textarea = screen.getByTestId("compose-input");
+    const textarea = screen.getByRole("textbox");
     await user.type(textarea, "A new message");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
@@ -180,11 +180,9 @@ describe("ConversationView", () => {
 
   it("shows back button when onBack is provided", () => {
     const onBack = vi.fn();
-    const { container } = renderWithProviders(
+    renderWithProviders(
       <ConversationView conversationId="conv-1" onBack={onBack} />
     );
-    // The back button is rendered with md:hidden (hidden on desktop, visible on mobile)
-    const backBtn = container.querySelector(".md\\:hidden");
-    expect(backBtn).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
   });
 });

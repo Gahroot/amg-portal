@@ -1,4 +1,10 @@
+import { Metadata } from "next";
 import { MilestoneCalendar } from "@/components/portal/milestone-calendar";
+
+export const metadata: Metadata = {
+  title: "Milestone Calendar",
+  description: "View all your program milestones across a calendar.",
+};
 
 export default function PortalCalendarPage() {
   return (

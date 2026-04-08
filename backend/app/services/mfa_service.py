@@ -1,6 +1,7 @@
 """MFA / TOTP service."""
 
 import base64
+import hmac
 import secrets
 import string
 from io import BytesIO
@@ -45,9 +46,13 @@ def generate_backup_codes(count: int = 8) -> list[str]:
 
 
 def verify_backup_code(stored_codes: list[str], code: str) -> tuple[bool, list[str]]:
-    """Verify a backup code, returning (valid, remaining_codes)."""
+    """Verify a backup code in constant time, returning (valid, remaining_codes)."""
     upper_code = code.upper()
-    if upper_code in stored_codes:
-        remaining = [c for c in stored_codes if c != upper_code]
+    matched = False
+    for stored in stored_codes:
+        if hmac.compare_digest(upper_code, stored):
+            matched = True
+    if matched:
+        remaining = [c for c in stored_codes if not hmac.compare_digest(c, upper_code)]
         return True, remaining
     return False, stored_codes

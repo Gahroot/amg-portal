@@ -4,7 +4,8 @@ import * as React from "react";
 import { OctagonXIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -30,13 +31,20 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log the error to console in development only
-    if (process.env.NODE_ENV === "development") {
-      console.error("ErrorBoundary caught an error:", error, errorInfo);
-      toast.error(error.message || "An unexpected error occurred");
-    } else {
-      toast.error("An unexpected error occurred. Please try again.");
-    }
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+
+    fetch("/api/error-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "REACT_CRASH",
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        pageUrl: typeof window !== "undefined" ? window.location.href : "unknown",
+        timestamp: new Date().toISOString(),
+      }),
+    }).catch(() => {});
   }
 
   render() {
@@ -60,14 +68,21 @@ export class ErrorBoundary extends React.Component<
                   ? this.state.error?.message || "An unexpected error occurred"
                   : "An unexpected error occurred. Please try again."}
               </p>
-              <Button
-                onClick={() => {
-                  this.setState({ hasError: false });
-                  window.location.reload();
-                }}
-              >
-                Try Again
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => {
+                    this.setState({ hasError: false });
+                    window.location.reload();
+                  }}
+                >
+                  Try Again
+                </Button>
+                {SUPPORT_EMAIL && (
+                  <Button variant="outline" asChild>
+                    <a href={`mailto:${SUPPORT_EMAIL}`}>Email Support</a>
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

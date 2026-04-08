@@ -17,6 +17,7 @@ from app.api.deps import (
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
 from app.models.client_profile import ClientProfile
 from app.models.enums import UserRole
+from app.schemas.client import UpcomingDateItemResponse
 from app.schemas.client_profile import (
     ClientProfileCreate,
     ClientProfileListResponse,
@@ -175,7 +176,7 @@ async def get_my_portfolio(
 
 @router.get(
     "/upcoming-dates",
-    response_model=list[dict[str, object]],
+    response_model=list[UpcomingDateItemResponse],
     dependencies=[Depends(require_internal)],
 )
 async def list_upcoming_dates(
@@ -183,7 +184,7 @@ async def list_upcoming_dates(
     current_user: CurrentUser,
     _rls: RLSContext,
     days_ahead: int = Query(14, ge=1, le=90),
-) -> list[dict[str, object]]:
+) -> list[UpcomingDateItemResponse]:
     """Return upcoming client birthdays and important dates within *days_ahead* days.
 
     RMs see only their own clients. MDs and other internal roles see all clients.
@@ -196,16 +197,16 @@ async def list_upcoming_dates(
         db, days_ahead=days_ahead, rm_id=rm_id
     )
     return [
-        {
-            "client_id": str(item.client_id),
-            "client_name": item.client_name,
-            "rm_id": str(item.rm_id),
-            "date_type": item.date_type,
-            "label": item.label,
-            "days_until": item.days_until,
-            "occurs_on": item.occurs_on.isoformat(),
-            "years_since": item.years_since,
-        }
+        UpcomingDateItemResponse(
+            client_id=item.client_id,
+            client_name=item.client_name,
+            rm_id=item.rm_id,
+            date_type=item.date_type,
+            label=item.label,
+            days_until=item.days_until,
+            occurs_on=item.occurs_on,
+            years_since=item.years_since,
+        )
         for item in items
     ]
 

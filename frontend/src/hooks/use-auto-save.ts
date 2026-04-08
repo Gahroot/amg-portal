@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useRef, useCallback, useEffect, type BaseSyntheticEvent } from "react";
 
 /**
  * Auto-save status states
@@ -50,6 +50,8 @@ export interface UseAutoSaveReturn<T> {
   hasUnsavedChanges: boolean;
   /** Manually trigger a save */
   save: (data: T) => Promise<void>;
+  /** Debounced save — waits for debounceDelay ms of inactivity before saving */
+  debouncedSave: (data: T) => void;
   /** Clear the draft from localStorage */
   clearDraft: () => void;
   /** Check if a draft exists for recovery */
@@ -112,23 +114,23 @@ export function useAutoSave<T extends Record<string, unknown>>(
     onSave,
     debounceDelay = DEFAULT_DEBOUNCE_DELAY,
     interval = DEFAULT_INTERVAL,
-    saveOnBlur = true,
     enablePeriodicSave = true,
     persistToLocalStorage = true,
     onStatusChange,
   } = options;
 
-  const [status, setStatus] = React.useState<AutoSaveStatus>("idle");
-  const [lastSaved, setLastSaved] = React.useState<Date | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
-  const currentDataRef = React.useRef<T | undefined>(initialData);
-  const isSubmittedRef = React.useRef(false);
-  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [status, setStatus] = useState<AutoSaveStatus>("idle");
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const currentDataRef = useRef<T | undefined>(initialData);
+  const isSubmittedRef = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const storageKey = `amg-draft-${formId}`;
 
   // Update status and notify callback
-  const updateStatus = React.useCallback(
+  const updateStatus = useCallback(
     (newStatus: AutoSaveStatus) => {
       setStatus(newStatus);
       onStatusChange?.(newStatus);
@@ -137,7 +139,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
   );
 
   // Get draft from localStorage
-  const getDraft = React.useCallback((): DraftData<T> | null => {
+  const getDraft = useCallback((): DraftData<T> | null => {
     if (typeof window === "undefined") return null;
 
     try {
@@ -153,18 +155,18 @@ export function useAutoSave<T extends Record<string, unknown>>(
   }, [storageKey, formId]);
 
   // Check if draft exists
-  const hasDraft = React.useCallback((): boolean => {
+  const hasDraft = useCallback((): boolean => {
     return getDraft() !== null;
   }, [getDraft]);
 
   // Restore draft data
-  const restoreDraft = React.useCallback((): T | null => {
+  const restoreDraft = useCallback((): T | null => {
     const draft = getDraft();
     return draft?.data ?? null;
   }, [getDraft]);
 
   // Clear draft from localStorage
-  const clearDraft = React.useCallback(() => {
+  const clearDraft = useCallback(() => {
     if (typeof window === "undefined") return;
 
     try {
@@ -175,7 +177,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
   }, [storageKey, formId]);
 
   // Save to localStorage
-  const saveToLocalStorage = React.useCallback(
+  const saveToLocalStorage = useCallback(
     (data: T) => {
       if (!persistToLocalStorage || typeof window === "undefined") return;
 
@@ -194,7 +196,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
   );
 
   // Main save function
-  const save = React.useCallback(
+  const save = useCallback(
     async (data: T) => {
       if (isSubmittedRef.current) return;
 
@@ -233,7 +235,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
   );
 
   // Mark as submitted - clears draft and resets state
-  const markSubmitted = React.useCallback(() => {
+  const markSubmitted = useCallback(() => {
     isSubmittedRef.current = true;
     clearDraft();
     setHasUnsavedChanges(false);
@@ -241,22 +243,39 @@ export function useAutoSave<T extends Record<string, unknown>>(
   }, [clearDraft, updateStatus]);
 
   // Reset changes tracking
-  const resetChanges = React.useCallback(() => {
+  const resetChanges = useCallback(() => {
     setHasUnsavedChanges(false);
     updateStatus("idle");
   }, [updateStatus]);
 
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
+  // Cleanup timeouts on unmount
+  useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
   }, []);
 
+  // Debounced save — delays the save call by `debounceDelay` ms, cancelling
+  // any pending invocation on each new call.
+  const debouncedSave = useCallback(
+    (data: T) => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(() => {
+        void save(data);
+      }, debounceDelay);
+    },
+    [save, debounceDelay]
+  );
+
   // Periodic auto-save
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enablePeriodicSave || !currentDataRef.current) return;
 
     const intervalId = setInterval(() => {
@@ -273,6 +292,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
     lastSaved,
     hasUnsavedChanges,
     save,
+    debouncedSave,
     clearDraft,
     hasDraft,
     getDraft,
@@ -313,10 +333,10 @@ export function useAutoSaveOnBlur<T extends Record<string, unknown>>(options: {
 }): void {
   const { watch, save, initialData, debounceDelay = 500, onUnsavedChangesChange } = options;
 
-  const dataRef = React.useRef<T | undefined>(initialData);
-  const lastSavedDataRef = React.useRef<string>(JSON.stringify(initialData ?? {}));
+  const dataRef = useRef<T | undefined>(initialData);
+  const lastSavedDataRef = useRef<string>(JSON.stringify(initialData ?? {}));
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = watch((data) => {
       dataRef.current = data as T;
 
@@ -329,9 +349,9 @@ export function useAutoSaveOnBlur<T extends Record<string, unknown>>(options: {
   }, [watch, onUnsavedChangesChange]);
 
   // Debounced save on change
-  const timeoutIdRef = React.useRef<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
-  const debouncedSave = React.useCallback(
+  const debouncedSave = useCallback(
     (data: T) => {
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
@@ -345,7 +365,7 @@ export function useAutoSaveOnBlur<T extends Record<string, unknown>>(options: {
   );
 
   // Save on window blur (leaving page)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleBlur = () => {
       if (dataRef.current) {
         debouncedSave(dataRef.current);
@@ -369,7 +389,7 @@ export function useUnsavedChangesWarning(
   hasUnsavedChanges: boolean,
   message = "You have unsaved changes. Are you sure you want to leave?"
 ): void {
-  React.useEffect(() => {
+  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
@@ -415,30 +435,54 @@ export function useAutoSaveWithForm<T extends Record<string, unknown>>(
       watch: (callback: (data: T) => void) => () => void;
       getValues: () => T;
       reset: (values?: T) => void;
-      handleSubmit: (onSubmit: (data: T) => Promise<void>) => (e?: React.BaseSyntheticEvent) => Promise<void>;
+      handleSubmit: (onSubmit: (data: T) => Promise<void>) => (e?: BaseSyntheticEvent) => Promise<void>;
     };
   }
 ): UseAutoSaveReturn<T> & {
   handleSubmit: (data: T) => Promise<void>;
 } {
-  const { form, ...autoSaveOptions } = options;
-  const autoSave = useAutoSave<T>(autoSaveOptions);
+  const { form, saveOnBlur = true, ...autoSaveOptions } = options;
+  const autoSave = useAutoSave<T>({ ...autoSaveOptions, saveOnBlur });
 
-  // Track form changes
-  React.useEffect(() => {
+  const {
+    debouncedSave: autoSaveDebouncedSave,
+    save: autoSaveSave,
+    markSubmitted: autoSaveMarkSubmitted,
+  } = autoSave;
+
+  // Track form changes and debounce saves — depend only on `form.watch`
+  // (stable subscription function) and `autoSaveDebouncedSave` (memoised via
+  // useCallback) so the effect is not torn down/re-registered on every render.
+  useEffect(() => {
     const unsubscribe = form.watch((data) => {
-      autoSave.save(data as T);
+      autoSaveDebouncedSave(data as T);
     });
     return unsubscribe;
-  }, [form, autoSave]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch, autoSaveDebouncedSave]);
+
+  // Save immediately when the window loses focus (user switches tab/app).
+  // Honour the `saveOnBlur` option — skip if disabled.
+  useEffect(() => {
+    if (!saveOnBlur) return;
+
+    const handleWindowBlur = () => {
+      const data = form.getValues();
+      void autoSaveSave(data);
+    };
+
+    window.addEventListener("blur", handleWindowBlur);
+    return () => window.removeEventListener("blur", handleWindowBlur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveOnBlur, form.getValues, autoSaveSave]);
 
   // Handle form submission
-  const handleSubmit = React.useCallback(
-    async (data: T) => {
+  const handleSubmit = useCallback(
+    async (_data: T) => {
       // Clear draft on successful submission
-      autoSave.markSubmitted();
+      autoSaveMarkSubmitted();
     },
-    [autoSave]
+    [autoSaveMarkSubmitted]
   );
 
   return {

@@ -29,7 +29,7 @@ class CommunicationLog(Base, TimestampMixin):
     )
     partner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("partners.id", ondelete="SET NULL"),
+        ForeignKey("partner_profiles.id", ondelete="SET NULL"),
         nullable=True,
     )
     program_id: Mapped[uuid.UUID | None] = mapped_column(

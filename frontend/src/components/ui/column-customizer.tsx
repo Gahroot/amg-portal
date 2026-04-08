@@ -370,47 +370,38 @@ export interface ResizableTableHeadProps
  * </ResizableTableHead>
  * ```
  */
-export const ResizableTableHead = React.forwardRef<
-  HTMLTableCellElement,
-  ResizableTableHeadProps
->(
-  (
-    {
-      width,
-      isResizing = false,
-      onResizeMouseDown,
-      onResizeDoubleClick,
-      enableResizing = true,
-      className,
-      children,
-      style,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <th
-        ref={ref}
-        className={cn("relative", className)}
-        style={{
-          ...style,
-          width: width !== undefined ? `${width}px` : undefined,
-        }}
-        {...props}
-      >
-        {children}
-        {enableResizing && onResizeMouseDown && (
-          <ColumnResizer
-            isResizing={isResizing}
-            onMouseDown={onResizeMouseDown}
-            onDoubleClick={onResizeDoubleClick}
-          />
-        )}
-      </th>
-    );
-  }
-);
-
-ResizableTableHead.displayName = "ResizableTableHead";
+export function ResizableTableHead({
+  ref,
+  width,
+  isResizing = false,
+  onResizeMouseDown,
+  onResizeDoubleClick,
+  enableResizing = true,
+  className,
+  children,
+  style,
+  ...props
+}: ResizableTableHeadProps & { ref?: React.Ref<HTMLTableCellElement> }) {
+  return (
+    <th
+      ref={ref}
+      className={cn("relative", className)}
+      style={{
+        ...style,
+        width: width !== undefined ? `${width}px` : undefined,
+      }}
+      {...props}
+    >
+      {children}
+      {enableResizing && onResizeMouseDown && (
+        <ColumnResizer
+          isResizing={isResizing}
+          onMouseDown={onResizeMouseDown}
+          onDoubleClick={onResizeDoubleClick}
+        />
+      )}
+    </th>
+  );
+}
 
 export default ColumnCustomizer;

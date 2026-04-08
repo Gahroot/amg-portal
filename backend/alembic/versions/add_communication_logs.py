@@ -37,7 +37,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["client_id"], ["client_profiles.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["partner_id"], ["partners.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["partner_id"], ["partner_profiles.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["program_id"], ["programs.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["logged_by"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),

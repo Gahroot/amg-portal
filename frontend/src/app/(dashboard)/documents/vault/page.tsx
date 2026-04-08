@@ -1,4 +1,10 @@
+import { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Evidence Vault",
+  description: "Sealed and archived documents for compliance and audit purposes.",
+};
 import { DocumentVault } from "@/components/documents/document-vault";
 
 export default function VaultPage() {

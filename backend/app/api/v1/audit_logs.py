@@ -10,9 +10,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import Select, func, select
 
 from app.api.deps import DB, require_compliance
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogListResponse, AuditLogResponse
+
+EXPORT_ROW_LIMIT = 10_000
 
 router = APIRouter()
 
@@ -85,7 +87,16 @@ async def export_audit_logs_csv(
     search: str | None = None,
 ) -> StreamingResponse:
     base = _build_query(entity_type, action, user_id, entity_id, start_date, end_date, search)
-    result = await db.execute(base.order_by(AuditLog.created_at.desc()))
+
+    count_result = await db.execute(select(func.count()).select_from(base.subquery()))
+    total: int = count_result.scalar_one()
+    if total > EXPORT_ROW_LIMIT:
+        raise BadRequestException(
+            f"Export would return {total:,} rows, exceeding the "
+            f"{EXPORT_ROW_LIMIT:,}-row limit. Narrow your filters and try again."
+        )
+
+    result = await db.execute(base.order_by(AuditLog.created_at.desc()).limit(EXPORT_ROW_LIMIT))
     logs = result.scalars().all()
 
     output = io.StringIO()

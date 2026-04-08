@@ -69,6 +69,7 @@ from app.api.v1.public import public_router
 from app.api.v1.public_reports import router as public_reports_router
 from app.api.v1.pulse_surveys import router as pulse_surveys_router
 from app.api.v1.push_tokens import router as push_tokens_router
+from app.api.v1.recurring_tasks import router as recurring_tasks_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.saved_filters import router as saved_filters_router
 from app.api.v1.scheduling import router as scheduling_router
@@ -197,6 +198,11 @@ router.include_router(
 router.include_router(workload_router, prefix="/workload", tags=["workload"])
 router.include_router(push_tokens_router, prefix="/push-tokens", tags=["push-tokens"])
 router.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
+router.include_router(
+    recurring_tasks_router,
+    prefix="/recurring-tasks",
+    tags=["recurring-tasks"],
+)
 router.include_router(
     table_views_router, prefix="/table-views", tags=["table-views"]
 )

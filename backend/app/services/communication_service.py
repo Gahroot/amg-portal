@@ -72,6 +72,21 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         await db.commit()
         await db.refresh(communication)
 
+        # Audit trail
+        try:
+            from app.services.communication_audit_service import log_communication_event
+
+            await log_communication_event(
+                db,
+                communication_id=communication.id,
+                conversation_id=data.conversation_id,
+                action="message_sent",
+                actor_id=sender_id,
+                details={"channel": "in_portal", "has_attachments": bool(data.attachment_ids)},
+            )
+        except Exception:
+            logger.exception("Failed to log audit event for communication %s", communication.id)
+
         # Auto-create or close SLA tracker based on sender role and conversation type
         if conversation:
             try:
@@ -300,6 +315,23 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         await db.commit()
         await db.refresh(communication)
 
+        # Audit trail
+        try:
+            from app.services.communication_audit_service import log_communication_event
+
+            await log_communication_event(
+                db,
+                communication_id=communication_id,
+                conversation_id=communication.conversation_id,
+                action="message_read",
+                actor_id=user_id,
+                details={},
+            )
+        except Exception:
+            logger.exception(
+                "Failed to log audit event for communication %s", communication_id
+            )
+
         return communication
 
     async def mark_messages_read(
@@ -407,6 +439,23 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         await db.commit()
         await db.refresh(communication)
 
+        # Audit trail
+        try:
+            from app.services.communication_audit_service import log_communication_event
+
+            await log_communication_event(
+                db,
+                communication_id=communication_id,
+                conversation_id=communication.conversation_id,
+                action="submitted_for_review",
+                actor_id=user.id,
+                details={"previous_status": "draft"},
+            )
+        except Exception:
+            logger.exception(
+                "Failed to log audit event for communication %s", communication_id
+            )
+
         # Notify internal staff about pending review
         try:
             from app.schemas.notification import CreateNotificationRequest
@@ -468,6 +517,23 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
 
         await db.commit()
         await db.refresh(communication)
+
+        # Audit trail
+        try:
+            from app.services.communication_audit_service import log_communication_event
+
+            await log_communication_event(
+                db,
+                communication_id=communication_id,
+                conversation_id=communication.conversation_id,
+                action=f"review_{action}d",
+                actor_id=reviewer.id,
+                details={"notes": notes, "outcome": communication.approval_status},
+            )
+        except Exception:
+            logger.exception(
+                "Failed to log audit event for communication %s", communication_id
+            )
 
         # Notify the sender about the review outcome
         try:

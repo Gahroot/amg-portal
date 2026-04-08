@@ -50,6 +50,11 @@ export function usePreferencesSync() {
 
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
+  const offlineQueueRef = useRef(offlineQueue);
+
+  useEffect(() => {
+    offlineQueueRef.current = offlineQueue;
+  }, [offlineQueue]);
 
   /**
    * Register this device with the server
@@ -193,10 +198,14 @@ export function usePreferencesSync() {
       }
 
       if (immediate) {
-        syncNow();
+        syncNow().catch((err) => {
+          console.error("Immediate sync failed:", err);
+        });
       } else {
         syncTimeoutRef.current = setTimeout(() => {
-          syncNow();
+          syncNow().catch((err) => {
+            console.error("Debounced sync failed:", err);
+          });
         }, SYNC_DEBOUNCE_MS);
       }
     },
@@ -228,10 +237,14 @@ export function usePreferencesSync() {
       }
 
       if (immediate) {
-        syncNow();
+        syncNow().catch((err) => {
+          console.error("Immediate sync failed:", err);
+        });
       } else {
         syncTimeoutRef.current = setTimeout(() => {
-          syncNow();
+          syncNow().catch((err) => {
+            console.error("Debounced sync failed:", err);
+          });
         }, SYNC_DEBOUNCE_MS);
       }
     },
@@ -298,9 +311,12 @@ export function usePreferencesSync() {
   useEffect(() => {
     const handleOnline = () => {
       setSyncState({ isOnline: true });
-      // Auto-sync when coming back online
-      if (offlineQueue.length > 0) {
-        syncNow();
+      // Auto-sync when coming back online — read current queue from ref so
+      // this handler is never torn down/re-registered on every queue change.
+      if (offlineQueueRef.current.length > 0) {
+        syncNow().catch((err) => {
+          console.error("Online re-sync failed:", err);
+        });
       }
     };
 
@@ -315,7 +331,7 @@ export function usePreferencesSync() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [offlineQueue.length, setSyncState, syncNow]);
+  }, [setSyncState, syncNow]);
 
   /**
    * Initial sync on mount
@@ -326,7 +342,9 @@ export function usePreferencesSync() {
       await pullFromServer();
     };
 
-    initSync();
+    initSync().catch((err) => {
+      console.error("Init sync failed:", err);
+    });
 
     return () => {
       if (syncTimeoutRef.current) {
@@ -344,7 +362,9 @@ export function usePreferencesSync() {
     const interval = setInterval(
       () => {
         if (offlineQueue.length > 0) {
-          syncNow();
+          syncNow().catch((err) => {
+            console.error("Periodic sync failed:", err);
+          });
         }
       },
       5 * 60 * 1000

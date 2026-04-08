@@ -1,6 +1,6 @@
 """Add document_requests table.
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: doc_requests_01
 Revises: ddc5d4fef8cd
 Create Date: 2026-03-23
 """
@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from alembic import op
 
-revision = "a1b2c3d4e5f6"
+revision = "doc_requests_01"
 down_revision = "ddc5d4fef8cd"
 branch_labels = None
 depends_on = None

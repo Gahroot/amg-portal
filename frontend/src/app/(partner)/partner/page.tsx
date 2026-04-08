@@ -762,16 +762,24 @@ export default function PartnerDashboardPage() {
 
 // ─── My Performance Trends ────────────────────────────────────────────────────
 
+function useMyTrendsQuery(days: number) {
+  return useQuery({
+    queryKey: ["partner", "my-trends", days],
+    queryFn: () => getMyTrends(days),
+  });
+}
+
 function MyPerformanceTrends() {
   const [dateRange, setDateRange] = React.useState<30 | 90 | 365>(90);
   const { data: trends, isLoading } = useMyTrendsQuery(dateRange);
 
   return (
-    <PerformanceChartSection
+    <PerformanceChart
       trends={trends}
       isLoading={isLoading}
       dateRange={dateRange}
       onDateRangeChange={setDateRange}
+      hideAnnotations
     />
   );
 }

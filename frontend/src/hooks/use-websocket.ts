@@ -41,20 +41,22 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   useEffect(() => {
     const connect = () => {
       const token = localStorage.getItem("access_token");
-      if (!token) return;
+      if (!token) {
+        // No auth token — don't attempt a WebSocket connection
+        return;
+      }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      // Connect without token in URL - token is sent as first message for security
       const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws";
 
       const ws = new WebSocket(wsUrl);
       let authenticated = false;
 
       ws.onopen = () => {
-        // Send auth message as first message (token not in URL for security)
+        // Send auth message with the token from localStorage
         ws.send(JSON.stringify({
           type: "auth",
-          token: token,
+          token,
         }));
       };
 

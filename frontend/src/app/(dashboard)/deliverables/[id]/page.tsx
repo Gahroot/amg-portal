@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import {
   getDeliverable,
   reviewDeliverable,
-  getDownloadUrl,
 } from "@/lib/api/deliverables";
 import type { DeliverableReviewData } from "@/types/deliverable";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Download, FileText, Eye } from "lucide-react";
 
 const STATUS_VARIANT: Record<
   string,
@@ -42,6 +42,14 @@ const STATUS_VARIANT: Record<
   returned: "destructive",
   rejected: "destructive",
 };
+
+function getFileType(fileName: string | null): "pdf" | "image" | "other" {
+  if (!fileName) return "other";
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "pdf";
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) return "image";
+  return "other";
+}
 
 export default function DeliverableDetailPage() {
   const params = useParams();
@@ -73,15 +81,17 @@ export default function DeliverableDetailPage() {
     onError: (error: Error) => toast.error(error.message || "Failed to submit review"),
   });
 
-  const handleDownload = async () => {
-    try {
-      const { download_url } = await getDownloadUrl(deliverableId);
-      window.open(download_url, "_blank");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to get download URL";
-      toast.error(message);
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+
+  const handleDownload = () => {
+    if (!deliverable?.download_url) {
+      toast.error("No file available to download");
+      return;
     }
+    window.open(deliverable.download_url, "_blank");
   };
+
+  const fileType = getFileType(deliverable?.file_name ?? null);
 
   const canReview =
     deliverable &&
@@ -111,6 +121,7 @@ export default function DeliverableDetailPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[#FDFBF7] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
@@ -123,10 +134,22 @@ export default function DeliverableDetailPage() {
             >
               {deliverable.status.replace(/_/g, " ")}
             </Badge>
-            {deliverable.file_path && (
-              <Button variant="outline" onClick={handleDownload}>
-                Download
-              </Button>
+            {deliverable.download_url && (
+              <>
+                {fileType !== "other" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setPreviewOpen(true)}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview
+                  </Button>
+                )}
+                <Button variant="outline" onClick={handleDownload}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+              </>
             )}
             {canReview && (
               <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
@@ -245,27 +268,66 @@ export default function DeliverableDetailPage() {
                 Submitted File
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground">File Name</p>
-                <p className="text-sm">{deliverable.file_name}</p>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <p className="text-sm font-medium">{deliverable.file_name}</p>
+                  </div>
+                  {deliverable.file_size != null && (
+                    <p className="text-xs text-muted-foreground pl-6">
+                      {(deliverable.file_size / 1024).toFixed(1)} KB
+                    </p>
+                  )}
+                  {deliverable.submitted_at && (
+                    <p className="text-xs text-muted-foreground pl-6">
+                      Submitted {new Date(deliverable.submitted_at).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                {deliverable.download_url && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {fileType !== "other" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewOpen(true)}
+                      >
+                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                        Preview
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
+                    >
+                      <Download className="mr-1.5 h-3.5 w-3.5" />
+                      Download
+                    </Button>
+                  </div>
+                )}
               </div>
-              {deliverable.file_size != null && (
-                <div>
-                  <p className="text-sm text-muted-foreground">File Size</p>
-                  <p className="text-sm">
-                    {(deliverable.file_size / 1024).toFixed(1)} KB
-                  </p>
+
+              {/* Inline preview for PDFs and images */}
+              {deliverable.download_url && fileType === "image" && (
+                <div className="rounded-md border overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={deliverable.download_url}
+                    alt={deliverable.file_name ?? "Preview"}
+                    className="max-h-96 w-full object-contain bg-muted"
+                  />
                 </div>
               )}
-              {deliverable.submitted_at && (
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Submitted At
-                  </p>
-                  <p className="text-sm">
-                    {new Date(deliverable.submitted_at).toLocaleString()}
-                  </p>
+              {deliverable.download_url && fileType === "pdf" && (
+                <div className="rounded-md border overflow-hidden">
+                  <iframe
+                    src={deliverable.download_url}
+                    title={deliverable.file_name ?? "PDF Preview"}
+                    className="h-[600px] w-full"
+                  />
                 </div>
               )}
             </CardContent>
@@ -299,5 +361,42 @@ export default function DeliverableDetailPage() {
         )}
       </div>
     </div>
+
+    {/* Preview Dialog */}
+    {deliverable.download_url && fileType !== "other" && (
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {deliverable.file_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="rounded-md border overflow-hidden">
+            {fileType === "pdf" ? (
+              <iframe
+                src={deliverable.download_url}
+                title={deliverable.file_name ?? "PDF Preview"}
+                className="h-[70vh] w-full"
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={deliverable.download_url}
+                alt={deliverable.file_name ?? "Preview"}
+                className="max-h-[70vh] w-full object-contain bg-muted"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleDownload}>
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }

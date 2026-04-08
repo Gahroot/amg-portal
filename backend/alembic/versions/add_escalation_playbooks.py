@@ -1,7 +1,7 @@
 """Add escalation_playbooks and playbook_executions tables.
 
 Revision ID: add_escalation_playbooks
-Revises: add_custom_reports, add_shared_reports, a1b2c3d4e5f6
+Revises: add_custom_reports, add_shared_reports
 Create Date: 2026-03-23
 """
 
@@ -16,7 +16,6 @@ revision: str = "add_escalation_playbooks"
 down_revision: str | Sequence[str] | None = (
     "add_custom_reports",
     "add_shared_reports",
-    "a1b2c3d4e5f6",
 )
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

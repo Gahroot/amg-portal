@@ -519,6 +519,32 @@ async def delete_playbook(
 
 
 @router.get(
+    "/overdue",
+    response_model=OverdueEscalationResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def list_overdue_escalations(
+    db: DB,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> OverdueEscalationResponse:
+    """List escalations where the response deadline has passed and status is still active."""
+    escalations, total = await get_overdue_escalations(db, skip=skip, limit=limit)
+    return OverdueEscalationResponse(escalations=escalations, total=total)  # type: ignore[arg-type]
+
+
+@router.get(
+    "/simple-metrics",
+    response_model=EscalationMetricsResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def get_simple_metrics(db: DB) -> EscalationMetricsResponse:
+    """Return concise escalation metrics: open by level, avg resolution, overdue count, trends."""
+    metrics = await get_simple_escalation_metrics(db)
+    return EscalationMetricsResponse(**metrics)  # type: ignore[arg-type]
+
+
+@router.get(
     "/{escalation_id}",
     response_model=EscalationResponse,
     dependencies=[Depends(require_internal)],
@@ -832,32 +858,6 @@ async def trigger_risk_check(
 
 
 # ── Overdue + Reassign ────────────────────────────────────────────────
-
-
-@router.get(
-    "/overdue",
-    response_model=OverdueEscalationResponse,
-    dependencies=[Depends(require_internal)],
-)
-async def list_overdue_escalations(
-    db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
-) -> OverdueEscalationResponse:
-    """List escalations where the response deadline has passed and status is still active."""
-    escalations, total = await get_overdue_escalations(db, skip=skip, limit=limit)
-    return OverdueEscalationResponse(escalations=escalations, total=total)  # type: ignore[arg-type]
-
-
-@router.get(
-    "/simple-metrics",
-    response_model=EscalationMetricsResponse,
-    dependencies=[Depends(require_internal)],
-)
-async def get_simple_metrics(db: DB) -> EscalationMetricsResponse:
-    """Return concise escalation metrics: open by level, avg resolution, overdue count, trends."""
-    metrics = await get_simple_escalation_metrics(db)
-    return EscalationMetricsResponse(**metrics)  # type: ignore[arg-type]
 
 
 @router.post(

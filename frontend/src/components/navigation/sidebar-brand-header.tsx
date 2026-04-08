@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -20,9 +21,14 @@ export function SidebarBrandHeader({ title }: SidebarBrandHeaderProps) {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <span className="text-sm font-bold">A</span>
-            </div>
+            <Image
+              src="/logo.webp"
+              alt="Anchor Mill Group"
+              width={32}
+              height={32}
+              className="shrink-0"
+              priority
+            />
             {state === "expanded" && (
               <span className="font-serif text-lg font-bold tracking-tight truncate">
                 {title}

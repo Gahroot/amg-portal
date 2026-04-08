@@ -68,7 +68,6 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_index("ix_assignment_history_assignment_id", "assignment_history", ["assignment_id"])
     op.create_index("ix_assignment_history_event", "assignment_history", ["event"])
 
 

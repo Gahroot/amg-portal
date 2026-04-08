@@ -1,5 +1,6 @@
 """Travel booking API endpoints."""
 
+import hmac
 import logging
 import uuid
 from typing import Any
@@ -206,7 +207,7 @@ async def receive_travel_webhook(
             detail="Webhook endpoint not configured",
         )
 
-    if x_travel_webhook_secret != settings.TRAVEL_WEBHOOK_SECRET:
+    if not hmac.compare_digest(x_travel_webhook_secret, settings.TRAVEL_WEBHOOK_SECRET):
         logger.warning("Invalid travel webhook secret received")
         raise UnauthorizedException("Invalid webhook secret")
 

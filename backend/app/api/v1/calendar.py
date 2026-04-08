@@ -18,7 +18,7 @@ from fastapi.responses import PlainTextResponse
 
 from app.api.deps import DB, CurrentUser
 from app.core.config import settings
-from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.exceptions import AppException, BadRequestException, NotFoundException
 from app.services.calendar_service import (
     CalendarError,
     generate_ical_for_user,
@@ -200,7 +200,10 @@ async def outlook_calendar_callback(
         )
 
         if token_response.status_code != 200:
-            logger.error(f"Microsoft token exchange failed: {token_response.text}")
+            logger.error(
+                "Microsoft token exchange failed with status %s",
+                token_response.status_code,
+            )
             raise BadRequestException("Failed to exchange authorization code for tokens")
 
         token_data = token_response.json()
@@ -278,10 +281,7 @@ async def sync_calendar(
             "last_synced_at": current_user.calendar_last_synced_at.isoformat(),
         }
     except CalendarError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        ) from e
+        raise AppException("Calendar sync failed. Please try again later.") from e
 
 
 @router.delete("/disconnect/{provider}")

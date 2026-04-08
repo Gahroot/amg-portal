@@ -12,8 +12,12 @@ import { getPartner } from "@/lib/api/partners";
 import {
   listDeliverables,
   createDeliverable,
+  uploadDeliverableFile,
+  attachDocumentToDeliverable,
 } from "@/lib/api/deliverables";
+import { listDocuments } from "@/lib/api/documents";
 import type { DeliverableCreateData } from "@/types/deliverable";
+import { FileUploadZone } from "@/components/documents/file-upload-zone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -44,7 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert } from "lucide-react";
+import { Check, ShieldAlert } from "lucide-react";
 
 const STATUS_VARIANT: Record<
   string,
@@ -70,6 +74,8 @@ const DELIVERABLE_STATUS_VARIANT: Record<
   rejected: "destructive",
 };
 
+type DocMode = "none" | "upload" | "library";
+
 export default function AssignmentDetailPage() {
   const params = useParams();
   const assignmentId = params.id as string;
@@ -82,6 +88,10 @@ export default function AssignmentDetailPage() {
     description: "",
     due_date: "",
   });
+  const [docMode, setDocMode] = React.useState<DocMode>("none");
+  const [uploadFile, setUploadFile] = React.useState<File | null>(null);
+  const [selectedDocId, setSelectedDocId] = React.useState<string | null>(null);
+  const [docSearch, setDocSearch] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
 
   const { data: assignment, isLoading } = useQuery({
@@ -101,6 +111,33 @@ export default function AssignmentDetailPage() {
     enabled: !!assignment?.partner_id,
   });
 
+  const { data: allDocs } = useQuery({
+    queryKey: ["documents", "all"],
+    queryFn: () => listDocuments({ limit: 200 }),
+    enabled: deliverableOpen && docMode === "library",
+  });
+
+  function resetDocState() {
+    setDocMode("none");
+    setUploadFile(null);
+    setSelectedDocId(null);
+    setDocSearch("");
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    setDeliverableOpen(open);
+    if (!open) {
+      resetDocState();
+      setNewDeliverable({
+        title: "",
+        deliverable_type: "document",
+        description: "",
+        due_date: "",
+      });
+      setError(null);
+    }
+  }
+
   const dispatchMutation = useMutation({
     mutationFn: () => dispatchAssignment(assignmentId),
     onSuccess: () => {
@@ -114,23 +151,37 @@ export default function AssignmentDetailPage() {
   });
 
   const createDeliverableMutation = useMutation({
-    mutationFn: (data: DeliverableCreateData) => createDeliverable(data),
+    mutationFn: async (data: DeliverableCreateData) => {
+      const deliverable = await createDeliverable(data);
+      if (docMode === "upload" && uploadFile) {
+        return uploadDeliverableFile(deliverable.id, uploadFile);
+      }
+      if (docMode === "library" && selectedDocId) {
+        return attachDocumentToDeliverable(deliverable.id, selectedDocId);
+      }
+      return deliverable;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["deliverables", { assignment_id: assignmentId }],
       });
-      setDeliverableOpen(false);
-      setNewDeliverable({
-        title: "",
-        deliverable_type: "document",
-        description: "",
-        due_date: "",
-      });
+      handleDialogOpenChange(false);
     },
     onError: () => {
       setError("Failed to create deliverable.");
     },
   });
+
+  const filteredDocs = React.useMemo(() => {
+    const docs = allDocs?.documents ?? [];
+    if (!docSearch.trim()) return docs;
+    const lower = docSearch.toLowerCase();
+    return docs.filter(
+      (d) =>
+        d.file_name.toLowerCase().includes(lower) ||
+        (d.description ?? "").toLowerCase().includes(lower),
+    );
+  }, [allDocs, docSearch]);
 
   if (isLoading) {
     return (
@@ -261,12 +312,12 @@ export default function AssignmentDetailPage() {
             <h2 className="font-serif text-xl font-semibold">Deliverables</h2>
             <Dialog
               open={deliverableOpen}
-              onOpenChange={setDeliverableOpen}
+              onOpenChange={handleDialogOpenChange}
             >
               <DialogTrigger asChild>
                 <Button>Add Deliverable</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add Deliverable</DialogTitle>
                 </DialogHeader>
@@ -335,6 +386,75 @@ export default function AssignmentDetailPage() {
                       }
                     />
                   </div>
+
+                  {/* Document attachment section */}
+                  <div className="space-y-2">
+                    <Label>Document (optional)</Label>
+                    <div className="flex gap-2">
+                      {(["none", "upload", "library"] as DocMode[]).map((mode) => (
+                        <Button
+                          key={mode}
+                          type="button"
+                          variant={docMode === mode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setDocMode(mode);
+                            setUploadFile(null);
+                            setSelectedDocId(null);
+                            setDocSearch("");
+                          }}
+                        >
+                          {mode === "none" && "None"}
+                          {mode === "upload" && "Upload New"}
+                          {mode === "library" && "From Library"}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {docMode === "upload" && (
+                      <FileUploadZone onFileSelect={setUploadFile} />
+                    )}
+
+                    {docMode === "library" && (
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Search documents..."
+                          value={docSearch}
+                          onChange={(e) => setDocSearch(e.target.value)}
+                        />
+                        <div className="max-h-48 overflow-y-auto rounded-md border">
+                          {filteredDocs.length === 0 ? (
+                            <p className="p-3 text-sm text-muted-foreground">
+                              {allDocs ? "No documents found." : "Loading…"}
+                            </p>
+                          ) : (
+                            filteredDocs.map((doc) => (
+                              <button
+                                key={doc.id}
+                                type="button"
+                                onClick={() => setSelectedDocId(doc.id)}
+                                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50 ${
+                                  selectedDocId === doc.id ? "bg-muted" : ""
+                                }`}
+                              >
+                                <span className="truncate font-medium">
+                                  {doc.file_name}
+                                </span>
+                                <span className="ml-2 flex shrink-0 items-center gap-1 text-muted-foreground">
+                                  {selectedDocId === doc.id && (
+                                    <Check className="size-4 text-primary" />
+                                  )}
+                                  <span className="text-xs">
+                                    {(doc.file_size / 1024).toFixed(0)} KB
+                                  </span>
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button
@@ -351,7 +471,9 @@ export default function AssignmentDetailPage() {
                     }
                     disabled={
                       !newDeliverable.title ||
-                      createDeliverableMutation.isPending
+                      createDeliverableMutation.isPending ||
+                      (docMode === "upload" && !uploadFile) ||
+                      (docMode === "library" && !selectedDocId)
                     }
                   >
                     {createDeliverableMutation.isPending

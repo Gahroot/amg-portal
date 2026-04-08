@@ -17,18 +17,37 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Conversation, CommunicationListResponse } from "@/types/communication";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 interface ConversationViewProps {
   conversationId: string;
   onBack?: () => void;
+  /** Override default hooks for portals that use different API endpoints */
+  overrides?: {
+    conversation?: Conversation;
+    isLoadingConversation?: boolean;
+    messagesData?: CommunicationListResponse;
+    isLoadingMessages?: boolean;
+    sendMessage?: UseMutationResult<unknown, Error, { conversationId: string; data: { body: string; attachment_ids?: string[] } }>;
+    markRead?: UseMutationResult<unknown, Error, string>;
+  };
 }
 
-export function ConversationView({ conversationId, onBack }: ConversationViewProps) {
+export function ConversationView({ conversationId, onBack, overrides }: ConversationViewProps) {
   const { user } = useAuth();
-  const { data: conversation, isLoading: isLoadingConv } = useConversation(conversationId);
-  const { data: messagesData, isLoading: isLoadingMessages } = useMessages(conversationId, { limit: 100 });
-  const sendMessage = useSendMessage();
-  const markRead = useMarkConversationRead();
+
+  const internalConv = useConversation(overrides ? "" : conversationId);
+  const internalMessages = useMessages(overrides ? "" : conversationId, { limit: 100 });
+  const internalSend = useSendMessage();
+  const internalMarkRead = useMarkConversationRead();
+
+  const conversation = overrides?.conversation ?? internalConv.data;
+  const isLoadingConv = overrides?.isLoadingConversation ?? internalConv.isLoading;
+  const messagesData = overrides?.messagesData ?? internalMessages.data;
+  const isLoadingMessages = overrides?.isLoadingMessages ?? internalMessages.isLoading;
+  const sendMessage = overrides?.sendMessage ?? internalSend;
+  const markRead = overrides?.markRead ?? internalMarkRead;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [typers, setTypers] = useState<Set<string>>(new Set());
 
@@ -111,7 +130,7 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-3">
           {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
+            <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden" aria-label="Back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}

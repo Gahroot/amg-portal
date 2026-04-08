@@ -3,7 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,10 +15,14 @@ class Notification(Base):
     """In-portal notification for users."""
 
     __tablename__ = "notifications"
+    __table_args__ = (
+        # Composite index for the dominant query pattern: fetch a user's unread notifications
+        Index("ix_notifications_user_id_is_read", "user_id", "is_read"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     notification_type: Mapped[NotificationType] = mapped_column(String(50), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -34,8 +38,8 @@ class Notification(Base):
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     email_delivered: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # Quiet hours queuing - track pending push/email deliveries
-    push_queued: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    email_queued: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    push_queued: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    email_queued: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     # Grouping key for bundling related notifications
     # Format: "{entity_type}:{entity_id}" or "{notification_type}" or custom
     group_key: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)

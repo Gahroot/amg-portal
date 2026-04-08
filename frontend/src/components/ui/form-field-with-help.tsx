@@ -53,94 +53,88 @@ export interface InputWithHelpProps
  * />
  * ```
  */
-export const InputWithHelp = React.forwardRef<HTMLInputElement, InputWithHelpProps>(
-  (
-    {
-      label,
-      helpContent,
-      tooltipProps,
-      error,
-      helperText,
-      required,
-      hideLabel,
-      className,
-      id,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const inputId = id || generatedId;
-    const errorId = `${inputId}-error`;
-    const helperId = `${inputId}-helper`;
+export function InputWithHelp({
+  ref,
+  label,
+  helpContent,
+  tooltipProps,
+  error,
+  helperText,
+  required,
+  hideLabel,
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: InputWithHelpProps & { ref?: React.Ref<HTMLInputElement> }) {
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
 
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("grid gap-1.5", className)}>
-        <div className="flex items-center gap-1.5">
-          <Label
-            htmlFor={inputId}
-            className={cn(
-              "text-sm font-medium leading-none",
-              hideLabel && "sr-only",
-              error && "text-destructive"
-            )}
-          >
-            {label}
-            {required && (
-              <span className="text-destructive ml-0.5" aria-hidden="true">
-                *
-              </span>
-            )}
-          </Label>
-          {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
-        </div>
-        <input
-          ref={ref}
-          id={inputId}
-          aria-invalid={!!error}
-          aria-required={required}
-          aria-describedby={describedBy || undefined}
-          required={required}
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <div className="flex items-center gap-1.5">
+        <Label
+          htmlFor={inputId}
           className={cn(
-            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium",
-            "placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus-visible:ring-destructive"
+            "text-sm font-medium leading-none",
+            hideLabel && "sr-only",
+            error && "text-destructive"
           )}
-          {...props}
-        />
-        {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={helperId} className="text-sm text-muted-foreground">
-            {helperText}
-          </p>
-        )}
+        >
+          {label}
+          {required && (
+            <span className="text-destructive ml-0.5" aria-hidden="true">
+              *
+            </span>
+          )}
+        </Label>
+        {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
       </div>
-    );
-  }
-);
-
-InputWithHelp.displayName = "InputWithHelp";
+      <input
+        ref={ref}
+        id={inputId}
+        aria-invalid={!!error}
+        aria-required={required}
+        aria-describedby={describedBy || undefined}
+        required={required}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium",
+          "placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive focus-visible:ring-destructive"
+        )}
+        {...props}
+      />
+      {error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-sm text-destructive"
+          aria-live="polite"
+        >
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={helperId} className="text-sm text-muted-foreground">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Props for TextareaWithHelp component
@@ -165,119 +159,113 @@ export interface TextareaWithHelpProps
  * />
  * ```
  */
-export const TextareaWithHelp = React.forwardRef<HTMLTextAreaElement, TextareaWithHelpProps>(
-  (
-    {
-      label,
-      helpContent,
-      tooltipProps,
-      error,
-      helperText,
-      required,
-      hideLabel,
-      className,
-      id,
-      maxLength,
-      value,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const textareaId = id || generatedId;
-    const errorId = `${textareaId}-error`;
-    const helperId = `${textareaId}-helper`;
-    const countId = `${textareaId}-count`;
+export function TextareaWithHelp({
+  ref,
+  label,
+  helpContent,
+  tooltipProps,
+  error,
+  helperText,
+  required,
+  hideLabel,
+  className,
+  id,
+  maxLength,
+  value,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: TextareaWithHelpProps & { ref?: React.Ref<HTMLTextAreaElement> }) {
+  const generatedId = React.useId();
+  const textareaId = id || generatedId;
+  const errorId = `${textareaId}-error`;
+  const helperId = `${textareaId}-helper`;
+  const countId = `${textareaId}-count`;
 
-    const currentLength =
-      typeof value === "string"
-        ? value.length
-        : typeof props.defaultValue === "string"
-          ? props.defaultValue.length
-          : 0;
+  const currentLength =
+    typeof value === "string"
+      ? value.length
+      : typeof props.defaultValue === "string"
+        ? props.defaultValue.length
+        : 0;
 
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      maxLength ? countId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    maxLength ? countId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("grid gap-1.5", className)}>
-        <div className="flex items-center gap-1.5">
-          <Label
-            htmlFor={textareaId}
-            className={cn(
-              "text-sm font-medium leading-none",
-              hideLabel && "sr-only",
-              error && "text-destructive"
-            )}
-          >
-            {label}
-            {required && (
-              <span className="text-destructive ml-0.5" aria-hidden="true">
-                *
-              </span>
-            )}
-          </Label>
-          {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
-        </div>
-        <textarea
-          ref={ref}
-          id={textareaId}
-          value={value}
-          maxLength={maxLength}
-          aria-invalid={!!error}
-          aria-required={required}
-          aria-describedby={describedBy || undefined}
-          required={required}
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <div className="flex items-center gap-1.5">
+        <Label
+          htmlFor={textareaId}
           className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "ring-offset-background placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus-visible:ring-destructive"
+            "text-sm font-medium leading-none",
+            hideLabel && "sr-only",
+            error && "text-destructive"
           )}
-          {...props}
-        />
-        <div className="flex justify-between">
-          <div>
-            {error && (
-              <p
-                id={errorId}
-                role="alert"
-                className="text-sm text-destructive"
-                aria-live="polite"
-              >
-                {error}
-              </p>
-            )}
-            {helperText && !error && (
-              <p id={helperId} className="text-sm text-muted-foreground">
-                {helperText}
-              </p>
-            )}
-          </div>
-          {maxLength && (
+        >
+          {label}
+          {required && (
+            <span className="text-destructive ml-0.5" aria-hidden="true">
+              *
+            </span>
+          )}
+        </Label>
+        {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
+      </div>
+      <textarea
+        ref={ref}
+        id={textareaId}
+        value={value}
+        maxLength={maxLength}
+        aria-invalid={!!error}
+        aria-required={required}
+        aria-describedby={describedBy || undefined}
+        required={required}
+        className={cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive focus-visible:ring-destructive"
+        )}
+        {...props}
+      />
+      <div className="flex justify-between">
+        <div>
+          {error && (
             <p
-              id={countId}
-              className="text-sm text-muted-foreground"
-              aria-live="off"
+              id={errorId}
+              role="alert"
+              className="text-sm text-destructive"
+              aria-live="polite"
             >
-              {currentLength}/{maxLength}
+              {error}
+            </p>
+          )}
+          {helperText && !error && (
+            <p id={helperId} className="text-sm text-muted-foreground">
+              {helperText}
             </p>
           )}
         </div>
+        {maxLength && (
+          <p
+            id={countId}
+            className="text-sm text-muted-foreground"
+            aria-live="off"
+          >
+            {currentLength}/{maxLength}
+          </p>
+        )}
       </div>
-    );
-  }
-);
-
-TextareaWithHelp.displayName = "TextareaWithHelp";
+    </div>
+  );
+}
 
 /**
  * Props for SelectWithHelp component
@@ -310,73 +298,67 @@ export interface SelectWithHelpProps extends FormFieldWithHelpBaseProps {
  * </SelectWithHelp>
  * ```
  */
-export const SelectWithHelp = React.forwardRef<HTMLDivElement, SelectWithHelpProps>(
-  (
-    {
-      label,
-      helpContent,
-      tooltipProps,
-      error,
-      helperText,
-      required,
-      hideLabel,
-      className,
-      id,
-      children,
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const selectId = id || generatedId;
-    const errorId = `${selectId}-error`;
-    const helperId = `${selectId}-helper`;
+export function SelectWithHelp({
+  ref,
+  label,
+  helpContent,
+  tooltipProps,
+  error,
+  helperText,
+  required,
+  hideLabel,
+  className,
+  id,
+  children,
+}: SelectWithHelpProps & { ref?: React.Ref<HTMLDivElement> }) {
+  const generatedId = React.useId();
+  const selectId = id || generatedId;
+  const errorId = `${selectId}-error`;
+  const helperId = `${selectId}-helper`;
 
-    return (
-      <div ref={ref} className={cn("grid gap-1.5", className)}>
-        <div className="flex items-center gap-1.5">
-          <Label
-            htmlFor={selectId}
-            className={cn(
-              "text-sm font-medium leading-none",
-              hideLabel && "sr-only",
-              error && "text-destructive"
-            )}
-          >
-            {label}
-            {required && (
-              <span className="text-destructive ml-0.5" aria-hidden="true">
-                *
-              </span>
-            )}
-          </Label>
-          {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
-        </div>
-        {React.cloneElement(children as React.ReactElement<{ id?: string; "aria-invalid"?: boolean; "aria-required"?: boolean }>, {
-          id: selectId,
-          "aria-invalid": !!error,
-          "aria-required": required,
-        })}
-        {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={helperId} className="text-sm text-muted-foreground">
-            {helperText}
-          </p>
-        )}
+  return (
+    <div ref={ref} className={cn("grid gap-1.5", className)}>
+      <div className="flex items-center gap-1.5">
+        <Label
+          htmlFor={selectId}
+          className={cn(
+            "text-sm font-medium leading-none",
+            hideLabel && "sr-only",
+            error && "text-destructive"
+          )}
+        >
+          {label}
+          {required && (
+            <span className="text-destructive ml-0.5" aria-hidden="true">
+              *
+            </span>
+          )}
+        </Label>
+        {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
       </div>
-    );
-  }
-);
-
-SelectWithHelp.displayName = "SelectWithHelp";
+      {React.cloneElement(children as React.ReactElement<{ id?: string; "aria-invalid"?: boolean; "aria-required"?: boolean }>, {
+        id: selectId,
+        "aria-invalid": !!error,
+        "aria-required": required,
+      })}
+      {error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-sm text-destructive"
+          aria-live="polite"
+        >
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={helperId} className="text-sm text-muted-foreground">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Props for CheckboxWithHelp component
@@ -408,85 +390,79 @@ export interface CheckboxWithHelpProps
  * />
  * ```
  */
-export const CheckboxWithHelp = React.forwardRef<HTMLInputElement, CheckboxWithHelpProps>(
-  (
-    {
-      label,
-      helpContent,
-      tooltipProps,
-      error,
-      helperText,
-      className,
-      id,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const checkboxId = id || generatedId;
-    const errorId = `${checkboxId}-error`;
-    const helperId = `${checkboxId}-helper`;
+export function CheckboxWithHelp({
+  ref,
+  label,
+  helpContent,
+  tooltipProps,
+  error,
+  helperText,
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: CheckboxWithHelpProps & { ref?: React.Ref<HTMLInputElement> }) {
+  const generatedId = React.useId();
+  const checkboxId = id || generatedId;
+  const errorId = `${checkboxId}-error`;
+  const helperId = `${checkboxId}-helper`;
 
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("flex items-start gap-2", className)}>
-        <input
-          ref={ref}
-          id={checkboxId}
-          type="checkbox"
-          aria-invalid={!!error}
-          aria-describedby={describedBy || undefined}
-          className={cn(
-            "h-4 w-4 shrink-0 rounded-sm border border-primary",
-            "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive"
-          )}
-          {...props}
-        />
-        <div className="grid gap-1">
-          <div className="flex items-center gap-1.5">
-            <label
-              htmlFor={checkboxId}
-              className={cn(
-                "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-                error && "text-destructive"
-              )}
-            >
-              {label}
-            </label>
-            {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
-          </div>
-          {error && (
-            <p
-              id={errorId}
-              role="alert"
-              className="text-sm text-destructive"
-              aria-live="polite"
-            >
-              {error}
-            </p>
-          )}
-          {helperText && !error && (
-            <p id={helperId} className="text-sm text-muted-foreground">
-              {helperText}
-            </p>
-          )}
+  return (
+    <div className={cn("flex items-start gap-2", className)}>
+      <input
+        ref={ref}
+        id={checkboxId}
+        type="checkbox"
+        aria-invalid={!!error}
+        aria-describedby={describedBy || undefined}
+        className={cn(
+          "h-4 w-4 shrink-0 rounded-sm border border-primary",
+          "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive"
+        )}
+        {...props}
+      />
+      <div className="grid gap-1">
+        <div className="flex items-center gap-1.5">
+          <label
+            htmlFor={checkboxId}
+            className={cn(
+              "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+              error && "text-destructive"
+            )}
+          >
+            {label}
+          </label>
+          {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
         </div>
+        {error && (
+          <p
+            id={errorId}
+            role="alert"
+            className="text-sm text-destructive"
+            aria-live="polite"
+          >
+            {error}
+          </p>
+        )}
+        {helperText && !error && (
+          <p id={helperId} className="text-sm text-muted-foreground">
+            {helperText}
+          </p>
+        )}
       </div>
-    );
-  }
-);
-
-CheckboxWithHelp.displayName = "CheckboxWithHelp";
+    </div>
+  );
+}
 
 /**
  * Props for FieldHelpContent - structured help content

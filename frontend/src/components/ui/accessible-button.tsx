@@ -75,63 +75,57 @@ const accessibleButtonVariants = cva(
  *   <Spinner /> Saving...
  * </AccessibleButton>
  */
-export const AccessibleButton = React.forwardRef<
-  HTMLButtonElement,
-  AccessibleButtonProps & VariantProps<typeof accessibleButtonVariants>
->(
-  (
-    {
-      className,
-      variant,
-      size,
-      loading = false,
-      iconOnly = false,
-      disabled,
-      children,
-      "aria-label": ariaLabel,
-      "aria-expanded": ariaExpanded,
-      "aria-controls": ariaControls,
-      "aria-pressed": ariaPressed,
-      "aria-haspopup": ariaHasPopup,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    // Ensure icon-only buttons have accessible labels
-    if (iconOnly && !ariaLabel) {
-      console.warn(
-        "AccessibleButton: iconOnly buttons require an aria-label prop"
-      );
-    }
-
-    return (
-      <button
-        ref={ref}
-        className={cn(accessibleButtonVariants({ variant, size, className }))}
-        disabled={disabled || loading}
-        aria-label={ariaLabel}
-        aria-expanded={ariaExpanded}
-        aria-controls={ariaControls}
-        aria-pressed={ariaPressed}
-        aria-haspopup={ariaHasPopup}
-        aria-describedby={ariaDescribedBy}
-        aria-busy={loading}
-        data-loading={loading}
-        {...props}
-      >
-        {loading && (
-          <span className="animate-spin h-4 w-4" aria-hidden="true">
-            ◌
-          </span>
-        )}
-        {children}
-      </button>
+export function AccessibleButton({
+  ref,
+  className,
+  variant,
+  size,
+  loading = false,
+  iconOnly = false,
+  disabled,
+  children,
+  "aria-label": ariaLabel,
+  "aria-expanded": ariaExpanded,
+  "aria-controls": ariaControls,
+  "aria-pressed": ariaPressed,
+  "aria-haspopup": ariaHasPopup,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: AccessibleButtonProps &
+  VariantProps<typeof accessibleButtonVariants> & {
+    ref?: React.Ref<HTMLButtonElement>;
+  }) {
+  // Ensure icon-only buttons have accessible labels
+  if (iconOnly && !ariaLabel) {
+    console.warn(
+      "AccessibleButton: iconOnly buttons require an aria-label prop"
     );
   }
-);
 
-AccessibleButton.displayName = "AccessibleButton";
+  return (
+    <button
+      ref={ref}
+      className={cn(accessibleButtonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
+      aria-pressed={ariaPressed}
+      aria-haspopup={ariaHasPopup}
+      aria-describedby={ariaDescribedBy}
+      aria-busy={loading}
+      data-loading={loading}
+      {...props}
+    >
+      {loading && (
+        <span className="animate-spin h-4 w-4" aria-hidden="true">
+          ◌
+        </span>
+      )}
+      {children}
+    </button>
+  );
+}
 
 export interface IconButtonProps
   extends Omit<AccessibleButtonProps, "iconOnly"> {
@@ -150,24 +144,26 @@ export interface IconButtonProps
  * @example
  * <IconButton icon={<SearchIcon />} label="Search" onClick={handleSearch} />
  */
-export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ icon, label, className, ...props }, ref) => {
-    return (
-      <AccessibleButton
-        ref={ref}
-        aria-label={label}
-        iconOnly
-        className={cn("p-2", className)}
-        {...props}
-      >
-        {icon}
-        <span className="sr-only">{label}</span>
-      </AccessibleButton>
-    );
-  }
-);
-
-IconButton.displayName = "IconButton";
+export function IconButton({
+  ref,
+  icon,
+  label,
+  className,
+  ...props
+}: IconButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+  return (
+    <AccessibleButton
+      ref={ref}
+      aria-label={label}
+      iconOnly
+      className={cn("p-2", className)}
+      {...props}
+    >
+      {icon}
+      <span className="sr-only">{label}</span>
+    </AccessibleButton>
+  );
+}
 
 export interface ToggleButtonProps
   extends Omit<AccessibleButtonProps, "aria-pressed"> {
@@ -194,43 +190,38 @@ export interface ToggleButtonProps
  *   <BookmarkIcon filled={isBookmarked} />
  * </ToggleButton>
  */
-export const ToggleButton = React.forwardRef<
-  HTMLButtonElement,
-  ToggleButtonProps & VariantProps<typeof accessibleButtonVariants>
->(
-  (
-    {
-      pressed,
-      onPressedChange,
-      labelOn,
-      labelOff,
-      children,
-      onClick,
-      ...props
-    },
-    ref
-  ) => {
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      onPressedChange(!pressed);
-      onClick?.(e);
-    };
+export function ToggleButton({
+  ref,
+  pressed,
+  onPressedChange,
+  labelOn,
+  labelOff,
+  children,
+  onClick,
+  ...props
+}: ToggleButtonProps &
+  VariantProps<typeof accessibleButtonVariants> & {
+    ref?: React.Ref<HTMLButtonElement>;
+  }) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onPressedChange(!pressed);
+    onClick?.(e);
+  };
 
-    const ariaLabel = pressed && labelOn ? labelOn : !pressed && labelOff ? labelOff : undefined;
+  const ariaLabel =
+    pressed && labelOn ? labelOn : !pressed && labelOff ? labelOff : undefined;
 
-    return (
-      <AccessibleButton
-        ref={ref}
-        aria-pressed={pressed}
-        aria-label={ariaLabel}
-        onClick={handleClick}
-        {...props}
-      >
-        {children}
-      </AccessibleButton>
-    );
-  }
-);
-
-ToggleButton.displayName = "ToggleButton";
+  return (
+    <AccessibleButton
+      ref={ref}
+      aria-pressed={pressed}
+      aria-label={ariaLabel}
+      onClick={handleClick}
+      {...props}
+    >
+      {children}
+    </AccessibleButton>
+  );
+}
 
 export { accessibleButtonVariants };

@@ -5,7 +5,7 @@ import logging
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document import Document
@@ -90,25 +90,68 @@ async def list_expiring_documents(
     if entity_id:
         filters.append(Document.entity_id == entity_id)
 
-    result = await db.execute(
-        select(Document)
-        .where(and_(*filters))
-        .order_by(Document.expiry_date.asc())
-    )
-    all_docs = list(result.scalars().all())
+    base_query = select(Document).where(and_(*filters))
 
-    # Build responses and apply optional status filter
-    responses = [_build_expiring_response(d) for d in all_docs]
+    # Apply optional status filter as an additional SQL predicate when possible.
+    # ExpiryStatus is computed from expiry_date, so we translate the filter back to SQL.
     if status_filter:
-        responses = [r for r in responses if r.expiry_status == status_filter]
+        today = datetime.now(UTC).date()
+        if status_filter == ExpiryStatus.expired.value:
+            base_query = base_query.where(Document.expiry_date < today)
+        elif status_filter == ExpiryStatus.expiring_30.value:
+            base_query = base_query.where(
+                Document.expiry_date >= today,
+                Document.expiry_date <= today + timedelta(days=30),
+            )
+        elif status_filter == ExpiryStatus.expiring_90.value:
+            base_query = base_query.where(
+                Document.expiry_date > today + timedelta(days=30),
+                Document.expiry_date <= cutoff,
+            )
+        # ExpiryStatus.valid would be > cutoff, but our top-level filter already caps at cutoff,
+        # so "valid" returns nothing — leave as-is.
 
-    # Counts (on unfiltered set)
-    expired_count = sum(1 for r in responses if r.expiry_status == ExpiryStatus.expired)
-    expiring_30_count = sum(1 for r in responses if r.expiry_status == ExpiryStatus.expiring_30)
-    expiring_90_count = sum(1 for r in responses if r.expiry_status == ExpiryStatus.expiring_90)
+    # Total count before pagination
+    count_result = await db.execute(
+        select(func.count()).select_from(base_query.subquery())
+    )
+    total = count_result.scalar_one()
 
-    total = len(responses)
-    paginated = responses[skip : skip + limit]
+    # Fetch only the requested page
+    result = await db.execute(
+        base_query.order_by(Document.expiry_date.asc()).offset(skip).limit(limit)
+    )
+    page_docs = list(result.scalars().all())
+
+    # Build responses for the page
+    paginated = [_build_expiring_response(d) for d in page_docs]
+
+    # Counts over the full (unfiltered-by-status) result set using SQL aggregates
+    expired_count_result = await db.execute(
+        select(func.count()).where(
+            and_(*filters),
+            Document.expiry_date < today,
+        )
+    )
+    expired_count = expired_count_result.scalar_one()
+
+    expiring_30_count_result = await db.execute(
+        select(func.count()).where(
+            and_(*filters),
+            Document.expiry_date >= today,
+            Document.expiry_date <= today + timedelta(days=30),
+        )
+    )
+    expiring_30_count = expiring_30_count_result.scalar_one()
+
+    expiring_90_count_result = await db.execute(
+        select(func.count()).where(
+            and_(*filters),
+            Document.expiry_date > today + timedelta(days=30),
+            Document.expiry_date <= cutoff,
+        )
+    )
+    expiring_90_count = expiring_90_count_result.scalar_one()
 
     return ExpiringDocumentsResponse(
         documents=paginated,
@@ -138,6 +181,17 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
     )
     docs = list(result.scalars().all())
 
+    # Batch-load RM IDs for all client-type documents in one query
+    from app.models.client import Client
+
+    client_entity_ids = [doc.entity_id for doc in docs if doc.entity_type == "client"]
+    rm_map: dict[object, UUID] = {}
+    if client_entity_ids:
+        rm_result = await db.execute(
+            select(Client.id, Client.rm_id).where(Client.id.in_(client_entity_ids))
+        )
+        rm_map = {row.id: row.rm_id for row in rm_result.all() if row.rm_id is not None}
+
     notifications_sent = 0
 
     for doc in docs:
@@ -148,8 +202,8 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
         # Determine which threshold we're at or past
         for threshold in ALERT_THRESHOLDS:
             if days_until <= threshold and threshold not in sent_thresholds:
-                # Find the RM for this document (via entity → client relationship)
-                rm_id = await _get_rm_for_document(db, doc)
+                # Resolve RM from pre-loaded map
+                rm_id = rm_map.get(doc.entity_id) if doc.entity_type == "client" else None
                 if rm_id is None:
                     logger.debug(
                         "No RM found for document %s (entity_type=%s, entity_id=%s) — skipping",
@@ -192,23 +246,6 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
 
     await db.commit()
     return notifications_sent
-
-
-async def _get_rm_for_document(db: AsyncSession, doc: Document) -> UUID | None:
-    """Look up the RM responsible for a document's entity."""
-    if doc.entity_type != "client":
-        return None
-    try:
-        from app.models.client import Client  # local import to avoid circular deps
-
-        result = await db.execute(
-            select(Client.rm_id).where(Client.id == doc.entity_id)
-        )
-        rm_id = result.scalar_one_or_none()
-        return rm_id
-    except Exception:
-        logger.exception("Error fetching RM for document %s", doc.id)
-        return None
 
 
 def _build_alert_message(

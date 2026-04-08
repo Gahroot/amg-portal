@@ -4,6 +4,19 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { renderWithProviders } from "@/test/mocks/wrapper";
 import { TaskBoard } from "../task-board";
 
+// ---- mock Next.js navigation ------------------------------------------------
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+  }),
+  usePathname: () => "/tasks",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // ---- mock API layer ---------------------------------------------------------
 // vi.hoisted so the data is available inside the hoisted vi.mock() factory.
 const { mockTasks } = vi.hoisted(() => {
@@ -21,6 +34,8 @@ const { mockTasks } = vi.hoisted(() => {
       program: { id: "prog-1", title: "Alpha Program", status: "active" },
       milestone: { id: "ms-1", title: "Kickoff", program_id: "prog-1" },
       position: 0,
+      depends_on: [],
+      blocked_by: [],
       created_at: "2025-01-01T00:00:00Z",
       updated_at: "2025-01-01T00:00:00Z",
     },
@@ -37,6 +52,8 @@ const { mockTasks } = vi.hoisted(() => {
       program: null,
       milestone: null,
       position: 0,
+      depends_on: [],
+      blocked_by: [],
       created_at: "2025-01-01T00:00:00Z",
       updated_at: "2025-01-01T00:00:00Z",
     },
@@ -53,6 +70,8 @@ const { mockTasks } = vi.hoisted(() => {
       program: null,
       milestone: null,
       position: 0,
+      depends_on: [],
+      blocked_by: [],
       created_at: "2025-01-01T00:00:00Z",
       updated_at: "2025-01-01T00:00:00Z",
     },
@@ -66,8 +85,10 @@ vi.mock("@/lib/api/tasks", () => ({
   getAssigneesForFilter: vi.fn().mockResolvedValue([]),
   createTask: vi.fn(),
   updateTask: vi.fn(),
+  updateTaskDependencies: vi.fn(),
   deleteTask: vi.fn(),
   reorderTask: vi.fn(),
+  bulkUpdateTasks: vi.fn(),
 }));
 
 // ---- mock DnD Kit (drag behaviour is not meaningful to test in jsdom) -------

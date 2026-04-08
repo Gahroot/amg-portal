@@ -130,11 +130,12 @@ export function usePartnerMessages(conversationId: string, params?: { skip?: num
   });
 }
 
-export function useSendPartnerMessage() {
+function usePartnerMessageMutation<T extends { conversationId: string }>(
+  extractBody: (vars: T) => string,
+) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, body }: { conversationId: string; body: string }) =>
-      sendMessageToConversation(conversationId, body),
+    mutationFn: (vars: T) => sendMessageToConversation(vars.conversationId, extractBody(vars)),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["partner-portal", "conversations", variables.conversationId, "messages"],
@@ -143,6 +144,18 @@ export function useSendPartnerMessage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to send message"),
   });
+}
+
+export function useSendPartnerMessage() {
+  return usePartnerMessageMutation<{ conversationId: string; body: string }>(
+    (vars) => vars.body,
+  );
+}
+
+export function useSendPartnerMessageForView() {
+  return usePartnerMessageMutation<{ conversationId: string; data: { body: string; attachment_ids?: string[] } }>(
+    (vars) => vars.data.body,
+  );
 }
 
 export function useMarkPartnerConversationRead() {

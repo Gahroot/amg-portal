@@ -19,8 +19,10 @@ from app.api.deps import (
 )
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.deliverable import Deliverable
+from app.models.document import Document
 from app.models.partner_assignment import PartnerAssignment
 from app.schemas.deliverable import (
+    DeliverableAttachDocument,
     DeliverableCreate,
     DeliverableListResponse,
     DeliverableResponse,
@@ -173,6 +175,74 @@ async def update_deliverable(
     return build_deliverable_response(deliverable)
 
 
+@router.post("/{deliverable_id}/upload", response_model=DeliverableResponse, status_code=200)
+async def upload_deliverable_file(
+    deliverable_id: UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_coordinator_or_above),
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    """Upload a file directly to an existing deliverable (internal staff only)."""
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
+    deliverable = result.scalar_one_or_none()
+    if not deliverable:
+        raise NotFoundException("Deliverable not found")
+
+    await storage_service.validate_file(file)
+    object_path, file_size = await storage_service.upload_file(
+        file, f"deliverables/{deliverable.assignment_id}"
+    )
+
+    deliverable.file_path = object_path
+    deliverable.file_name = file.filename
+    deliverable.file_size = file_size
+    deliverable.submitted_at = datetime.now(UTC)
+    deliverable.submitted_by = current_user.id
+    deliverable.status = "submitted"  # type: ignore[assignment]
+
+    await db.commit()
+    await db.refresh(deliverable)
+    return build_deliverable_response(deliverable)
+
+
+@router.post(
+    "/{deliverable_id}/attach-document",
+    response_model=DeliverableResponse,
+    status_code=200,
+)
+async def attach_document_to_deliverable(
+    deliverable_id: UUID,
+    data: DeliverableAttachDocument,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_coordinator_or_above),
+) -> dict[str, Any]:
+    """Link an existing document to a deliverable (internal staff only)."""
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
+    deliverable = result.scalar_one_or_none()
+    if not deliverable:
+        raise NotFoundException("Deliverable not found")
+
+    doc_result = await db.execute(select(Document).where(Document.id == data.document_id))
+    document = doc_result.scalar_one_or_none()
+    if not document:
+        raise NotFoundException("Document not found")
+
+    deliverable.file_path = document.file_path
+    deliverable.file_name = document.file_name
+    deliverable.file_size = document.file_size
+    deliverable.submitted_at = datetime.now(UTC)
+    deliverable.submitted_by = current_user.id
+    deliverable.status = "submitted"  # type: ignore[assignment]
+
+    await db.commit()
+    await db.refresh(deliverable)
+    return build_deliverable_response(deliverable)
+
+
 @router.post("/{deliverable_id}/submit", response_model=DeliverableResponse)
 async def submit_deliverable(
     deliverable_id: UUID,
@@ -195,15 +265,16 @@ async def submit_deliverable(
     if deliverable.status not in ("pending", "returned"):
         raise BadRequestException("Deliverable cannot be submitted in current status")
 
+    await storage_service.validate_file(file)
     object_path, file_size = await storage_service.upload_file(
         file, f"deliverables/{deliverable.assignment_id}"
     )
 
-    deliverable.file_path = object_path  # type: ignore[assignment]
-    deliverable.file_name = file.filename  # type: ignore[assignment]
-    deliverable.file_size = file_size  # type: ignore[assignment]
-    deliverable.submitted_at = datetime.now(UTC)  # type: ignore[assignment]
-    deliverable.submitted_by = current_user.id  # type: ignore[assignment]
+    deliverable.file_path = object_path
+    deliverable.file_name = file.filename
+    deliverable.file_size = file_size
+    deliverable.submitted_at = datetime.now(UTC)
+    deliverable.submitted_by = current_user.id
     deliverable.status = "submitted"  # type: ignore[assignment]
 
     await db.commit()
@@ -219,6 +290,27 @@ async def submit_deliverable(
         logger.exception(
             "Failed to dispatch deliverable_submission for %s",
             deliverable.id,
+        )
+
+    try:
+        from app.services.webhook_service import trigger_partner_webhooks
+
+        await trigger_partner_webhooks(
+            db,
+            partner_id=deliverable.assignment.partner_id,
+            event_type="deliverable.submitted",
+            data={
+                "deliverable_id": str(deliverable.id),
+                "assignment_id": str(deliverable.assignment_id),
+                "title": deliverable.title,
+                "submitted_at": deliverable.submitted_at.isoformat()
+                if deliverable.submitted_at
+                else None,
+            },
+        )
+    except Exception:
+        logger.exception(
+            "Failed to trigger webhook for deliverable_submitted %s", deliverable.id
         )
 
     return build_deliverable_response(deliverable)
@@ -244,12 +336,12 @@ async def review_deliverable(
         raise BadRequestException("Deliverable is not ready for review")
 
     deliverable.status = data.status  # type: ignore[assignment]
-    deliverable.review_comments = data.review_comments  # type: ignore[assignment]
-    deliverable.reviewed_by = current_user.id  # type: ignore[assignment]
-    deliverable.reviewed_at = datetime.now(UTC)  # type: ignore[assignment]
+    deliverable.review_comments = data.review_comments
+    deliverable.reviewed_by = current_user.id
+    deliverable.reviewed_at = datetime.now(UTC)
 
     if data.status == "approved":
-        deliverable.client_visible = True  # type: ignore[assignment]
+        deliverable.client_visible = True
 
     await db.commit()
     await db.refresh(deliverable)
@@ -263,6 +355,38 @@ async def review_deliverable(
             "Failed to dispatch review notifications for deliverable %s",
             deliverable.id,
         )
+
+    # Only fire webhook on terminal outcomes that a partner cares about
+    if data.status in ("approved", "returned", "rejected"):
+        try:
+            from app.models.partner_assignment import PartnerAssignment
+            from app.services.webhook_service import trigger_partner_webhooks
+
+            assignment_result = await db.execute(
+                select(PartnerAssignment).where(
+                    PartnerAssignment.id == deliverable.assignment_id
+                )
+            )
+            assignment = assignment_result.scalar_one_or_none()
+            if assignment:
+                await trigger_partner_webhooks(
+                    db,
+                    partner_id=assignment.partner_id,
+                    event_type=f"deliverable.{data.status}",
+                    data={
+                        "deliverable_id": str(deliverable.id),
+                        "assignment_id": str(deliverable.assignment_id),
+                        "title": deliverable.title,
+                        "status": data.status,
+                        "reviewed_at": deliverable.reviewed_at.isoformat()
+                        if deliverable.reviewed_at
+                        else None,
+                    },
+                )
+        except Exception:
+            logger.exception(
+                "Failed to trigger webhook for deliverable review %s", deliverable.id
+            )
 
     return build_deliverable_response(deliverable)
 

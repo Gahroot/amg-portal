@@ -1,11 +1,12 @@
 """Partner capability matrix, qualifications, certifications, and onboarding models."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from typing import Any
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -15,20 +16,27 @@ class PartnerCapability(Base, TimestampMixin):
 
     __tablename__ = "partner_capabilities"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    capability_name = Column(String(100), nullable=False)
-    proficiency_level = Column(String(20), nullable=False)  # beginner, intermediate, expert
-    years_experience = Column(Numeric(5, 1), nullable=True)
-    verified = Column(Boolean, default=False)
-    verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    verified_at = Column(DateTime(timezone=True), nullable=True)
-    notes = Column(Text, nullable=True)
+    capability_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # beginner, intermediate, expert
+    proficiency_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    years_experience: Mapped[float | None] = mapped_column(Numeric(5, 1), nullable=True)
+    verified: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    partner = relationship("PartnerProfile", backref="capabilities_detail")
+    partner = relationship("PartnerProfile", back_populates="capabilities_detail")
     verifier = relationship("User", foreign_keys=[verified_by])
 
 
@@ -37,11 +45,12 @@ class ServiceCategory(Base, TimestampMixin):
 
     __tablename__ = "service_categories"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False, unique=True)
-    description = Column(Text, nullable=True)
-    required_capabilities = Column(JSON, default=list)  # List of capability names required
-    active = Column(Boolean, default=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # List of capability names required
+    required_capabilities: Mapped[list[str] | None] = mapped_column(JSON, default=list)
+    active: Mapped[bool | None] = mapped_column(Boolean, default=True)
 
     # Relationships
     qualifications = relationship(
@@ -54,21 +63,31 @@ class PartnerQualification(Base, TimestampMixin):
 
     __tablename__ = "partner_qualifications"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    category_id = Column(
-        UUID(as_uuid=True), ForeignKey("service_categories.id", ondelete="CASCADE"), nullable=False
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("service_categories.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    qualification_level = Column(String(20), nullable=False)  # qualified, preferred, expert
-    approval_status = Column(String(20), default="pending")  # pending, approved, rejected
-    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    approved_at = Column(DateTime(timezone=True), nullable=True)
-    notes = Column(Text, nullable=True)
+    # qualified, preferred, expert
+    qualification_level: Mapped[str] = mapped_column(String(20), nullable=False)
+    # pending, approved, rejected
+    approval_status: Mapped[str | None] = mapped_column(String(20), default="pending")
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    partner = relationship("PartnerProfile", backref="qualifications_detail")
+    partner = relationship("PartnerProfile", back_populates="qualifications_detail")
     category = relationship("ServiceCategory", back_populates="qualifications")
     approver = relationship("User", foreign_keys=[approved_by])
 
@@ -78,23 +97,32 @@ class PartnerCertification(Base, TimestampMixin):
 
     __tablename__ = "partner_certifications"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    name = Column(String(200), nullable=False)
-    issuing_body = Column(String(200), nullable=False)
-    certificate_number = Column(String(100), nullable=True)
-    issue_date = Column(Date, nullable=True)
-    expiry_date = Column(Date, nullable=True)
-    document_url = Column(String(500), nullable=True)
-    verification_status = Column(String(20), default="pending")  # pending, verified, expired, rejected
-    verified_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    verified_at = Column(DateTime(timezone=True), nullable=True)
-    notes = Column(Text, nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    issuing_body: Mapped[str] = mapped_column(String(200), nullable=False)
+    certificate_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    issue_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    document_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # pending, verified, expired, rejected
+    verification_status: Mapped[str | None] = mapped_column(
+        String(20), default="pending"
+    )
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    partner = relationship("PartnerProfile", backref="certifications_detail")
+    partner = relationship("PartnerProfile", back_populates="certifications_detail")
     verifier = relationship("User", foreign_keys=[verified_by])
 
 
@@ -103,18 +131,32 @@ class PartnerOnboarding(Base, TimestampMixin):
 
     __tablename__ = "partner_onboarding"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    partner_id = Column(
-        UUID(as_uuid=True), ForeignKey("partner_profiles.id", ondelete="CASCADE"), nullable=False, unique=True
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    partner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("partner_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
-    current_stage = Column(String(30), default="profile_setup")
-    # Stages: profile_setup, capability_matrix, compliance_docs, certification_upload, review, completed
-    checklist_items = Column(JSON, default=dict)  # {stage: {item: bool}}
-    completed_stages = Column(JSON, default=list)  # List of completed stage names
-    assigned_coordinator = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    current_stage: Mapped[str | None] = mapped_column(
+        String(30), default="profile_setup"
+    )
+    # Stages: profile_setup, capability_matrix, compliance_docs,
+    # certification_upload, review, completed
+    # {stage: {item: bool}}
+    checklist_items: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=dict)
+    # List of completed stage names
+    completed_stages: Mapped[list[str] | None] = mapped_column(JSON, default=list)
+    assigned_coordinator: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
-    partner = relationship("PartnerProfile", backref=backref("onboarding_detail", uselist=False))
+    partner = relationship("PartnerProfile", back_populates="onboarding_detail")
     coordinator = relationship("User", foreign_keys=[assigned_coordinator])

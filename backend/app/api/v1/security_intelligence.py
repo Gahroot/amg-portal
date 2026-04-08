@@ -26,6 +26,7 @@ from app.models.enums import SecurityProfileLevel, UserRole
 from app.schemas.security_intelligence import (
     SecurityBriefResponse,
     SecurityProfileLevelUpdate,
+    SecurityProfileLevelUpdateResponse,
     ThreatSummary,
     TravelAdvisory,
 )
@@ -172,7 +173,7 @@ async def get_security_brief(
 
 @router.patch(
     "/{profile_id}/security-profile-level",
-    response_model=dict,
+    response_model=SecurityProfileLevelUpdateResponse,
     dependencies=[Depends(require_rm_or_above)],
     summary="Update a client's security profile level",
     description=(
@@ -186,7 +187,7 @@ async def update_security_profile_level(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> dict[str, str]:
+) -> SecurityProfileLevelUpdateResponse:
     result = await db.execute(
         select(ClientProfile).where(ClientProfile.id == profile_id)
     )
@@ -216,7 +217,7 @@ async def update_security_profile_level(
     db.add(log)
     await db.commit()
 
-    return {
-        "profile_id": str(profile_id),
-        "security_profile_level": data.security_profile_level.value,
-    }
+    return SecurityProfileLevelUpdateResponse(
+        profile_id=profile_id,
+        security_profile_level=data.security_profile_level.value,
+    )

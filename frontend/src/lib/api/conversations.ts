@@ -103,7 +103,6 @@ export async function uploadVoiceAudio(blob: Blob): Promise<AudioUploadResult> {
   const response = await api.post<AudioUploadResult>(
     "/api/v1/communications/upload-audio",
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return response.data;
 }

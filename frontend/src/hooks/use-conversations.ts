@@ -113,9 +113,7 @@ export function useUnreadCount() {
     queryKey: ["unread-count"],
     queryFn: async () => {
       const response = await fetch("/api/v1/communications/unread-count", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
+        credentials: "include",
       });
       if (!response.ok) {
         throw new Error("Failed to fetch unread count");

@@ -391,7 +391,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        token = message.get("token")
+        # Try explicit token in message first, then fall back to httpOnly cookie
+        token: str | None = message.get("token") or websocket.cookies.get("access_token")
         if not token:
             await websocket.send_text(
                 json.dumps({"type": "auth_error", "message": "Token required"})

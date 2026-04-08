@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
@@ -153,7 +154,7 @@ export default function CertificateDetailPage() {
             <CardContent>
               <div
                 className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: certificate.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(certificate.content) }}
               />
             </CardContent>
           </Card>

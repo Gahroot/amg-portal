@@ -120,7 +120,7 @@ export const useTableColumnStore = create<TableColumnStore>()(
 
       resetConfig: (tableId) => {
         set((prev) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           const { [tableId]: _, ...remaining } = prev.configs;
           return { configs: remaining };
         });

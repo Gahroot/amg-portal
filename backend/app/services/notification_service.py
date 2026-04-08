@@ -6,8 +6,9 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import String, case, func, literal, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.config import settings
 from app.models.notification import Notification
@@ -27,6 +28,47 @@ logger = logging.getLogger(__name__)
 
 # Priority order for determining highest priority in a group
 PRIORITY_ORDER = {"urgent": 4, "high": 3, "normal": 2, "low": 1}
+
+
+def _build_group_key_expr(group_mode: str) -> ColumnElement[Any]:
+    """Build a SQL expression that computes the notification group key."""
+    if group_mode == "entity":
+        entity_id_text = func.cast(Notification.entity_id, String)
+        return case(
+            (
+                (Notification.entity_type.is_not(None))
+                & (Notification.entity_id.is_not(None)),
+                literal("entity:") + Notification.entity_type + literal(":") + entity_id_text,
+            ),
+            else_=literal("type:") + Notification.notification_type,
+        )
+    elif group_mode == "time":
+        now_expr = func.now()
+        return case(
+            (
+                Notification.created_at >= now_expr - text("interval '1 hour'"),
+                literal("time:Last hour"),
+            ),
+            (
+                Notification.created_at >= now_expr - text("interval '24 hours'"),
+                literal("time:Today"),
+            ),
+            (
+                Notification.created_at >= now_expr - text("interval '48 hours'"),
+                literal("time:Yesterday"),
+            ),
+            (
+                Notification.created_at >= now_expr - text("interval '7 days'"),
+                literal("time:This week"),
+            ),
+            (
+                Notification.created_at >= now_expr - text("interval '30 days'"),
+                literal("time:This month"),
+            ),
+            else_=literal("time:Older"),
+        )
+    else:
+        return literal("type:") + Notification.notification_type
 
 # Human-readable labels for notification types
 NOTIFICATION_TYPE_LABELS: dict[str, str] = {
@@ -331,6 +373,10 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
     ) -> tuple[list[NotificationGroupResponse], int, int]:
         """Get notifications grouped by the specified mode.
 
+        Uses SQL GROUP BY aggregation to compute group metadata, then fetches
+        full notification rows only for the paginated groups — avoiding the
+        previous pattern of pulling up to 200 rows into Python just to group them.
+
         Args:
             db: Database session
             user_id: User ID
@@ -342,24 +388,99 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         Returns:
             Tuple of (groups, total_groups, total_notifications)
         """
-        # Get all notifications for this user (with higher limit for grouping)
-        notifications, total = await self.get_notifications_for_user(
-            db,
-            user_id=user_id,
-            unread_only=unread_only,
-            limit=200,  # Get more for proper grouping
+        base_filter = [Notification.user_id == user_id]
+        if unread_only:
+            base_filter.append(Notification.is_read == False)  # noqa: E712
+
+        group_key_expr = _build_group_key_expr(group_mode)
+
+        # Aggregation query: one row per group with summary stats
+        agg_query = (
+            select(
+                group_key_expr.label("group_key"),
+                func.count().label("total_count"),
+                func.sum(case((Notification.is_read == False, 1), else_=0)).label("unread_count"),  # noqa: E712
+                func.max(Notification.created_at).label("latest_created_at"),
+                # Highest priority via PRIORITY_ORDER mapping: urgent=4, high=3, normal=2, low=1
+                func.max(
+                    case(
+                        (Notification.priority == "urgent", 4),
+                        (Notification.priority == "high", 3),
+                        (Notification.priority == "normal", 2),
+                        else_=1,
+                    )
+                ).label("max_priority_rank"),
+            )
+            .where(*base_filter)
+            .group_by(group_key_expr)
+            .order_by(func.max(Notification.created_at).desc())
         )
 
-        if not notifications:
+        agg_rows = list((await db.execute(agg_query)).mappings().all())
+
+        if not agg_rows:
             return [], 0, 0
 
-        # Group notifications
-        groups = self._group_notifications(notifications, group_mode)
+        total_notifications: int = sum(r["total_count"] for r in agg_rows)
+        total_groups = len(agg_rows)
 
-        # Apply pagination to groups
-        paginated_groups = groups[skip : skip + limit]
+        # Paginate groups
+        page_agg_rows = agg_rows[skip : skip + limit]
+        if not page_agg_rows:
+            return [], total_groups, total_notifications
 
-        return paginated_groups, len(groups), total
+        page_group_keys = [r["group_key"] for r in page_agg_rows]
+
+        # Fetch full notification rows only for the groups on this page
+        rows_query = (
+            select(Notification)
+            .where(
+                *base_filter,
+                group_key_expr.in_(page_group_keys),
+            )
+            .order_by(Notification.created_at.desc())
+        )
+        page_notifications = list((await db.execute(rows_query)).scalars().all())
+
+        # Build a lookup: group_key -> [Notification, ...]
+        notifs_by_key: dict[str, list[Notification]] = defaultdict(list)
+        for notif in page_notifications:
+            key = self._get_group_key_for_mode(notif, group_mode)
+            notifs_by_key[key].append(notif)
+
+        # Rank int -> label
+        priority_rank_to_label = {4: "urgent", 3: "high", 2: "normal", 1: "low"}
+
+        groups: list[NotificationGroupResponse] = []
+        for row in page_agg_rows:
+            gkey = row["group_key"]
+            group_notifs = notifs_by_key.get(gkey, [])
+            # Rows are already ordered desc; latest is first
+            latest = group_notifs[0] if group_notifs else None
+            highest_priority = priority_rank_to_label.get(row["max_priority_rank"], "low")
+            group_label = self._get_group_label(gkey, latest, group_mode) if latest else gkey
+
+            groups.append(
+                NotificationGroupResponse(
+                    group_key=gkey,
+                    group_label=group_label,
+                    notification_type=latest.notification_type if latest else "",
+                    entity_type=latest.entity_type if latest else None,
+                    entity_id=latest.entity_id if latest else None,
+                    priority=highest_priority,
+                    count=row["total_count"],
+                    unread_count=row["unread_count"],
+                    is_read=row["unread_count"] == 0,
+                    latest_created_at=row["latest_created_at"],
+                    latest_title=latest.title if latest else "",
+                    latest_body=latest.body if latest else "",
+                    action_url=latest.action_url if latest else None,
+                    action_label=latest.action_label if latest else None,
+                    notifications=[NotificationResponse.model_validate(n) for n in group_notifs],
+                )
+            )
+
+        return groups, total_groups, total_notifications
 
     def _group_notifications(
         self,
@@ -487,7 +608,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         )
 
         if group_mode == "entity" and group_key.startswith("entity:"):
-            # Parse entity type and id from group key
+            # Parse entity type and id from group key ("entity:<type>:<id>")
             parts = group_key.split(":")
             if len(parts) >= 3:
                 entity_type = parts[1]
@@ -497,9 +618,8 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
                     Notification.entity_id == entity_id,
                 )
             else:
-                # Fallback to notification type
-                notif_type = parts[1] if len(parts) > 1 else group_key
-                query = query.where(Notification.notification_type == notif_type)
+                # Malformed key — do not mark anything to avoid mass-reads
+                return 0
         elif group_mode == "time":
             # For time-based grouping, we need to filter by time ranges
             now = datetime.now(UTC)
@@ -508,7 +628,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
             if time_label == "Last hour":
                 cutoff = now - timedelta(hours=1)
             elif time_label == "Today":
-                cutoff = now - timedelta(hours=24)
+                cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elif time_label == "Yesterday":
                 cutoff = now - timedelta(hours=48)
                 query = query.where(Notification.created_at >= now - timedelta(hours=48))
@@ -542,26 +662,22 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
     ) -> int:
         """Get count of unique groups with unread notifications.
 
-        This is used for the badge count on the notification bell.
+        Uses a SQL COUNT(DISTINCT …) aggregation so no rows are fetched into
+        Python — this is the query behind the notification-bell badge which is
+        called on every window focus from the frontend.
         """
-        # Get unread notifications
-        notifications, _ = await self.get_notifications_for_user(
-            db,
-            user_id=user_id,
-            unread_only=True,
-            limit=500,  # Get all unread for accurate count
+        base_filter = [
+            Notification.user_id == user_id,
+            Notification.is_read == False,  # noqa: E712
+        ]
+
+        group_key_expr = _build_group_key_expr(group_mode)
+
+        count_query = (
+            select(func.count(func.distinct(group_key_expr)))
+            .where(*base_filter)
         )
-
-        if not notifications:
-            return 0
-
-        # Count unique groups
-        groups: set[str] = set()
-        for notification in notifications:
-            key = self._get_group_key_for_mode(notification, group_mode)
-            groups.add(key)
-
-        return len(groups)
+        return (await db.execute(count_query)).scalar_one()
 
     async def _send_immediate_notification_email(
         self,

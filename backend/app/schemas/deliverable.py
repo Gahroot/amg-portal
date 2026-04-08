@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DeliverableCreate(BaseModel):
@@ -51,6 +51,13 @@ class DeliverableListResponse(BaseModel):
 class DeliverableReview(BaseModel):
     status: str  # approved, returned, rejected
     review_comments: str | None = None
+
+
+# ── Staff Attach ──────────────────────────────────────────────────────────────
+
+
+class DeliverableAttachDocument(BaseModel):
+    document_id: UUID = Field(..., description="ID of an existing document to attach")
 
 
 # ── Bulk Submit ────────────────────────────────────────────────────────────────

@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_refresh_token
+from app.core.security import (
+    create_refresh_token,
+    decode_refresh_token,
+    encrypt_mfa_secret,
+    hash_token,
+)
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from tests.conftest import auth_headers, make_user
 
@@ -80,7 +88,7 @@ class TestLogin:
         and empty tokens — forcing the caller to re-submit with an OTP."""
         user = make_user("coordinator")
         user.mfa_enabled = True
-        user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        user.mfa_secret = encrypt_mfa_secret("JBSWY3DPEHPK3PXP")
         db_session.add(user)
         await db_session.commit()
 
@@ -99,7 +107,7 @@ class TestLogin:
     ) -> None:
         user = make_user("coordinator")
         user.mfa_enabled = True
-        user.mfa_secret = "JBSWY3DPEHPK3PXP"
+        user.mfa_secret = encrypt_mfa_secret("JBSWY3DPEHPK3PXP")
         db_session.add(user)
         await db_session.commit()
 
@@ -128,6 +136,18 @@ class TestTokenRefresh:
         await db_session.commit()
 
         refresh = create_refresh_token({"sub": str(user.id), "email": user.email})
+        # Store a matching RefreshToken row so the /refresh endpoint can
+        # look it up for rotation / reuse detection.
+        payload = decode_refresh_token(refresh)
+        db_session.add(RefreshToken(
+            user_id=user.id,
+            token_hash=hash_token(refresh),
+            jti=payload["jti"],
+            family_id=payload["family"],
+            expires_at=datetime.now(UTC) + timedelta(days=7),
+        ))
+        await db_session.commit()
+
         resp = await anon_client.post(
             f"{BASE}/refresh", json={"refresh_token": refresh}
         )

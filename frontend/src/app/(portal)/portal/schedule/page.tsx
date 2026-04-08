@@ -1,4 +1,10 @@
+import { Metadata } from "next";
 import { BookMeeting, MyMeetingsList } from "@/components/portal/book-meeting";
+
+export const metadata: Metadata = {
+  title: "Schedule a Meeting",
+  description: "Book time with your Relationship Manager at a time that works for you.",
+};
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function PortalSchedulePage() {

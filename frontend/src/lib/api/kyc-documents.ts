@@ -16,7 +16,6 @@ export async function uploadKYCDocument(
   const response = await api.post<KYCDocumentItem>(
     `/api/v1/kyc/clients/${clientId}/kyc-documents`,
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return response.data;
 }

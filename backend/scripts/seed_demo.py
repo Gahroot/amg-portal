@@ -10,6 +10,8 @@ from sqlalchemy import select
 
 from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
+from app.models.client_profile import ClientProfile
+from app.models.partner import PartnerProfile
 from app.models.user import User
 
 DEMO_PASSWORD = "Demo1234!"
@@ -48,6 +50,10 @@ DEMO_USERS = [
 ]
 
 
+CLIENT_EMAIL = "client@anchormillgroup.com"
+PARTNER_EMAIL = "partner@anchormillgroup.com"
+
+
 async def seed_demo() -> None:
     hashed = hash_password(DEMO_PASSWORD)
 
@@ -74,6 +80,52 @@ async def seed_demo() -> None:
             created.append(data["email"])
 
         await db.commit()
+
+        # Ensure the demo client user has a ClientProfile so the portal dashboard works
+        client_user_result = await db.execute(select(User).where(User.email == CLIENT_EMAIL))
+        client_user = client_user_result.scalar_one_or_none()
+        if client_user:
+            existing_profile = await db.execute(
+                select(ClientProfile).where(ClientProfile.user_id == client_user.id)
+            )
+            if not existing_profile.scalar_one_or_none():
+                profile = ClientProfile(
+                    legal_name=client_user.full_name,
+                    display_name=client_user.full_name,
+                    primary_email=client_user.email,
+                    user_id=client_user.id,
+                    created_by=client_user.id,
+                    portal_access_enabled=True,
+                    compliance_status="approved",
+                    approval_status="approved",
+                )
+                db.add(profile)
+                await db.commit()
+                print(f"\nCreated ClientProfile for {CLIENT_EMAIL}")
+
+        # Ensure the demo partner user has a PartnerProfile so the partner portal works
+        partner_user_result = await db.execute(select(User).where(User.email == PARTNER_EMAIL))
+        partner_user = partner_user_result.scalar_one_or_none()
+        if partner_user:
+            existing_partner = await db.execute(
+                select(PartnerProfile).where(PartnerProfile.user_id == partner_user.id)
+            )
+            if not existing_partner.scalar_one_or_none():
+                partner_profile = PartnerProfile(
+                    firm_name="Rossi Advisory",
+                    contact_name=partner_user.full_name,
+                    contact_email=partner_user.email,
+                    user_id=partner_user.id,
+                    created_by=partner_user.id,
+                    status="active",
+                    availability_status="available",
+                    capabilities=["Concierge", "Travel", "Lifestyle Management"],
+                    geographies=["Europe", "Global"],
+                    compliance_verified=True,
+                )
+                db.add(partner_profile)
+                await db.commit()
+                print(f"\nCreated PartnerProfile for {PARTNER_EMAIL}")
 
     print(f"\nDemo password: {DEMO_PASSWORD}\n")
     if created:

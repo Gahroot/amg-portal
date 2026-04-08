@@ -396,7 +396,7 @@ async def _send_welcome_email_with_certificate(
     try:
         if profile.compliance_certificate_path:
             # Fetch PDF bytes from MinIO
-            pdf_bytes = _fetch_pdf_from_storage(profile.compliance_certificate_path)
+            pdf_bytes = await _fetch_pdf_from_storage(profile.compliance_certificate_path)
             if pdf_bytes:
                 subject = (
                     "Welcome to AMG Portal — "
@@ -437,18 +437,12 @@ async def _send_welcome_email_with_certificate(
         )
 
 
-def _fetch_pdf_from_storage(object_path: str) -> bytes | None:
+async def _fetch_pdf_from_storage(object_path: str) -> bytes | None:
     """Retrieve raw PDF bytes from MinIO.  Returns ``None`` on any error."""
     try:
-        from app.services.storage import StorageService, storage_service
+        from app.services.storage import storage_service
 
-        svc: StorageService = storage_service
-        response = svc.client.get_object(svc.bucket, object_path)
-        try:
-            return bytes(response.read())
-        finally:
-            response.close()
-            response.release_conn()
+        return await storage_service.download_file(object_path)
     except Exception:
         logger.exception("Failed to fetch PDF from storage path %s", object_path)
         return None

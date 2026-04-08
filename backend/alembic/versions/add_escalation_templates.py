@@ -1,7 +1,7 @@
 """add_escalation_templates
 
 Revision ID: add_escalation_templates
-Revises: add_custom_reports, a1b2c3d4e5f6, add_shared_reports
+Revises: add_custom_reports, add_shared_reports
 Create Date: 2026-03-23 00:00:00.000000
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "add_escalation_templates"
-down_revision: tuple[str, ...] = ("add_custom_reports", "a1b2c3d4e5f6", "add_shared_reports")
+down_revision: tuple[str, ...] = ("add_custom_reports", "add_shared_reports")
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -163,7 +163,7 @@ def upgrade() -> None:
                      created_at, updated_at)
                 VALUES
                     (gen_random_uuid(), :name, :category, :severity, :description_template,
-                     :suggested_actions::jsonb, :notification_template, true, true,
+                     CAST(:suggested_actions AS jsonb), :notification_template, true, true,
                      now(), now())
                 """
             ),

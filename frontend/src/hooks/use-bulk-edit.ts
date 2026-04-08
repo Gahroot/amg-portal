@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useMemo, useCallback, type Dispatch, type SetStateAction } from "react";
 import type { RowSelectionState } from "@tanstack/react-table";
 import type { BulkEditResult } from "@/types/bulk-edit";
 
@@ -17,7 +17,7 @@ interface UseBulkEditReturn<TRecord> {
   /** Current row selection state */
   selection: RowSelectionState;
   /** Set selection state */
-  setSelection: React.Dispatch<React.SetStateAction<RowSelectionState>>;
+  setSelection: Dispatch<SetStateAction<RowSelectionState>>;
   /** Selected records (derived from selection) */
   selectedRecords: TRecord[];
   /** IDs of selected records */
@@ -89,15 +89,15 @@ export function useBulkEdit<TRecord>({
   records,
   onSuccess,
 }: UseBulkEditOptions<TRecord>): UseBulkEditReturn<TRecord> {
-  const [selection, setSelection] = React.useState<RowSelectionState>({});
-  const [isDialogOpen, setDialogOpen] = React.useState(false);
+  const [selection, setSelection] = useState<RowSelectionState>({});
+  const [isDialogOpen, setDialogOpen] = useState(false);
 
   // Derive selected records from selection state
-  const selectedRecords = React.useMemo(() => {
+  const selectedRecords = useMemo(() => {
     return records.filter((record) => selection[getRowId(record)]);
   }, [records, selection, getRowId]);
 
-  const selectedIds = React.useMemo(() => {
+  const selectedIds = useMemo(() => {
     return selectedRecords.map(getRowId);
   }, [selectedRecords, getRowId]);
 
@@ -106,11 +106,11 @@ export function useBulkEdit<TRecord>({
   const isAllSelected =
     records.length > 0 && selectedCount === records.length;
 
-  const clearSelection = React.useCallback(() => {
+  const clearSelection = useCallback(() => {
     setSelection({});
   }, []);
 
-  const selectAll = React.useCallback(() => {
+  const selectAll = useCallback(() => {
     const newSelection: RowSelectionState = {};
     records.forEach((record) => {
       newSelection[getRowId(record)] = true;
@@ -118,7 +118,7 @@ export function useBulkEdit<TRecord>({
     setSelection(newSelection);
   }, [records, getRowId]);
 
-  const toggleRow = React.useCallback((id: string) => {
+  const toggleRow = useCallback((id: string) => {
     setSelection((prev) => {
       const newSelection = { ...prev };
       if (newSelection[id]) {
@@ -130,17 +130,17 @@ export function useBulkEdit<TRecord>({
     });
   }, []);
 
-  const openDialog = React.useCallback(() => {
+  const openDialog = useCallback(() => {
     if (selectedCount > 0) {
       setDialogOpen(true);
     }
   }, [selectedCount]);
 
-  const closeDialog = React.useCallback(() => {
+  const closeDialog = useCallback(() => {
     setDialogOpen(false);
   }, []);
 
-  const handleComplete = React.useCallback(
+  const handleComplete = useCallback(
     (result: BulkEditResult) => {
       clearSelection();
       closeDialog();

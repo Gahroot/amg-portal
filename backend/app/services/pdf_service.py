@@ -1,11 +1,11 @@
 """PDF report generation using WeasyPrint + Jinja2."""
 
-import io
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from fastapi.concurrency import run_in_threadpool
 from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger(__name__)
@@ -37,41 +37,41 @@ class PDFService:
         template = self.env.get_template(template_name)
         return template.render(**data)
 
-    def render_html_to_pdf(self, html: str) -> bytes:
+    async def render_html_to_pdf(self, html: str) -> bytes:
         """Convert HTML string to PDF bytes using WeasyPrint."""
         from weasyprint import HTML
 
-        return HTML(string=html).write_pdf()  # type: ignore[no-any-return]
+        return await run_in_threadpool(lambda: HTML(string=html).write_pdf())
 
-    def generate_portfolio_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_portfolio_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate portfolio overview PDF."""
         html = self.render_html("reports/portfolio_overview.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_program_status_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_program_status_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate program status PDF."""
         html = self.render_html("reports/program_status.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_completion_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_completion_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate completion report PDF."""
         html = self.render_html("reports/completion_report.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_annual_review_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_annual_review_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate annual review PDF."""
         html = self.render_html("reports/annual_review.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_brief_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_brief_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate a partner assignment brief PDF."""
         html = self.render_html("brief.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_custom_report_pdf(self, data: dict[str, Any]) -> bytes:
+    async def generate_custom_report_pdf(self, data: dict[str, Any]) -> bytes:
         """Generate a custom report PDF."""
         html = self.render_html("reports/custom_report.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
     async def store_report_pdf(
         self,
@@ -85,14 +85,7 @@ class PDFService:
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         object_name = f"reports/{report_type}/{entity_id}_{timestamp}.pdf"
 
-        file_data = io.BytesIO(pdf_bytes)
-        storage_service.client.put_object(
-            storage_service.bucket,
-            object_name,
-            file_data,
-            len(pdf_bytes),
-            content_type="application/pdf",
-        )
+        await storage_service.upload_bytes(object_name, pdf_bytes, "application/pdf")
         return object_name
 
 

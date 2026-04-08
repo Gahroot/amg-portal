@@ -59,11 +59,11 @@
   --radius: 0.5rem;
 
   /* Warm cream backgrounds matching AMG brand */
-  --background: #e8e4dc;
+  --background: #f5f3ef;
   --foreground: #1a1714;
-  --card: #f0ece4;
+  --card: #ffffff;
   --card-foreground: #1a1714;
-  --popover: #f0ece4;
+  --popover: #ffffff;
   --popover-foreground: #1a1714;
 
   /* Gold/brown primary */
@@ -71,9 +71,9 @@
   --primary-foreground: #f0ece4;
 
   /* Secondary colors */
-  --secondary: #ddd8ce;
+  --secondary: #f0ede8;
   --secondary-foreground: #1a1714;
-  --muted: #d9d4ca;
+  --muted: #eae7e1;
   --muted-foreground: #6a6558;
 
   /* Accent */
@@ -82,8 +82,8 @@
 
   /* Destructive and borders */
   --destructive: #dc2626;
-  --border: rgba(139, 125, 94, 0.2);
-  --input: rgba(139, 125, 94, 0.25);
+  --border: rgba(139, 125, 94, 0.12);
+  --input: rgba(139, 125, 94, 0.18);
   --ring: #8b7d5e;
 
   /* Charts */

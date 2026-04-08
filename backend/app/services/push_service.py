@@ -55,6 +55,10 @@ def generate_deep_link(entity_type: str | None, entity_id: str | uuid.UUID | Non
 class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
     """Service for Expo push notification operations."""
 
+    # Expose the module-level helper as an instance method so callers can use
+    # ``push_service.generate_deep_link(...)`` uniformly.
+    generate_deep_link = staticmethod(generate_deep_link)
+
     async def register_token(
         self,
         db: AsyncSession,

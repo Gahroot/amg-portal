@@ -3,7 +3,7 @@
 import io
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -69,7 +69,7 @@ async def export_table_pdf(
         page_size=request.page_size,
     )
 
-    pdf_bytes = pdf_export_service.generate_table_pdf(
+    pdf_bytes = await pdf_export_service.generate_table_pdf(
         title=request.title,
         headers=request.headers,
         rows=request.rows,
@@ -185,7 +185,7 @@ async def export_program_summary_pdf(
 
     options = PDFExportOptions(orientation=orientation)
 
-    pdf_bytes = pdf_export_service.generate_program_summary_pdf(
+    pdf_bytes = await pdf_export_service.generate_program_summary_pdf(
         program_data=program_data,
         options=options,
         user_name=current_user.full_name,
@@ -319,7 +319,7 @@ async def export_client_profile_pdf(
 
     options = PDFExportOptions(orientation=orientation)
 
-    pdf_bytes = pdf_export_service.generate_client_profile_pdf(
+    pdf_bytes = await pdf_export_service.generate_client_profile_pdf(
         client_data=client_data,
         options=options,
         user_name=current_user.full_name,
@@ -343,7 +343,7 @@ async def export_client_profile_pdf(
 @router.get("/financial")
 async def export_financial_report_pdf(
     db: DB,
-    current_user: CurrentUser = Depends(require_rm_or_above),
+    current_user: Annotated[User, Depends(require_rm_or_above)],
     orientation: str = Query(default="landscape", pattern="^(portrait|landscape)$"),
     year: int | None = Query(default=None, description="Filter by year"),
     program_id: uuid.UUID | None = Query(default=None, description="Filter by program"),
@@ -409,7 +409,7 @@ async def export_financial_report_pdf(
 
     options = PDFExportOptions(orientation=orientation)
 
-    pdf_bytes = pdf_export_service.generate_financial_report_pdf(
+    pdf_bytes = await pdf_export_service.generate_financial_report_pdf(
         financial_data=financial_data,
         options=options,
         user_name=current_user.full_name,
@@ -477,7 +477,7 @@ async def export_partner_performance_pdf(
 
     options = PDFExportOptions(orientation=orientation)
 
-    pdf_bytes = pdf_export_service.generate_table_pdf(
+    pdf_bytes = await pdf_export_service.generate_table_pdf(
         title=partner_data["title"],
         headers=["Metric", "Value"],
         rows=[

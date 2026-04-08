@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,6 +56,16 @@ class TaxDocumentCreate(BaseModel):
 class TaxDocumentStatusUpdate(BaseModel):
     status: str = Field(..., description="draft | published | superseded")
     notes: str | None = Field(None, max_length=2000)
+
+
+class TaxDocumentDownloadResponse(BaseModel):
+    """Presigned download URL response for a tax document."""
+
+    download_url: str
+    document_id: uuid.UUID
+    document_type: str
+    tax_year: int
+    expires_in_seconds: int
 
 
 VALID_DOCUMENT_TYPES = {"1099-NEC", "1099-MISC", "annual_summary"}
@@ -273,7 +282,7 @@ async def get_my_tax_documents(
 
 @router.get(
     "/my/{document_id}/download",
-    response_model=dict[str, Any],
+    response_model=TaxDocumentDownloadResponse,
 )
 async def download_my_tax_document(
     document_id: uuid.UUID,
@@ -282,7 +291,7 @@ async def download_my_tax_document(
     partner: CurrentPartner,
     _rls: RLSContext,
     request: Request,
-) -> dict[str, Any]:
+) -> TaxDocumentDownloadResponse:
     """Get a presigned download URL for a tax document. Access is audit-logged."""
     result = await db.execute(
         select(TaxDocument).where(
@@ -303,8 +312,9 @@ async def download_my_tax_document(
     download_url = storage_service.get_presigned_url(doc.file_path, expires=timedelta(hours=1))
 
     # Write immutable access log
-    client_host = request.client.host if request.client else None
-    ip_address = request.headers.get("X-Forwarded-For", client_host)
+    from app.core.ip_utils import get_client_ip
+
+    ip_address = get_client_ip(request)
     user_agent = request.headers.get("User-Agent")
     access_log = TaxDocumentAccessLog(
         tax_document_id=doc.id,
@@ -316,10 +326,10 @@ async def download_my_tax_document(
     db.add(access_log)
     await db.commit()
 
-    return {
-        "download_url": download_url,
-        "document_id": str(doc.id),
-        "document_type": doc.document_type,
-        "tax_year": doc.tax_year,
-        "expires_in_seconds": 3600,
-    }
+    return TaxDocumentDownloadResponse(
+        download_url=download_url,
+        document_id=doc.id,
+        document_type=doc.document_type,
+        tax_year=doc.tax_year,
+        expires_in_seconds=3600,
+    )

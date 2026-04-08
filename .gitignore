@@ -12,6 +12,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# EZ Coder
+.ezcoder/errors.log
+.ezcoder/errors.log.old
+
 # Design docs
 AMG Portal Design.docx
 AMG Portal Design.docx.md
+.vercel

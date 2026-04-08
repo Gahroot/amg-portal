@@ -1,8 +1,10 @@
 import logging
+import logging.handlers
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,10 +16,48 @@ from app.core.exceptions import (
     AppException,
     app_exception_handler,
     generic_exception_handler,
+    http_exception_handler,
     validation_exception_handler,
 )
 from app.middleware.audit import AuditContextMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
+
+
+def _configure_logging() -> None:
+    """Configure structured logging for the application.
+
+    - Always logs to stdout (captured by process manager / Docker).
+    - Optionally writes a rotating file log when LOG_FILE env var is set
+      (e.g. LOG_FILE=backend/app.log).  File rotates at 10 MB, keeps 5 backups.
+    - Log level is controlled by LOG_LEVEL env var (default: INFO).
+    """
+    log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+    log_level = getattr(logging, log_level_name, logging.INFO)
+
+    fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    datefmt = "%Y-%m-%dT%H:%M:%S"
+
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+
+    log_file = os.environ.get("LOG_FILE", "")
+    if log_file:
+        os.makedirs(os.path.dirname(log_file) if os.path.dirname(log_file) else ".", exist_ok=True)
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10 MB
+            backupCount=5,
+            encoding="utf-8",
+        )
+        handlers.append(file_handler)
+
+    logging.basicConfig(level=log_level, format=fmt, datefmt=datefmt, handlers=handlers, force=True)
+
+    # Quieten noisy third-party loggers
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
+
+_configure_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +94,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             exc_info=True,
         )
 
+    try:
+        from app.services.meeting_scheduler_service import seed_meeting_types
+
+        async with AsyncSessionLocal() as db:
+            await seed_meeting_types(db)
+    except Exception:
+        logger.warning(
+            "Failed to seed meeting types — DB may be unavailable or migrations pending",
+            exc_info=True,
+        )
+
     scheduler = start_scheduler()
     yield
     stop_scheduler(scheduler)
@@ -69,6 +120,7 @@ app = FastAPI(
 
 # Register exception handlers for consistent, secure error responses
 app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, generic_exception_handler)
 

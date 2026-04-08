@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateReadStatus, batchUpdateReadStatus, getReadStatus } from "@/lib/api/preferences";
 import { useDeviceId } from "@/stores/preferences-store";
@@ -187,26 +187,32 @@ export function useReadStatusTracker<T extends { id: string }>(
   const deviceId = useDeviceId();
   const queryClient = useQueryClient();
 
+  // Stable, serialisable representation of item IDs — only changes when the
+  // actual set of IDs changes, not when the caller passes a new array reference
+  // on every render.  Both useQuery and useEffect depend on this instead of
+  // `items` directly to avoid infinite re-render loops.
+  const itemIds = useMemo(() => items.map((i) => i.id), [items]);
+
   // Fetch all read statuses individually
   // Note: For large lists, consider a bulk endpoint
   const { isLoading } = useQuery({
-    queryKey: [`${entityType}-read-statuses`, items.map((i) => i.id)],
+    queryKey: [`${entityType}-read-statuses`, itemIds],
     queryFn: async () => {
       const results: Record<string, boolean> = {};
       await Promise.all(
-        items.map(async (item) => {
+        itemIds.map(async (id) => {
           try {
-            const status = await getReadStatus(entityType, item.id);
-            results[item.id] = status.is_read;
+            const status = await getReadStatus(entityType, id);
+            results[id] = status.is_read;
           } catch {
             // If not found, assume unread
-            results[item.id] = false;
+            results[id] = false;
           }
         })
       );
       return results;
     },
-    enabled: items.length > 0,
+    enabled: itemIds.length > 0,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -215,13 +221,13 @@ export function useReadStatusTracker<T extends { id: string }>(
     const fetchStatuses = async () => {
       const results: Record<string, boolean> = {};
       await Promise.all(
-        items.map(async (item) => {
+        itemIds.map(async (id) => {
           try {
             const cached = queryClient.getQueryData<ReadStatusResponse>(
-              readStatusKeys.entity(entityType, item.id)
+              readStatusKeys.entity(entityType, id)
             );
             if (cached) {
-              results[item.id] = cached.is_read;
+              results[id] = cached.is_read;
             }
           } catch {
             // Ignore cache errors
@@ -233,7 +239,7 @@ export function useReadStatusTracker<T extends { id: string }>(
       }
     };
     fetchStatuses();
-  }, [entityType, items, queryClient]);
+  }, [entityType, itemIds, queryClient]);
 
   /**
    * Mark a single item as read

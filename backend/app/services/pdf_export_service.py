@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi.concurrency import run_in_threadpool
 from jinja2 import Environment, FileSystemLoader
 
 from app.services.pdf_service import TEMPLATE_DIR
@@ -57,11 +58,11 @@ class PDFExportService:
         template = self.env.get_template(template_name)
         return template.render(**data)
 
-    def render_html_to_pdf(self, html: str) -> bytes:
+    async def render_html_to_pdf(self, html: str) -> bytes:
         """Convert HTML string to PDF bytes using WeasyPrint."""
         from weasyprint import HTML
 
-        return HTML(string=html).write_pdf()  # type: ignore[no-any-return]
+        return await run_in_threadpool(lambda: HTML(string=html).write_pdf())
 
     def _build_export_data(
         self,
@@ -94,7 +95,7 @@ class PDFExportService:
             "page_size": options.page_size,
         }
 
-    def generate_table_pdf(
+    async def generate_table_pdf(
         self,
         title: str,
         headers: list[str],
@@ -119,9 +120,9 @@ class PDFExportService:
         )
 
         html = self.render_html("data_table.html", data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_program_summary_pdf(
+    async def generate_program_summary_pdf(
         self,
         program_data: dict[str, Any],
         options: PDFExportOptions | None = None,
@@ -137,9 +138,9 @@ class PDFExportService:
         program_data.setdefault("company_subtitle", options.company_subtitle)
 
         html = self.render_html("program_summary.html", program_data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_client_profile_pdf(
+    async def generate_client_profile_pdf(
         self,
         client_data: dict[str, Any],
         options: PDFExportOptions | None = None,
@@ -155,9 +156,9 @@ class PDFExportService:
         client_data.setdefault("company_subtitle", options.company_subtitle)
 
         html = self.render_html("client_profile.html", client_data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_financial_report_pdf(
+    async def generate_financial_report_pdf(
         self,
         financial_data: dict[str, Any],
         options: PDFExportOptions | None = None,
@@ -173,9 +174,9 @@ class PDFExportService:
         financial_data.setdefault("company_subtitle", options.company_subtitle)
 
         html = self.render_html("financial_report.html", financial_data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
-    def generate_custom_report_pdf(
+    async def generate_custom_report_pdf(
         self,
         report_data: dict[str, Any],
         template_name: str = "custom_report.html",
@@ -192,7 +193,7 @@ class PDFExportService:
         report_data.setdefault("company_subtitle", options.company_subtitle)
 
         html = self.render_html(template_name, report_data)
-        return self.render_html_to_pdf(html)
+        return await self.render_html_to_pdf(html)
 
 
 # Singleton instance

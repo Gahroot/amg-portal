@@ -42,9 +42,7 @@ export async function uploadDocument(
   formData.append("entity_id", entityId);
   if (category) formData.append("category", category);
   if (description) formData.append("description", description);
-  const response = await api.post<DocumentItem>("/api/v1/documents/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await api.post<DocumentItem>("/api/v1/documents/", formData);
   return response.data;
 }
 
@@ -64,7 +62,6 @@ export async function uploadDocumentWithProgress(
   if (description) formData.append("description", description);
 
   const response = await api.post<DocumentItem>("/api/v1/documents/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (e) => {
       if (e.total) onProgress(Math.round((e.loaded * 100) / e.total));
     },
@@ -283,7 +280,6 @@ export async function fulfillMyDocumentRequest(
   const response = await api.post<DocumentRequestItem>(
     `/api/v1/portal/document-requests/${requestId}/fulfill`,
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return response.data;
 }

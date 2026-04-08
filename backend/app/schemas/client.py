@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -37,3 +37,16 @@ class ClientResponse(BaseModel):
 class ClientListResponse(BaseModel):
     clients: list[ClientResponse]
     total: int
+
+
+class UpcomingDateItemResponse(BaseModel):
+    """A single upcoming birthday or important date for a client."""
+
+    client_id: UUID
+    client_name: str
+    rm_id: UUID
+    date_type: str
+    label: str
+    days_until: int
+    occurs_on: date
+    years_since: int | None

@@ -24,20 +24,21 @@ const ALLOWED_ROLES = [
 export default function PlaybookPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = React.use(params);
   const { user } = useAuth();
   const router = useRouter();
 
   const escalationQuery = useQuery({
-    queryKey: ["escalations", params.id],
-    queryFn: () => getEscalation(params.id),
+    queryKey: ["escalations", id],
+    queryFn: () => getEscalation(id),
     enabled: !!user && ALLOWED_ROLES.includes(user.role),
   });
 
   const playbookQuery = useQuery({
-    queryKey: ["escalation-playbook", params.id],
-    queryFn: () => getEscalationPlaybook(params.id),
+    queryKey: ["escalation-playbook", id],
+    queryFn: () => getEscalationPlaybook(id),
     enabled:
       !!user &&
       ALLOWED_ROLES.includes(user.role) &&
@@ -115,7 +116,7 @@ export default function PlaybookPage({
               className="mt-6"
               asChild
             >
-              <Link href={`/escalations/${params.id}`}>
+              <Link href={`/escalations/${id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Escalation
               </Link>
@@ -145,7 +146,7 @@ export default function PlaybookPage({
             className="mt-1"
             asChild
           >
-            <Link href={`/escalations/${params.id}`}>
+            <Link href={`/escalations/${id}`}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -165,7 +166,7 @@ export default function PlaybookPage({
 
         {/* Playbook viewer */}
         <PlaybookViewer
-          escalationId={params.id}
+          escalationId={id}
           data={playbookQuery.data}
         />
       </div>

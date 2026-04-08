@@ -51,7 +51,7 @@ export default function PartnerDocumentsPage() {
       for (const assignment of assignmentsData.assignments) {
         try {
           const response = await fetch("/api/v1/partner-portal/assignments/" + assignment.id + "/documents", {
-            headers: { Authorization: "Bearer " + localStorage.getItem("access_token") },
+            credentials: "include",
           });
           if (response.ok) {
             const data = await response.json();

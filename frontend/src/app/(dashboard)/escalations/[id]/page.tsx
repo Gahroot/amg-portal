@@ -45,8 +45,9 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
 export default function EscalationDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = React.use(params);
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -56,8 +57,8 @@ export default function EscalationDetailPage({
   const [statusUpdate, setStatusUpdate] = React.useState<string>("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["escalations", params.id],
-    queryFn: () => getEscalation(params.id),
+    queryKey: ["escalations", id],
+    queryFn: () => getEscalation(id),
     enabled: !!user && ALLOWED_ROLES.includes(user.role),
   });
 
@@ -67,9 +68,9 @@ export default function EscalationDetailPage({
 
   const statusMutation = useMutation({
     mutationFn: (newStatus: string) =>
-      updateEscalation(params.id, { status: newStatus as "acknowledged" | "investigating" | "resolved" | "closed" }),
+      updateEscalation(id, { status: newStatus as "acknowledged" | "investigating" | "resolved" | "closed" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["escalations", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["escalations", id] });
       queryClient.invalidateQueries({ queryKey: ["escalations"] });
       toast.success("Status updated");
       setStatusUpdate("");
@@ -79,7 +80,7 @@ export default function EscalationDetailPage({
 
   const handleResolve = (notes: string, status: "resolved" | "closed") => {
     resolveMutation.mutate(
-      { id: params.id, notes },
+      { id: id, notes },
       {
         onSuccess: () => {
           toast.success("Escalation resolved");
@@ -91,7 +92,7 @@ export default function EscalationDetailPage({
   };
 
   const handleAcknowledge = () => {
-    acknowledgeMutation.mutate(params.id, {
+    acknowledgeMutation.mutate(id, {
       onSuccess: () => {
         toast.success("Escalation acknowledged");
         setAcknowledgeOpen(false);
@@ -190,7 +191,7 @@ export default function EscalationDetailPage({
             )}
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/escalations/${params.id}/playbook`}>
+            <Link href={`/escalations/${id}/playbook`}>
               <BookOpen className="mr-2 h-4 w-4" />
               Resolution Playbook
             </Link>
@@ -317,7 +318,7 @@ export default function EscalationDetailPage({
                     onClick={() => {
                       const newOwner = prompt("Enter new owner ID (UUID):");
                       if (newOwner) {
-                        reassignMutation.mutate({ id: params.id, newOwnerId: newOwner });
+                        reassignMutation.mutate({ id: id, newOwnerId: newOwner });
                       }
                     }}
                     disabled={reassignMutation.isPending}

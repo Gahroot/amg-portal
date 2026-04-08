@@ -15,8 +15,7 @@ class ConnectionManager:
         self.active_connections: dict[uuid.UUID, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: uuid.UUID) -> None:
-        """Connect a WebSocket for a user."""
-        await websocket.accept()
+        """Register an already-accepted WebSocket for a user."""
         if user_id not in self.active_connections:
             self.active_connections[user_id] = set()
         self.active_connections[user_id].add(websocket)

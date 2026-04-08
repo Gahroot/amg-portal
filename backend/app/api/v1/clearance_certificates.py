@@ -584,10 +584,7 @@ async def get_certificate_pdf(
         )
     else:
         # Download from storage
-        response = storage_service.client.get_object(
-            storage_service.bucket, cert.pdf_path
-        )
-        pdf_bytes = response.read()
+        pdf_bytes = await storage_service.download_file(cert.pdf_path)
 
     filename = f"certificate_{cert.certificate_number}.pdf"
     return Response(
@@ -618,7 +615,7 @@ async def delete_certificate(
     # Delete PDF from storage if exists
     if cert.pdf_path:
         with contextlib.suppress(Exception):
-            storage_service.delete_file(cert.pdf_path)
+            await storage_service.delete_file(cert.pdf_path)
 
     await db.delete(cert)
     await db.commit()

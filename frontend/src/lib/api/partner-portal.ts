@@ -211,7 +211,6 @@ export async function bulkSubmitDeliverables(
   const response = await api.post<BulkSubmitResponse>(
     "/api/v1/partner-portal/deliverables/bulk-submit",
     formData,
-    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return response.data;
 }

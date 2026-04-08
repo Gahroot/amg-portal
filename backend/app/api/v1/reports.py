@@ -4,7 +4,7 @@ import contextlib
 import csv
 import io
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
@@ -68,7 +68,7 @@ async def get_client_id_from_user(db: DB, current_user: CurrentUser) -> uuid.UUI
     )
     profile = profile_result.scalar_one_or_none()
     if not profile:
-        raise ValueError("Client profile not found for this user")
+        raise NotFoundException("Client profile not found for this user")
 
     # Step 2: find the Client record that corresponds to this profile
     client_query = select(Client).where(Client.name == profile.legal_name)
@@ -77,7 +77,7 @@ async def get_client_id_from_user(db: DB, current_user: CurrentUser) -> uuid.UUI
     client_result = await db.execute(client_query.limit(1))
     client = client_result.scalar_one_or_none()
     if not client:
-        raise ValueError("Client record not found for this user")
+        raise NotFoundException("Client record not found for this user")
 
     return client.id
 
@@ -557,7 +557,7 @@ async def export_portfolio_report_pdf(
 
         raise NotFoundException("Client not found")
 
-    pdf_bytes = pdf_service.generate_portfolio_pdf(report)
+    pdf_bytes = await pdf_service.generate_portfolio_pdf(report)
     filename = f"portfolio_overview_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
@@ -592,7 +592,7 @@ async def export_program_status_report_pdf(
 
         raise NotFoundException("Program not found")
 
-    pdf_bytes = pdf_service.generate_program_status_pdf(report)
+    pdf_bytes = await pdf_service.generate_program_status_pdf(report)
     safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
     filename = f"program_status_{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
@@ -631,7 +631,7 @@ async def export_completion_report_pdf(
 
         raise NotFoundException("Program not found")
 
-    pdf_bytes = pdf_service.generate_completion_pdf(report)
+    pdf_bytes = await pdf_service.generate_completion_pdf(report)
     safe_title = report["program_title"].replace(" ", "_").replace("/", "")[:30]
     filename = f"completion_{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
@@ -656,7 +656,7 @@ async def export_annual_review_pdf(
 
         raise NotFoundException("Client not found")
 
-    pdf_bytes = pdf_service.generate_annual_review_pdf(report)
+    pdf_bytes = await pdf_service.generate_annual_review_pdf(report)
     filename = f"annual_review_{year}_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
@@ -889,7 +889,7 @@ async def execute_report_schedule(
     # Email the report to recipients in background (best-effort)
     report_data = await _get_report_data(schedule, db)
     if report_data:
-        attachment_bytes = _generate_attachment_bytes(schedule, report_data)
+        attachment_bytes = await _generate_attachment_bytes(schedule, report_data)
         ext = schedule.format or "pdf"
         content_type = "application/pdf" if ext == "pdf" else "text/csv"
         subject = (
@@ -989,13 +989,26 @@ async def get_escalation_log_report_endpoint(
 async def get_compliance_audit_report_endpoint(
     db: DB,
     current_user: CurrentUser,
+    start_date: date | None = Query(
+        None, description="Filter records created on or after this date (YYYY-MM-DD)"
+    ),
+    end_date: date | None = Query(
+        None, description="Filter records created on or before this date (YYYY-MM-DD)"
+    ),
 ) -> dict[str, Any]:
     """
     Compliance audit report covering KYC status, access anomalies, and user accounts.
 
     Accessible by finance_compliance and managing_director roles only.
+
+    Optional ``start_date`` / ``end_date`` query parameters restrict all record
+    fetches to rows created within the given date range.
     """
-    report = await report_service.get_compliance_audit_report(db)
+    report = await report_service.get_compliance_audit_report(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+    )
     return report
 
 

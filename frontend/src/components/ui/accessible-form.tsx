@@ -30,93 +30,84 @@ export interface AccessibleInputProps
  *   required
  * />
  */
-export const AccessibleInput = React.forwardRef<
-  HTMLInputElement,
-  AccessibleInputProps
->(
-  (
-    {
-      label,
-      hideLabel = false,
-      error,
-      helperText,
-      required,
-      className,
-      id,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const inputId = id || generatedId;
-    const errorId = `${inputId}-error`;
-    const helperId = `${inputId}-helper`;
+export function AccessibleInput({
+  ref,
+  label,
+  hideLabel = false,
+  error,
+  helperText,
+  required,
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: AccessibleInputProps & { ref?: React.Ref<HTMLInputElement> }) {
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
 
-    // Build aria-describedby
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  // Build aria-describedby
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("grid gap-1.5", className)}>
-        <label
-          htmlFor={inputId}
-          className={cn(
-            "text-sm font-medium leading-none",
-            hideLabel && "sr-only",
-            error && "text-destructive"
-          )}
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <label
+        htmlFor={inputId}
+        className={cn(
+          "text-sm font-medium leading-none",
+          hideLabel && "sr-only",
+          error && "text-destructive"
+        )}
+      >
+        {label}
+        {required && (
+          <span className="text-destructive ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      <input
+        ref={ref}
+        id={inputId}
+        aria-invalid={!!error}
+        aria-required={required}
+        aria-describedby={describedBy || undefined}
+        required={required}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium",
+          "placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive focus-visible:ring-destructive"
+        )}
+        {...props}
+      />
+      {error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-sm text-destructive"
+          aria-live="polite"
         >
-          {label}
-          {required && (
-            <span className="text-destructive ml-1" aria-hidden="true">
-              *
-            </span>
-          )}
-        </label>
-        <input
-          ref={ref}
-          id={inputId}
-          aria-invalid={!!error}
-          aria-required={required}
-          aria-describedby={describedBy || undefined}
-          required={required}
-          className={cn(
-            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium",
-            "placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus-visible:ring-destructive"
-          )}
-          {...props}
-        />
-        {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={helperId} className="text-sm text-muted-foreground">
-            {helperText}
-          </p>
-        )}
-      </div>
-    );
-  }
-);
-
-AccessibleInput.displayName = "AccessibleInput";
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={helperId} className="text-sm text-muted-foreground">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export interface AccessibleTextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -147,115 +138,106 @@ export interface AccessibleTextareaProps
  *   showCount
  * />
  */
-export const AccessibleTextarea = React.forwardRef<
-  HTMLTextAreaElement,
-  AccessibleTextareaProps
->(
-  (
-    {
-      label,
-      hideLabel = false,
-      error,
-      helperText,
-      required,
-      maxLength,
-      showCount,
-      className,
-      id,
-      value,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const textareaId = id || generatedId;
-    const errorId = `${textareaId}-error`;
-    const helperId = `${textareaId}-helper`;
-    const countId = `${textareaId}-count`;
+export function AccessibleTextarea({
+  ref,
+  label,
+  hideLabel = false,
+  error,
+  helperText,
+  required,
+  maxLength,
+  showCount,
+  className,
+  id,
+  value,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: AccessibleTextareaProps & { ref?: React.Ref<HTMLTextAreaElement> }) {
+  const generatedId = React.useId();
+  const textareaId = id || generatedId;
+  const errorId = `${textareaId}-error`;
+  const helperId = `${textareaId}-helper`;
+  const countId = `${textareaId}-count`;
 
-    const currentLength =
-      typeof value === "string" ? value.length : (typeof props.defaultValue === "string" ? props.defaultValue.length : 0);
+  const currentLength =
+    typeof value === "string" ? value.length : (typeof props.defaultValue === "string" ? props.defaultValue.length : 0);
 
-    // Build aria-describedby
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      showCount ? countId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  // Build aria-describedby
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    showCount ? countId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("grid gap-1.5", className)}>
-        <label
-          htmlFor={textareaId}
-          className={cn(
-            "text-sm font-medium leading-none",
-            hideLabel && "sr-only",
-            error && "text-destructive"
-          )}
-        >
-          {label}
-          {required && (
-            <span className="text-destructive ml-1" aria-hidden="true">
-              *
-            </span>
-          )}
-        </label>
-        <textarea
-          ref={ref}
-          id={textareaId}
-          value={value}
-          maxLength={maxLength}
-          aria-invalid={!!error}
-          aria-required={required}
-          aria-describedby={describedBy || undefined}
-          required={required}
-          className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "ring-offset-background placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus-visible:ring-destructive"
-          )}
-          {...props}
-        />
-        <div className="flex justify-between">
-          <div>
-            {error && (
-              <p
-                id={errorId}
-                role="alert"
-                className="text-sm text-destructive"
-                aria-live="polite"
-              >
-                {error}
-              </p>
-            )}
-            {helperText && !error && (
-              <p id={helperId} className="text-sm text-muted-foreground">
-                {helperText}
-              </p>
-            )}
-          </div>
-          {showCount && maxLength && (
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <label
+        htmlFor={textareaId}
+        className={cn(
+          "text-sm font-medium leading-none",
+          hideLabel && "sr-only",
+          error && "text-destructive"
+        )}
+      >
+        {label}
+        {required && (
+          <span className="text-destructive ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      <textarea
+        ref={ref}
+        id={textareaId}
+        value={value}
+        maxLength={maxLength}
+        aria-invalid={!!error}
+        aria-required={required}
+        aria-describedby={describedBy || undefined}
+        required={required}
+        className={cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive focus-visible:ring-destructive"
+        )}
+        {...props}
+      />
+      <div className="flex justify-between">
+        <div>
+          {error && (
             <p
-              id={countId}
-              className="text-sm text-muted-foreground"
-              aria-live="off"
+              id={errorId}
+              role="alert"
+              className="text-sm text-destructive"
+              aria-live="polite"
             >
-              {currentLength}/{maxLength}
+              {error}
+            </p>
+          )}
+          {helperText && !error && (
+            <p id={helperId} className="text-sm text-muted-foreground">
+              {helperText}
             </p>
           )}
         </div>
+        {showCount && maxLength && (
+          <p
+            id={countId}
+            className="text-sm text-muted-foreground"
+            aria-live="off"
+          >
+            {currentLength}/{maxLength}
+          </p>
+        )}
       </div>
-    );
-  }
-);
-
-AccessibleTextarea.displayName = "AccessibleTextarea";
+    </div>
+  );
+}
 
 export interface AccessibleSelectProps
   extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -286,109 +268,100 @@ export interface AccessibleSelectProps
  *   required
  * />
  */
-export const AccessibleSelect = React.forwardRef<
-  HTMLSelectElement,
-  AccessibleSelectProps
->(
-  (
-    {
-      label,
-      hideLabel = false,
-      error,
-      helperText,
-      required,
-      options,
-      placeholder,
-      className,
-      id,
-      "aria-describedby": ariaDescribedBy,
-      ...props
-    },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const selectId = id || generatedId;
-    const errorId = `${selectId}-error`;
-    const helperId = `${selectId}-helper`;
+export function AccessibleSelect({
+  ref,
+  label,
+  hideLabel = false,
+  error,
+  helperText,
+  required,
+  options,
+  placeholder,
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: AccessibleSelectProps & { ref?: React.Ref<HTMLSelectElement> }) {
+  const generatedId = React.useId();
+  const selectId = id || generatedId;
+  const errorId = `${selectId}-error`;
+  const helperId = `${selectId}-helper`;
 
-    // Build aria-describedby
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  // Build aria-describedby
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("grid gap-1.5", className)}>
-        <label
-          htmlFor={selectId}
-          className={cn(
-            "text-sm font-medium leading-none",
-            hideLabel && "sr-only",
-            error && "text-destructive"
-          )}
-        >
-          {label}
-          {required && (
-            <span className="text-destructive ml-1" aria-hidden="true">
-              *
-            </span>
-          )}
-        </label>
-        <select
-          ref={ref}
-          id={selectId}
-          aria-invalid={!!error}
-          aria-required={required}
-          aria-describedby={describedBy || undefined}
-          required={required}
-          className={cn(
-            "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "ring-offset-background placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus-visible:ring-destructive"
-          )}
-          {...props}
-        >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
-          )}
-          {options.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <p
-            id={errorId}
-            role="alert"
-            className="text-sm text-destructive"
-            aria-live="polite"
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <label
+        htmlFor={selectId}
+        className={cn(
+          "text-sm font-medium leading-none",
+          hideLabel && "sr-only",
+          error && "text-destructive"
+        )}
+      >
+        {label}
+        {required && (
+          <span className="text-destructive ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      <select
+        ref={ref}
+        id={selectId}
+        aria-invalid={!!error}
+        aria-required={required}
+        aria-describedby={describedBy || undefined}
+        required={required}
+        className={cn(
+          "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm",
+          "ring-offset-background placeholder:text-muted-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive focus-visible:ring-destructive"
+        )}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
           >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={helperId} className="text-sm text-muted-foreground">
-            {helperText}
-          </p>
-        )}
-      </div>
-    );
-  }
-);
-
-AccessibleSelect.displayName = "AccessibleSelect";
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <p
+          id={errorId}
+          role="alert"
+          className="text-sm text-destructive"
+          aria-live="polite"
+        >
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={helperId} className="text-sm text-muted-foreground">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export interface AccessibleCheckboxProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
@@ -410,76 +383,75 @@ export interface AccessibleCheckboxProps
  *   onCheckedChange={setAgreed}
  * />
  */
-export const AccessibleCheckbox = React.forwardRef<
-  HTMLInputElement,
-  AccessibleCheckboxProps
->(
-  (
-    { label, error, helperText, className, id, "aria-describedby": ariaDescribedBy, ...props },
-    ref
-  ) => {
-    const generatedId = React.useId();
-    const checkboxId = id || generatedId;
-    const errorId = `${checkboxId}-error`;
-    const helperId = `${checkboxId}-helper`;
+export function AccessibleCheckbox({
+  ref,
+  label,
+  error,
+  helperText,
+  className,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  ...props
+}: AccessibleCheckboxProps & { ref?: React.Ref<HTMLInputElement> }) {
+  const generatedId = React.useId();
+  const checkboxId = id || generatedId;
+  const errorId = `${checkboxId}-error`;
+  const helperId = `${checkboxId}-helper`;
 
-    // Build aria-describedby
-    const describedBy = [
-      error ? errorId : null,
-      helperText && !error ? helperId : null,
-      ariaDescribedBy,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  // Build aria-describedby
+  const describedBy = [
+    error ? errorId : null,
+    helperText && !error ? helperId : null,
+    ariaDescribedBy,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    return (
-      <div className={cn("flex items-start gap-2", className)}>
-        <input
-          ref={ref}
-          id={checkboxId}
-          type="checkbox"
-          aria-invalid={!!error}
-          aria-describedby={describedBy || undefined}
+  return (
+    <div className={cn("flex items-start gap-2", className)}>
+      <input
+        ref={ref}
+        id={checkboxId}
+        type="checkbox"
+        aria-invalid={!!error}
+        aria-describedby={describedBy || undefined}
+        className={cn(
+          "h-4 w-4 shrink-0 rounded-sm border border-primary",
+          "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-destructive"
+        )}
+        {...props}
+      />
+      <div className="grid gap-1">
+        <label
+          htmlFor={checkboxId}
           className={cn(
-            "h-4 w-4 shrink-0 rounded-sm border border-primary",
-            "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive"
+            "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+            error && "text-destructive"
           )}
-          {...props}
-        />
-        <div className="grid gap-1">
-          <label
-            htmlFor={checkboxId}
-            className={cn(
-              "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-              error && "text-destructive"
-            )}
+        >
+          {label}
+        </label>
+        {error && (
+          <p
+            id={errorId}
+            role="alert"
+            className="text-sm text-destructive"
+            aria-live="polite"
           >
-            {label}
-          </label>
-          {error && (
-            <p
-              id={errorId}
-              role="alert"
-              className="text-sm text-destructive"
-              aria-live="polite"
-            >
-              {error}
-            </p>
-          )}
-          {helperText && !error && (
-            <p id={helperId} className="text-sm text-muted-foreground">
-              {helperText}
-            </p>
-          )}
-        </div>
+            {error}
+          </p>
+        )}
+        {helperText && !error && (
+          <p id={helperId} className="text-sm text-muted-foreground">
+            {helperText}
+          </p>
+        )}
       </div>
-    );
-  }
-);
-
-AccessibleCheckbox.displayName = "AccessibleCheckbox";
+    </div>
+  );
+}
 
 export interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSetElement> {
   /** Legend text (required for accessibility) */
@@ -497,21 +469,24 @@ export interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSet
  *   <AccessibleInput label="Last Name" />
  * </Fieldset>
  */
-export const Fieldset = React.forwardRef<HTMLFieldSetElement, FieldsetProps>(
-  ({ legend, hideLegend = false, className, children, ...props }, ref) => {
-    return (
-      <fieldset
-        ref={ref}
-        className={cn("space-y-4", className)}
-        {...props}
-      >
-        <legend className={cn("text-sm font-medium", hideLegend && "sr-only")}>
-          {legend}
-        </legend>
-        {children}
-      </fieldset>
-    );
-  }
-);
-
-Fieldset.displayName = "Fieldset";
+export function Fieldset({
+  ref,
+  legend,
+  hideLegend = false,
+  className,
+  children,
+  ...props
+}: FieldsetProps & { ref?: React.Ref<HTMLFieldSetElement> }) {
+  return (
+    <fieldset
+      ref={ref}
+      className={cn("space-y-4", className)}
+      {...props}
+    >
+      <legend className={cn("text-sm font-medium", hideLegend && "sr-only")}>
+        {legend}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}

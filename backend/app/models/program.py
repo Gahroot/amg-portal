@@ -50,6 +50,7 @@ class Program(Base, TimestampMixin):
         "TravelBooking", back_populates="program", cascade="all, delete-orphan"
     )
     invoices = relationship("Invoice", back_populates="program")
+    partner_assignments = relationship("PartnerAssignment", back_populates="program")
     creator = relationship("User", foreign_keys=[created_by])
 
     def __repr__(self) -> str:

@@ -202,7 +202,10 @@ async def _broadcast_program_update(
         if client:
             profile_result = await db.execute(
                 select(ClientProfile)
-                .where(ClientProfile.assigned_rm_id == client.rm_id)
+                .where(
+                    ClientProfile.assigned_rm_id == client.rm_id,
+                    ClientProfile.legal_name == client.name,
+                )
                 .limit(1)
             )
             profile = profile_result.scalar_one_or_none()

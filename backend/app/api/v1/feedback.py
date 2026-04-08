@@ -3,11 +3,11 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser
+from app.api.deps import DB, CurrentUser, require_admin
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.portal_feedback import FeedbackStatus, FeedbackType, PortalFeedback
 from app.models.user import User
@@ -159,7 +159,8 @@ async def get_my_feedback(
 @router.get("/", response_model=PortalFeedbackListResponse)
 async def list_all_feedback(
     db: DB,
-    current_user: CurrentUser,  # TODO: Add admin check
+    current_user: CurrentUser,
+    _: None = Depends(require_admin),
     status: str | None = Query(None, description="Filter by status"),
     feedback_type: str | None = Query(None, description="Filter by type"),
     priority: str | None = Query(None, description="Filter by priority"),
@@ -218,7 +219,8 @@ async def list_all_feedback(
 @router.get("/summary", response_model=PortalFeedbackSummary)
 async def get_feedback_summary(
     db: DB,
-    current_user: CurrentUser,  # TODO: Add admin check
+    current_user: CurrentUser,
+    _: None = Depends(require_admin),
 ) -> PortalFeedbackSummary:
     """Get feedback summary statistics (admin only)."""
     # Total count
@@ -291,7 +293,8 @@ async def get_feedback_summary(
 async def get_feedback(
     feedback_id: uuid.UUID,
     db: DB,
-    current_user: CurrentUser,  # TODO: Add admin check
+    current_user: CurrentUser,
+    _: None = Depends(require_admin),
 ) -> PortalFeedbackResponse:
     """Get a specific feedback item (admin only)."""
     result = await db.execute(
@@ -320,7 +323,8 @@ async def update_feedback(
     feedback_id: uuid.UUID,
     data: PortalFeedbackUpdate,
     db: DB,
-    current_user: CurrentUser,  # TODO: Add admin check
+    current_user: CurrentUser,
+    _: None = Depends(require_admin),
 ) -> PortalFeedbackResponse:
     """Update feedback status, priority, or assignment (admin only)."""
     result = await db.execute(
@@ -366,7 +370,8 @@ async def assign_feedback(
     feedback_id: uuid.UUID,
     assigned_to: uuid.UUID,
     db: DB,
-    current_user: CurrentUser,  # TODO: Add admin check
+    current_user: CurrentUser,
+    _: None = Depends(require_admin),
 ) -> PortalFeedbackResponse:
     """Assign feedback to a user (admin only)."""
     result = await db.execute(

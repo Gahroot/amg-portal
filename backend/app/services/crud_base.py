@@ -1,15 +1,8 @@
 import uuid
-from typing import Any, TypeVar
+from typing import Any
 
-from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db.base import Base
-
-ModelType = TypeVar("ModelType", bound=Base)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType]:

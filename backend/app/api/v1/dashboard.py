@@ -300,3 +300,27 @@ async def get_alerts_endpoint(db: DB, _rls: RLSContext) -> AlertsResponse:
     """Return actionable alerts for the dashboard."""
     alerts, total = await get_dashboard_alerts(db)
     return AlertsResponse(alerts=alerts, total=total)
+
+
+@router.get(
+    "/at-risk-programs",
+    response_model=ProgramHealthResponse,
+    dependencies=[Depends(require_internal)],
+)
+async def get_at_risk_programs(
+    db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> ProgramHealthResponse:
+    """Return programs that are at risk: red RAG status or active escalations."""
+    rm_client_ids: list[uuid.UUID] | None = None
+    if current_user.role == UserRole.relationship_manager:
+        rm_client_ids = await get_rm_client_ids(db, current_user.id)
+
+    all_items = await _build_program_health_items(db, rm_client_ids=rm_client_ids)
+
+    at_risk = [
+        item
+        for item in all_items
+        if item.rag_status == "red" or item.active_escalation_count > 0
+    ]
+
+    return ProgramHealthResponse(programs=at_risk, total=len(at_risk))

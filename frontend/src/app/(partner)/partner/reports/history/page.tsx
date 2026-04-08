@@ -93,7 +93,7 @@ export default function EngagementHistoryPage() {
           <div>
             <p className="font-medium">Your Performance Rating</p>
             <p className="text-sm text-muted-foreground">
-              {report.performance_rating.toFixed(2)} out of 5 — based on your completed assignments
+              {Number(report.performance_rating).toFixed(2)} out of 5 — based on your completed assignments
             </p>
           </div>
         </div>

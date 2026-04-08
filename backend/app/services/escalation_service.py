@@ -557,16 +557,18 @@ async def get_escalations_with_owner_info(
     result = await db.execute(q)
     escalations = result.scalars().all()
 
-    # Build response with owner info
+    # Batch-load owners and triggerers to avoid N+1
+    user_ids = {esc.owner_id for esc in escalations if esc.owner_id}
+    user_ids |= {esc.triggered_by for esc in escalations if esc.triggered_by}
+    users_map: dict[object, User] = {}
+    if user_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(user_ids)))
+        users_map = {u.id: u for u in users_result.scalars().all()}
+
     escalation_data = []
     for esc in escalations:
-        # Get owner info
-        owner_result = await db.execute(select(User).where(User.id == esc.owner_id))
-        owner = owner_result.scalar_one_or_none()
-
-        # Get triggerer info
-        triggerer_result = await db.execute(select(User).where(User.id == esc.triggered_by))
-        triggerer = triggerer_result.scalar_one_or_none()
+        owner = users_map.get(esc.owner_id)
+        triggerer = users_map.get(esc.triggered_by)
 
         esc_dict = {
             "id": esc.id,
@@ -663,6 +665,31 @@ async def evaluate_auto_triggers(db: AsyncSession) -> list[Escalation]:
     return created
 
 
+async def _load_open_escalation_set(
+    db: AsyncSession,
+    entity_ids: list[str],
+) -> set[tuple[str, str]]:
+    """Batch-load open/acknowledged/investigating escalations for a list of entity IDs.
+
+    Returns a set of (entity_type, entity_id) tuples for fast membership testing.
+    """
+    if not entity_ids:
+        return set()
+    result = await db.execute(
+        select(Escalation.entity_type, Escalation.entity_id).where(
+            Escalation.entity_id.in_(entity_ids),
+            Escalation.status.in_(
+                [
+                    EscalationStatus.open.value,
+                    EscalationStatus.acknowledged.value,
+                    EscalationStatus.investigating.value,
+                ]
+            ),
+        )
+    )
+    return {(row.entity_type, row.entity_id) for row in result.all()}
+
+
 async def _evaluate_sla_breach_rule(
     db: AsyncSession,
     rule: EscalationRule,
@@ -681,19 +708,23 @@ async def _evaluate_sla_breach_rule(
     )
     breached_trackers = list(result.scalars().all())
 
+    if not breached_trackers:
+        return created
+
+    # Batch-load open escalations for all candidate entity IDs in one query
+    all_entity_ids = [t.entity_id for t in breached_trackers]
+    open_set = await _load_open_escalation_set(db, all_entity_ids)
+
+    now = datetime.now(UTC)
     for tracker in breached_trackers:
         # Check if hours exceeded threshold
         if sla_hours_exceeded > 0:
-            now = datetime.now(UTC)
             elapsed_hours = (now - tracker.started_at).total_seconds() / 3600
             if elapsed_hours < sla_hours_exceeded:
                 continue
 
-        # Deduplication: check for existing open escalation on this entity
-        existing = await _has_open_escalation(
-            db, tracker.entity_type, tracker.entity_id
-        )
-        if existing:
+        # Deduplication via in-memory set
+        if (tracker.entity_type, tracker.entity_id) in open_set:
             continue
 
         esc = await create_escalation(
@@ -716,6 +747,8 @@ async def _evaluate_sla_breach_rule(
             },
         )
         created.append(esc)
+        # Keep the set consistent so subsequent items in this batch don't double-create
+        open_set.add((tracker.entity_type, tracker.entity_id))
 
     return created
 
@@ -740,6 +773,13 @@ async def _evaluate_milestone_overdue_rule(
     )
     milestones = list(result.scalars().all())
 
+    if not milestones:
+        return created
+
+    # Batch-load open escalations for all candidate milestone IDs in one query
+    all_entity_ids = [str(m.id) for m in milestones]
+    open_set = await _load_open_escalation_set(db, all_entity_ids)
+
     for milestone in milestones:
         if milestone.due_date is None:
             continue
@@ -747,8 +787,7 @@ async def _evaluate_milestone_overdue_rule(
         if days_over < days_overdue_threshold:
             continue
 
-        existing = await _has_open_escalation(db, "milestone", str(milestone.id))
-        if existing:
+        if ("milestone", str(milestone.id)) in open_set:
             continue
 
         esc = await create_escalation(
@@ -770,6 +809,7 @@ async def _evaluate_milestone_overdue_rule(
             program_id=milestone.program_id,
         )
         created.append(esc)
+        open_set.add(("milestone", str(milestone.id)))
 
     return created
 
@@ -794,6 +834,13 @@ async def _evaluate_task_overdue_rule(
     )
     tasks = list(result.scalars().all())
 
+    if not tasks:
+        return created
+
+    # Batch-load open escalations for all candidate task IDs in one query
+    all_entity_ids = [str(t.id) for t in tasks]
+    open_set = await _load_open_escalation_set(db, all_entity_ids)
+
     for task in tasks:
         if task.due_date is None:
             continue
@@ -801,8 +848,7 @@ async def _evaluate_task_overdue_rule(
         if days_over < days_overdue_threshold:
             continue
 
-        existing = await _has_open_escalation(db, "task", str(task.id))
-        if existing:
+        if ("task", str(task.id)) in open_set:
             continue
 
         esc = await create_escalation(
@@ -823,6 +869,7 @@ async def _evaluate_task_overdue_rule(
             },
         )
         created.append(esc)
+        open_set.add(("task", str(task.id)))
 
     return created
 
@@ -1283,13 +1330,20 @@ async def get_overdue_escalations(
     result = await db.execute(q)
     escalations = result.scalars().all()
 
+    # Batch-load owners and triggerers to avoid N+1
+    overdue_user_ids = {esc.owner_id for esc in escalations if esc.owner_id}
+    overdue_user_ids |= {esc.triggered_by for esc in escalations if esc.triggered_by}
+    overdue_users_map: dict[object, User] = {}
+    if overdue_user_ids:
+        overdue_users_result = await db.execute(
+            select(User).where(User.id.in_(overdue_user_ids))
+        )
+        overdue_users_map = {u.id: u for u in overdue_users_result.scalars().all()}
+
     escalation_data = []
     for esc in escalations:
-        owner_result = await db.execute(select(User).where(User.id == esc.owner_id))
-        owner = owner_result.scalar_one_or_none()
-
-        triggerer_result = await db.execute(select(User).where(User.id == esc.triggered_by))
-        triggerer = triggerer_result.scalar_one_or_none()
+        owner = overdue_users_map.get(esc.owner_id)
+        triggerer = overdue_users_map.get(esc.triggered_by)
 
         esc_dict: dict[str, object] = {
             "id": esc.id,

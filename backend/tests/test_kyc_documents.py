@@ -15,7 +15,7 @@ from app.models.enums import KYCDocumentStatus, KYCDocumentType
 from app.models.kyc_document import KYCDocument
 from app.models.user import User
 
-BASE = "/api/v1"
+BASE = "/api/v1/kyc"
 
 
 # ---------------------------------------------------------------------------

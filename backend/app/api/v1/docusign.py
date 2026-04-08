@@ -3,10 +3,11 @@
 from uuid import UUID
 
 from docusign_esign import ApiException
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, require_internal
+from app.core.exceptions import AppException, BadRequestException, NotFoundException
 from app.models.document import Document
 from app.schemas.docusign import (
     CreateEnvelopeRequest,
@@ -46,20 +47,13 @@ async def create_envelope(
     )
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise NotFoundException("Document not found")
 
     # Download file bytes from MinIO
     try:
-        response = storage_service.client.get_object(
-            storage_service.bucket, doc.file_path
-        )
-        file_bytes = response.read()
-        response.close()
-        response.release_conn()
+        file_bytes = await storage_service.download_file(doc.file_path)
     except Exception as exc:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to download document: {exc}"
-        ) from exc
+        raise AppException("Failed to retrieve the document for signing") from exc
 
     file_ext = _file_extension_from_content_type(doc.content_type)
 
@@ -71,11 +65,9 @@ async def create_envelope(
             signer_email=body.signer_email,
             signer_name=body.signer_name,
         )
-    except HTTPException:
-        raise
     except ApiException as exc:
-        raise HTTPException(
-            status_code=503, detail=f"DocuSign API error: {exc.reason}"
+        raise AppException(
+            "DocuSign service is temporarily unavailable", status_code=503
         ) from exc
 
     doc.envelope_id = envelope_id
@@ -109,11 +101,9 @@ async def get_signing_url(
     )
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise NotFoundException("Document not found")
     if not doc.envelope_id:
-        raise HTTPException(
-            status_code=400, detail="Document has no DocuSign envelope"
-        )
+        raise BadRequestException("Document has no DocuSign envelope")
 
     try:
         signing_url = await docusign_service.get_signing_url(
@@ -122,11 +112,9 @@ async def get_signing_url(
             signer_name=signer_name,
             return_url=return_url,
         )
-    except HTTPException:
-        raise
     except ApiException as exc:
-        raise HTTPException(
-            status_code=503, detail=f"DocuSign API error: {exc.reason}"
+        raise AppException(
+            "DocuSign service is temporarily unavailable", status_code=503
         ) from exc
 
     return SigningUrlResponse(

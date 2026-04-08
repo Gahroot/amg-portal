@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/popover";
 import { SearchSuggestions } from "@/components/search/search-suggestions";
 import { useSearchSuggestions } from "@/hooks/use-search-suggestions";
-import { useGlobalSearch } from "@/hooks/use-global-search";
 import { useAddRecentSearch } from "@/hooks/use-recent-searches";
 import type { SearchSuggestion } from "@/lib/api/search";
 
@@ -69,9 +68,6 @@ export function GlobalSearch({
     data: suggestionsData,
     isLoading: suggestionsLoading,
   } = useSearchSuggestions(query, 200, isOpen);
-
-  // Fetch full search results (when user submits)
-  const { data: searchData, isLoading: searchLoading } = useGlobalSearch(query);
 
   const addRecentSearch = useAddRecentSearch();
 
@@ -213,7 +209,7 @@ export function GlobalSearch({
     }
   }, [isOpen, inDialog]);
 
-  const isLoading = suggestionsLoading || searchLoading;
+  const isLoading = suggestionsLoading;
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>

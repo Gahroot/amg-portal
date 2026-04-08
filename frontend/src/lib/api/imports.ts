@@ -1,5 +1,6 @@
 // API client for import endpoints
 
+import api from "@/lib/api";
 import type {
   ImportEntityType,
   ImportJobListResponse,
@@ -34,16 +35,8 @@ interface ConfirmRequest {
  * Get import template for an entity type
  */
 export async function getImportTemplate(entityType: ImportEntityType): Promise<ImportTemplate> {
-  const response = await fetch(`${API_BASE}/templates/${entityType}`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to get template" }));
-    throw new Error(error.message || "Failed to get template");
-  }
-
-  return response.json();
+  const response = await api.get<ImportTemplate>(`${API_BASE}/templates/${entityType}`);
+  return response.data;
 }
 
 /**
@@ -63,95 +56,51 @@ export async function uploadImportFile(
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE}/upload?entity_type=${entityType}`, {
-    method: "POST",
-    body: formData,
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to upload file" }));
-    throw new Error(error.detail || error.message || "Failed to upload file");
-  }
-
-  return response.json();
+  const response = await api.post<ImportUploadResponse>(
+    `${API_BASE}/upload`,
+    formData,
+    { params: { entity_type: entityType } }
+  );
+  return response.data;
 }
 
 /**
  * Set column mappings for an import job
  */
 export async function mapImportColumns(request: MapColumnsRequest): Promise<ImportJobResponse> {
-  const response = await fetch(`${API_BASE}/map-columns`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to map columns" }));
-    throw new Error(error.detail || error.message || "Failed to map columns");
-  }
-
-  return response.json();
+  const response = await api.post<ImportJobResponse>(`${API_BASE}/map-columns`, request);
+  return response.data;
 }
 
 /**
  * Validate import data
  */
 export async function validateImport(request: ValidateRequest): Promise<ImportValidateResponse> {
-  const response = await fetch(`${API_BASE}/validate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...request, skip_duplicates: request.skip_duplicates ?? false }),
-    credentials: "include",
+  const response = await api.post<ImportValidateResponse>(`${API_BASE}/validate`, {
+    ...request,
+    skip_duplicates: request.skip_duplicates ?? false,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to validate import" }));
-    throw new Error(error.detail || error.message || "Failed to validate import");
-  }
-
-  return response.json();
+  return response.data;
 }
 
 /**
  * Confirm and execute the import
  */
 export async function confirmImport(request: ConfirmRequest): Promise<ImportConfirmResponse> {
-  const response = await fetch(`${API_BASE}/confirm`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...request,
-      skip_invalid_rows: request.skip_invalid_rows ?? true,
-      skip_warnings: request.skip_warnings ?? false,
-    }),
-    credentials: "include",
+  const response = await api.post<ImportConfirmResponse>(`${API_BASE}/confirm`, {
+    ...request,
+    skip_invalid_rows: request.skip_invalid_rows ?? true,
+    skip_warnings: request.skip_warnings ?? false,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to confirm import" }));
-    throw new Error(error.detail || error.message || "Failed to confirm import");
-  }
-
-  return response.json();
+  return response.data;
 }
 
 /**
  * Get import job details
  */
 export async function getImportJob(importId: string): Promise<ImportJobResponse> {
-  const response = await fetch(`${API_BASE}/${importId}`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to get import job" }));
-    throw new Error(error.detail || error.message || "Failed to get import job");
-  }
-
-  return response.json();
+  const response = await api.get<ImportJobResponse>(`${API_BASE}/${importId}`);
+  return response.data;
 }
 
 /**
@@ -165,14 +114,8 @@ export function getErrorReportDownloadUrl(importId: string): string {
  * List recent import jobs
  */
 export async function listImportJobs(limit = 20): Promise<ImportJobListResponse> {
-  const response = await fetch(`${API_BASE}/?limit=${limit}`, {
-    credentials: "include",
+  const response = await api.get<ImportJobListResponse>(`${API_BASE}/`, {
+    params: { limit },
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to list import jobs" }));
-    throw new Error(error.detail || error.message || "Failed to list import jobs");
-  }
-
-  return response.json();
+  return response.data;
 }

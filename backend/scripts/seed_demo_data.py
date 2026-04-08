@@ -37,8 +37,12 @@ from app.models.conversation import Conversation
 from app.models.decision_request import DecisionRequest
 from app.models.deliverable import Deliverable
 from app.models.document import Document
+from app.models.document_delivery import DocumentDelivery
+from app.models.document_request import DocumentRequest
 from app.models.escalation import Escalation
 from app.models.kyc_document import KYCDocument
+from app.models.meeting_slot import Meeting, RMAvailability
+from app.models.meeting_type import MeetingType
 from app.models.milestone import Milestone
 from app.models.notification import Notification
 from app.models.nps_survey import NPSFollowUp, NPSResponse, NPSSurvey
@@ -48,6 +52,7 @@ from app.models.partner_rating import PartnerRating
 from app.models.program import Program
 from app.models.program_closure import ProgramClosure
 from app.models.report_schedule import ReportSchedule
+from app.models.scheduled_event import ScheduledEvent
 from app.models.sla_tracker import SLATracker
 from app.models.task import Task
 from app.models.user import User
@@ -199,6 +204,15 @@ FN = {i: _uid(f"audit.finding.{i}") for i in range(1, 3)}
 
 # Capability Review
 CAP_REVIEW_ID = _uid("capability.review.meridian.2026")
+
+# Phase 2 — Document Delivery, Scheduling, Evidence Vault
+P2_DOC = {i: _uid(f"p2.document.{i}") for i in range(1, 8)}
+P2_DELIVERY = {i: _uid(f"p2.delivery.{i}") for i in range(1, 5)}
+P2_DOCREQ = {i: _uid(f"p2.docreq.{i}") for i in range(1, 4)}
+P2_MTGTYPE = {i: _uid(f"p2.meetingtype.{i}") for i in range(1, 4)}
+P2_AVAIL = {i: _uid(f"p2.availability.{i}") for i in range(1, 6)}
+P2_MEETING = {i: _uid(f"p2.meeting.{i}") for i in range(1, 4)}
+P2_EVENT = {i: _uid(f"p2.event.{i}") for i in range(1, 5)}
 
 
 # ---------------------------------------------------------------------------
@@ -2563,6 +2577,443 @@ async def seed_capability_review(db: AsyncSession) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Phase 2 — Document Delivery, Scheduling, Evidence Vault
+# ---------------------------------------------------------------------------
+
+
+async def seed_phase2_documents(db: AsyncSession) -> None:
+    """Seed Phase 2 documents: reports, briefs, contracts, vault items."""
+    logger.info("Seeding Phase 2 documents...")
+    base = "/uploads"
+    docs = [
+        # Client-facing reports & briefs
+        {
+            "id": P2_DOC[1],
+            "file_path": f"{base}/reports/beaumont_q1_2026_portfolio.pdf",
+            "file_name": "Q1 2026 Portfolio Report.pdf",
+            "file_size": 1_450_000,
+            "content_type": "application/pdf",
+            "entity_type": "client",
+            "entity_id": CLIENT_BEAUMONT_ID,
+            "category": "report",
+            "description": "Quarterly portfolio performance report for Q1 2026.",
+            "uploaded_by": SARAH_ID,
+        },
+        {
+            "id": P2_DOC[2],
+            "file_path": f"{base}/programs/estate_plan_brief.pdf",
+            "file_name": "Estate Plan Brief.pdf",
+            "file_size": 820_000,
+            "content_type": "application/pdf",
+            "entity_type": "program",
+            "entity_id": PROG_ESTATE_ID,
+            "category": "general",
+            "description": "Executive brief for the Beaumont Global Estate Plan.",
+            "uploaded_by": SARAH_ID,
+        },
+        # Contracts
+        {
+            "id": P2_DOC[3],
+            "file_path": f"{base}/contracts/nda_fortress_legal.pdf",
+            "file_name": "NDA — Fortress Legal.pdf",
+            "file_size": 340_000,
+            "content_type": "application/pdf",
+            "entity_type": "partner",
+            "entity_id": PARTNER_FORTRESS_ID,
+            "category": "contract",
+            "description": "Non-disclosure agreement with Fortress Legal.",
+            "uploaded_by": ELENA_ID,
+        },
+        {
+            "id": P2_DOC[4],
+            "file_path": f"{base}/contracts/engagement_meridian.pdf",
+            "file_name": "Engagement Letter — Meridian Advisors.pdf",
+            "file_size": 290_000,
+            "content_type": "application/pdf",
+            "entity_type": "partner",
+            "entity_id": PARTNER_MERIDIAN_ID,
+            "category": "contract",
+            "description": "Engagement letter for tax optimization advisory.",
+            "uploaded_by": ELENA_ID,
+        },
+        # Evidence vault — sealed due diligence
+        {
+            "id": P2_DOC[5],
+            "file_path": f"{base}/vault/beaumont_due_diligence.pdf",
+            "file_name": "Due Diligence — Beaumont Family Office.pdf",
+            "file_size": 2_100_000,
+            "content_type": "application/pdf",
+            "entity_type": "client",
+            "entity_id": CLIENT_BEAUMONT_ID,
+            "category": "compliance",
+            "description": "Comprehensive due diligence report — sealed for audit.",
+            "uploaded_by": OLIVIA_ID,
+            "vault_status": "sealed",
+            "sealed_at": NOW - timedelta(days=45),
+            "sealed_by": OLIVIA_ID,
+            "retention_policy": "7_years",
+            "chain_of_custody": [
+                {
+                    "action": "created",
+                    "actor": "Olivia Grant",
+                    "at": (NOW - timedelta(days=50)).isoformat(),
+                },
+                {
+                    "action": "sealed",
+                    "actor": "Olivia Grant",
+                    "at": (NOW - timedelta(days=45)).isoformat(),
+                },
+            ],
+        },
+        # Evidence vault — security assessment
+        {
+            "id": P2_DOC[6],
+            "file_path": f"{base}/vault/beaumont_security_assessment.pdf",
+            "file_name": "Security Assessment — Beaumont.pdf",
+            "file_size": 1_850_000,
+            "content_type": "application/pdf",
+            "entity_type": "client",
+            "entity_id": CLIENT_BEAUMONT_ID,
+            "category": "compliance",
+            "description": "Physical and digital security posture assessment.",
+            "uploaded_by": OLIVIA_ID,
+            "vault_status": "sealed",
+            "sealed_at": NOW - timedelta(days=30),
+            "sealed_by": MARCUS_ID,
+            "retention_policy": "5_years",
+            "chain_of_custody": [
+                {
+                    "action": "created",
+                    "actor": "Olivia Grant",
+                    "at": (NOW - timedelta(days=35)).isoformat(),
+                },
+                {
+                    "action": "reviewed",
+                    "actor": "Marcus Wellington",
+                    "at": (NOW - timedelta(days=31)).isoformat(),
+                },
+                {
+                    "action": "sealed",
+                    "actor": "Marcus Wellington",
+                    "at": (NOW - timedelta(days=30)).isoformat(),
+                },
+            ],
+        },
+        # Financial document for client portal
+        {
+            "id": P2_DOC[7],
+            "file_path": f"{base}/reports/beaumont_fee_schedule.pdf",
+            "file_name": "2026 Fee Schedule.pdf",
+            "file_size": 185_000,
+            "content_type": "application/pdf",
+            "entity_type": "client",
+            "entity_id": CLIENT_BEAUMONT_ID,
+            "category": "financial",
+            "description": "Annual fee schedule and billing summary for 2026.",
+            "uploaded_by": SARAH_ID,
+        },
+    ]
+    for d in docs:
+        did = d.pop("id")
+        await get_or_create(db, Document, defaults={"id": did, **d}, id=did)
+
+
+async def seed_phase2_document_deliveries(db: AsyncSession) -> None:
+    """Seed document deliveries so the client portal shows delivered docs."""
+    logger.info("Seeding Phase 2 document deliveries...")
+    deliveries = [
+        {
+            "id": P2_DELIVERY[1],
+            "document_id": P2_DOC[1],
+            "recipient_id": PHILIPPE_ID,
+            "delivery_method": "portal",
+            "delivered_at": NOW - timedelta(days=5),
+            "viewed_at": NOW - timedelta(days=4),
+            "notes": "Q1 2026 portfolio report delivered via portal.",
+        },
+        {
+            "id": P2_DELIVERY[2],
+            "document_id": P2_DOC[2],
+            "recipient_id": PHILIPPE_ID,
+            "delivery_method": "portal",
+            "delivered_at": NOW - timedelta(days=20),
+            "viewed_at": NOW - timedelta(days=18),
+            "acknowledged_at": NOW - timedelta(days=18),
+            "notes": "Estate plan brief acknowledged by client.",
+        },
+        {
+            "id": P2_DELIVERY[3],
+            "document_id": P2_DOC[7],
+            "recipient_id": PHILIPPE_ID,
+            "delivery_method": "portal",
+            "delivered_at": NOW - timedelta(days=10),
+            "notes": "Fee schedule delivered — awaiting review.",
+        },
+        {
+            "id": P2_DELIVERY[4],
+            "document_id": P2_DOC[1],
+            "recipient_id": MARCUS_ID,
+            "delivery_method": "email",
+            "delivered_at": NOW - timedelta(days=5),
+            "viewed_at": NOW - timedelta(days=5),
+            "notes": "CC to Managing Director.",
+        },
+    ]
+    for d in deliveries:
+        did = d.pop("id")
+        await get_or_create(db, DocumentDelivery, defaults={"id": did, **d}, id=did)
+
+
+async def seed_phase2_document_requests(db: AsyncSession) -> None:
+    """Seed document requests for the client portal."""
+    logger.info("Seeding Phase 2 document requests...")
+    requests = [
+        {
+            "id": P2_DOCREQ[1],
+            "client_id": PROFILE_BEAUMONT_ID,
+            "requested_by": SARAH_ID,
+            "document_type": "bank_statement",
+            "title": "Q4 2025 Bank Statements",
+            "description": "Please provide bank statements for all accounts for Oct-Dec 2025.",
+            "message": "Hi Philippe, we need these for the tax optimization review.",
+            "status": "pending",
+            "deadline": NOW + timedelta(days=7),
+        },
+        {
+            "id": P2_DOCREQ[2],
+            "client_id": PROFILE_BEAUMONT_ID,
+            "requested_by": SARAH_ID,
+            "document_type": "tax_return",
+            "title": "2025 Swiss Tax Filing",
+            "description": "Copy of the 2025 Swiss cantonal tax return.",
+            "status": "in_progress",
+            "deadline": NOW + timedelta(days=14),
+            "in_progress_at": NOW - timedelta(days=2),
+            "rm_notes": "Philippe confirmed he will upload by end of week.",
+        },
+        {
+            "id": P2_DOCREQ[3],
+            "client_id": PROFILE_BEAUMONT_ID,
+            "requested_by": OLIVIA_ID,
+            "document_type": "source_of_wealth",
+            "title": "Source of Wealth Declaration",
+            "description": "Compliance requires an updated source of wealth declaration.",
+            "status": "complete",
+            "deadline": NOW - timedelta(days=10),
+            "completed_at": NOW - timedelta(days=12),
+            "rm_notes": "Received and verified.",
+        },
+    ]
+    for r in requests:
+        rid = r.pop("id")
+        await get_or_create(db, DocumentRequest, defaults={"id": rid, **r}, id=rid)
+
+
+async def seed_phase2_meeting_types(db: AsyncSession) -> None:
+    """Seed meeting types for scheduling."""
+    logger.info("Seeding Phase 2 meeting types...")
+    types = [
+        {
+            "id": P2_MTGTYPE[1],
+            "slug": "quick_checkin",
+            "label": "Quick Check-in",
+            "duration_minutes": 15,
+            "description": "Brief status update or question.",
+            "display_order": 0,
+        },
+        {
+            "id": P2_MTGTYPE[2],
+            "slug": "standard",
+            "label": "Standard Meeting",
+            "duration_minutes": 30,
+            "description": "Regular program review or planning session.",
+            "display_order": 1,
+        },
+        {
+            "id": P2_MTGTYPE[3],
+            "slug": "extended",
+            "label": "Extended Session",
+            "duration_minutes": 60,
+            "description": "In-depth strategy or complex topic discussion.",
+            "display_order": 2,
+        },
+    ]
+    for t in types:
+        tid = t.pop("id")
+        slug = t["slug"]
+        await get_or_create(db, MeetingType, defaults={"id": tid, **t}, slug=slug)
+
+
+async def seed_phase2_rm_availability(db: AsyncSession) -> None:
+    """Seed RM availability windows for Sarah Blackwood."""
+    logger.info("Seeding Phase 2 RM availability...")
+    from datetime import time as dt_time
+
+    # Mon-Fri 9am-12pm and 2pm-5pm for Sarah
+    slots = [
+        (1, 0, dt_time(9, 0), dt_time(12, 0)),   # Mon AM
+        (2, 0, dt_time(14, 0), dt_time(17, 0)),   # Mon PM
+        (3, 2, dt_time(9, 0), dt_time(12, 0)),    # Wed AM
+        (4, 2, dt_time(14, 0), dt_time(17, 0)),   # Wed PM
+        (5, 4, dt_time(9, 0), dt_time(12, 0)),    # Fri AM
+    ]
+    for idx, dow, start, end in slots:
+        await get_or_create(
+            db,
+            RMAvailability,
+            defaults={
+                "id": P2_AVAIL[idx],
+                "rm_id": SARAH_ID,
+                "day_of_week": dow,
+                "start_time": start,
+                "end_time": end,
+                "buffer_minutes": 15,
+                "is_active": True,
+            },
+            id=P2_AVAIL[idx],
+        )
+
+
+async def seed_phase2_meetings(db: AsyncSession) -> None:
+    """Seed client-RM meetings."""
+    logger.info("Seeding Phase 2 meetings...")
+
+    # Look up actual meeting type IDs (may differ from deterministic IDs
+    # if meeting types were seeded by another service first).
+    from sqlalchemy import select as sa_select
+    mt_result = await db.execute(
+        sa_select(MeetingType.id, MeetingType.slug)
+    )
+    mt_map = {row.slug: row.id for row in mt_result.all()}
+    checkin_id = mt_map.get("quick_checkin", P2_MTGTYPE[1])
+    standard_id = mt_map.get("standard", P2_MTGTYPE[2])
+    extended_id = mt_map.get("extended", P2_MTGTYPE[3])
+
+    meetings = [
+        # Upcoming - confirmed
+        {
+            "id": P2_MEETING[1],
+            "meeting_type_id": standard_id,
+            "rm_id": SARAH_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "booked_by_user_id": PHILIPPE_ID,
+            "start_time": NOW + timedelta(days=3, hours=2),
+            "end_time": NOW + timedelta(days=3, hours=2, minutes=30),
+            "timezone": "Europe/Zurich",
+            "status": "confirmed",
+            "agenda": "Review trust structure options and tax optimization progress.",
+            "virtual_link": "https://meet.amg-portal.com/beaumont-estate-review",
+        },
+        # Upcoming - pending
+        {
+            "id": P2_MEETING[2],
+            "meeting_type_id": extended_id,
+            "rm_id": SARAH_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "booked_by_user_id": PHILIPPE_ID,
+            "start_time": NOW + timedelta(days=10, hours=5),
+            "end_time": NOW + timedelta(days=10, hours=6),
+            "timezone": "Europe/Zurich",
+            "status": "pending",
+            "agenda": "Deep-dive into succession planning framework.",
+        },
+        # Past - completed
+        {
+            "id": P2_MEETING[3],
+            "meeting_type_id": checkin_id,
+            "rm_id": SARAH_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "booked_by_user_id": PHILIPPE_ID,
+            "start_time": NOW - timedelta(days=7, hours=-3),
+            "end_time": NOW - timedelta(days=7, hours=-3, minutes=-15),
+            "timezone": "Europe/Zurich",
+            "status": "completed",
+            "agenda": "Quick check on jurisdictional analysis delivery.",
+            "notes": "Confirmed all deliverables on track. Client satisfied.",
+        },
+    ]
+    for m in meetings:
+        mid = m.pop("id")
+        await get_or_create(db, Meeting, defaults={"id": mid, **m}, id=mid)
+
+
+async def seed_phase2_scheduled_events(db: AsyncSession) -> None:
+    """Seed scheduled events for calendar / scheduling pages."""
+    logger.info("Seeding Phase 2 scheduled events...")
+    events = [
+        # Internal coordination meeting
+        {
+            "id": P2_EVENT[1],
+            "title": "Estate Plan — Weekly Sync",
+            "description": "Weekly coordination meeting for the Beaumont estate plan team.",
+            "event_type": "meeting",
+            "start_time": NOW + timedelta(days=2, hours=0),
+            "end_time": NOW + timedelta(days=2, hours=1),
+            "timezone": "UTC",
+            "location": "AMG Conference Room A",
+            "organizer_id": SARAH_ID,
+            "program_id": PROG_ESTATE_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "attendee_ids": [SARAH_ID, ELENA_ID, DAVID_ID],
+            "status": "confirmed",
+            "reminder_minutes": 30,
+        },
+        # Client review call
+        {
+            "id": P2_EVENT[2],
+            "title": "Beaumont Quarterly Review",
+            "description": "Quarterly program and portfolio review with Philippe Beaumont.",
+            "event_type": "call",
+            "start_time": NOW + timedelta(days=5, hours=3),
+            "end_time": NOW + timedelta(days=5, hours=4),
+            "timezone": "Europe/Zurich",
+            "virtual_link": "https://meet.amg-portal.com/beaumont-quarterly",
+            "organizer_id": SARAH_ID,
+            "program_id": PROG_ESTATE_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "attendee_ids": [SARAH_ID, PHILIPPE_ID],
+            "status": "scheduled",
+            "reminder_minutes": 60,
+        },
+        # Deadline event
+        {
+            "id": P2_EVENT[3],
+            "title": "Tax Optimization Memo — Deadline",
+            "description": "Deadline for cross-border tax memo from Meridian Advisors.",
+            "event_type": "deadline",
+            "start_time": datetime(2026, 4, 1, 17, 0, 0, tzinfo=UTC),
+            "end_time": datetime(2026, 4, 1, 17, 0, 0, tzinfo=UTC),
+            "timezone": "UTC",
+            "organizer_id": ELENA_ID,
+            "program_id": PROG_ESTATE_ID,
+            "attendee_ids": [ELENA_ID, SARAH_ID],
+            "status": "scheduled",
+            "reminder_minutes": 1440,
+        },
+        # Site visit
+        {
+            "id": P2_EVENT[4],
+            "title": "Art Storage Facility Visit",
+            "description": "Visit potential secure storage facility for Beaumont art collection.",
+            "event_type": "site_visit",
+            "start_time": NOW + timedelta(days=14, hours=2),
+            "end_time": NOW + timedelta(days=14, hours=4),
+            "timezone": "Europe/Zurich",
+            "location": "Geneva Freeport, Route de Meyrin 59",
+            "organizer_id": ELENA_ID,
+            "program_id": PROG_ART_ID,
+            "client_id": CLIENT_BEAUMONT_ID,
+            "attendee_ids": [ELENA_ID, STEFAN_ID],
+            "status": "scheduled",
+            "reminder_minutes": 120,
+        },
+    ]
+    for e in events:
+        eid = e.pop("id")
+        await get_or_create(db, ScheduledEvent, defaults={"id": eid, **e}, id=eid)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -2699,6 +3150,43 @@ async def seed() -> None:  # noqa: PLR0915
         # 26. Capability Review
         logger.info("=== Seeding capability review ===")
         await seed_capability_review(db)
+        await db.flush()
+
+        # --- Phase 2: Document Delivery, Scheduling, Evidence Vault ---
+
+        # 27. Phase 2 Documents (reports, briefs, contracts, vault)
+        logger.info("=== Seeding Phase 2 documents ===")
+        await seed_phase2_documents(db)
+        await db.flush()
+
+        # 28. Document Deliveries
+        logger.info("=== Seeding Phase 2 document deliveries ===")
+        await seed_phase2_document_deliveries(db)
+        await db.flush()
+
+        # 29. Document Requests
+        logger.info("=== Seeding Phase 2 document requests ===")
+        await seed_phase2_document_requests(db)
+        await db.flush()
+
+        # 30. Meeting Types
+        logger.info("=== Seeding Phase 2 meeting types ===")
+        await seed_phase2_meeting_types(db)
+        await db.flush()
+
+        # 31. RM Availability
+        logger.info("=== Seeding Phase 2 RM availability ===")
+        await seed_phase2_rm_availability(db)
+        await db.flush()
+
+        # 32. Client-RM Meetings
+        logger.info("=== Seeding Phase 2 meetings ===")
+        await seed_phase2_meetings(db)
+        await db.flush()
+
+        # 33. Scheduled Events (calendar)
+        logger.info("=== Seeding Phase 2 scheduled events ===")
+        await seed_phase2_scheduled_events(db)
         await db.flush()
 
         await db.commit()

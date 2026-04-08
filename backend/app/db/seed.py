@@ -29,7 +29,12 @@ async def seed_admin() -> None:
         )
         db.add(user)
         await db.commit()
-        print(f"Admin user created: admin@anchormillgroup.com (password: {password})")
+        password_source = (
+            "AMG_ADMIN_PASSWORD env var"
+            if os.environ.get("AMG_ADMIN_PASSWORD")
+            else "default password"
+        )
+        print(f"Admin user created: admin@anchormillgroup.com (password source: {password_source})")
 
 
 if __name__ == "__main__":

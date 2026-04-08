@@ -1,7 +1,7 @@
 """add_meeting_scheduler
 
 Revision ID: add_meeting_scheduler
-Revises: add_doc_req_status_tracking, add_escalation_rules, add_milestone_reminder_preferences, add_notification_snooze_fields, add_program_templates, add_pulse_surveys, add_recurring_tasks
+Revises: add_doc_req_status_tracking, add_milestone_reminder_preferences, add_notification_snooze_fields, add_program_templates, add_pulse_surveys, add_recurring_tasks
 Create Date: 2026-03-23 12:00:00.000000
 
 """
@@ -16,7 +16,6 @@ from alembic import op
 revision: str = "add_meeting_scheduler"
 down_revision: str | Sequence[str] | None = (
     "add_doc_req_status_tracking",
-    "add_escalation_rules",
     "add_milestone_reminder_preferences",
     "add_notification_snooze_fields",
     "add_program_templates",

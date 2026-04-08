@@ -15,6 +15,22 @@ const eslintConfig = defineConfig([
           destructuredArrayIgnorePattern: "^_",
         },
       ],
+      // React 17+ JSX transform makes `import * as React` unnecessary.
+      // Use named imports instead: `import { useState, useEffect } from "react"`.
+      "no-restricted-imports": [
+        "warn",
+        {
+          paths: [
+            {
+              name: "react",
+              importNames: ["default"],
+              message:
+                'Use named imports from "react" instead of `import * as React` or `import React`. ' +
+                'Example: import { useState, useEffect } from "react"',
+            },
+          ],
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.

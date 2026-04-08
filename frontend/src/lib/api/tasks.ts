@@ -32,46 +32,46 @@ export async function getTasks(filters?: TaskFilters): Promise<TaskBoardListResp
   if (filters?.skip !== undefined) params.append("skip", String(filters.skip));
   if (filters?.limit !== undefined) params.append("limit", String(filters.limit));
 
-  const response = await api.get<TaskBoardListResponse>(`/tasks?${params.toString()}`);
+  const response = await api.get<TaskBoardListResponse>(`/api/v1/tasks?${params.toString()}`);
   return response.data;
 }
 
 export async function createTask(data: TaskCreate): Promise<TaskBoard> {
-  const response = await api.post<TaskBoard>("/tasks", data);
+  const response = await api.post<TaskBoard>("/api/v1/tasks", data);
   return response.data;
 }
 
 export async function updateTask(taskId: string, data: TaskUpdate): Promise<TaskBoard> {
-  const response = await api.patch<TaskBoard>(`/tasks/${taskId}`, data);
+  const response = await api.patch<TaskBoard>(`/api/v1/tasks/${taskId}`, data);
   return response.data;
 }
 
 export async function deleteTask(taskId: string): Promise<void> {
-  await api.delete(`/tasks/${taskId}`);
+  await api.delete(`/api/v1/tasks/${taskId}`);
 }
 
 export async function reorderTask(data: TaskReorder): Promise<void> {
-  await api.post("/tasks/reorder", data);
+  await api.post("/api/v1/tasks/reorder", data);
 }
 
 export async function batchReorderTasks(updates: TaskReorder[]): Promise<void> {
-  await api.post("/tasks/batch-reorder", updates);
+  await api.post("/api/v1/tasks/batch-reorder", updates);
 }
 
 export async function bulkUpdateTasks(
   payload: TaskBulkUpdatePayload,
 ): Promise<TaskBulkUpdateResult> {
-  const response = await api.post<TaskBulkUpdateResult>("/tasks/bulk-update", payload);
+  const response = await api.post<TaskBulkUpdateResult>("/api/v1/tasks/bulk-update", payload);
   return response.data;
 }
 
 export async function getProgramsForFilter(): Promise<ProgramInfo[]> {
-  const response = await api.get<ProgramInfo[]>("/tasks/programs");
+  const response = await api.get<ProgramInfo[]>("/api/v1/tasks/programs");
   return response.data;
 }
 
 export async function getAssigneesForFilter(): Promise<AssigneeInfo[]> {
-  const response = await api.get<AssigneeInfo[]>("/tasks/assignees");
+  const response = await api.get<AssigneeInfo[]>("/api/v1/tasks/assignees");
   return response.data;
 }
 
@@ -79,7 +79,7 @@ export async function updateTaskDependencies(
   taskId: string,
   dependsOn: string[],
 ): Promise<TaskBoard> {
-  const response = await api.put<TaskBoard>(`/tasks/${taskId}/dependencies`, {
+  const response = await api.put<TaskBoard>(`/api/v1/tasks/${taskId}/dependencies`, {
     depends_on: dependsOn,
   });
   return response.data;
@@ -90,7 +90,7 @@ export async function getMilestonesForProgram(programId: string): Promise<Milest
   // This reuses the existing tasks endpoint (which already joins milestones) without
   // requiring a dedicated milestones listing endpoint.
   const response = await api.get<TaskBoardListResponse>(
-    `/tasks?program_id=${programId}&limit=200`,
+    `/api/v1/tasks?program_id=${programId}&limit=200`,
   );
   const milestoneMap = new Map<string, MilestoneInfo>();
   for (const task of response.data.tasks) {

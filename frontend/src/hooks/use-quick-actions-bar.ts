@@ -318,6 +318,7 @@ export function useQuickActionsBar(
     const requiresMeta = mergedConfig.focusShortcutMetaKey;
 
     function handleGlobalKeyDown(e: globalThis.KeyboardEvent) {
+      if (!e.key) return;
       const key = e.key.toLowerCase();
       const matchesKey = shortcut.toLowerCase() === key;
       const matchesMeta = requiresMeta

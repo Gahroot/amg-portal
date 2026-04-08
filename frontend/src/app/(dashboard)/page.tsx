@@ -1,6 +1,8 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -259,6 +261,7 @@ function MetricCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const role = user?.role ?? "";
   const isInternal = [
     "managing_director",
@@ -267,34 +270,48 @@ export default function DashboardPage() {
     "finance_compliance",
   ].includes(role);
 
+  // Redirect non-internal users to their appropriate portal
+  React.useEffect(() => {
+    if (role === "client") {
+      router.replace("/portal/dashboard");
+    } else if (role === "partner") {
+      router.replace("/partner");
+    }
+  }, [role, router]);
+
   const {
     data: summary,
     isLoading: summaryLoading,
     isError: summaryError,
-  } = usePortfolioSummary();
+  } = usePortfolioSummary({ enabled: isInternal });
 
   const {
     data: atRisk,
     isLoading: atRiskLoading,
     isError: atRiskError,
-  } = useAtRiskPrograms();
+  } = useAtRiskPrograms({ enabled: isInternal });
 
   const {
     data: realTimeStats,
     isLoading: statsLoading,
-  } = useRealTimeStats();
+  } = useRealTimeStats({ enabled: isInternal });
 
   const {
     data: activityFeed,
     isLoading: feedLoading,
-  } = useActivityFeed();
+  } = useActivityFeed({ enabled: isInternal });
 
   const {
     data: alertsData,
     isLoading: alertsLoading,
-  } = useDashboardAlerts();
+  } = useDashboardAlerts({ enabled: isInternal });
 
   const isLoading = summaryLoading || atRiskLoading;
+
+  // Show loading state while redirecting non-internal users
+  if (!isInternal && role) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div id="dashboard-content" className="mx-auto max-w-7xl space-y-6">

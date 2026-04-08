@@ -19,7 +19,7 @@ from app.models.audit_log import AuditLog
 logger = logging.getLogger(__name__)
 
 SKIP_TABLES = {"audit_logs", "alembic_version"}
-SENSITIVE_FIELDS = {"hashed_password"}
+SENSITIVE_FIELDS = {"hashed_password", "mfa_secret", "mfa_backup_codes"}
 
 
 _SCALAR_CONVERTERS: dict[type, object] = {

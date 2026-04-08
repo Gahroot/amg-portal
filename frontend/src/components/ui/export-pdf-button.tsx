@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { getAccessToken } from "@/lib/token-storage";
+
 
 export interface PDFExportOptions {
   orientation: "portrait" | "landscape";
@@ -250,7 +250,6 @@ export function ExportPDFButton({
     setShowOptionsDialog(false);
 
     try {
-      const token = getAccessToken();
       const params = new URLSearchParams();
 
       // Add options as query params
@@ -265,7 +264,7 @@ export function ExportPDFButton({
       const fullUrl = `${exportUrl}${separator}${params.toString()}`;
 
       const response = await fetch(fullUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -380,13 +379,11 @@ export async function exportTableAsPDF(
   options?: Partial<PDFExportOptions>,
   filters?: Record<string, string>,
 ): Promise<void> {
-  const token = getAccessToken();
-
   const response = await fetch("/api/v1/export/pdf/table", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
       title,

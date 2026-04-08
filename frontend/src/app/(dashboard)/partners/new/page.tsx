@@ -66,15 +66,17 @@ export default function NewPartnerPage() {
     resolver: zodResolver(createPartnerSchema),
   });
 
-  // Watch form fields for duplicate detection
-  const watchedFields = watch(["firm_name", "contact_name", "contact_email", "contact_phone"]);
+  // Watch individual form fields for duplicate detection — watching separately
+  // gives stable primitive values so the dependency array doesn't change every render.
+  const firmNameValue = watch("firm_name");
+  const contactNameValue = watch("contact_name");
+  const contactEmailValue = watch("contact_email");
+  const contactPhoneValue = watch("contact_phone");
 
   // Debounced duplicate check
   React.useEffect(() => {
-    const [firm_name, contact_name, contact_email, contact_phone] = watchedFields;
-
     // Only check if we have at least an email or firm name
-    if (!contact_email && !firm_name) {
+    if (!contactEmailValue && !firmNameValue) {
       setDuplicates([]);
       return;
     }
@@ -83,10 +85,10 @@ export default function NewPartnerPage() {
       try {
         setIsCheckingDuplicates(true);
         const matches = await checkPartnerDuplicates({
-          firm_name: firm_name || null,
-          contact_name: contact_name || null,
-          contact_email: contact_email || null,
-          contact_phone: contact_phone || null,
+          firm_name: firmNameValue || null,
+          contact_name: contactNameValue || null,
+          contact_email: contactEmailValue || null,
+          contact_phone: contactPhoneValue || null,
         });
         setDuplicates(matches);
       } catch (error) {
@@ -99,7 +101,7 @@ export default function NewPartnerPage() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [watchedFields]);
+  }, [firmNameValue, contactNameValue, contactEmailValue, contactPhoneValue]);
 
   if (
     user?.role !== "managing_director" &&

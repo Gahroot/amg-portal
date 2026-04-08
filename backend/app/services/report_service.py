@@ -1,11 +1,11 @@
 """Report service — aggregates data for client-facing and internal reports."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import extract, func, select
+from sqlalchemy import and_, case, extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,7 +25,7 @@ class ReportService:
 
     async def get_portfolio_overview(
         self, db: AsyncSession, client_id: uuid.UUID
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         """
         Generate portfolio overview report showing all client programs.
 
@@ -216,6 +216,8 @@ class ReportService:
         assigned_partners = []
         for assignment in assignments:
             if assignment.partner_id and assignment.partner_id not in partners_set:
+                if assignment.partner is None:
+                    continue
                 partners_set.add(assignment.partner_id)
                 assigned_partners.append(
                     {
@@ -334,6 +336,8 @@ class ReportService:
         partners = []
         for assignment in assignments:
             if assignment.partner_id and assignment.partner_id not in partners_set:
+                if assignment.partner is None:
+                    continue
                 partners_set.add(assignment.partner_id)
                 partners.append(
                     {
@@ -372,7 +376,7 @@ class ReportService:
             "generated_at": datetime.now(UTC).isoformat(),
         }
 
-    async def get_annual_review(
+    async def get_annual_review(  # noqa: PLR0912
         self, db: AsyncSession, client_id: uuid.UUID, year: int
     ) -> dict[str, Any] | None:
         """
@@ -486,6 +490,8 @@ class ReportService:
         partner_stats: dict[uuid.UUID, dict[str, Any]] = {}
 
         for assignment in assignments:
+            if assignment.partner is None:
+                continue
             if assignment.partner_id not in partner_stats:
                 partner_stats[assignment.partner_id] = {
                     "partner_id": assignment.partner_id,
@@ -790,7 +796,12 @@ class ReportService:
             "generated_at": now.isoformat(),
         }
 
-    async def get_compliance_audit_report(self, db: AsyncSession) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
+    async def get_compliance_audit_report(  # noqa: PLR0912, PLR0915
+        self,
+        db: AsyncSession,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> dict[str, Any]:
         """
         Generate compliance audit report for finance/compliance and MD review.
 
@@ -799,6 +810,10 @@ class ReportService:
         - Document completeness percentage per client
         - Open access anomalies from the latest access audit
         - User account status summary
+
+        When ``start_date`` / ``end_date`` are supplied, all record fetches are
+        filtered to rows whose ``created_at`` falls within that range, avoiding
+        unbounded full-table scans.
         """
         from app.models.access_audit import AccessAudit
         from app.models.kyc_document import KYCDocument
@@ -806,17 +821,102 @@ class ReportService:
         today = datetime.now(UTC).date()
         expiry_threshold = today + timedelta(days=30)
 
-        # 1. Clients + KYC documents
-        clients_result = await db.execute(select(Client).order_by(Client.name))
+        # Build reusable timestamp bounds for WHERE filters.
+        # We convert date → timezone-aware datetime at the boundaries so that
+        # comparisons against TIMESTAMPTZ columns work correctly.
+        ts_start = (
+            datetime(start_date.year, start_date.month, start_date.day, tzinfo=UTC)
+            if start_date
+            else None
+        )
+        ts_end = (
+            datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, tzinfo=UTC)
+            if end_date
+            else None
+        )
+
+        # ------------------------------------------------------------------
+        # 1. Clients filtered by creation date range
+        # ------------------------------------------------------------------
+        client_query = select(Client).order_by(Client.name)
+        if ts_start is not None:
+            client_query = client_query.where(Client.created_at >= ts_start)
+        if ts_end is not None:
+            client_query = client_query.where(Client.created_at <= ts_end)
+        clients_result = await db.execute(client_query)
         clients = list(clients_result.scalars().all())
 
-        kyc_result = await db.execute(select(KYCDocument))
-        kyc_docs = list(kyc_result.scalars().all())
+        # ------------------------------------------------------------------
+        # 1b. KYC document counts aggregated in SQL — one row per client.
+        #
+        # Each bucket is computed with a conditional COUNT so we never pull
+        # raw document rows into Python.
+        # ------------------------------------------------------------------
+        kyc_agg_query = (
+            select(
+                KYCDocument.client_id,
+                func.count().label("total"),
+                # verified + no expiry OR expiry > threshold  →  "current"
+                func.count(
+                    case(
+                        (
+                            and_(
+                                KYCDocument.status == "verified",
+                                (KYCDocument.expiry_date.is_(None))
+                                | (KYCDocument.expiry_date > expiry_threshold),
+                            ),
+                            KYCDocument.id,
+                        )
+                    )
+                ).label("current"),
+                # verified + expiry in (today, threshold]  →  "expiring_30d"
+                func.count(
+                    case(
+                        (
+                            and_(
+                                KYCDocument.status == "verified",
+                                KYCDocument.expiry_date.isnot(None),
+                                KYCDocument.expiry_date > today,
+                                KYCDocument.expiry_date <= expiry_threshold,
+                            ),
+                            KYCDocument.id,
+                        )
+                    )
+                ).label("expiring_30d"),
+                # verified + expiry < today  OR  status == "expired"  →  "expired"
+                func.count(
+                    case(
+                        (
+                            (KYCDocument.status == "expired")
+                            | and_(
+                                KYCDocument.status == "verified",
+                                KYCDocument.expiry_date.isnot(None),
+                                KYCDocument.expiry_date < today,
+                            ),
+                            KYCDocument.id,
+                        )
+                    )
+                ).label("expired"),
+                # pending / uploaded  →  "pending"
+                func.count(
+                    case(
+                        (
+                            KYCDocument.status.in_(["pending", "uploaded"]),
+                            KYCDocument.id,
+                        )
+                    )
+                ).label("pending"),
+            )
+            .group_by(KYCDocument.client_id)
+        )
+        if ts_start is not None:
+            kyc_agg_query = kyc_agg_query.where(KYCDocument.created_at >= ts_start)
+        if ts_end is not None:
+            kyc_agg_query = kyc_agg_query.where(KYCDocument.created_at <= ts_end)
 
-        # Group by client (KYCDocument uses old-style Column so key is Any at mypy level)
-        kyc_by_client: dict[Any, list[Any]] = {}
-        for doc in kyc_docs:
-            kyc_by_client.setdefault(doc.client_id, []).append(doc)
+        kyc_agg_result = await db.execute(kyc_agg_query)
+        # Keyed by client_id UUID → named-tuple row
+        kyc_by_client: dict[Any, Any] = {row.client_id: row for row in kyc_agg_result}
 
         client_kyc_statuses: list[dict[str, Any]] = []
         total_kyc_current = 0
@@ -824,29 +924,13 @@ class ReportService:
         total_kyc_expired = 0
 
         for client in clients:
-            docs = kyc_by_client.get(client.id, [])
-            current = 0
-            expiring_30d = 0
-            expired = 0
-            pending = 0
+            agg = kyc_by_client.get(client.id)
+            total: int = agg.total if agg else 0
+            current: int = agg.current if agg else 0
+            expiring_30d: int = agg.expiring_30d if agg else 0
+            expired: int = agg.expired if agg else 0
+            pending: int = agg.pending if agg else 0
 
-            for doc in docs:
-                if doc.status == "verified":
-                    if doc.expiry_date:
-                        if doc.expiry_date < today:
-                            expired += 1
-                        elif doc.expiry_date <= expiry_threshold:
-                            expiring_30d += 1
-                        else:
-                            current += 1
-                    else:
-                        current += 1
-                elif doc.status == "expired":
-                    expired += 1
-                elif doc.status in ("pending", "uploaded"):
-                    pending += 1
-
-            total = len(docs)
             completeness_pct = (
                 round((current + expiring_30d) / total * 100, 1) if total > 0 else 0.0
             )
@@ -881,7 +965,9 @@ class ReportService:
                 }
             )
 
+        # ------------------------------------------------------------------
         # 2. Latest access audit open findings
+        # ------------------------------------------------------------------
         latest_audit_result = await db.execute(
             select(AccessAudit)
             .options(selectinload(AccessAudit.findings))
@@ -908,31 +994,65 @@ class ReportService:
                         }
                     )
 
+        # ------------------------------------------------------------------
         # 3. User account statuses
-        users_result = await db.execute(select(User).order_by(User.full_name))
-        users = list(users_result.scalars().all())
+        #
+        # Summary counts: aggregate in SQL with GROUP BY status — no full scan.
+        # Per-user detail list: filtered select of only the columns we need.
+        # ------------------------------------------------------------------
+
+        # 3a. Summary counts via GROUP BY — avoids loading every User row.
+        user_counts_query = (
+            select(User.status, func.count(User.id).label("cnt"))
+            .group_by(User.status)
+        )
+        if ts_start is not None:
+            user_counts_query = user_counts_query.where(User.created_at >= ts_start)
+        if ts_end is not None:
+            user_counts_query = user_counts_query.where(User.created_at <= ts_end)
+        user_counts_result = await db.execute(user_counts_query)
 
         active_users = 0
         inactive_users = 0
         deactivated_users = 0
-        user_account_statuses: list[dict[str, Any]] = []
-
-        for user in users:
-            if user.status == "active":
-                active_users += 1
-            elif user.status == "deactivated":
-                deactivated_users += 1
+        for status_row in user_counts_result:
+            if status_row.status == "active":
+                active_users = status_row.cnt
+            elif status_row.status == "deactivated":
+                deactivated_users = status_row.cnt
             else:
-                inactive_users += 1
+                inactive_users += status_row.cnt
 
+        # 3b. Per-row detail list — filtered and restricted to needed columns.
+        user_detail_query = (
+            select(
+                User.id,
+                User.full_name,
+                User.email,
+                User.role,
+                User.status,
+                User.created_at,
+            )
+            .order_by(User.full_name)
+        )
+        if ts_start is not None:
+            user_detail_query = user_detail_query.where(User.created_at >= ts_start)
+        if ts_end is not None:
+            user_detail_query = user_detail_query.where(User.created_at <= ts_end)
+        users_result = await db.execute(user_detail_query)
+
+        user_account_statuses: list[dict[str, Any]] = []
+        total_users = 0
+        for u in users_result:
+            total_users += 1
             user_account_statuses.append(
                 {
-                    "user_id": user.id,
-                    "full_name": user.full_name,
-                    "email": user.email,
-                    "role": user.role,
-                    "status": user.status,
-                    "created_at": user.created_at.isoformat(),
+                    "user_id": u.id,
+                    "full_name": u.full_name,
+                    "email": u.email,
+                    "role": u.role,
+                    "status": u.status,
+                    "created_at": u.created_at.isoformat(),
                 }
             )
 
@@ -944,7 +1064,7 @@ class ReportService:
             "client_kyc_statuses": client_kyc_statuses,
             "access_anomalies": access_anomalies,
             "latest_audit_period": latest_audit_period,
-            "total_users": len(users),
+            "total_users": total_users,
             "active_users": active_users,
             "inactive_users": inactive_users,
             "deactivated_users": deactivated_users,

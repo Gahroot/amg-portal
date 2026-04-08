@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import type { DecisionRequest } from "@/types/communication";
 
@@ -139,6 +140,9 @@ export function AddToCalendarButton({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("iCal download failed:", error);
+      toast.error("Failed to download calendar file. Please try again.");
     } finally {
       setIsDownloading(false);
     }

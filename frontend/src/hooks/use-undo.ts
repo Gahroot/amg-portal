@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, type SetStateAction } from "react";
 
 /**
  * History state for undo/redo functionality
@@ -34,9 +34,9 @@ export interface UseUndoReturn<T> {
   /** Whether redo is available */
   canRedo: boolean;
   /** Set a new value (adds to history) */
-  setValue: (value: React.SetStateAction<T>) => void;
+  setValue: (value: SetStateAction<T>) => void;
   /** Update value without adding to history */
-  updateValue: (value: React.SetStateAction<T>) => void;
+  updateValue: (value: SetStateAction<T>) => void;
   /** Undo the last change */
   undo: () => void;
   /** Redo the last undone change */
@@ -82,30 +82,30 @@ export function useUndo<T>(
   const { maxHistory = 50, debounceMs = 300, isEqual = Object.is } = options;
 
   // Resolve initial value
-  const resolvedInitialValue = React.useMemo(() => {
+  const resolvedInitialValue = useMemo(() => {
     return typeof initialValue === "function"
       ? (initialValue as () => T)()
       : initialValue;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [history, setHistory] = React.useState<HistoryState<T>>({
+  const [history, setHistory] = useState<HistoryState<T>>({
     past: [],
     present: resolvedInitialValue,
     future: [],
   });
 
   // Refs for debounce handling
-  const debounceTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  const pendingValueRef = React.useRef<T | null>(null);
+  const pendingValueRef = useRef<T | null>(null);
 
   // Keep track of initial value for reset
-  const initialValueRef = React.useRef(resolvedInitialValue);
+  const initialValueRef = useRef(resolvedInitialValue);
 
   // Update initial value ref if prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     initialValueRef.current = resolvedInitialValue;
   }, [resolvedInitialValue]);
 
@@ -115,7 +115,7 @@ export function useUndo<T>(
   const canRedo = future.length > 0;
 
   // Flush pending debounced value to history
-  const flushDebounce = React.useCallback(() => {
+  const flushDebounce = useCallback(() => {
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
       debounceTimeoutRef.current = null;
@@ -143,7 +143,7 @@ export function useUndo<T>(
   }, [isEqual, maxHistory]);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
@@ -154,7 +154,7 @@ export function useUndo<T>(
   /**
    * Set a new value and add to history
    */
-  const setValue: UseUndoReturn<T>["setValue"] = React.useCallback(
+  const setValue: UseUndoReturn<T>["setValue"] = useCallback(
     (action) => {
       // Cancel any pending flush
       if (debounceTimeoutRef.current) {
@@ -204,7 +204,7 @@ export function useUndo<T>(
   /**
    * Update value without adding to history
    */
-  const updateValue: UseUndoReturn<T>["updateValue"] = React.useCallback(
+  const updateValue: UseUndoReturn<T>["updateValue"] = useCallback(
     (action) => {
       setHistory((prev) => {
         const newValue =
@@ -228,7 +228,7 @@ export function useUndo<T>(
   /**
    * Undo the last change
    */
-  const undo = React.useCallback(() => {
+  const undo = useCallback(() => {
     // Flush any pending changes first
     flushDebounce();
 
@@ -251,7 +251,7 @@ export function useUndo<T>(
   /**
    * Redo the last undone change
    */
-  const redo = React.useCallback(() => {
+  const redo = useCallback(() => {
     // Flush any pending changes first
     flushDebounce();
 
@@ -274,7 +274,7 @@ export function useUndo<T>(
   /**
    * Reset to initial or specified value, clearing all history
    */
-  const reset: UseUndoReturn<T>["reset"] = React.useCallback(
+  const reset: UseUndoReturn<T>["reset"] = useCallback(
     (value) => {
       // Cancel any pending debounce
       if (debounceTimeoutRef.current) {
@@ -297,7 +297,7 @@ export function useUndo<T>(
   /**
    * Clear history without changing present value
    */
-  const clearHistory = React.useCallback(() => {
+  const clearHistory = useCallback(() => {
     // Cancel any pending debounce
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -395,7 +395,7 @@ export function useFormUndo<T extends Record<string, unknown>>(
     ...options,
   });
 
-  const setField = React.useCallback(
+  const setField = useCallback(
     <K extends keyof T>(field: K, value: T[K]) => {
       undoState.setValue((prev) => ({
         ...prev,
@@ -405,7 +405,7 @@ export function useFormUndo<T extends Record<string, unknown>>(
     [undoState]
   );
 
-  const setFields = React.useCallback(
+  const setFields = useCallback(
     (updates: Partial<T>) => {
       undoState.setValue((prev) => ({
         ...prev,

@@ -22,6 +22,13 @@ class SecurityProfileLevelUpdate(BaseModel):
     security_profile_level: SecurityProfileLevel
 
 
+class SecurityProfileLevelUpdateResponse(BaseModel):
+    """Response body after updating a client's security profile level."""
+
+    profile_id: UUID
+    security_profile_level: str
+
+
 # ---------------------------------------------------------------------------
 # Feed response shapes
 # ---------------------------------------------------------------------------

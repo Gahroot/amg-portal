@@ -9,6 +9,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.core.audit_context import AuditContext, audit_context_var
+from app.core.ip_utils import get_client_ip
 from app.core.security import decode_access_token
 
 
@@ -28,12 +29,8 @@ class AuditContextMiddleware(BaseHTTPMiddleware):
                         ctx.user_id = uuid.UUID(sub)
                 ctx.user_email = payload.get("email")
 
-        # IP address
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            ctx.ip_address = forwarded.split(",")[0].strip()
-        elif request.client:
-            ctx.ip_address = request.client.host
+        # IP address — only trust X-Forwarded-For from known proxy addresses
+        ctx.ip_address = get_client_ip(request)
 
         # User-Agent
         ctx.user_agent = request.headers.get("user-agent", "")[:500]

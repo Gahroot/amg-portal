@@ -21,12 +21,28 @@ from collections.abc import AsyncGenerator, Generator
 
 import asyncpg
 import pytest
-import pytest_asyncio
+
+# ---------------------------------------------------------------------------
+# Custom pytest markers
+# ---------------------------------------------------------------------------
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register project-specific pytest markers."""
+    config.addinivalue_line(
+        "markers",
+        "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    )
+    config.addinivalue_line(
+        "markers",
+        "integration: marks integration tests requiring database",
+    )
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text as _text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.core.rate_limit import _fallback_cache
 from app.core.security import create_access_token, hash_password
 from app.db.base import Base
 from app.db.session import get_db
@@ -100,7 +116,7 @@ def create_test_database() -> Generator[None, None, None]:
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def db_session(
     create_test_database: None,  # noqa: ARG001
 ) -> AsyncGenerator[AsyncSession, None]:
@@ -123,6 +139,24 @@ async def db_session(
                 yield s
             finally:
                 await s.close()
+
+    # Reset rate-limit counters (Redis keys + in-process fallback) *before*
+    # each test so sequential login/auth tests don't hit 429 from prior runs.
+    _fallback_cache.clear()
+    try:
+        from app.db.redis import redis_client
+
+        cursor: int = 0
+        while True:
+            cursor, keys = await redis_client.scan(
+                cursor, match="rate_limit:*", count=100
+            )
+            if keys:
+                await redis_client.delete(*keys)
+            if cursor == 0:
+                break
+    except Exception:  # noqa: BLE001
+        pass  # Redis not available in this test environment
 
     app.dependency_overrides[get_db] = _override
 
@@ -148,7 +182,7 @@ async def db_session(
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def anon_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:  # noqa: ARG001
     """Unauthenticated async HTTP test client."""
     async with AsyncClient(
@@ -186,7 +220,7 @@ def make_user(role: str, suffix: str = "") -> User:
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def md_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.managing_director)
     db_session.add(user)
@@ -194,7 +228,7 @@ async def md_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def rm_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.relationship_manager)
     db_session.add(user)
@@ -202,7 +236,7 @@ async def rm_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def rm_user_b(db_session: AsyncSession) -> User:
     """Second RM — used in scoping / RBAC tests."""
     user = make_user(UserRole.relationship_manager, "rmb")
@@ -211,7 +245,7 @@ async def rm_user_b(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def coordinator_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.coordinator)
     db_session.add(user)
@@ -219,7 +253,7 @@ async def coordinator_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def compliance_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.finance_compliance)
     db_session.add(user)
@@ -227,7 +261,7 @@ async def compliance_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def client_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.client)
     db_session.add(user)
@@ -235,7 +269,7 @@ async def client_user(db_session: AsyncSession) -> User:
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def partner_user(db_session: AsyncSession) -> User:
     user = make_user(UserRole.partner)
     db_session.add(user)
@@ -248,19 +282,19 @@ async def partner_user(db_session: AsyncSession) -> User:
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def md_client(anon_client: AsyncClient, md_user: User) -> AsyncClient:
     anon_client.headers.update(auth_headers(md_user))
     return anon_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def rm_client(anon_client: AsyncClient, rm_user: User) -> AsyncClient:
     anon_client.headers.update(auth_headers(rm_user))
     return anon_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def coordinator_client(
     anon_client: AsyncClient, coordinator_user: User
 ) -> AsyncClient:
@@ -268,7 +302,7 @@ async def coordinator_client(
     return anon_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def compliance_client(
     anon_client: AsyncClient, compliance_user: User
 ) -> AsyncClient:
@@ -276,7 +310,7 @@ async def compliance_client(
     return anon_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def client_user_http(
     anon_client: AsyncClient, client_user: User
 ) -> AsyncClient:
@@ -285,7 +319,7 @@ async def client_user_http(
     return anon_client
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def partner_http(
     anon_client: AsyncClient, partner_user: User
 ) -> AsyncClient:
@@ -299,7 +333,7 @@ async def partner_http(
 # ---------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def db_client(db_session: AsyncSession, rm_user: User) -> Client:
     """A Client entity (not a portal user account) assigned to ``rm_user``."""
     record = Client(
@@ -314,7 +348,7 @@ async def db_client(db_session: AsyncSession, rm_user: User) -> Client:
     return record
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def db_client_profile(
     db_session: AsyncSession, rm_user: User
 ) -> ClientProfile:
@@ -333,7 +367,7 @@ async def db_client_profile(
     return profile
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def db_client_profile_pending_md(
     db_session: AsyncSession, rm_user: User
 ) -> ClientProfile:

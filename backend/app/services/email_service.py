@@ -14,7 +14,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-async def render_jinja_template(template_str: str, variables: dict[str, Any]) -> str:
+def render_jinja_template(template_str: str, variables: dict[str, Any]) -> str:
     """Render a Jinja2 template with the given variables."""
     template = Template(template_str)
     return template.render(**variables)

@@ -163,14 +163,11 @@ export async function downloadServerExport(
   format: ExportFormat,
   fileName: string,
 ): Promise<void> {
-  const { getAccessToken } = await import("@/lib/token-storage");
-  const token = getAccessToken();
-
   const separator = url.includes("?") ? "&" : "?";
   const fullUrl = `${url}${separator}format=${format}`;
 
   const response = await fetch(fullUrl, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
 
   if (!response.ok) {

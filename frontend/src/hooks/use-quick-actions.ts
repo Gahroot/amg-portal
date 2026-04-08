@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useMemo, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import type { UserRole } from "@/types/user";
@@ -425,22 +425,22 @@ export function useQuickActions(): UseQuickActionsReturn {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const [state, setState] = React.useState<QuickActionsState>(loadState);
+  const [state, setState] = useState<QuickActionsState>(loadState);
 
   // Build context
-  const context: QuickActionContext = React.useMemo(() => ({
+  const context: QuickActionContext = useMemo(() => ({
     pathname,
     pageType: detectPageType(pathname),
     userRole: user?.role || "client",
   }), [pathname, user?.role]);
 
   // Get actions for current context
-  const allActions = React.useMemo(() => {
+  const allActions = useMemo(() => {
     return getDefaultActionsForContext(context.pageType, context.userRole);
   }, [context.pageType, context.userRole]);
 
   // Sort actions by order and custom order
-  const actions = React.useMemo(() => {
+  const actions = useMemo(() => {
     return [...allActions].sort((a, b) => {
       const orderA = state.customOrder[a.id] ?? a.order ?? 100;
       const orderB = state.customOrder[b.id] ?? b.order ?? 100;
@@ -449,12 +449,12 @@ export function useQuickActions(): UseQuickActionsReturn {
   }, [allActions, state.customOrder]);
 
   // Get pinned actions
-  const pinnedActions = React.useMemo(() => {
+  const pinnedActions = useMemo(() => {
     return actions.filter((a) => state.pinnedActions.includes(a.id));
   }, [actions, state.pinnedActions]);
 
   // Pin/unpin actions
-  const pinAction = React.useCallback((actionId: string) => {
+  const pinAction = useCallback((actionId: string) => {
     setState((prev) => {
       if (prev.pinnedActions.includes(actionId)) return prev;
       const newState = {
@@ -466,7 +466,7 @@ export function useQuickActions(): UseQuickActionsReturn {
     });
   }, []);
 
-  const unpinAction = React.useCallback((actionId: string) => {
+  const unpinAction = useCallback((actionId: string) => {
     setState((prev) => {
       const newState = {
         ...prev,
@@ -477,7 +477,7 @@ export function useQuickActions(): UseQuickActionsReturn {
     });
   }, []);
 
-  const togglePin = React.useCallback((actionId: string) => {
+  const togglePin = useCallback((actionId: string) => {
     setState((prev) => {
       const isPinned = prev.pinnedActions.includes(actionId);
       const newState = {
@@ -491,7 +491,7 @@ export function useQuickActions(): UseQuickActionsReturn {
     });
   }, []);
 
-  const reorderAction = React.useCallback((actionId: string, newOrder: number) => {
+  const reorderAction = useCallback((actionId: string, newOrder: number) => {
     setState((prev) => {
       const newState = {
         ...prev,
@@ -503,7 +503,7 @@ export function useQuickActions(): UseQuickActionsReturn {
   }, []);
 
   // Execute action
-  const executeAction = React.useCallback((action: QuickAction) => {
+  const executeAction = useCallback((action: QuickAction) => {
     // Check if disabled
     const disabled = typeof action.disabled === "function"
       ? action.disabled(context)
@@ -515,15 +515,15 @@ export function useQuickActions(): UseQuickActionsReturn {
   }, [context]);
 
   // Menu state
-  const openMenu = React.useCallback(() => {
+  const openMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: true }));
   }, []);
 
-  const closeMenu = React.useCallback(() => {
+  const closeMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
-  const toggleMenu = React.useCallback(() => {
+  const toggleMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: !prev.isOpen }));
   }, []);
 
