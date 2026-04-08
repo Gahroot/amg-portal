@@ -76,46 +76,8 @@ class MilestoneResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MilestoneDetailResponse(BaseModel):
-    id: UUID
-    program_id: UUID
-    title: str
-    description: str | None
-    due_date: date | None
-    status: str
-    position: int
-    calendar_event_id: str | None = None
-    task_count: int = 0
-    completed_task_count: int = 0
+class MilestoneDetailResponse(MilestoneResponse):
     tasks: list[TaskResponse] = []
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ProgramDetailResponse(BaseModel):
-    id: UUID
-    client_id: UUID
-    client_name: str = ""
-    title: str
-    objectives: str | None
-    scope: str | None
-    budget_envelope: Decimal | None
-    start_date: date | None
-    end_date: date | None
-    status: str
-    emergency_reason: str | None = None
-    retrospective_due_at: datetime | None = None
-    created_by: UUID
-    rag_status: str = "green"
-    milestone_count: int = 0
-    completed_milestone_count: int = 0
-    milestones: list[MilestoneDetailResponse] = []
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ProgramCreate(BaseModel):
@@ -165,6 +127,10 @@ class ProgramResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProgramDetailResponse(ProgramResponse):
+    milestones: list[MilestoneDetailResponse] = []
 
 
 class ArchivalCandidateResponse(BaseModel):
