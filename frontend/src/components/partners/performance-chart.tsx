@@ -48,7 +48,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "sla_compliance_pct",
     label: "SLA Compliance %",
-    color: "#6366f1",
+    color: "#8b7d5e",
     type: "line",
     domain: [0, 100],
     yAxisId: "pct",
@@ -56,7 +56,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_overall",
     label: "Overall Rating",
-    color: "#16a34a",
+    color: "#1B2A4A",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -64,7 +64,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_quality",
     label: "Quality",
-    color: "#d97706",
+    color: "#c4a060",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -72,7 +72,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_timeliness",
     label: "Timeliness",
-    color: "#0ea5e9",
+    color: "#6B5E4A",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -80,7 +80,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "avg_communication",
     label: "Communication",
-    color: "#a855f7",
+    color: "#A0785A",
     type: "line",
     domain: [1, 5],
     yAxisId: "score",
@@ -88,7 +88,7 @@ const METRICS: MetricConfig[] = [
   {
     key: "assignments_completed",
     label: "Assignments Completed",
-    color: "#94a3b8",
+    color: "#D4CFC5",
     type: "bar",
     yAxisId: "count",
   },
@@ -113,7 +113,7 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border bg-background shadow-md p-3 text-xs space-y-1 min-w-[180px]">
+    <div className="rounded-lg border border-t-2 border-t-primary bg-background shadow-md p-3 text-xs space-y-1 min-w-[180px]">
       <p className="font-semibold text-foreground mb-2">
         Week of {label ? format(parseISO(label), "MMM d, yyyy") : ""}
       </p>
@@ -307,10 +307,10 @@ export function PerformanceChart({
           color={
             summary.overall_sla_compliance_pct !== null
               ? summary.overall_sla_compliance_pct >= 90
-                ? "#16a34a"
+                ? "#4A7A5A"
                 : summary.overall_sla_compliance_pct >= 75
-                  ? "#d97706"
-                  : "#dc2626"
+                  ? "#c4a060"
+                  : "#8B2020"
               : undefined
           }
         />
@@ -320,10 +320,10 @@ export function PerformanceChart({
           color={
             summary.overall_avg_quality !== null
               ? summary.overall_avg_quality >= 4
-                ? "#16a34a"
+                ? "#4A7A5A"
                 : summary.overall_avg_quality >= 3
-                  ? "#d97706"
-                  : "#dc2626"
+                  ? "#c4a060"
+                  : "#8B2020"
               : undefined
           }
         />
@@ -343,7 +343,7 @@ export function PerformanceChart({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <CardTitle className="font-serif text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-indigo-500" />
+              <TrendingUp className="h-5 w-5 text-primary" />
               Performance Trends
             </CardTitle>
 
@@ -410,7 +410,7 @@ export function PerformanceChart({
                   data={chartData}
                   margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="1 4" strokeOpacity={0.4} stroke="hsl(var(--border))" vertical={false} />
 
                   {/* X axis — week start dates */}
                   <XAxis

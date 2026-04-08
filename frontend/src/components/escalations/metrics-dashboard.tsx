@@ -49,18 +49,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const LEVEL_COLORS: Record<string, string> = {
-  task: "#6366f1",
-  milestone: "#f59e0b",
-  program: "#ef4444",
-  client_impact: "#dc2626",
+  task: "#8b7d5e",
+  milestone: "#c4a060",
+  program: "#1B2A4A",
+  client_impact: "#8B2020",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "#ef4444",
-  acknowledged: "#f59e0b",
-  investigating: "#6366f1",
-  resolved: "#16a34a",
-  closed: "#94a3b8",
+  open: "#8B2020",
+  acknowledged: "#c4a060",
+  investigating: "#1B2A4A",
+  resolved: "#4A7A5A",
+  closed: "#B8B0A0",
 };
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -166,7 +166,7 @@ function ChartTooltip({
       : label
     : "";
   return (
-    <div className="rounded-lg border bg-background shadow-md p-3 text-xs space-y-1 min-w-[160px]">
+    <div className="rounded-lg border border-t-2 border-t-primary bg-background shadow-md p-3 text-xs space-y-1 min-w-[160px]">
       <p className="font-semibold mb-2">{displayLabel}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center justify-between gap-3">
@@ -441,7 +441,7 @@ export function EscalationMetricsDashboard() {
                   ? `${summary.avg_time_to_response_hours}h`
                   : "—"
               }
-              icon={<TrendingUp className="h-5 w-5 text-indigo-500" />}
+              icon={<TrendingUp className="h-5 w-5 text-primary" />}
               highlight={
                 summary?.avg_time_to_response_hours !== null &&
                 summary?.avg_time_to_response_hours !== undefined
@@ -478,7 +478,7 @@ export function EscalationMetricsDashboard() {
                     data={levelChartData}
                     margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="1 4" strokeOpacity={0.4} stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11 }}
@@ -526,7 +526,7 @@ export function EscalationMetricsDashboard() {
                     data={statusChartData}
                     margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="1 4" strokeOpacity={0.4} stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 11 }}
@@ -558,7 +558,7 @@ export function EscalationMetricsDashboard() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="font-serif text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-indigo-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
             Weekly Escalation Trend
           </CardTitle>
         </CardHeader>
@@ -576,7 +576,7 @@ export function EscalationMetricsDashboard() {
                   data={trendData}
                   margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="1 4" strokeOpacity={0.4} stroke="hsl(var(--border))" vertical={false} />
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 10 }}
@@ -691,7 +691,7 @@ export function EscalationMetricsDashboard() {
                       </div>
                       <div className="flex-1 rounded-full bg-muted h-2 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-indigo-500"
+                          className="h-full rounded-full bg-primary"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
