@@ -29,6 +29,7 @@ import { ExportDashboardButton } from "@/components/dashboard/export-dashboard-b
 import { UpcomingDatesWidget } from "@/components/dashboard/upcoming-dates-widget";
 import { ExpiringDocumentsWidget } from "@/components/documents/expiring-documents-widget";
 import { FavoriteReportsWidget } from "@/components/reports/report-favorites";
+import { FadeIn } from "@/components/ui/fade-in";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -316,28 +317,32 @@ export default function DashboardPage() {
   return (
     <div id="dashboard-content" className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Welcome back, {user?.full_name?.split(" ")[0]}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {ROLE_LABELS[role] ?? role} · {user?.email}
-          </p>
+      <FadeIn>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="font-serif text-3xl font-bold tracking-tight">
+              Welcome back, {user?.full_name?.split(" ")[0]}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {ROLE_LABELS[role] ?? role} · {user?.email}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {isInternal ? (
+              <QuickActionsBar role={role} />
+            ) : (
+              <QuickActions role={role} />
+            )}
+            <ExportDashboardButton title="Portfolio Overview" />
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {isInternal ? (
-            <QuickActionsBar role={role} />
-          ) : (
-            <QuickActions role={role} />
-          )}
-          <ExportDashboardButton title="Portfolio Overview" />
-        </div>
-      </div>
+      </FadeIn>
 
       {/* Real-time stats bar */}
       {isInternal && (
-        <StatsBar stats={realTimeStats} isLoading={statsLoading} />
+        <FadeIn delay={0.1}>
+          <StatsBar stats={realTimeStats} isLoading={statsLoading} />
+        </FadeIn>
       )}
 
       {/* Loading state */}
@@ -359,64 +364,78 @@ export default function DashboardPage() {
         <>
           {/* RAG breakdown — show to all internal roles */}
           {role !== "client" && role !== "partner" && (
-            <RagBreakdown breakdown={summary.rag_breakdown} />
+            <FadeIn delay={0.15}>
+              <RagBreakdown breakdown={summary.rag_breakdown} />
+            </FadeIn>
           )}
 
           {/* Upcoming dates widget — RMs and MDs only */}
           {(role === "managing_director" || role === "relationship_manager") && (
-            <UpcomingDatesWidget />
+            <FadeIn delay={0.15}>
+              <UpcomingDatesWidget />
+            </FadeIn>
           )}
 
           {/* Expiring documents widget — internal roles */}
-          {isInternal && <ExpiringDocumentsWidget limit={5} />}
+          {isInternal && (
+            <FadeIn delay={0.15}>
+              <ExpiringDocumentsWidget limit={5} />
+            </FadeIn>
+          )}
 
           {/* Favorite reports widget — RMs and MDs only */}
           {(role === "managing_director" || role === "relationship_manager") && (
-            <FavoriteReportsWidget />
+            <FadeIn delay={0.15}>
+              <FavoriteReportsWidget />
+            </FadeIn>
           )}
 
           {/* Activity feed + Alerts side by side */}
           {isInternal && (
-            <div className="grid gap-6 lg:grid-cols-2">
-              <ActivityFeed
-                items={activityFeed?.items}
-                isLoading={feedLoading}
-              />
-              <AlertsPanel
-                alerts={alertsData?.alerts}
-                isLoading={alertsLoading}
-              />
-            </div>
+            <FadeIn delay={0.2}>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <ActivityFeed
+                  items={activityFeed?.items}
+                  isLoading={feedLoading}
+                />
+                <AlertsPanel
+                  alerts={alertsData?.alerts}
+                  isLoading={alertsLoading}
+                />
+              </div>
+            </FadeIn>
           )}
 
           {/* At-risk programs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                At-Risk Programs
-              </CardTitle>
-              <CardDescription>
-                Programs with red RAG status or active escalations requiring
-                immediate attention
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {atRiskLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
-                  ))}
-                </div>
-              ) : atRisk && atRisk.programs.length > 0 ? (
-                <ProgramHealthTable programs={atRisk.programs} />
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No at-risk programs. All programs are on track.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <FadeIn delay={0.2}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  At-Risk Programs
+                </CardTitle>
+                <CardDescription>
+                  Programs with red RAG status or active escalations requiring
+                  immediate attention
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {atRiskLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </div>
+                ) : atRisk && atRisk.programs.length > 0 ? (
+                  <ProgramHealthTable programs={atRisk.programs} />
+                ) : (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No at-risk programs. All programs are on track.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </FadeIn>
         </>
       )}
     </div>
