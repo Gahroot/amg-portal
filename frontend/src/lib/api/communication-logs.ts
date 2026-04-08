@@ -1,4 +1,3 @@
-import api from "@/lib/api";
 import type {
   CommunicationLog,
   CommunicationLogListResponse,
@@ -6,45 +5,19 @@ import type {
   CommunicationLogUpdateData,
   CommunicationLogListParams,
 } from "@/types/communication-log";
+import { createApiClient } from "./factory";
 
-export async function listCommunicationLogs(
-  params?: CommunicationLogListParams
-): Promise<CommunicationLogListResponse> {
-  const response = await api.get<CommunicationLogListResponse>(
-    "/api/v1/communication-logs/",
-    { params }
-  );
-  return response.data;
-}
+const logsApi = createApiClient<
+  CommunicationLog,
+  CommunicationLogListResponse,
+  CommunicationLogCreateData,
+  CommunicationLogUpdateData
+>("/api/v1/communication-logs/", { updateMethod: "put" });
 
-export async function getCommunicationLog(id: string): Promise<CommunicationLog> {
-  const response = await api.get<CommunicationLog>(
-    `/api/v1/communication-logs/${id}`
-  );
-  return response.data;
-}
-
-export async function createCommunicationLog(
-  data: CommunicationLogCreateData
-): Promise<CommunicationLog> {
-  const response = await api.post<CommunicationLog>(
-    "/api/v1/communication-logs/",
-    data
-  );
-  return response.data;
-}
-
-export async function updateCommunicationLog(
-  id: string,
-  data: CommunicationLogUpdateData
-): Promise<CommunicationLog> {
-  const response = await api.put<CommunicationLog>(
-    `/api/v1/communication-logs/${id}`,
-    data
-  );
-  return response.data;
-}
-
-export async function deleteCommunicationLog(id: string): Promise<void> {
-  await api.delete(`/api/v1/communication-logs/${id}`);
-}
+export const listCommunicationLogs = logsApi.list as (
+  params?: CommunicationLogListParams,
+) => Promise<CommunicationLogListResponse>;
+export const getCommunicationLog = logsApi.get;
+export const createCommunicationLog = logsApi.create;
+export const updateCommunicationLog = logsApi.update;
+export const deleteCommunicationLog = logsApi.delete;

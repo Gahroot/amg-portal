@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 // ============================================================================
 // Types
@@ -146,68 +147,46 @@ export interface ClearanceCertificateListParams {
 }
 
 // ============================================================================
-// Template API Functions
+// Template API Functions (factory)
 // ============================================================================
 
-export async function listTemplates(params?: {
+const templatesApi = createApiClient<
+  CertificateTemplate,
+  CertificateTemplateListResponse,
+  CertificateTemplateCreate,
+  CertificateTemplateUpdate
+>("/api/v1/clearance-certificates/templates");
+
+export const listTemplates = templatesApi.list as (params?: {
   template_type?: CertificateTemplateType;
   is_active?: boolean;
   skip?: number;
   limit?: number;
-}): Promise<CertificateTemplateListResponse> {
-  const response = await api.get<CertificateTemplateListResponse>(
-    "/api/v1/clearance-certificates/templates",
-    { params }
-  );
-  return response.data;
-}
-
-export async function getTemplate(id: string): Promise<CertificateTemplate> {
-  const response = await api.get<CertificateTemplate>(
-    `/api/v1/clearance-certificates/templates/${id}`
-  );
-  return response.data;
-}
-
-export async function createTemplate(
-  data: CertificateTemplateCreate
-): Promise<CertificateTemplate> {
-  const response = await api.post<CertificateTemplate>(
-    "/api/v1/clearance-certificates/templates",
-    data
-  );
-  return response.data;
-}
-
-export async function updateTemplate(
-  id: string,
-  data: CertificateTemplateUpdate
-): Promise<CertificateTemplate> {
-  const response = await api.patch<CertificateTemplate>(
-    `/api/v1/clearance-certificates/templates/${id}`,
-    data
-  );
-  return response.data;
-}
-
-export async function deleteTemplate(id: string): Promise<void> {
-  await api.delete(`/api/v1/clearance-certificates/templates/${id}`);
-}
+}) => Promise<CertificateTemplateListResponse>;
+export const getTemplate = templatesApi.get;
+export const createTemplate = templatesApi.create;
+export const updateTemplate = templatesApi.update;
+export const deleteTemplate = templatesApi.delete;
 
 // ============================================================================
-// Certificate API Functions
+// Certificate API Functions (factory for standard CRUD)
 // ============================================================================
 
-export async function listCertificates(
-  params?: ClearanceCertificateListParams
-): Promise<ClearanceCertificateListResponse> {
-  const response = await api.get<ClearanceCertificateListResponse>(
-    "/api/v1/clearance-certificates/",
-    { params }
-  );
-  return response.data;
-}
+const certsApi = createApiClient<
+  ClearanceCertificate,
+  ClearanceCertificateListResponse,
+  ClearanceCertificateCreate,
+  ClearanceCertificateUpdate
+>("/api/v1/clearance-certificates/");
 
+export const listCertificates = certsApi.list as (
+  params?: ClearanceCertificateListParams,
+) => Promise<ClearanceCertificateListResponse>;
+export const createCertificate = certsApi.create;
+export const updateCertificate = certsApi.update;
+export const deleteCertificate = certsApi.delete;
+
+// getCertificate returns ClearanceCertificateDetail (richer type), so keep manual
 export async function getCertificate(id: string): Promise<ClearanceCertificateDetail> {
   const response = await api.get<ClearanceCertificateDetail>(
     `/api/v1/clearance-certificates/${id}`
@@ -215,26 +194,7 @@ export async function getCertificate(id: string): Promise<ClearanceCertificateDe
   return response.data;
 }
 
-export async function createCertificate(
-  data: ClearanceCertificateCreate
-): Promise<ClearanceCertificate> {
-  const response = await api.post<ClearanceCertificate>(
-    "/api/v1/clearance-certificates/",
-    data
-  );
-  return response.data;
-}
-
-export async function updateCertificate(
-  id: string,
-  data: ClearanceCertificateUpdate
-): Promise<ClearanceCertificate> {
-  const response = await api.patch<ClearanceCertificate>(
-    `/api/v1/clearance-certificates/${id}`,
-    data
-  );
-  return response.data;
-}
+// Custom endpoints
 
 export async function issueCertificate(
   id: string,
@@ -256,10 +216,6 @@ export async function revokeCertificate(
     data
   );
   return response.data;
-}
-
-export async function deleteCertificate(id: string): Promise<void> {
-  await api.delete(`/api/v1/clearance-certificates/${id}`);
 }
 
 export async function previewCertificate(

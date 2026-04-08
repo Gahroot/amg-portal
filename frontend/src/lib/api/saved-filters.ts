@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 export interface SavedFilter {
   id: string;
@@ -29,6 +30,18 @@ export interface SavedFilterUpdateData {
   is_default?: boolean;
 }
 
+const filtersApi = createApiClient<
+  SavedFilter,
+  SavedFilterListResponse,
+  SavedFilterCreateData,
+  SavedFilterUpdateData
+>("/api/v1/saved-filters", { updateMethod: "put" });
+
+export const createSavedFilter = filtersApi.create;
+export const updateSavedFilter = filtersApi.update;
+export const deleteSavedFilter = filtersApi.delete;
+
+// getSavedFilters has custom param handling
 export async function getSavedFilters(
   entityType?: string
 ): Promise<SavedFilterListResponse> {
@@ -41,26 +54,4 @@ export async function getSavedFilters(
     { params }
   );
   return response.data;
-}
-
-export async function createSavedFilter(
-  data: SavedFilterCreateData
-): Promise<SavedFilter> {
-  const response = await api.post<SavedFilter>("/api/v1/saved-filters", data);
-  return response.data;
-}
-
-export async function updateSavedFilter(
-  id: string,
-  data: SavedFilterUpdateData
-): Promise<SavedFilter> {
-  const response = await api.put<SavedFilter>(
-    `/api/v1/saved-filters/${id}`,
-    data
-  );
-  return response.data;
-}
-
-export async function deleteSavedFilter(id: string): Promise<void> {
-  await api.delete(`/api/v1/saved-filters/${id}`);
 }

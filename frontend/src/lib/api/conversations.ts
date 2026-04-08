@@ -8,6 +8,7 @@ import type {
   CommunicationListResponse,
   SendMessageData,
 } from "@/types/communication";
+import { createApiClient } from "./factory";
 
 export interface AudioUploadResult {
   object_path: string;
@@ -26,36 +27,19 @@ export interface MessageListParams {
   limit?: number;
 }
 
-// Conversations
-export async function listConversations(
-  params?: ConversationListParams
-): Promise<ConversationListResponse> {
-  const response = await api.get<ConversationListResponse>(
-    "/api/v1/conversations/",
-    { params }
-  );
-  return response.data;
-}
+const conversationsApi = createApiClient<
+  Conversation,
+  ConversationListResponse,
+  ConversationCreateData,
+  ConversationUpdateData
+>("/api/v1/conversations/");
 
-export async function getConversation(id: string): Promise<Conversation> {
-  const response = await api.get<Conversation>(`/api/v1/conversations/${id}`);
-  return response.data;
-}
-
-export async function createConversation(
-  data: ConversationCreateData
-): Promise<Conversation> {
-  const response = await api.post<Conversation>("/api/v1/conversations/", data);
-  return response.data;
-}
-
-export async function updateConversation(
-  id: string,
-  data: ConversationUpdateData
-): Promise<Conversation> {
-  const response = await api.patch<Conversation>(`/api/v1/conversations/${id}`, data);
-  return response.data;
-}
+export const listConversations = conversationsApi.list as (
+  params?: ConversationListParams,
+) => Promise<ConversationListResponse>;
+export const getConversation = conversationsApi.get;
+export const createConversation = conversationsApi.create;
+export const updateConversation = conversationsApi.update;
 
 // Messages
 export async function getMessages(
@@ -97,7 +81,6 @@ export async function addParticipant(
 // Voice messages
 export async function uploadVoiceAudio(blob: Blob): Promise<AudioUploadResult> {
   const formData = new FormData();
-  // Give the file a proper name with extension so the backend extracts the right ext
   const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
   formData.append("file", blob, `voice_message.${ext}`);
   const response = await api.post<AudioUploadResult>(

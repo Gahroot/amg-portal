@@ -9,6 +9,7 @@ import type {
   EscalationUpdate,
   OverdueEscalationListResponse,
 } from "@/types/escalation";
+import { createApiClient } from "./factory";
 
 export interface EscalationListParams {
   skip?: number;
@@ -20,34 +21,21 @@ export interface EscalationListParams {
   search?: string;
 }
 
-export async function listEscalations(
+const escalationsApi = createApiClient<
+  Escalation,
+  EscalationListResponse,
+  EscalationCreate,
+  EscalationUpdate
+>("/api/v1/escalations/", { updateMethod: "put" });
+
+export const listEscalations = escalationsApi.list as (
   params?: EscalationListParams,
-): Promise<EscalationListResponse> {
-  const response = await api.get<EscalationListResponse>("/api/v1/escalations/", {
-    params,
-  });
-  return response.data;
-}
+) => Promise<EscalationListResponse>;
+export const getEscalation = escalationsApi.get;
+export const createEscalation = escalationsApi.create;
+export const updateEscalation = escalationsApi.update;
 
-export async function getEscalation(id: string): Promise<Escalation> {
-  const response = await api.get<Escalation>(`/api/v1/escalations/${id}`);
-  return response.data;
-}
-
-export async function createEscalation(
-  data: EscalationCreate,
-): Promise<Escalation> {
-  const response = await api.post<Escalation>("/api/v1/escalations/", data);
-  return response.data;
-}
-
-export async function updateEscalation(
-  id: string,
-  data: EscalationUpdate,
-): Promise<Escalation> {
-  const response = await api.put<Escalation>(`/api/v1/escalations/${id}`, data);
-  return response.data;
-}
+// Custom endpoints
 
 export async function acknowledgeEscalation(
   id: string,

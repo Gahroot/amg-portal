@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 // Types
 export interface WebhookEventType {
@@ -71,7 +72,20 @@ export interface WebhookTestResponse {
   payload: string;
 }
 
-// API functions
+const webhooksApi = createApiClient<
+  Webhook,
+  WebhookListResponse,
+  WebhookCreateRequest,
+  WebhookUpdateRequest
+>("/api/v1/partner-portal");
+
+export const getWebhook = webhooksApi.get;
+export const createWebhook = webhooksApi.create;
+export const updateWebhook = webhooksApi.update;
+export const deleteWebhook = webhooksApi.delete;
+
+// Custom endpoints
+
 export async function getWebhookEventTypes(): Promise<{ event_types: WebhookEventType[] }> {
   const response = await api.get<{ event_types: WebhookEventType[] }>(
     "/api/v1/partner-portal/event-types"
@@ -84,28 +98,6 @@ export async function getWebhooks(params?: {
 }): Promise<WebhookListResponse> {
   const response = await api.get<WebhookListResponse>("/api/v1/partner-portal", { params });
   return response.data;
-}
-
-export async function getWebhook(webhookId: string): Promise<Webhook> {
-  const response = await api.get<Webhook>(`/api/v1/partner-portal/${webhookId}`);
-  return response.data;
-}
-
-export async function createWebhook(data: WebhookCreateRequest): Promise<Webhook> {
-  const response = await api.post<Webhook>("/api/v1/partner-portal", data);
-  return response.data;
-}
-
-export async function updateWebhook(
-  webhookId: string,
-  data: WebhookUpdateRequest
-): Promise<Webhook> {
-  const response = await api.patch<Webhook>(`/api/v1/partner-portal/${webhookId}`, data);
-  return response.data;
-}
-
-export async function deleteWebhook(webhookId: string): Promise<void> {
-  await api.delete(`/api/v1/partner-portal/${webhookId}`);
 }
 
 export async function testWebhook(

@@ -14,44 +14,23 @@ import type {
   AccessAuditListParams,
   AuditFindingListParams,
 } from "@/types/access-audit";
+import { createApiClient } from "./factory";
 
-export async function listAccessAudits(
-  params?: AccessAuditListParams
-): Promise<AccessAuditListResponse> {
-  const response = await api.get<AccessAuditListResponse>(
-    "/api/v1/access-audits/",
-    { params }
-  );
-  return response.data;
-}
+const auditsApi = createApiClient<
+  AccessAudit,
+  AccessAuditListResponse,
+  CreateAccessAuditRequest,
+  UpdateAccessAuditRequest
+>("/api/v1/access-audits/", { updateMethod: "put" });
 
-export async function getAccessAudit(id: string): Promise<AccessAudit> {
-  const response = await api.get<AccessAudit>(
-    `/api/v1/access-audits/${id}`
-  );
-  return response.data;
-}
+export const listAccessAudits = auditsApi.list as (
+  params?: AccessAuditListParams,
+) => Promise<AccessAuditListResponse>;
+export const getAccessAudit = auditsApi.get;
+export const createAccessAudit = auditsApi.create;
+export const updateAccessAudit = auditsApi.update;
 
-export async function createAccessAudit(
-  data: CreateAccessAuditRequest
-): Promise<AccessAudit> {
-  const response = await api.post<AccessAudit>(
-    "/api/v1/access-audits/",
-    data
-  );
-  return response.data;
-}
-
-export async function updateAccessAudit(
-  id: string,
-  data: UpdateAccessAuditRequest
-): Promise<AccessAudit> {
-  const response = await api.put<AccessAudit>(
-    `/api/v1/access-audits/${id}`,
-    data
-  );
-  return response.data;
-}
+// Custom endpoints
 
 export async function completeAccessAudit(id: string): Promise<AccessAudit> {
   const response = await api.post<AccessAudit>(

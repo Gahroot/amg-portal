@@ -5,6 +5,7 @@ import type {
   DecisionCreateData,
   DecisionResponseData,
 } from "@/types/communication";
+import { createApiClient } from "./factory";
 
 export interface DecisionListParams {
   client_id?: string;
@@ -18,16 +19,21 @@ export interface PendingDecisionListParams {
   limit?: number;
 }
 
-// Decisions
-export async function listDecisions(
-  params?: DecisionListParams
-): Promise<DecisionListResponse> {
-  const response = await api.get<DecisionListResponse>(
-    "/api/v1/decisions/",
-    { params }
-  );
-  return response.data;
-}
+const decisionsApi = createApiClient<
+  DecisionRequest,
+  DecisionListResponse,
+  DecisionCreateData,
+  Partial<DecisionCreateData>
+>("/api/v1/decisions/");
+
+export const listDecisions = decisionsApi.list as (
+  params?: DecisionListParams,
+) => Promise<DecisionListResponse>;
+export const getDecision = decisionsApi.get;
+export const createDecision = decisionsApi.create;
+export const updateDecision = decisionsApi.update;
+
+// Custom endpoints
 
 export async function listPendingDecisions(
   params?: PendingDecisionListParams
@@ -39,18 +45,6 @@ export async function listPendingDecisions(
   return response.data;
 }
 
-export async function getDecision(id: string): Promise<DecisionRequest> {
-  const response = await api.get<DecisionRequest>(`/api/v1/decisions/${id}`);
-  return response.data;
-}
-
-export async function createDecision(
-  data: DecisionCreateData
-): Promise<DecisionRequest> {
-  const response = await api.post<DecisionRequest>("/api/v1/decisions/", data);
-  return response.data;
-}
-
 export async function respondToDecision(
   id: string,
   data: DecisionResponseData
@@ -58,17 +52,6 @@ export async function respondToDecision(
   const response = await api.post<DecisionRequest>(
     `/api/v1/decisions/${id}/respond`,
     { response: data }
-  );
-  return response.data;
-}
-
-export async function updateDecision(
-  id: string,
-  data: Partial<DecisionCreateData>
-): Promise<DecisionRequest> {
-  const response = await api.patch<DecisionRequest>(
-    `/api/v1/decisions/${id}`,
-    data
   );
   return response.data;
 }

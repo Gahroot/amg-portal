@@ -8,51 +8,28 @@ import type {
   ScheduledEventListResponse,
   ConflictCheckResponse,
 } from "@/types/scheduling";
+import { createApiClient } from "./factory";
 
-export async function listEvents(params?: {
+const eventsApi = createApiClient<
+  ScheduledEvent,
+  ScheduledEventListResponse,
+  ScheduledEventCreate,
+  ScheduledEventUpdate
+>("/api/v1/scheduling/events");
+
+export const listEvents = eventsApi.list as (params?: {
   skip?: number;
   limit?: number;
   status?: string;
   event_type?: string;
-}): Promise<ScheduledEventListResponse> {
-  const response = await api.get<ScheduledEventListResponse>(
-    "/api/v1/scheduling/events",
-    { params }
-  );
-  return response.data;
-}
+}) => Promise<ScheduledEventListResponse>;
 
-export async function createEvent(
-  data: ScheduledEventCreate
-): Promise<ScheduledEvent> {
-  const response = await api.post<ScheduledEvent>(
-    "/api/v1/scheduling/events",
-    data
-  );
-  return response.data;
-}
+export const getEvent = eventsApi.get;
+export const createEvent = eventsApi.create;
+export const updateEvent = eventsApi.update;
+export const deleteEvent = eventsApi.delete;
 
-export async function getEvent(eventId: string): Promise<ScheduledEvent> {
-  const response = await api.get<ScheduledEvent>(
-    `/api/v1/scheduling/events/${eventId}`
-  );
-  return response.data;
-}
-
-export async function updateEvent(
-  eventId: string,
-  data: ScheduledEventUpdate
-): Promise<ScheduledEvent> {
-  const response = await api.patch<ScheduledEvent>(
-    `/api/v1/scheduling/events/${eventId}`,
-    data
-  );
-  return response.data;
-}
-
-export async function deleteEvent(eventId: string): Promise<void> {
-  await api.delete(`/api/v1/scheduling/events/${eventId}`);
-}
+// Custom endpoints
 
 export async function getMySchedule(
   start: string,

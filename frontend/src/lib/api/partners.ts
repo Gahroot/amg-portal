@@ -16,6 +16,7 @@ import type {
   PartnerDuplicateMatch,
   RefreshDuePartnerListResponse,
 } from "@/types/partner";
+import { createApiClient } from "./factory";
 
 // Re-export types for convenience
 export type {
@@ -34,25 +35,19 @@ export type {
   RefreshDuePartnerListResponse,
 };
 
-export async function listPartners(params?: PartnerListParams): Promise<PartnerListResponse> {
-  const response = await api.get<PartnerListResponse>("/api/v1/partners/", { params });
-  return response.data;
-}
+const partnersApi = createApiClient<
+  PartnerProfile,
+  PartnerListResponse,
+  PartnerCreateData,
+  PartnerUpdateData
+>("/api/v1/partners/");
 
-export async function getPartner(id: string): Promise<PartnerProfile> {
-  const response = await api.get<PartnerProfile>(`/api/v1/partners/${id}`);
-  return response.data;
-}
+export const listPartners = partnersApi.list as (params?: PartnerListParams) => Promise<PartnerListResponse>;
+export const getPartner = partnersApi.get;
+export const createPartner = partnersApi.create;
+export const updatePartner = partnersApi.update;
 
-export async function createPartner(data: PartnerCreateData): Promise<PartnerProfile> {
-  const response = await api.post<PartnerProfile>("/api/v1/partners/", data);
-  return response.data;
-}
-
-export async function updatePartner(id: string, data: PartnerUpdateData): Promise<PartnerProfile> {
-  const response = await api.patch<PartnerProfile>(`/api/v1/partners/${id}`, data);
-  return response.data;
-}
+// Custom endpoints
 
 export async function provisionPartner(id: string, data: PartnerProvisionData): Promise<PartnerProfile> {
   const response = await api.post<PartnerProfile>(`/api/v1/partners/${id}/provision`, data);

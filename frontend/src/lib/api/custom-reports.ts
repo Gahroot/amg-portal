@@ -11,6 +11,7 @@ import type {
   ReportPreviewResponse,
   ReportSort,
 } from "@/types/custom-report";
+import { createApiClient } from "./factory";
 
 export type {
   CustomReport,
@@ -81,32 +82,18 @@ export interface CustomReportUpdate {
   is_template?: boolean;
 }
 
-export async function listCustomReports(): Promise<CustomReportListResponse> {
-  const res = await api.get<CustomReportListResponse>("/api/v1/custom-reports/");
-  return res.data;
-}
+const reportsApi = createApiClient<
+  CustomReport,
+  CustomReportListResponse,
+  CustomReportCreate,
+  CustomReportUpdate
+>("/api/v1/custom-reports/");
 
-export async function getCustomReport(id: string): Promise<CustomReport> {
-  const res = await api.get<CustomReport>(`/api/v1/custom-reports/${id}`);
-  return res.data;
-}
-
-export async function createCustomReport(payload: CustomReportCreate): Promise<CustomReport> {
-  const res = await api.post<CustomReport>("/api/v1/custom-reports/", payload);
-  return res.data;
-}
-
-export async function updateCustomReport(
-  id: string,
-  payload: CustomReportUpdate,
-): Promise<CustomReport> {
-  const res = await api.patch<CustomReport>(`/api/v1/custom-reports/${id}`, payload);
-  return res.data;
-}
-
-export async function deleteCustomReport(id: string): Promise<void> {
-  await api.delete(`/api/v1/custom-reports/${id}`);
-}
+export const listCustomReports = reportsApi.list as () => Promise<CustomReportListResponse>;
+export const getCustomReport = reportsApi.get;
+export const createCustomReport = reportsApi.create;
+export const updateCustomReport = reportsApi.update;
+export const deleteCustomReport = reportsApi.delete;
 
 // ============================================================================
 // Export
@@ -116,7 +103,6 @@ export function buildExportUrl(
   reportId: string,
   _format: ExportFormat,
 ): string {
-  // Returns URL for triggering a download via browser
   return `/api/v1/custom-reports/${reportId}/export`;
 }
 
