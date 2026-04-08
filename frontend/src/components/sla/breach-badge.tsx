@@ -25,5 +25,5 @@ export function SLABreachBadge({ breachStatus }: SLABreachBadgeProps) {
       label: breachStatus,
       variant: "outline" as const,
     };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} dot>{config.label}</Badge>;
 }

@@ -34,5 +34,5 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status] ?? { label: status, variant: "outline" as const };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} dot>{config.label}</Badge>;
 }

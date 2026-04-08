@@ -33,7 +33,7 @@ export function EscalationLevelBadge({ level }: EscalationLevelBadgeProps) {
       className: "bg-gray-100 text-gray-800 hover:bg-gray-200",
     };
   return (
-    <Badge variant="outline" className={config.className}>
+    <Badge variant="outline" className={config.className} dot>
       {config.label}
     </Badge>
   );
