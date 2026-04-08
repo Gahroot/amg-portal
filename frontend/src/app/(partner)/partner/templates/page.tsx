@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { TemplateLibrary } from "@/components/partner/template-library";
+import { TemplateLibrary } from "@/components/partners/template-library";
 
 export const metadata: Metadata = {
   title: "Template Library | AMG Partner Portal",

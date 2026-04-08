@@ -1,4 +1,4 @@
-import { ScorecardDashboard } from "@/components/partner/scorecard-dashboard";
+import { ScorecardDashboard } from "@/components/partners/scorecard-dashboard";
 
 export const metadata = {
   title: "Performance Scorecard | AMG Partner Portal",

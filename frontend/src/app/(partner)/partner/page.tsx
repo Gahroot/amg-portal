@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyTrends } from "@/lib/api/partners";
 import type { PartnerTrends } from "@/types/partner";
 import { PerformanceChart } from "@/components/partners/performance-chart";
-import { PerformanceAlerts } from "@/components/partner/performance-alerts";
+import { PerformanceAlerts } from "@/components/partners/performance-alerts";
 import {
   Card,
   CardContent,

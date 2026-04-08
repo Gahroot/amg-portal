@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { AssignmentCalendar } from "@/components/partner/assignment-calendar";
+import { AssignmentCalendar } from "@/components/partners/assignment-calendar";
 
 export const metadata: Metadata = {
   title: "Assignment Calendar",
