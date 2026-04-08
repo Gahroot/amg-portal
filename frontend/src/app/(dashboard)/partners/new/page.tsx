@@ -6,7 +6,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
-import { createPartner, checkPartnerDuplicates } from "@/lib/api/partners";
+import { checkPartnerDuplicates } from "@/lib/api/partners";
+import { useCreatePartner } from "@/hooks/use-partners";
 import type { PartnerDuplicateMatch } from "@/types/partner";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ type CreatePartnerFormData = z.infer<typeof createPartnerSchema>;
 export default function NewPartnerPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const createPartnerMutation = useCreatePartner();
   const [selectedCapabilities, setSelectedCapabilities] = React.useState<
     string[]
   >([]);
@@ -130,7 +132,7 @@ export default function NewPartnerPage() {
           .map((g) => g.trim())
           .filter(Boolean)
       : [];
-    await createPartner({
+    await createPartnerMutation.mutateAsync({
       firm_name: data.firm_name,
       contact_name: data.contact_name,
       contact_email: data.contact_email,
@@ -144,34 +146,22 @@ export default function NewPartnerPage() {
   };
 
   const onSubmit = async (data: CreatePartnerFormData) => {
-    try {
-      // If there are potential duplicates, show warning dialog
-      if (duplicates.length > 0) {
-        setPendingFormData(data);
-        setShowDuplicateDialog(true);
-        return;
-      }
-
-      // No duplicates, proceed with creation
-      await doCreatePartner(data);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Failed to create partner. Please try again.";
-      toast.error(message);
+    // If there are potential duplicates, show warning dialog
+    if (duplicates.length > 0) {
+      setPendingFormData(data);
+      setShowDuplicateDialog(true);
+      return;
     }
+
+    // No duplicates, proceed with creation
+    // Error toast is handled by useCreatePartner's onError
+    await doCreatePartner(data).catch(() => {});
   };
 
   const handleCreateAnyway = async () => {
     if (!pendingFormData) return;
-    try {
-      await doCreatePartner(pendingFormData);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Failed to create partner. Please try again.";
-      toast.error(message);
-    }
+    // Error toast is handled by useCreatePartner's onError
+    await doCreatePartner(pendingFormData).catch(() => {});
   };
 
   // Convert PartnerDuplicateMatch to DialogPartnerMatch format

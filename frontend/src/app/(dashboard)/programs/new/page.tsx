@@ -153,7 +153,7 @@ export default function NewProgramPage() {
                       value={watchedValues.client_id ?? ""}
                       onValueChange={(val) => setValue("client_id", val)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
