@@ -20,6 +20,7 @@ import type {
   VaultDocument,
   VaultDocumentListResponse,
 } from "@/types/document-delivery";
+import { createApiClient } from "./factory";
 
 export interface DocumentListParams {
   entity_type?: string;
@@ -28,6 +29,35 @@ export interface DocumentListParams {
   skip?: number;
   limit?: number;
 }
+
+// Standard CRUD for documents (list, get, delete)
+const docsApi = createApiClient<DocumentItem, DocumentListResponse>(
+  "/api/v1/documents/"
+);
+
+export const listDocuments = docsApi.list as (params?: DocumentListParams) => Promise<DocumentListResponse>;
+export const getDocument = docsApi.get;
+export const deleteDocument = docsApi.delete;
+
+// Standard CRUD for document requests
+const requestsApi = createApiClient<
+  DocumentRequestItem,
+  DocumentRequestListResponse,
+  DocumentRequestCreate,
+  DocumentRequestUpdate
+>("/api/v1/document-requests/");
+
+export const listDocumentRequests = requestsApi.list as (params?: {
+  client_id?: string;
+  status?: string;
+  skip?: number;
+  limit?: number;
+}) => Promise<DocumentRequestListResponse>;
+export const getDocumentRequest = requestsApi.get;
+export const createDocumentRequest = requestsApi.create;
+export const updateDocumentRequest = requestsApi.update;
+
+// Custom document endpoints
 
 export async function uploadDocument(
   file: File,
@@ -96,23 +126,9 @@ export async function bulkUploadDocuments(
   return results;
 }
 
-export async function listDocuments(params?: DocumentListParams): Promise<DocumentListResponse> {
-  const response = await api.get<DocumentListResponse>("/api/v1/documents/", { params });
-  return response.data;
-}
-
-export async function getDocument(id: string): Promise<DocumentItem> {
-  const response = await api.get<DocumentItem>(`/api/v1/documents/${id}`);
-  return response.data;
-}
-
 export async function getDocumentDownloadUrl(id: string): Promise<{ download_url: string }> {
   const response = await api.get<{ download_url: string }>(`/api/v1/documents/${id}/download`);
   return response.data;
-}
-
-export async function deleteDocument(id: string): Promise<void> {
-  await api.delete(`/api/v1/documents/${id}`);
 }
 
 export async function getDocumentVersions(id: string): Promise<DocumentVersionListResponse> {
@@ -207,39 +223,7 @@ export async function listExpiringDocuments(
   return response.data;
 }
 
-// ── Document Request API ──────────────────────────────────────────────────────
-
-export async function createDocumentRequest(
-  data: DocumentRequestCreate,
-): Promise<DocumentRequestItem> {
-  const response = await api.post<DocumentRequestItem>("/api/v1/document-requests/", data);
-  return response.data;
-}
-
-export async function listDocumentRequests(params?: {
-  client_id?: string;
-  status?: string;
-  skip?: number;
-  limit?: number;
-}): Promise<DocumentRequestListResponse> {
-  const response = await api.get<DocumentRequestListResponse>("/api/v1/document-requests/", {
-    params,
-  });
-  return response.data;
-}
-
-export async function getDocumentRequest(id: string): Promise<DocumentRequestItem> {
-  const response = await api.get<DocumentRequestItem>(`/api/v1/document-requests/${id}`);
-  return response.data;
-}
-
-export async function updateDocumentRequest(
-  id: string,
-  data: DocumentRequestUpdate,
-): Promise<DocumentRequestItem> {
-  const response = await api.patch<DocumentRequestItem>(`/api/v1/document-requests/${id}`, data);
-  return response.data;
-}
+// Custom document request endpoints
 
 export async function cancelDocumentRequest(id: string): Promise<DocumentRequestItem> {
   const response = await api.post<DocumentRequestItem>(`/api/v1/document-requests/${id}/cancel`);

@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 export interface AuditLog {
   id: string;
@@ -31,19 +32,16 @@ export interface AuditLogListParams {
   search?: string;
 }
 
-export async function listAuditLogs(
-  params?: AuditLogListParams
-): Promise<AuditLogListResponse> {
-  const response = await api.get<AuditLogListResponse>("/api/v1/audit-logs/", {
-    params,
-  });
-  return response.data;
-}
+const logsApi = createApiClient<AuditLog, AuditLogListResponse>(
+  "/api/v1/audit-logs/"
+);
 
-export async function getAuditLog(id: string): Promise<AuditLog> {
-  const response = await api.get<AuditLog>(`/api/v1/audit-logs/${id}`);
-  return response.data;
-}
+export const listAuditLogs = logsApi.list as (
+  params?: AuditLogListParams,
+) => Promise<AuditLogListResponse>;
+export const getAuditLog = logsApi.get;
+
+// Custom endpoints
 
 export async function getEntityAuditHistory(
   entityType: string,

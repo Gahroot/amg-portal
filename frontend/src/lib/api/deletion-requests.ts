@@ -6,6 +6,7 @@ import type {
   DeletionRequestListParams,
   RejectDeletionRequest,
 } from "@/types/deletion-request";
+import { createApiClient } from "./factory";
 
 export type {
   DeletionRequest,
@@ -15,32 +16,19 @@ export type {
   RejectDeletionRequest,
 };
 
-export async function listDeletionRequests(
+const deletionApi = createApiClient<
+  DeletionRequest,
+  DeletionRequestListResponse,
+  DeletionRequestCreate
+>("/api/v1/deletion-requests/");
+
+export const listDeletionRequests = deletionApi.list as (
   params?: DeletionRequestListParams,
-): Promise<DeletionRequestListResponse> {
-  const response = await api.get<DeletionRequestListResponse>(
-    "/api/v1/deletion-requests/",
-    { params },
-  );
-  return response.data;
-}
+) => Promise<DeletionRequestListResponse>;
+export const getDeletionRequest = deletionApi.get;
+export const createDeletionRequest = deletionApi.create;
 
-export async function getDeletionRequest(id: string): Promise<DeletionRequest> {
-  const response = await api.get<DeletionRequest>(
-    `/api/v1/deletion-requests/${id}`,
-  );
-  return response.data;
-}
-
-export async function createDeletionRequest(
-  data: DeletionRequestCreate,
-): Promise<DeletionRequest> {
-  const response = await api.post<DeletionRequest>(
-    "/api/v1/deletion-requests/",
-    data,
-  );
-  return response.data;
-}
+// Custom endpoints
 
 export async function approveDeletionRequest(
   id: string,

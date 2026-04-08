@@ -1,4 +1,3 @@
-import api from "@/lib/api";
 import type {
   User,
   UserCreateData,
@@ -6,6 +5,7 @@ import type {
   UserListResponse,
   UserListParams,
 } from "@/types/user";
+import { createApiClient } from "./factory";
 
 // Re-export types for convenience
 export type {
@@ -16,33 +16,12 @@ export type {
   UserListParams,
 };
 
-export async function listUsers(
-  params?: UserListParams
-): Promise<UserListResponse> {
-  const response = await api.get<UserListResponse>("/api/v1/users/", {
-    params,
-  });
-  return response.data;
-}
+const usersApi = createApiClient<User, UserListResponse, UserCreateData, UserUpdateData>(
+  "/api/v1/users/"
+);
 
-export async function createUser(data: UserCreateData): Promise<User> {
-  const response = await api.post<User>("/api/v1/users/", data);
-  return response.data;
-}
-
-export async function getUser(id: string): Promise<User> {
-  const response = await api.get<User>(`/api/v1/users/${id}`);
-  return response.data;
-}
-
-export async function updateUser(
-  id: string,
-  data: UserUpdateData
-): Promise<User> {
-  const response = await api.patch<User>(`/api/v1/users/${id}`, data);
-  return response.data;
-}
-
-export async function deleteUser(id: string): Promise<void> {
-  await api.delete(`/api/v1/users/${id}`);
-}
+export const listUsers = usersApi.list as (params?: UserListParams) => Promise<UserListResponse>;
+export const getUser = usersApi.get;
+export const createUser = usersApi.create;
+export const updateUser = usersApi.update;
+export const deleteUser = usersApi.delete;

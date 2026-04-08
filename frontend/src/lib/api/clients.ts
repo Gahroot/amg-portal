@@ -17,6 +17,7 @@ import type {
   SecurityProfileLevelUpdate,
   UpcomingDateItem,
 } from "@/types/client";
+import { createApiClient } from "./factory";
 
 // Simplified client type for selection dropdowns
 export interface Client {
@@ -24,38 +25,21 @@ export interface Client {
   name: string;
 }
 
-export async function listClientProfiles(
-  params?: ClientListParams
-): Promise<ClientProfileListResponse> {
-  const response = await api.get<ClientProfileListResponse>(
-    "/api/v1/clients/",
-    { params }
-  );
-  return response.data;
-}
+const clientsApi = createApiClient<
+  ClientProfile,
+  ClientProfileListResponse,
+  ClientProfileCreateData,
+  ClientProfileUpdateData
+>("/api/v1/clients/");
 
-export async function getClientProfile(id: string): Promise<ClientProfile> {
-  const response = await api.get<ClientProfile>(`/api/v1/clients/${id}`);
-  return response.data;
-}
+export const listClientProfiles = clientsApi.list as (
+  params?: ClientListParams,
+) => Promise<ClientProfileListResponse>;
+export const getClientProfile = clientsApi.get;
+export const createClientProfile = clientsApi.create;
+export const updateClientProfile = clientsApi.update;
 
-export async function createClientProfile(
-  data: ClientProfileCreateData
-): Promise<ClientProfile> {
-  const response = await api.post<ClientProfile>("/api/v1/clients/", data);
-  return response.data;
-}
-
-export async function updateClientProfile(
-  id: string,
-  data: ClientProfileUpdateData
-): Promise<ClientProfile> {
-  const response = await api.patch<ClientProfile>(
-    `/api/v1/clients/${id}`,
-    data
-  );
-  return response.data;
-}
+// Custom endpoints
 
 export async function updateIntelligenceFile(
   id: string,

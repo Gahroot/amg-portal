@@ -19,6 +19,7 @@ import type {
   ProgramListParams,
   ProgramDetail,
 } from "@/types/program";
+import { createApiClient } from "./factory";
 
 // Re-export types for convenience
 export type {
@@ -42,32 +43,21 @@ export type {
   ProgramDetail,
 };
 
-export async function listPrograms(
-  params?: ProgramListParams
-): Promise<ProgramListResponse> {
-  const response = await api.get<ProgramListResponse>("/api/v1/programs/", {
-    params,
-  });
-  return response.data;
-}
+const programsApi = createApiClient<Program, ProgramListResponse, ProgramCreate, ProgramUpdate>(
+  "/api/v1/programs/"
+);
 
-export async function createProgram(data: ProgramCreate): Promise<Program> {
-  const response = await api.post<Program>("/api/v1/programs/", data);
-  return response.data;
-}
+export const listPrograms = programsApi.list as (params?: ProgramListParams) => Promise<ProgramListResponse>;
+export const createProgram = programsApi.create;
+export const updateProgram = programsApi.update;
 
+// get returns ProgramDetail (richer than Program), so keep manual
 export async function getProgram(id: string): Promise<ProgramDetail> {
   const response = await api.get<ProgramDetail>(`/api/v1/programs/${id}`);
   return response.data;
 }
 
-export async function updateProgram(
-  id: string,
-  data: ProgramUpdate
-): Promise<Program> {
-  const response = await api.patch<Program>(`/api/v1/programs/${id}`, data);
-  return response.data;
-}
+// Custom endpoints
 
 export async function getProgramSummary(
   id: string

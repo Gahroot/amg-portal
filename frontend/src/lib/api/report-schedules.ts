@@ -4,6 +4,7 @@
  */
 
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 // ============================================================================
 // Types
@@ -55,33 +56,19 @@ export interface ReportScheduleUpdate {
 // API functions
 // ============================================================================
 
-export async function listReportSchedules(): Promise<ReportSchedule[]> {
-  const response = await api.get<ReportSchedule[]>("/api/v1/reports/schedules");
-  return response.data;
-}
+const schedulesApi = createApiClient<
+  ReportSchedule,
+  ReportSchedule[],
+  ReportScheduleCreate,
+  ReportScheduleUpdate
+>("/api/v1/reports/schedules");
 
-export async function createReportSchedule(
-  data: ReportScheduleCreate,
-): Promise<ReportSchedule> {
-  const response = await api.post<ReportSchedule>("/api/v1/reports/schedules", data);
-  return response.data;
-}
+export const listReportSchedules = schedulesApi.list as () => Promise<ReportSchedule[]>;
+export const createReportSchedule = schedulesApi.create;
+export const updateReportSchedule = schedulesApi.update;
+export const deleteReportSchedule = schedulesApi.delete;
 
-export async function updateReportSchedule(
-  id: string,
-  data: ReportScheduleUpdate,
-): Promise<ReportSchedule> {
-  const response = await api.patch<ReportSchedule>(
-    `/api/v1/reports/schedules/${id}`,
-    data,
-  );
-  return response.data;
-}
-
-export async function deleteReportSchedule(id: string): Promise<void> {
-  await api.delete(`/api/v1/reports/schedules/${id}`);
-}
-
+// Custom endpoint
 export async function executeReportSchedule(id: string): Promise<ReportSchedule> {
   const response = await api.post<ReportSchedule>(
     `/api/v1/reports/schedules/${id}/execute`,

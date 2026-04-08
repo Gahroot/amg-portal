@@ -9,44 +9,23 @@ import type {
   GenerateAnnualReviewsRequest,
   CapabilityReviewListParams,
 } from "@/types/capability-review";
+import { createApiClient } from "./factory";
 
-export async function listCapabilityReviews(
-  params?: CapabilityReviewListParams
-): Promise<CapabilityReviewListResponse> {
-  const response = await api.get<CapabilityReviewListResponse>(
-    "/api/v1/capability-reviews/",
-    { params }
-  );
-  return response.data;
-}
+const reviewsApi = createApiClient<
+  CapabilityReview,
+  CapabilityReviewListResponse,
+  CreateCapabilityReviewRequest,
+  UpdateCapabilityReviewRequest
+>("/api/v1/capability-reviews/", { updateMethod: "put" });
 
-export async function getCapabilityReview(id: string): Promise<CapabilityReview> {
-  const response = await api.get<CapabilityReview>(
-    `/api/v1/capability-reviews/${id}`
-  );
-  return response.data;
-}
+export const listCapabilityReviews = reviewsApi.list as (
+  params?: CapabilityReviewListParams,
+) => Promise<CapabilityReviewListResponse>;
+export const getCapabilityReview = reviewsApi.get;
+export const createCapabilityReview = reviewsApi.create;
+export const updateCapabilityReview = reviewsApi.update;
 
-export async function createCapabilityReview(
-  data: CreateCapabilityReviewRequest
-): Promise<CapabilityReview> {
-  const response = await api.post<CapabilityReview>(
-    "/api/v1/capability-reviews/",
-    data
-  );
-  return response.data;
-}
-
-export async function updateCapabilityReview(
-  id: string,
-  data: UpdateCapabilityReviewRequest
-): Promise<CapabilityReview> {
-  const response = await api.put<CapabilityReview>(
-    `/api/v1/capability-reviews/${id}`,
-    data
-  );
-  return response.data;
-}
+// Custom endpoints
 
 export async function completeCapabilityReview(
   id: string,

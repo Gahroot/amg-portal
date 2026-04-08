@@ -8,52 +8,24 @@ import type {
   EscalationRuleUpdate,
 } from "@/types/escalation-rule";
 import type { Escalation } from "@/types/escalation";
+import { createApiClient } from "./factory";
 
-export async function listEscalationRules(
+const rulesApi = createApiClient<
+  EscalationRule,
+  EscalationRuleListResponse,
+  EscalationRuleCreate,
+  EscalationRuleUpdate
+>("/api/v1/escalations/escalation-rules", { updateMethod: "put" });
+
+export const listEscalationRules = rulesApi.list as (
   params?: EscalationRuleListParams,
-): Promise<EscalationRuleListResponse> {
-  const response = await api.get<EscalationRuleListResponse>(
-    "/api/v1/escalations/escalation-rules",
-    { params },
-  );
-  return response.data;
-}
+) => Promise<EscalationRuleListResponse>;
+export const getEscalationRule = rulesApi.get;
+export const createEscalationRule = rulesApi.create;
+export const updateEscalationRule = rulesApi.update;
+export const deleteEscalationRule = rulesApi.delete;
 
-export async function getEscalationRule(
-  id: string,
-): Promise<EscalationRule> {
-  const response = await api.get<EscalationRule>(
-    `/api/v1/escalations/escalation-rules/${id}`,
-  );
-  return response.data;
-}
-
-export async function createEscalationRule(
-  data: EscalationRuleCreate,
-): Promise<EscalationRule> {
-  const response = await api.post<EscalationRule>(
-    "/api/v1/escalations/escalation-rules",
-    data,
-  );
-  return response.data;
-}
-
-export async function updateEscalationRule(
-  id: string,
-  data: EscalationRuleUpdate,
-): Promise<EscalationRule> {
-  const response = await api.put<EscalationRule>(
-    `/api/v1/escalations/escalation-rules/${id}`,
-    data,
-  );
-  return response.data;
-}
-
-export async function deleteEscalationRule(
-  id: string,
-): Promise<void> {
-  await api.delete(`/api/v1/escalations/escalation-rules/${id}`);
-}
+// Custom endpoints
 
 export async function progressEscalation(
   id: string,

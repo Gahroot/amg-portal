@@ -16,38 +16,28 @@ import type {
   NPSResponseListParams,
   NPSFollowUpListParams,
 } from "@/types/nps-survey";
+import { createApiClient } from "./factory";
 
 // ==================== Survey API ====================
 
-export async function listNPSSurveys(
-  params?: NPSSurveyListParams
-): Promise<NPSSurveyListResponse> {
-  const response = await api.get<NPSSurveyListResponse>("/api/v1/nps-surveys/", {
-    params,
-  });
-  return response.data;
-}
+const surveysApi = createApiClient<
+  NPSSurvey,
+  NPSSurveyListResponse,
+  NPSSurveyCreateData,
+  NPSSurveyUpdateData
+>("/api/v1/nps-surveys/");
+
+export const listNPSSurveys = surveysApi.list as (
+  params?: NPSSurveyListParams,
+) => Promise<NPSSurveyListResponse>;
+export const getNPSSurvey = surveysApi.get;
+export const createNPSSurvey = surveysApi.create;
+export const updateNPSSurvey = surveysApi.update;
+
+// Custom survey endpoints
 
 export async function getActiveNPSSurvey(): Promise<NPSSurvey | null> {
   const response = await api.get<NPSSurvey | null>("/api/v1/nps-surveys/active");
-  return response.data;
-}
-
-export async function getNPSSurvey(id: string): Promise<NPSSurvey> {
-  const response = await api.get<NPSSurvey>(`/api/v1/nps-surveys/${id}`);
-  return response.data;
-}
-
-export async function createNPSSurvey(data: NPSSurveyCreateData): Promise<NPSSurvey> {
-  const response = await api.post<NPSSurvey>("/api/v1/nps-surveys/", data);
-  return response.data;
-}
-
-export async function updateNPSSurvey(
-  id: string,
-  data: NPSSurveyUpdateData
-): Promise<NPSSurvey> {
-  const response = await api.patch<NPSSurvey>(`/api/v1/nps-surveys/${id}`, data);
   return response.data;
 }
 

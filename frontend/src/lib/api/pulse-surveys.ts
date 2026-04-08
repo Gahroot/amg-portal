@@ -11,35 +11,27 @@ import type {
   PulseSurveyUpdateData,
   PulseSurveyResponse,
 } from "@/types/pulse-survey";
+import { createApiClient } from "./factory";
 
 const BASE = "/api/v1/pulse-surveys";
 
 // ==================== Admin Survey API ====================
 
-export async function listPulseSurveys(
-  params?: PulseSurveyListParams
-): Promise<PulseSurveyListResponse> {
-  const response = await api.get<PulseSurveyListResponse>(`${BASE}/`, { params });
-  return response.data;
-}
+const surveysApi = createApiClient<
+  PulseSurvey,
+  PulseSurveyListResponse,
+  PulseSurveyCreateData,
+  PulseSurveyUpdateData
+>(`${BASE}/`);
 
-export async function getPulseSurvey(id: string): Promise<PulseSurvey> {
-  const response = await api.get<PulseSurvey>(`${BASE}/${id}`);
-  return response.data;
-}
+export const listPulseSurveys = surveysApi.list as (
+  params?: PulseSurveyListParams,
+) => Promise<PulseSurveyListResponse>;
+export const getPulseSurvey = surveysApi.get;
+export const createPulseSurvey = surveysApi.create;
+export const updatePulseSurvey = surveysApi.update;
 
-export async function createPulseSurvey(data: PulseSurveyCreateData): Promise<PulseSurvey> {
-  const response = await api.post<PulseSurvey>(`${BASE}/`, data);
-  return response.data;
-}
-
-export async function updatePulseSurvey(
-  id: string,
-  data: PulseSurveyUpdateData
-): Promise<PulseSurvey> {
-  const response = await api.patch<PulseSurvey>(`${BASE}/${id}`, data);
-  return response.data;
-}
+// Custom endpoints
 
 export async function activatePulseSurvey(id: string): Promise<PulseSurvey> {
   const response = await api.post<PulseSurvey>(`${BASE}/${id}/activate`);

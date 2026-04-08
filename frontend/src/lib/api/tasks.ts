@@ -11,6 +11,7 @@ import type {
   MilestoneInfo,
   ProgramInfo,
 } from "@/types/task";
+import { createApiClient } from "./factory";
 
 interface TaskFilters {
   program_id?: string;
@@ -22,6 +23,11 @@ interface TaskFilters {
   limit?: number;
 }
 
+const tasksApi = createApiClient<TaskBoard, TaskBoardListResponse, TaskCreate, TaskUpdate>(
+  "/api/v1/tasks"
+);
+
+// getTasks uses custom param building, so keep it manual
 export async function getTasks(filters?: TaskFilters): Promise<TaskBoardListResponse> {
   const params = new URLSearchParams();
   if (filters?.program_id) params.append("program_id", filters.program_id);
@@ -36,24 +42,19 @@ export async function getTasks(filters?: TaskFilters): Promise<TaskBoardListResp
   return response.data;
 }
 
-export async function getTask(id: string): Promise<TaskBoard> {
-  const response = await api.get<TaskBoard>(`/api/v1/tasks/${id}`);
-  return response.data;
-}
+export const getTask = tasksApi.get;
+export const createTask = tasksApi.create;
 
-export async function createTask(data: TaskCreate): Promise<TaskBoard> {
-  const response = await api.post<TaskBoard>("/api/v1/tasks", data);
-  return response.data;
-}
-
+// updateTask uses taskId param name but same signature
 export async function updateTask(taskId: string, data: TaskUpdate): Promise<TaskBoard> {
-  const response = await api.patch<TaskBoard>(`/api/v1/tasks/${taskId}`, data);
-  return response.data;
+  return tasksApi.update(taskId, data);
 }
 
 export async function deleteTask(taskId: string): Promise<void> {
-  await api.delete(`/api/v1/tasks/${taskId}`);
+  return tasksApi.delete(taskId);
 }
+
+// Custom endpoints
 
 export async function reorderTask(data: TaskReorder): Promise<void> {
   await api.post("/api/v1/tasks/reorder", data);
@@ -91,9 +92,6 @@ export async function updateTaskDependencies(
 }
 
 export async function getMilestonesForProgram(programId: string): Promise<MilestoneInfo[]> {
-  // Fetch a small set of tasks for the program and extract unique milestones from them.
-  // This reuses the existing tasks endpoint (which already joins milestones) without
-  // requiring a dedicated milestones listing endpoint.
   const response = await api.get<TaskBoardListResponse>(
     `/api/v1/tasks?program_id=${programId}&limit=200`,
   );

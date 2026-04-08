@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 export interface AssignmentHistoryEntry {
   id: string;
@@ -63,25 +64,21 @@ export interface AssignmentUpdateData {
   due_date?: string;
 }
 
-export async function listAssignments(params?: AssignmentListParams): Promise<AssignmentListResponse> {
-  const response = await api.get<AssignmentListResponse>("/api/v1/assignments/", { params });
-  return response.data;
-}
+const assignmentsApi = createApiClient<
+  Assignment,
+  AssignmentListResponse,
+  AssignmentCreateData,
+  AssignmentUpdateData
+>("/api/v1/assignments/");
 
-export async function getAssignment(id: string): Promise<Assignment> {
-  const response = await api.get<Assignment>(`/api/v1/assignments/${id}`);
-  return response.data;
-}
+export const listAssignments = assignmentsApi.list as (
+  params?: AssignmentListParams,
+) => Promise<AssignmentListResponse>;
+export const getAssignment = assignmentsApi.get;
+export const createAssignment = assignmentsApi.create;
+export const updateAssignment = assignmentsApi.update;
 
-export async function createAssignment(data: AssignmentCreateData): Promise<Assignment> {
-  const response = await api.post<Assignment>("/api/v1/assignments/", data);
-  return response.data;
-}
-
-export async function updateAssignment(id: string, data: AssignmentUpdateData): Promise<Assignment> {
-  const response = await api.patch<Assignment>(`/api/v1/assignments/${id}`, data);
-  return response.data;
-}
+// Custom endpoints
 
 export async function dispatchAssignment(id: string, offerHours = 48): Promise<Assignment> {
   const response = await api.post<Assignment>(

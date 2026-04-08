@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { createApiClient } from "./factory";
 
 // Feedback types
 export interface FeedbackTypeOption {
@@ -76,19 +77,27 @@ export interface FeedbackUpdateData {
   internal_notes?: string;
 }
 
-// API functions
+// Admin CRUD via factory
+const feedbackApi = createApiClient<
+  FeedbackResponse,
+  FeedbackListResponse,
+  FeedbackCreateData,
+  FeedbackUpdateData
+>("/api/v1/feedback/");
 
-/**
- * Get available feedback types
- */
+export const listAllFeedback = feedbackApi.list as (
+  params?: FeedbackListParams,
+) => Promise<FeedbackListResponse>;
+export const getFeedback = feedbackApi.get;
+export const updateFeedback = feedbackApi.update;
+
+// Custom endpoints
+
 export async function getFeedbackTypes(): Promise<FeedbackTypesResponse> {
   const response = await api.get<FeedbackTypesResponse>("/api/v1/feedback/types");
   return response.data;
 }
 
-/**
- * Submit new feedback
- */
 export async function submitFeedback(
   data: FeedbackCreateData
 ): Promise<FeedbackResponse> {
@@ -96,9 +105,6 @@ export async function submitFeedback(
   return response.data;
 }
 
-/**
- * List current user's feedback submissions
- */
 export async function listMyFeedback(
   params?: FeedbackListParams
 ): Promise<FeedbackListResponse> {
@@ -108,9 +114,6 @@ export async function listMyFeedback(
   return response.data;
 }
 
-/**
- * Get a specific feedback item by ID (current user's)
- */
 export async function getMyFeedback(id: string): Promise<FeedbackResponse> {
   const response = await api.get<FeedbackResponse>(
     `/api/v1/feedback/my/${id}`
@@ -118,53 +121,11 @@ export async function getMyFeedback(id: string): Promise<FeedbackResponse> {
   return response.data;
 }
 
-// Admin API functions
-
-/**
- * List all feedback (admin only)
- */
-export async function listAllFeedback(
-  params?: FeedbackListParams
-): Promise<FeedbackListResponse> {
-  const response = await api.get<FeedbackListResponse>("/api/v1/feedback/", {
-    params,
-  });
-  return response.data;
-}
-
-/**
- * Get feedback summary statistics (admin only)
- */
 export async function getFeedbackSummary(): Promise<FeedbackSummary> {
   const response = await api.get<FeedbackSummary>("/api/v1/feedback/summary");
   return response.data;
 }
 
-/**
- * Get a specific feedback item (admin only)
- */
-export async function getFeedback(id: string): Promise<FeedbackResponse> {
-  const response = await api.get<FeedbackResponse>(`/api/v1/feedback/${id}`);
-  return response.data;
-}
-
-/**
- * Update feedback (admin only)
- */
-export async function updateFeedback(
-  id: string,
-  data: FeedbackUpdateData
-): Promise<FeedbackResponse> {
-  const response = await api.patch<FeedbackResponse>(
-    `/api/v1/feedback/${id}`,
-    data
-  );
-  return response.data;
-}
-
-/**
- * Assign feedback to a user (admin only)
- */
 export async function assignFeedback(
   id: string,
   assignedTo: string
