@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_internal
@@ -16,6 +16,7 @@ from app.schemas.communication_log import (
     CommunicationLogResponse,
     CommunicationLogUpdate,
 )
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -114,40 +115,29 @@ async def list_communication_logs(
 ) -> CommunicationLogListResponse:
     """List communication logs with optional filters."""
     query = _base_query()
-    count_query = select(func.count()).select_from(CommunicationLog)
 
-    filters = []
     if client_id:
-        filters.append(CommunicationLog.client_id == client_id)
+        query = query.where(CommunicationLog.client_id == client_id)
     if partner_id:
-        filters.append(CommunicationLog.partner_id == partner_id)
+        query = query.where(CommunicationLog.partner_id == partner_id)
     if program_id:
-        filters.append(CommunicationLog.program_id == program_id)
+        query = query.where(CommunicationLog.program_id == program_id)
     if channel:
-        filters.append(CommunicationLog.channel == channel)
+        query = query.where(CommunicationLog.channel == channel)
     if direction:
-        filters.append(CommunicationLog.direction == direction)
+        query = query.where(CommunicationLog.direction == direction)
     if date_from:
-        filters.append(CommunicationLog.occurred_at >= date_from)
+        query = query.where(CommunicationLog.occurred_at >= date_from)
     if date_to:
-        filters.append(CommunicationLog.occurred_at <= date_to)
+        query = query.where(CommunicationLog.occurred_at <= date_to)
     if search:
-        filters.append(
+        query = query.where(
             CommunicationLog.subject.ilike(f"%{search}%")
             | CommunicationLog.contact_name.ilike(f"%{search}%")
         )
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
-
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(
-        query.order_by(CommunicationLog.occurred_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
-    logs = result.scalars().all()
+    query = query.order_by(CommunicationLog.occurred_at.desc())
+    logs, total = await paginate(db, query, skip=skip, limit=limit)
 
     return CommunicationLogListResponse(
         logs=[_build_response(log) for log in logs],

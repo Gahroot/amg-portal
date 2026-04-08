@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
@@ -41,6 +41,7 @@ from app.schemas.program import (
     TaskUpdate,
 )
 from app.services.calendar_service import sync_milestone_to_google_calendar
+from app.services.crud_base import paginate
 from app.utils.rag import compute_rag_status
 
 logger = logging.getLogger(__name__)
@@ -226,32 +227,26 @@ async def list_programs(
         selectinload(Program.client),
         selectinload(Program.milestones).selectinload(Milestone.tasks),
     )
-    count_query = select(func.count()).select_from(Program)
 
     if status_filter:
         query = query.where(Program.status == status_filter)
-        count_query = count_query.where(Program.status == status_filter)
     if client_id:
         query = query.where(Program.client_id == client_id)
-        count_query = count_query.where(Program.client_id == client_id)
     if search:
-        pattern = f"%{search}%"
-        query = query.where(Program.title.ilike(pattern))
-        count_query = count_query.where(Program.title.ilike(pattern))
+        query = query.where(Program.title.ilike(f"%{search}%"))
 
     # RMs only see programs belonging to their clients or programs they created.
     if current_user.role == UserRole.relationship_manager:
         rm_client_ids = await get_rm_client_ids(db, current_user.id)
-        rm_filter = or_(
-            Program.client_id.in_(rm_client_ids),
-            Program.created_by == current_user.id,
+        query = query.where(
+            or_(
+                Program.client_id.in_(rm_client_ids),
+                Program.created_by == current_user.id,
+            )
         )
-        query = query.where(rm_filter)
-        count_query = count_query.where(rm_filter)
 
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(query.order_by(Program.created_at.desc()).offset(skip).limit(limit))
-    programs = result.scalars().unique().all()
+    query = query.order_by(Program.created_at.desc())
+    programs, total = await paginate(db, query, skip=skip, limit=limit, unique=True)
     return ProgramListResponse(
         programs=[build_program_response(p) for p in programs],
         total=total,

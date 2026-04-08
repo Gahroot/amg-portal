@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, or_, select
 
 from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
 from app.core.exceptions import BadRequestException, NotFoundException
@@ -34,6 +34,7 @@ from app.schemas.partner_threshold import (
     PartnerThresholdCreate,
     PartnerThresholdResponse,
 )
+from app.services.crud_base import paginate
 from app.services.duplicate_detection_service import check_partner_duplicates
 from app.services.partner_capacity_service import (
     get_all_partners_capacity_summary,
@@ -121,34 +122,23 @@ async def list_partners(
     search: str | None = None,
 ):
     query = select(PartnerProfile)
-    count_query = select(func.count()).select_from(PartnerProfile)
 
-    filters = []
     if status:
-        filters.append(PartnerProfile.status == status)
+        query = query.where(PartnerProfile.status == status)
     if availability:
-        filters.append(PartnerProfile.availability_status == availability)
+        query = query.where(PartnerProfile.availability_status == availability)
     if search:
-        search_filter = PartnerProfile.firm_name.ilike(
-            f"%{search}%"
-        ) | PartnerProfile.contact_name.ilike(f"%{search}%")
-        filters.append(search_filter)
-    # JSON array contains filters for capability and geography
+        query = query.where(
+            PartnerProfile.firm_name.ilike(f"%{search}%")
+            | PartnerProfile.contact_name.ilike(f"%{search}%")
+        )
     if capability:
-        filters.append(PartnerProfile.capabilities.op("@>")(f'["{capability}"]'))
+        query = query.where(PartnerProfile.capabilities.op("@>")(f'["{capability}"]'))
     if geography:
-        filters.append(PartnerProfile.geographies.op("@>")(f'["{geography}"]'))
+        query = query.where(PartnerProfile.geographies.op("@>")(f'["{geography}"]'))
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
-
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
-    query = query.offset(skip).limit(limit).order_by(PartnerProfile.created_at.desc())
-    result = await db.execute(query)
-    profiles = result.scalars().all()
+    query = query.order_by(PartnerProfile.created_at.desc())
+    profiles, total = await paginate(db, query, skip=skip, limit=limit)
 
     return PartnerProfileListResponse(profiles=profiles, total=total)
 

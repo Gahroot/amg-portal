@@ -3,7 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, require_compliance, require_internal
@@ -25,6 +25,7 @@ from app.schemas.access_audit import (
     WaiveFindingRequest,
 )
 from app.services.access_audit_service import access_audit_service
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -101,15 +102,8 @@ async def list_access_audits(
     if year:
         base = base.where(AccessAudit.year == year)
 
-    count_query = select(func.count()).select_from(base.subquery())
-    total = (await db.execute(count_query)).scalar_one()
-
-    result = await db.execute(
-        base.order_by(AccessAudit.year.desc(), AccessAudit.quarter.desc())
-        .offset(skip)
-        .limit(limit)
-    )
-    audits = result.scalars().all()
+    base = base.order_by(AccessAudit.year.desc(), AccessAudit.quarter.desc())
+    audits, total = await paginate(db, base, skip=skip, limit=limit)
 
     return AccessAuditListResponse(
         audits=[AccessAuditResponse(**_enrich_audit(a)) for a in audits],

@@ -6,7 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
@@ -29,6 +29,7 @@ from app.schemas.deliverable import (
     DeliverableReview,
     DeliverableUpdate,
 )
+from app.services.crud_base import paginate
 from app.services.storage import storage_service
 
 logger = logging.getLogger(__name__)
@@ -110,26 +111,16 @@ async def list_deliverables(
     search: str | None = None,
 ) -> DeliverableListResponse:
     query = select(Deliverable)
-    count_query = select(func.count()).select_from(Deliverable)
 
-    filters = []
     if assignment_id:
-        filters.append(Deliverable.assignment_id == assignment_id)
+        query = query.where(Deliverable.assignment_id == assignment_id)
     if status:
-        filters.append(Deliverable.status == status)
+        query = query.where(Deliverable.status == status)
     if search:
-        filters.append(Deliverable.title.ilike(f"%{search}%"))
+        query = query.where(Deliverable.title.ilike(f"%{search}%"))
 
-    for f in filters:
-        query = query.where(f)
-        count_query = count_query.where(f)
-
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    query = query.offset(skip).limit(limit).order_by(Deliverable.created_at.desc())
-    result = await db.execute(query)
-    deliverables = result.scalars().all()
+    query = query.order_by(Deliverable.created_at.desc())
+    deliverables, total = await paginate(db, query, skip=skip, limit=limit)
 
     return DeliverableListResponse(
         deliverables=[build_deliverable_response(d) for d in deliverables],  # type: ignore[misc]

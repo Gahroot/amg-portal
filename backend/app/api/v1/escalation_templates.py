@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import DB, require_admin, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
@@ -14,6 +14,7 @@ from app.schemas.escalation_template import (
     EscalationTemplateResponse,
     EscalationTemplateUpdate,
 )
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -54,16 +55,8 @@ async def list_escalation_templates(
     if is_system is not None:
         q = q.where(EscalationTemplate.is_system == is_system)
 
-    count_result = await db.execute(select(func.count()).select_from(q.subquery()))
-    total = count_result.scalar_one()
-
-    q = (
-        q.order_by(EscalationTemplate.is_system.desc(), EscalationTemplate.name)
-        .offset(skip)
-        .limit(limit)
-    )
-    result = await db.execute(q)
-    templates = result.scalars().all()
+    q = q.order_by(EscalationTemplate.is_system.desc(), EscalationTemplate.name)
+    templates, total = await paginate(db, q, skip=skip, limit=limit)
 
     return EscalationTemplateListResponse(
         templates=[EscalationTemplateResponse.model_validate(t) for t in templates],

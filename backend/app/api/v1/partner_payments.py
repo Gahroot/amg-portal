@@ -24,6 +24,7 @@ from app.api.deps import (
 from app.core.exceptions import NotFoundException
 from app.models.partner_assignment import PartnerAssignment
 from app.models.partner_payment import PartnerPayment
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -126,32 +127,20 @@ async def get_my_payments(
         .options(selectinload(PartnerPayment.assignment))
         .where(PartnerPayment.partner_id == partner.id)
     )
-    count_q = select(func.count()).select_from(PartnerPayment).where(
-        PartnerPayment.partner_id == partner.id
-    )
 
-    filters = []
     if date_from:
-        filters.append(PartnerPayment.payment_date >= date_from)
+        q = q.where(PartnerPayment.payment_date >= date_from)
     if date_to:
-        filters.append(PartnerPayment.payment_date <= date_to)
+        q = q.where(PartnerPayment.payment_date <= date_to)
     if amount_min is not None:
-        filters.append(PartnerPayment.amount >= amount_min)
+        q = q.where(PartnerPayment.amount >= amount_min)
     if amount_max is not None:
-        filters.append(PartnerPayment.amount <= amount_max)
+        q = q.where(PartnerPayment.amount <= amount_max)
     if payment_method:
-        filters.append(PartnerPayment.payment_method == payment_method)
+        q = q.where(PartnerPayment.payment_method == payment_method)
 
-    for f in filters:
-        q = q.where(f)
-        count_q = count_q.where(f)
-
-    total_result = await db.execute(count_q)
-    total = total_result.scalar() or 0
-
-    q = q.order_by(PartnerPayment.payment_date.desc()).offset(skip).limit(limit)
-    result = await db.execute(q)
-    payments = result.scalars().all()
+    q = q.order_by(PartnerPayment.payment_date.desc())
+    payments, total = await paginate(db, q, skip=skip, limit=limit)
 
     return PaymentListResponse(
         payments=[_build_response(p) for p in payments],
@@ -282,28 +271,18 @@ async def list_partner_payments(
 ) -> PaymentListResponse:
     """List all partner payments (internal staff view)."""
     q = select(PartnerPayment).options(selectinload(PartnerPayment.assignment))
-    count_q = select(func.count()).select_from(PartnerPayment)
 
-    filters = []
     if partner_id:
-        filters.append(PartnerPayment.partner_id == partner_id)
+        q = q.where(PartnerPayment.partner_id == partner_id)
     if date_from:
-        filters.append(PartnerPayment.payment_date >= date_from)
+        q = q.where(PartnerPayment.payment_date >= date_from)
     if date_to:
-        filters.append(PartnerPayment.payment_date <= date_to)
+        q = q.where(PartnerPayment.payment_date <= date_to)
     if payment_method:
-        filters.append(PartnerPayment.payment_method == payment_method)
+        q = q.where(PartnerPayment.payment_method == payment_method)
 
-    for f in filters:
-        q = q.where(f)
-        count_q = count_q.where(f)
-
-    total_result = await db.execute(count_q)
-    total = total_result.scalar() or 0
-
-    q = q.order_by(PartnerPayment.payment_date.desc()).offset(skip).limit(limit)
-    result = await db.execute(q)
-    payments = result.scalars().all()
+    q = q.order_by(PartnerPayment.payment_date.desc())
+    payments, total = await paginate(db, q, skip=skip, limit=limit)
 
     return PaymentListResponse(
         payments=[_build_response(p) for p in payments],

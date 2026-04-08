@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, require_admin
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
@@ -14,6 +14,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.auth import UserResponse
 from app.schemas.user import UserCreateByAdmin, UserListResponse, UserUpdate
+from app.services.crud_base import paginate
 
 router = APIRouter()
 
@@ -28,22 +29,17 @@ async def list_users(
     limit: int = Query(50, ge=1, le=100),
 ):
     query = select(User)
-    count_query = select(func.count()).select_from(User)
 
     if role:
         query = query.where(User.role == role.value)
-        count_query = count_query.where(User.role == role.value)
     if status_filter:
         query = query.where(User.status == status_filter)
-        count_query = count_query.where(User.status == status_filter)
     if search:
         pattern = f"%{search}%"
         query = query.where(User.email.ilike(pattern) | User.full_name.ilike(pattern))
-        count_query = count_query.where(User.email.ilike(pattern) | User.full_name.ilike(pattern))
 
-    total = (await db.execute(count_query)).scalar_one()
-    result = await db.execute(query.order_by(User.created_at.desc()).offset(skip).limit(limit))
-    users = result.scalars().all()
+    query = query.order_by(User.created_at.desc())
+    users, total = await paginate(db, query, skip=skip, limit=limit)
 
     return UserListResponse(users=users, total=total)
 
