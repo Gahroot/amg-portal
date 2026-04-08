@@ -18,6 +18,13 @@ export function FadeIn({ children, className, delay = 0, duration = 0.5 }: FadeI
     const el = ref.current;
     if (!el) return;
 
+    // Skip observer for elements already in viewport (above the fold)
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

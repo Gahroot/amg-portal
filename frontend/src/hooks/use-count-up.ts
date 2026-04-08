@@ -11,10 +11,8 @@ export function useCountUp(end: number, duration = 800): number {
 
   useEffect(() => {
     if (end === 0) {
-      rafRef.current = requestAnimationFrame(() => setValue(0));
-      return () => {
-        if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
-      };
+      setValue(0);
+      return;
     }
 
     const startTime = performance.now();
