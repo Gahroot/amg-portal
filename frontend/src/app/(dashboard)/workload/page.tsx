@@ -89,7 +89,7 @@ export default function WorkloadPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-full space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
             Staff Workload
@@ -271,7 +271,7 @@ export default function WorkloadPage() {
           open={!!selectedStaffId}
           onOpenChange={(open) => !open && setSelectedStaffId(null)}
         >
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle>
                 Assignments - {selectedStaff?.user_name || "Staff Member"}
