@@ -39,6 +39,7 @@ from app.api.v1.imports import router as imports_router
 from app.api.v1.intake import router as intake_router
 from app.api.v1.invoices import router as invoices_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
+from app.api.v1.kyc_verifications import router as kyc_verifications_router
 from app.api.v1.meetings import router as meetings_router
 from app.api.v1.messaging import router as messaging_router
 from app.api.v1.notifications import router as notifications_router
@@ -145,6 +146,7 @@ router.include_router(
 )
 router.include_router(documents_router, prefix="/documents", tags=["documents"])
 router.include_router(kyc_documents_router, prefix="/kyc", tags=["kyc-documents"])
+router.include_router(kyc_verifications_router, prefix="/kyc", tags=["kyc-verifications"])
 router.include_router(
     clearance_certificates_router,
     prefix="/clearance-certificates",
