@@ -1,68 +1,34 @@
-// Data Import Types
+/**
+ * Data import types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/import_schemas.py
+ */
+import type { components } from "./generated";
 
-export type ImportEntityType = "clients" | "partners" | "programs" | "tasks";
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export type ImportStatus =
-  | "pending"
-  | "validating"
-  | "mapping"
-  | "preview"
-  | "importing"
-  | "completed"
-  | "failed";
+export type ImportEntityType = components["schemas"]["ImportEntityType"];
+export type ImportStatus = components["schemas"]["ImportStatus"];
+export type ImportError = components["schemas"]["ImportError"];
+export type ImportWarning = components["schemas"]["ImportWarning"];
+export type ImportFieldDefinition = components["schemas"]["ImportFieldDefinition"];
+export type ImportPreviewRow = components["schemas"]["ImportPreviewRow"];
+export type ImportValidateResponse = components["schemas"]["ImportValidateResponse"];
+export type ImportConfirmResponse = components["schemas"]["ImportConfirmResponse"];
+export type ImportJobResponse = components["schemas"]["ImportJobResponse"];
+export type ImportJobListResponse = components["schemas"]["ImportJobListResponse"];
+export type ImportTemplate = components["schemas"]["ImportTemplateResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — wizard steps, upload response, constants
+// ---------------------------------------------------------------------------
 
 export interface ColumnMapping {
   source_column: string;
   target_field: string;
   transform?: string | null;
-}
-
-export interface ImportError {
-  row_number: number;
-  column?: string | null;
-  field?: string | null;
-  error_type: "required" | "format" | "duplicate" | "reference" | "value";
-  message: string;
-  value?: unknown;
-}
-
-export interface ImportWarning {
-  row_number: number;
-  column?: string | null;
-  field?: string | null;
-  warning_type: "duplicate_match" | "similar_existing" | "missing_optional";
-  message: string;
-  value?: unknown;
-  existing_id?: string;
-  existing_name?: string;
-}
-
-export interface ImportPreviewRow {
-  row_number: number;
-  data: Record<string, unknown>;
-  mapped_data: Record<string, unknown>;
-  is_valid: boolean;
-  errors: ImportError[];
-  warnings: ImportWarning[];
-}
-
-export interface ImportFieldDefinition {
-  name: string;
-  display_name: string;
-  description?: string | null;
-  required: boolean;
-  field_type: "string" | "email" | "phone" | "date" | "number" | "enum" | "uuid";
-  enum_values?: string[] | null;
-  default_value?: unknown;
-  validation_regex?: string | null;
-  example_values: string[];
-}
-
-export interface ImportTemplate {
-  entity_type: ImportEntityType;
-  fields: ImportFieldDefinition[];
-  example_rows: Record<string, unknown>[];
-  csv_headers: string[];
 }
 
 export interface ImportUploadResponse {
@@ -74,51 +40,6 @@ export interface ImportUploadResponse {
   status: ImportStatus;
 }
 
-export interface ImportValidateResponse {
-  import_id: string;
-  status: ImportStatus;
-  total_rows: number;
-  valid_rows: number;
-  invalid_rows: number;
-  rows_with_warnings: number;
-  errors: ImportError[];
-  warnings: ImportWarning[];
-  preview_rows: ImportPreviewRow[];
-}
-
-export interface ImportConfirmResponse {
-  import_id: string;
-  status: ImportStatus;
-  total_rows: number;
-  imported_rows: number;
-  skipped_rows: number;
-  failed_rows: number;
-  created_ids: string[];
-  errors: ImportError[];
-}
-
-export interface ImportJobResponse {
-  import_id: string;
-  entity_type: ImportEntityType;
-  filename: string;
-  status: ImportStatus;
-  created_at: string;
-  updated_at: string;
-  total_rows?: number | null;
-  valid_rows?: number | null;
-  invalid_rows?: number | null;
-  imported_rows?: number | null;
-  errors: ImportError[];
-  warnings: ImportWarning[];
-  mappings: ColumnMapping[];
-}
-
-export interface ImportJobListResponse {
-  jobs: ImportJobResponse[];
-  total: number;
-}
-
-// Step types for wizard
 export type ImportWizardStep = "upload" | "mapping" | "validation" | "preview" | "complete";
 
 export const WIZARD_STEPS: { id: ImportWizardStep; title: string; description: string }[] = [
@@ -129,7 +50,6 @@ export const WIZARD_STEPS: { id: ImportWizardStep; title: string; description: s
   { id: "complete", title: "Complete", description: "Import finished" },
 ];
 
-// Entity type labels
 export const ENTITY_TYPE_LABELS: Record<ImportEntityType, string> = {
   clients: "Clients",
   partners: "Partners",

@@ -1,3 +1,22 @@
+/**
+ * Partner governance types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/partner_governance.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type GovernanceAction = components["schemas"]["GovernanceActionResponse"];
+export type GovernanceHistoryResponse = components["schemas"]["GovernanceHistoryResponse"];
+export type GovernanceDashboardResponse = components["schemas"]["GovernanceDashboardResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes
+// ---------------------------------------------------------------------------
+
 export type GovernanceActionType =
   | "warning"
   | "probation"
@@ -5,31 +24,12 @@ export type GovernanceActionType =
   | "termination"
   | "reinstatement";
 
-export interface GovernanceAction {
-  id: string;
-  partner_id: string;
-  action: GovernanceActionType;
-  reason: string;
-  evidence: Record<string, unknown> | null;
-  effective_date: string;
-  expiry_date: string | null;
-  issued_by: string;
-  issuer_name: string | null;
-  partner_firm_name: string | null;
-  created_at: string;
-}
-
 export interface GovernanceActionCreate {
   action: GovernanceActionType;
   reason: string;
   evidence?: Record<string, unknown>;
   effective_date?: string;
   expiry_date?: string;
-}
-
-export interface GovernanceHistoryResponse {
-  actions: GovernanceAction[];
-  total: number;
 }
 
 export interface CompositeScore {
@@ -54,9 +54,4 @@ export interface GovernanceDashboardEntry {
   sla_breach_count: number;
   avg_rating: number | null;
   notice_count: number;
-}
-
-export interface GovernanceDashboardResponse {
-  entries: GovernanceDashboardEntry[];
-  total: number;
 }

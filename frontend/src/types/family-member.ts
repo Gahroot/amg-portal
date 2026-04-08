@@ -1,3 +1,22 @@
+/**
+ * Family member types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/family_member.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type FamilyMember = components["schemas"]["FamilyMemberResponse"];
+export type FamilyMemberListResponse = components["schemas"]["FamilyMemberListResponse"];
+export type FamilyMemberCreate = components["schemas"]["FamilyMemberCreate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, update shapes
+// ---------------------------------------------------------------------------
+
 export type FamilyRelationshipType =
   | "spouse"
   | "partner"
@@ -11,34 +30,7 @@ export type FamilyRelationshipType =
   | "in_law"
   | "other";
 
-export interface FamilyMember {
-  id: string;
-  client_profile_id: string;
-  name: string;
-  relationship_type: FamilyRelationshipType;
-  date_of_birth: string | null;
-  occupation: string | null;
-  notes: string | null;
-  is_primary_contact: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface FamilyMemberCreate {
-  name: string;
-  relationship_type: FamilyRelationshipType;
-  date_of_birth?: string;
-  occupation?: string;
-  notes?: string;
-  is_primary_contact?: boolean;
-}
-
 export type FamilyMemberUpdate = Partial<FamilyMemberCreate>;
-
-export interface FamilyMemberListResponse {
-  family_members: FamilyMember[];
-  total: number;
-}
 
 export interface FamilyRelationship {
   id: string;

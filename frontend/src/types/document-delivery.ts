@@ -1,24 +1,23 @@
+/**
+ * Document delivery types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/document_delivery.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type DocumentDeliveryRecord = components["schemas"]["DocumentDeliveryResponse"];
+export type DocumentDeliveryListResponse = components["schemas"]["DocumentDeliveryListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — request shapes, display helpers
+// ---------------------------------------------------------------------------
+
 export type VaultStatus = "active" | "archived" | "sealed";
 export type DeliveryMethod = "portal" | "email" | "secure_link";
-
-export interface DocumentDeliveryRecord {
-  id: string;
-  document_id: string;
-  recipient_id: string;
-  delivery_method: DeliveryMethod;
-  delivered_at: string;
-  viewed_at: string | null;
-  acknowledged_at: string | null;
-  secure_link_token: string | null;
-  secure_link_expires_at: string | null;
-  notes: string | null;
-  created_at: string;
-}
-
-export interface DocumentDeliveryListResponse {
-  deliveries: DocumentDeliveryRecord[];
-  total: number;
-}
 
 export interface DeliverDocumentRequest {
   recipient_ids: string[];

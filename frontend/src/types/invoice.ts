@@ -1,22 +1,22 @@
+/**
+ * Invoice types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/invoice.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type Invoice = components["schemas"]["InvoiceResponse"];
+export type InvoiceListResponse = components["schemas"]["InvoiceListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, query params
+// ---------------------------------------------------------------------------
+
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
-
-export interface Invoice {
-  id: string;
-  client_id: string;
-  program_id: string | null;
-  amount: string;
-  status: InvoiceStatus;
-  due_date: string | null;
-  notes: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface InvoiceListResponse {
-  invoices: Invoice[];
-  total: number;
-}
 
 export interface InvoiceListParams {
   skip?: number;

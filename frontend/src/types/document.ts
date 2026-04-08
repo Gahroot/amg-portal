@@ -1,3 +1,36 @@
+/**
+ * Document types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (enums, query params, display types) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/document.py
+ * @see backend/app/schemas/document_request.py
+ * @see backend/app/schemas/kyc_document.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type DocumentItem = components["schemas"]["DocumentResponse"];
+export type DocumentListResponse = components["schemas"]["DocumentListResponse"];
+export type DocumentVersionItem = components["schemas"]["DocumentVersionResponse"];
+export type DocumentVersionListResponse = components["schemas"]["DocumentVersionListResponse"];
+export type DocumentDiffHunk = components["schemas"]["DocumentDiffHunk"];
+export type DocumentCompareResponse = components["schemas"]["DocumentCompareResponse"];
+export type DocumentRequestItem = components["schemas"]["DocumentRequestResponse"];
+export type DocumentRequestListResponse = components["schemas"]["DocumentRequestListResponse"];
+export type DocumentRequestCreate = components["schemas"]["DocumentRequestCreate"];
+export type DocumentRequestUpdate = components["schemas"]["DocumentRequestUpdate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, KYC types, query params
+// ---------------------------------------------------------------------------
+
 export type DocumentEntityType = "client" | "program" | "deliverable" | "partner";
 export type DocumentCategory = "general" | "contract" | "report" | "correspondence" | "compliance" | "financial" | "legal" | "other";
 export type DocumentRequestStatus =
@@ -26,30 +59,6 @@ export type ExpiryStatus = "expired" | "expiring_30" | "expiring_90" | "valid";
 export type KYCDocumentType = "passport" | "national_id" | "proof_of_address" | "tax_id" | "bank_statement" | "source_of_wealth" | "other";
 export type KYCDocumentStatus = "pending" | "verified" | "expired" | "rejected";
 
-export interface DocumentItem {
-  id: string;
-  file_path: string;
-  file_name: string;
-  file_size: number;
-  content_type: string;
-  entity_type: string;
-  entity_id: string;
-  category: string;
-  description: string | null;
-  version: number;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
-  download_url: string | null;
-  // Expiry fields
-  document_type: DocumentType | null;
-  expiry_date: string | null;       // ISO date string e.g. "2026-08-15"
-  expiry_status: ExpiryStatus | null;
-  // DocuSign
-  envelope_id: string | null;
-  docusign_status: string | null;
-}
-
 export interface ExpiringDocumentItem {
   id: string;
   file_name: string;
@@ -59,9 +68,9 @@ export interface ExpiringDocumentItem {
   category: string;
   description: string | null;
   document_type: DocumentType | null;
-  expiry_date: string;              // ISO date string, always present
+  expiry_date: string;
   expiry_status: ExpiryStatus;
-  days_until_expiry: number;        // negative if already expired
+  days_until_expiry: number;
   uploaded_by: string;
   created_at: string;
   download_url: string | null;
@@ -73,25 +82,6 @@ export interface ExpiringDocumentsResponse {
   expired_count: number;
   expiring_30_count: number;
   expiring_90_count: number;
-}
-
-export interface DocumentListResponse {
-  documents: DocumentItem[];
-  total: number;
-}
-
-export interface DocumentVersionItem {
-  id: string;
-  version: number;
-  uploaded_by: string;
-  created_at: string;
-  file_size: number;
-  download_url: string | null;
-}
-
-export interface DocumentVersionListResponse {
-  versions: DocumentVersionItem[];
-  total: number;
 }
 
 export interface KYCDocumentItem {
@@ -128,69 +118,4 @@ export interface DiffLine {
   line_number_b: number | null;
   content: string;
   change_type: DiffChangeType;
-}
-
-export interface DocumentDiffHunk {
-  a_start: number;
-  a_count: number;
-  b_start: number;
-  b_count: number;
-  lines: DiffLine[];
-}
-
-export interface DocumentCompareResponse {
-  version_a: DocumentVersionItem;
-  version_b: DocumentVersionItem;
-  is_text: boolean;
-  diff_available: boolean;
-  hunks: DocumentDiffHunk[];
-  total_additions: number;
-  total_deletions: number;
-  metadata: Record<string, unknown> | null;
-}
-
-export interface DocumentRequestItem {
-  id: string;
-  client_id: string;
-  requested_by: string;
-  document_type: DocumentRequestType;
-  title: string;
-  description: string | null;
-  message: string | null;
-  status: DocumentRequestStatus;
-  deadline: string | null;
-  estimated_completion: string | null;
-  requested_at: string;
-  in_progress_at: string | null;
-  received_at: string | null;
-  processing_at: string | null;
-  completed_at: string | null;
-  cancelled_at: string | null;
-  rm_notes: string | null;
-  client_notes: string | null;
-  fulfilled_document_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DocumentRequestListResponse {
-  requests: DocumentRequestItem[];
-  total: number;
-}
-
-export interface DocumentRequestCreate {
-  client_id: string;
-  document_type: DocumentRequestType;
-  title: string;
-  description?: string;
-  message?: string;
-  deadline?: string | null;
-}
-
-export interface DocumentRequestUpdate {
-  title?: string;
-  description?: string;
-  message?: string;
-  deadline?: string | null;
-  status?: DocumentRequestStatus;
 }

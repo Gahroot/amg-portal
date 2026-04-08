@@ -1,3 +1,25 @@
+/**
+ * Access audit types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/access_audit.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type AccessAudit = components["schemas"]["AccessAuditResponse"];
+export type AccessAuditListResponse = components["schemas"]["AccessAuditListResponse"];
+export type AccessAuditFinding = components["schemas"]["AccessAuditFindingResponse"];
+export type AccessAuditFindingListResponse = components["schemas"]["AccessAuditFindingListResponse"];
+export type AccessAuditStatistics = components["schemas"]["AccessAuditStatistics"];
+export type AcknowledgeFindingRequest = components["schemas"]["AcknowledgeFindingRequest"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, query params, request shapes
+// ---------------------------------------------------------------------------
+
 export type FindingType =
   | "excessive_access"
   | "inactive_user"
@@ -17,73 +39,6 @@ export type FindingStatus =
   | "remediated"
   | "waived"
   | "closed";
-
-export interface AccessAuditFinding {
-  id: string;
-  audit_id: string;
-  user_id: string | null;
-  finding_type: FindingType;
-  severity: FindingSeverity;
-  description: string;
-  recommendation: string | null;
-  status: FindingStatus;
-  remediation_notes: string | null;
-  remediated_by: string | null;
-  remediated_at: string | null;
-  acknowledged_by: string | null;
-  acknowledged_at: string | null;
-  waived_reason: string | null;
-  waived_by: string | null;
-  waived_at: string | null;
-  created_at: string;
-  updated_at: string;
-  user_email: string | null;
-  user_name: string | null;
-  remediator_name: string | null;
-}
-
-export interface AccessAudit {
-  id: string;
-  audit_period: string;
-  quarter: number;
-  year: number;
-  status: "draft" | "in_review" | "completed";
-  auditor_id: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  users_reviewed: number;
-  permissions_verified: number;
-  anomalies_found: number;
-  summary: string | null;
-  recommendations: string | null;
-  created_at: string;
-  updated_at: string;
-  auditor_name: string | null;
-  findings: AccessAuditFinding[];
-}
-
-export interface AccessAuditListResponse {
-  audits: AccessAudit[];
-  total: number;
-}
-
-export interface AccessAuditFindingListResponse {
-  findings: AccessAuditFinding[];
-  total: number;
-}
-
-export interface AccessAuditStatistics {
-  total: number;
-  draft: number;
-  in_review: number;
-  completed: number;
-  total_findings: number;
-  open_findings: number;
-  remediated_findings: number;
-  waived_findings: number;
-  by_severity: Record<string, number>;
-  by_quarter: Record<string, number>;
-}
 
 export interface CreateAccessAuditRequest {
   quarter: number;
@@ -121,10 +76,6 @@ export interface UpdateAccessAuditFindingRequest {
 
 export interface RemediateFindingRequest {
   remediation_notes?: string;
-}
-
-export interface AcknowledgeFindingRequest {
-  notes?: string;
 }
 
 export interface WaiveFindingRequest {

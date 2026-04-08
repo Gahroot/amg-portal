@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# openapi spec cache (regenerate via scripts/generate-types.sh)
+openapi.json

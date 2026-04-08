@@ -1,10 +1,21 @@
 /**
- * Types for user preferences and multi-device sync
+ * User preferences types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/user_preferences.py
  */
+import type { components } from "./generated";
 
-/**
- * User interface preferences that sync across devices
- */
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type UserPreferencesResponse = components["schemas"]["UserPreferencesResponse"];
+export type UserPreferencesSyncResponse = components["schemas"]["UserPreferencesSyncResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — UI preferences, sync state, device management
+// ---------------------------------------------------------------------------
+
 export interface UIPreferences {
   theme: "light" | "dark" | "system";
   sidebar_collapsed: boolean;
@@ -16,9 +27,6 @@ export interface UIPreferences {
   column_visibility: Record<string, Record<string, boolean>>;
 }
 
-/**
- * Default UI preferences
- */
 export const defaultUIPreferences: UIPreferences = {
   theme: "system",
   sidebar_collapsed: false,
@@ -30,47 +38,20 @@ export const defaultUIPreferences: UIPreferences = {
   column_visibility: {},
 };
 
-/**
- * Partial update for UI preferences
- */
 export type UIPreferencesUpdate = Partial<UIPreferences>;
 
-/**
- * Dashboard configuration summary for sync
- */
 export interface DashboardConfigSummary {
   layout_mode: string;
   columns: number;
   widgets: Array<Record<string, unknown>>;
 }
 
-/**
- * Full user preferences response from server
- */
-export interface UserPreferencesResponse {
-  id: string;
-  user_id: string;
-  ui_preferences: UIPreferences;
-  notification_preferences: unknown | null;
-  dashboard_config: DashboardConfigSummary | null;
-  sync_enabled: boolean;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Request to update user preferences
- */
 export interface UserPreferencesUpdateRequest {
   ui_preferences?: UIPreferencesUpdate;
   sync_enabled?: boolean;
   version: number;
 }
 
-/**
- * Conflict resolution information
- */
 export interface ConflictResolution {
   server_version: number;
   client_version: number;
@@ -79,18 +60,6 @@ export interface ConflictResolution {
   resolution_strategy: "server_wins" | "client_wins" | "merge";
 }
 
-/**
- * Response for preferences sync operation
- */
-export interface UserPreferencesSyncResponse {
-  preferences: UserPreferencesResponse;
-  conflict: ConflictResolution | null;
-  synced_at: string;
-}
-
-/**
- * Read status for an entity
- */
 export interface ReadStatusResponse {
   id: string;
   user_id: string;
@@ -101,9 +70,6 @@ export interface ReadStatusResponse {
   updated_at: string;
 }
 
-/**
- * Request to update read status
- */
 export interface ReadStatusUpdateRequest {
   entity_type: string;
   entity_id: string;
@@ -111,18 +77,12 @@ export interface ReadStatusUpdateRequest {
   device_id?: string;
 }
 
-/**
- * Sync action types
- */
 export type SyncAction =
   | "mark_read"
   | "mark_unread"
   | "update_preference"
   | "update_ui_preference";
 
-/**
- * Entity types that can be synced
- */
 export type EntityType =
   | "program"
   | "document"
@@ -132,9 +92,6 @@ export type EntityType =
   | "message"
   | "preference";
 
-/**
- * A single change to be synced
- */
 export interface SyncChange {
   entity_type: string;
   entity_id?: string;
@@ -144,9 +101,6 @@ export interface SyncChange {
   device_id?: string;
 }
 
-/**
- * Request to push changes from client to server
- */
 export interface SyncPushRequest {
   device_id: string;
   changes: SyncChange[];
@@ -154,9 +108,6 @@ export interface SyncPushRequest {
   last_synced_at?: string;
 }
 
-/**
- * Response after pushing changes
- */
 export interface SyncPushResponse {
   success: boolean;
   server_version: number;
@@ -170,9 +121,6 @@ export interface SyncPushResponse {
   synced_at: string;
 }
 
-/**
- * Response for pulling changes from server
- */
 export interface SyncPullResponse {
   server_version: number;
   preferences: UserPreferencesResponse;
@@ -181,9 +129,6 @@ export interface SyncPullResponse {
   synced_at: string;
 }
 
-/**
- * Device session information
- */
 export interface DeviceSessionResponse {
   id: string;
   device_id: string;
@@ -194,9 +139,6 @@ export interface DeviceSessionResponse {
   app_version: string | null;
 }
 
-/**
- * Request to register a device
- */
 export interface DeviceRegisterRequest {
   device_id: string;
   device_type: "web" | "ios" | "android";
@@ -205,18 +147,12 @@ export interface DeviceRegisterRequest {
   app_version?: string;
 }
 
-/**
- * List of user's devices
- */
 export interface DeviceListResponse {
   devices: DeviceSessionResponse[];
   current_device_id: string | null;
   total: number;
 }
 
-/**
- * Current sync status for the user
- */
 export interface SyncStatusResponse {
   is_syncing: boolean;
   last_synced_at: string | null;
@@ -226,9 +162,6 @@ export interface SyncStatusResponse {
   connected_devices: number;
 }
 
-/**
- * Local sync state managed by the store
- */
 export interface SyncState {
   isSyncing: boolean;
   lastSyncedAt: Date | null;
@@ -238,9 +171,6 @@ export interface SyncState {
   isOnline: boolean;
 }
 
-/**
- * Queued offline change
- */
 export interface QueuedChange {
   id: string;
   change: SyncChange;

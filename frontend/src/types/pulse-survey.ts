@@ -1,4 +1,20 @@
-// Pulse Survey Types
+/**
+ * Pulse survey types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/pulse_survey.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type PulseSurvey = components["schemas"]["PulseSurveyDetail"];
+export type PulseSurveyListResponse = components["schemas"]["PulseSurveyListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, request shapes, constants, analytics
+// ---------------------------------------------------------------------------
 
 export type PulseSurveyStatus = "draft" | "active" | "closed";
 export type PulseSurveyResponseType = "emoji" | "stars" | "yes_no" | "thumbs";
@@ -7,7 +23,6 @@ export type PulseSurveyTrigger =
   | "milestone_completion"
   | "random";
 
-// Valid response values per type
 export const PULSE_RESPONSE_VALUES: Record<PulseSurveyResponseType, string[]> =
   {
     emoji: ["happy", "neutral", "sad"],
@@ -15,31 +30,6 @@ export const PULSE_RESPONSE_VALUES: Record<PulseSurveyResponseType, string[]> =
     yes_no: ["yes", "no"],
     thumbs: ["up", "down"],
   };
-
-// ==================== Survey Types ====================
-
-export interface PulseSurvey {
-  id: string;
-  title: string;
-  question: string;
-  response_type: PulseSurveyResponseType;
-  allow_comment: boolean;
-  status: PulseSurveyStatus;
-  trigger_type: PulseSurveyTrigger;
-  active_from: string | null;
-  active_to: string | null;
-  max_responses: number | null;
-  min_days_between_shows: number;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  response_count: number;
-}
-
-export interface PulseSurveyListResponse {
-  surveys: PulseSurvey[];
-  total: number;
-}
 
 export interface PulseSurveyCreateData {
   title: string;
@@ -56,8 +46,6 @@ export interface PulseSurveyCreateData {
 export type PulseSurveyUpdateData = Partial<PulseSurveyCreateData> & {
   status?: PulseSurveyStatus;
 };
-
-// ==================== Response Types ====================
 
 export interface PulseSurveyResponse {
   id: string;
@@ -80,8 +68,6 @@ export interface PulseSurveyResponseCreateData {
   trigger_context?: Record<string, unknown>;
 }
 
-// ==================== Analytics Types ====================
-
 export interface PulseSurveyValueCount {
   value: string;
   count: number;
@@ -103,8 +89,6 @@ export interface PulseSurveyClientStatus {
   has_responded: boolean;
   responded_at: string | null;
 }
-
-// ==================== Query Params ====================
 
 export interface PulseSurveyListParams {
   status?: PulseSurveyStatus;

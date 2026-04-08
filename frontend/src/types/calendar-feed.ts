@@ -1,47 +1,23 @@
 /**
- * Types for calendar feed token management.
+ * Calendar feed types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/calendar_feed.py
  */
+import type { components } from "./generated";
 
-/**
- * Calendar feed token (without the actual token value)
- */
-export interface CalendarFeedToken {
-  id: string;
-  name: string;
-  is_active: boolean;
-  last_accessed_at: string | null;
-  created_at: string;
-  revoked_at: string | null;
-}
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-/**
- * Calendar feed token with full URL (returned only on create/regenerate)
- */
-export interface CalendarFeedTokenCreated extends CalendarFeedToken {
-  feed_url: string;
-  token: string;
-  warning: string;
-}
+export type CalendarFeedToken = components["schemas"]["CalendarFeedTokenResponse"];
+export type CalendarFeedTokenCreated = components["schemas"]["CalendarFeedTokenCreatedResponse"];
+export type CalendarFeedStatus = components["schemas"]["CalendarFeedStatusResponse"];
+export type CalendarFeedTokenCreateRequest = components["schemas"]["CalendarFeedTokenCreate"];
 
-/**
- * Calendar feed status response
- */
-export interface CalendarFeedStatus {
-  has_active_token: boolean;
-  active_token: CalendarFeedToken | null;
-  feed_url: string | null;
-}
+// ---------------------------------------------------------------------------
+// Frontend-only types — filter options
+// ---------------------------------------------------------------------------
 
-/**
- * Request to create a calendar feed token
- */
-export interface CalendarFeedTokenCreateRequest {
-  name?: string;
-}
-
-/**
- * Calendar feed filter options (for future use)
- */
 export interface CalendarFeedFilterOptions {
   include_milestones?: boolean;
   include_deadlines?: boolean;

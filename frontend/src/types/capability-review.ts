@@ -1,45 +1,27 @@
-export interface CapabilityReview {
-  id: string;
-  partner_id: string;
-  review_year: number;
-  status: "pending" | "scheduled" | "in_progress" | "completed" | "overdue" | "waived";
-  reviewer_id: string | null;
-  scheduled_date: string | null;
-  completed_date: string | null;
-  capabilities_reviewed: string[] | null;
-  certifications_reviewed: string[] | null;
-  qualifications_reviewed: string[] | null;
-  findings: CapabilityReviewFinding[] | null;
-  notes: string | null;
-  recommendations: string | null;
-  reminder_sent_at: string | null;
-  created_at: string;
-  updated_at: string;
-  partner_name: string | null;
-  reviewer_name: string | null;
-}
+/**
+ * Capability review types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/capability_review.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type CapabilityReview = components["schemas"]["CapabilityReviewResponse"];
+export type CapabilityReviewListResponse = components["schemas"]["CapabilityReviewListResponse"];
+export type CapabilityReviewStatistics = components["schemas"]["CapabilityReviewStatistics"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — request shapes, query params
+// ---------------------------------------------------------------------------
 
 export interface CapabilityReviewFinding {
   finding_type: string;
   description: string;
   severity: "low" | "medium" | "high" | "critical";
   recommendation: string | null;
-}
-
-export interface CapabilityReviewListResponse {
-  reviews: CapabilityReview[];
-  total: number;
-}
-
-export interface CapabilityReviewStatistics {
-  total: number;
-  pending: number;
-  scheduled: number;
-  in_progress: number;
-  completed: number;
-  overdue: number;
-  waived: number;
-  by_year: Record<number, number>;
 }
 
 export interface CreateCapabilityReviewRequest {

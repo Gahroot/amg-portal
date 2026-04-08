@@ -1,4 +1,22 @@
-// Custom report builder types
+/**
+ * Custom report types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/custom_report.py
+ */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type CustomReport = components["schemas"]["CustomReportResponse"];
+export type CustomReportListResponse = components["schemas"]["CustomReportListResponse"];
+export type CustomReportCreateData = components["schemas"]["CustomReportCreate"];
+export type CustomReportUpdateData = components["schemas"]["CustomReportUpdate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — enums, display helpers
+// ---------------------------------------------------------------------------
 
 export type FieldType = "text" | "number" | "date" | "status" | "rag" | "boolean" | "calculated";
 export type FilterOperator =
@@ -41,26 +59,6 @@ export interface ReportFilter {
 export interface ReportSort {
   field: string;
   direction: SortDirection;
-}
-
-export interface CustomReport {
-  id: string;
-  name: string;
-  description: string | null;
-  data_source: DataSource;
-  fields: ReportField[];
-  filters: ReportFilter[];
-  sorting: ReportSort[];
-  grouping: string[];
-  is_template: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CustomReportListResponse {
-  reports: CustomReport[];
-  total: number;
 }
 
 export interface ReportPreviewRequest {

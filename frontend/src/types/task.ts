@@ -1,71 +1,34 @@
-export type TaskStatus = "todo" | "in_progress" | "blocked" | "done" | "cancelled";
-export type TaskPriority = "low" | "medium" | "high" | "urgent";
+/**
+ * Task board types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (UI constants, display helpers) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/task.py
+ */
+import type { components } from "./generated";
 
-export interface AssigneeInfo {
-  id: string;
-  name: string;
-  email: string;
-}
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export interface ProgramInfo {
-  id: string;
-  title: string;
-  status: string;
-}
+export type TaskStatus = components["schemas"]["TaskStatus"];
+export type TaskPriority = components["schemas"]["TaskPriority"];
+export type AssigneeInfo = components["schemas"]["AssigneeInfo"];
+export type ProgramInfo = components["schemas"]["ProgramInfo"];
+export type MilestoneInfo = components["schemas"]["MilestoneInfo"];
+export type TaskBoard = components["schemas"]["TaskBoardResponse"];
+export type TaskBoardListResponse = components["schemas"]["TaskBoardListResponse"];
+export type TaskCreate = components["schemas"]["TaskBoardCreate"];
+export type TaskUpdate = components["schemas"]["TaskBoardUpdate"];
+export type TaskReorder = components["schemas"]["TaskReorder"];
+export type TaskBulkUpdateResult = components["schemas"]["TaskBulkUpdateResult"];
 
-export interface MilestoneInfo {
-  id: string;
-  title: string;
-  program_id: string;
-}
-
-export interface TaskBoard {
-  id: string;
-  milestone_id: string;
-  title: string;
-  description: string | null;
-  status: TaskStatus;
-  priority: TaskPriority;
-  due_date: string | null;
-  assigned_to: string | null;
-  assignee: AssigneeInfo | null;
-  program: ProgramInfo | null;
-  milestone: MilestoneInfo | null;
-  position: number;
-  depends_on: string[];
-  blocked_by: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TaskBoardListResponse {
-  tasks: TaskBoard[];
-  total: number;
-}
-
-export interface TaskCreate {
-  title: string;
-  description?: string;
-  milestone_id: string;
-  due_date?: string;
-  assigned_to?: string;
-  priority?: TaskPriority;
-}
-
-export interface TaskUpdate {
-  title?: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  due_date?: string;
-  assigned_to?: string | null;
-}
-
-export interface TaskReorder {
-  task_id: string;
-  new_status: string;
-  after_task_id?: string | null;
-}
+// ---------------------------------------------------------------------------
+// Frontend-only types — payload shapes, UI constants
+// ---------------------------------------------------------------------------
 
 export interface TaskBulkUpdatePayload {
   task_ids: string[];
@@ -81,12 +44,6 @@ export interface TaskBulkUpdatePayload {
 export interface BulkUpdateFailure {
   task_id: string;
   error: string;
-}
-
-export interface TaskBulkUpdateResult {
-  updated: number;
-  deleted: number;
-  failed: BulkUpdateFailure[];
 }
 
 export const TASK_STATUSES: { value: TaskStatus; label: string; color: string }[] = [

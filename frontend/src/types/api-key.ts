@@ -1,6 +1,22 @@
 /**
- * API Key types for programmatic API access management.
+ * API Key types — re-exported from generated OpenAPI types where possible.
+ *
+ * @see backend/app/schemas/api_key.py
  */
+import type { components } from "./generated";
+
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
+
+export type APIKey = components["schemas"]["APIKeyResponse"];
+export type APIKeyCreated = components["schemas"]["APIKeyCreatedResponse"];
+export type APIKeyListResponse = components["schemas"]["APIKeyListResponse"];
+export type APIKeyCreateRequest = components["schemas"]["APIKeyCreate"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — UI display helpers
+// ---------------------------------------------------------------------------
 
 export interface ScopeInfo {
   name: string;
@@ -9,34 +25,6 @@ export interface ScopeInfo {
 
 export interface ScopesResponse {
   scopes: ScopeInfo[];
-}
-
-export interface APIKey {
-  id: string;
-  name: string;
-  key_prefix: string;
-  scopes: string[];
-  is_active: boolean;
-  last_used_at: string | null;
-  expires_at: string | null;
-  created_at: string;
-}
-
-export interface APIKeyCreated extends APIKey {
-  key: string;
-  warning: string;
-}
-
-export interface APIKeyListResponse {
-  items: APIKey[];
-  total: number;
-}
-
-export interface APIKeyCreateRequest {
-  name: string;
-  scopes: string[];
-  expires_in_days?: number | null;
-  rate_limit?: number | null;
 }
 
 // Available scopes with descriptions (mirrors backend)
