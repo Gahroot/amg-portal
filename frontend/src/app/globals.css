@@ -334,6 +334,27 @@
   }
 }
 
+/* ── Luxury polish utilities ─────────────────────────────────────────────── */
+
+.gold-separator {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    hsl(var(--primary) / 0.3),
+    hsl(var(--primary) / 0.1),
+    transparent
+  );
+}
+
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
 /* Grain texture overlay — premium feel matching AMG website */
 body::after {
   content: "";
