@@ -93,7 +93,8 @@ export default function MDApprovalReviewPage() {
       toast.success(approved === "approve" ? "Client approved" : "Client rejected");
       router.push("/approvals");
     } catch {
-      // Error is handled by the hook's onError callback
+      toast.error("This profile has already been processed");
+      router.push("/approvals");
     }
   };
 

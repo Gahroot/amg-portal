@@ -101,9 +101,16 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
         profile = await self.get(db, profile_id)
         if not profile:
             raise NotFoundException("Profile not found")
-        if profile.approval_status != ApprovalStatus.pending_md_approval.value:
+        current = profile.approval_status
+        # Idempotent: if already in the target state, return as-is
+        if approval.approved and current == ApprovalStatus.approved.value:
+            return profile
+        if not approval.approved and current == ApprovalStatus.rejected.value:
+            return profile
+        # Only allow transitions from pending_md_approval
+        if current != ApprovalStatus.pending_md_approval.value:
             raise BadRequestException(
-                f"Cannot approve profile in {profile.approval_status} state"
+                f"Cannot approve profile in {current} state"
             )
 
         update_data: dict[str, Any] = {
