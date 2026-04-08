@@ -8,7 +8,6 @@ export const passwordSchema = z
   .regex(/[0-9]/, "Password must contain a number")
   .regex(/[^A-Za-z0-9]/, "Password must contain a special character");
 
-// Raw field (not wrapped in an object) — used inside mfaSetupSchema, mfaDisableSchema, mfaCodeSchema
 export const mfaCodeField = z
   .string()
   .min(6, "Code must be at least 6 characters")

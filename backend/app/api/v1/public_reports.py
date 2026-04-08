@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB
-from app.core.exceptions import NotFoundException, UnauthorizedException
+from app.core.exceptions import GoneException, NotFoundException, UnauthorizedException
 from app.models.shared_report import SharedReport
 from app.schemas.shared_report import (
     PublicReportAccessRequest,
@@ -40,7 +40,7 @@ async def _resolve_share(token: str, db: DB) -> SharedReport:
 
             expires_at = expires_at.replace(tzinfo=UTC)
         if expires_at < datetime.now(UTC):
-            raise NotFoundException("Share not found")
+            raise GoneException("This shared report has expired")
 
     return share
 
