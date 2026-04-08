@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCountUp } from "@/hooks/use-count-up";
 import type { RealTimeStats } from "@/lib/api/dashboard";
 
 interface StatsBarProps {
@@ -26,6 +27,7 @@ interface StatItemProps {
 
 function StatItem({ label, value, icon, alert = false }: StatItemProps) {
   const isAlert = alert && value > 0;
+  const animatedValue = useCountUp(value);
   return (
     <Card
       className={
@@ -34,15 +36,15 @@ function StatItem({ label, value, icon, alert = false }: StatItemProps) {
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle
-          className={`text-sm font-medium ${
+          className={`text-[11px] font-medium uppercase tracking-widest ${
             isAlert ? "text-red-700" : "text-muted-foreground"
           }`}
         >
           {label}
         </CardTitle>
         <span
-          className={`h-4 w-4 ${
-            isAlert ? "text-red-600" : "text-muted-foreground"
+          className={`rounded-lg p-2 ${
+            isAlert ? "bg-red-100 text-red-600" : "bg-primary/10 text-muted-foreground"
           }`}
         >
           {icon}
@@ -50,9 +52,9 @@ function StatItem({ label, value, icon, alert = false }: StatItemProps) {
       </CardHeader>
       <CardContent>
         <p
-          className={`text-2xl font-bold ${isAlert ? "text-red-700" : ""}`}
+          className={`text-2xl font-light tabular-nums tracking-tight ${isAlert ? "text-red-700" : ""}`}
         >
-          {value}
+          {animatedValue}
         </p>
       </CardContent>
     </Card>

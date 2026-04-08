@@ -119,8 +119,8 @@ function SummaryCard({ title, value, subtext, icon, trend, highlight }: SummaryC
       <CardContent className="pt-4 pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 min-w-0">
-            <p className="text-xs text-muted-foreground truncate">{title}</p>
-            <p className="text-2xl font-bold tabular-nums">{value}</p>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground truncate">{title}</p>
+            <p className="text-2xl font-light tabular-nums tracking-tight">{value}</p>
             {subtext && (
               <p className="text-xs text-muted-foreground">{subtext}</p>
             )}
