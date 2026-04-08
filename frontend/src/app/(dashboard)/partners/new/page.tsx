@@ -132,17 +132,21 @@ export default function NewPartnerPage() {
           .map((g) => g.trim())
           .filter(Boolean)
       : [];
-    await createPartnerMutation.mutateAsync({
-      firm_name: data.firm_name,
-      contact_name: data.contact_name,
-      contact_email: data.contact_email,
-      contact_phone: data.contact_phone || undefined,
-      capabilities: selectedCapabilities,
-      geographies,
-      notes: data.notes || undefined,
-    });
-    toast.success("Partner created successfully");
-    router.push("/partners");
+    try {
+      await createPartnerMutation.mutateAsync({
+        firm_name: data.firm_name,
+        contact_name: data.contact_name,
+        contact_email: data.contact_email,
+        contact_phone: data.contact_phone || undefined,
+        capabilities: selectedCapabilities,
+        geographies,
+        notes: data.notes || undefined,
+      });
+      toast.success("Partner created successfully");
+      router.push("/partners");
+    } catch {
+      // Error toast is handled by useCreatePartner's onError
+    }
   };
 
   const onSubmit = async (data: CreatePartnerFormData) => {
@@ -154,14 +158,12 @@ export default function NewPartnerPage() {
     }
 
     // No duplicates, proceed with creation
-    // Error toast is handled by useCreatePartner's onError
-    await doCreatePartner(data).catch(() => {});
+    await doCreatePartner(data);
   };
 
   const handleCreateAnyway = async () => {
     if (!pendingFormData) return;
-    // Error toast is handled by useCreatePartner's onError
-    await doCreatePartner(pendingFormData).catch(() => {});
+    await doCreatePartner(pendingFormData);
   };
 
   // Convert PartnerDuplicateMatch to DialogPartnerMatch format
