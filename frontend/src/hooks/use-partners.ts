@@ -8,6 +8,8 @@ import {
   updatePartner,
   provisionPartner,
 } from "@/lib/api/partners";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   PartnerListParams,
   PartnerCreateData,
@@ -17,28 +19,24 @@ import type {
 
 export function usePartners(params?: PartnerListParams) {
   return useQuery({
-    queryKey: ["partners", params],
+    queryKey: queryKeys.partners.list(params),
     queryFn: () => listPartners(params),
   });
 }
 
 export function usePartner(id: string) {
   return useQuery({
-    queryKey: ["partners", id],
+    queryKey: queryKeys.partners.detail(id),
     queryFn: () => getPartner(id),
     enabled: !!id,
   });
 }
 
 export function useCreatePartner() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: PartnerCreateData) => createPartner(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["partners"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create partner"),
+    invalidateKeys: [queryKeys.partners.all],
+    errorMessage: "Failed to create partner",
   });
 }
 
@@ -48,8 +46,8 @@ export function useUpdatePartner() {
     mutationFn: ({ id, data }: { id: string; data: PartnerUpdateData }) =>
       updatePartner(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["partners"] });
-      queryClient.invalidateQueries({ queryKey: ["partners", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partners.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partners.detail(variables.id) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to update partner"),
@@ -67,8 +65,8 @@ export function useProvisionPartner() {
       data: PartnerProvisionData;
     }) => provisionPartner(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["partners"] });
-      queryClient.invalidateQueries({ queryKey: ["partners", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partners.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.partners.detail(variables.id) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to provision partner"),

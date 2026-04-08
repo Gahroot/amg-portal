@@ -264,7 +264,7 @@ describe("useUpdateProgram", () => {
 
     // Verify cache invalidation
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["programs"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["programs", "program-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["programs", "detail", "program-1"] });
   });
 
   it("shows toast error on failure", async () => {

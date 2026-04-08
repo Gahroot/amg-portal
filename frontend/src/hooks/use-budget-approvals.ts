@@ -20,6 +20,8 @@ import {
   addChainStep,
   removeChainStep,
 } from "@/lib/api/budget-approvals";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   BudgetApprovalListParams,
   BudgetApprovalStepDecision,
@@ -32,21 +34,21 @@ import type {
 
 export function useBudgetApprovalRequests(params?: BudgetApprovalListParams) {
   return useQuery({
-    queryKey: ["budget-approvals", "requests", params],
+    queryKey: queryKeys.budgetApprovals.requests.list(params),
     queryFn: () => listBudgetApprovalRequests(params),
   });
 }
 
 export function usePendingBudgetApprovals() {
   return useQuery({
-    queryKey: ["budget-approvals", "pending"],
+    queryKey: queryKeys.budgetApprovals.pending(),
     queryFn: getPendingBudgetApprovals,
   });
 }
 
 export function useBudgetApprovalRequest(id: string) {
   return useQuery({
-    queryKey: ["budget-approvals", "requests", id],
+    queryKey: queryKeys.budgetApprovals.requests.detail(id),
     queryFn: () => getBudgetApprovalRequest(id),
     enabled: !!id,
   });
@@ -54,15 +56,14 @@ export function useBudgetApprovalRequest(id: string) {
 
 export function useBudgetApprovalHistory(requestId: string) {
   return useQuery({
-    queryKey: ["budget-approvals", "history", requestId],
+    queryKey: queryKeys.budgetApprovals.history(requestId),
     queryFn: () => getBudgetApprovalHistory(requestId),
     enabled: !!requestId,
   });
 }
 
 export function useDecideBudgetApprovalStep() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       stepId,
       data,
@@ -70,26 +71,19 @@ export function useDecideBudgetApprovalStep() {
       stepId: string;
       data: BudgetApprovalStepDecision;
     }) => decideBudgetApprovalStep(stepId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["budget-approvals"] });
-      toast.success("Decision submitted successfully");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to submit decision"),
+    invalidateKeys: [queryKeys.budgetApprovals.all],
+    successMessage: "Decision submitted successfully",
+    errorMessage: "Failed to submit decision",
   });
 }
 
 export function useCancelBudgetApprovalRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       cancelBudgetApprovalRequest(id, reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["budget-approvals"] });
-      toast.success("Request cancelled");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to cancel request"),
+    invalidateKeys: [queryKeys.budgetApprovals.all],
+    successMessage: "Request cancelled",
+    errorMessage: "Failed to cancel request",
   });
 }
 
@@ -97,55 +91,37 @@ export function useCancelBudgetApprovalRequest() {
 
 export function useApprovalThresholds(isActive?: boolean) {
   return useQuery({
-    queryKey: ["budget-approvals", "thresholds", { isActive }],
+    queryKey: queryKeys.budgetApprovals.thresholds.list(isActive),
     queryFn: () => listApprovalThresholds(isActive),
   });
 }
 
 export function useCreateApprovalThreshold() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ApprovalThresholdCreate) =>
       createApprovalThreshold(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "thresholds"],
-      });
-      toast.success("Threshold created");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create threshold"),
+    invalidateKeys: [queryKeys.budgetApprovals.thresholds.all],
+    successMessage: "Threshold created",
+    errorMessage: "Failed to create threshold",
   });
 }
 
 export function useUpdateApprovalThreshold() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: ApprovalThresholdUpdate }) =>
       updateApprovalThreshold(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "thresholds"],
-      });
-      toast.success("Threshold updated");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update threshold"),
+    invalidateKeys: [queryKeys.budgetApprovals.thresholds.all],
+    successMessage: "Threshold updated",
+    errorMessage: "Failed to update threshold",
   });
 }
 
 export function useDeleteApprovalThreshold() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteApprovalThreshold(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "thresholds"],
-      });
-      toast.success("Threshold deleted");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to delete threshold"),
+    invalidateKeys: [queryKeys.budgetApprovals.thresholds.all],
+    successMessage: "Threshold deleted",
+    errorMessage: "Failed to delete threshold",
   });
 }
 
@@ -153,62 +129,44 @@ export function useDeleteApprovalThreshold() {
 
 export function useApprovalChains(isActive?: boolean) {
   return useQuery({
-    queryKey: ["budget-approvals", "chains", { isActive }],
+    queryKey: queryKeys.budgetApprovals.chains.list(isActive),
     queryFn: () => listApprovalChains(isActive),
   });
 }
 
 export function useApprovalChain(id: string) {
   return useQuery({
-    queryKey: ["budget-approvals", "chains", id],
+    queryKey: queryKeys.budgetApprovals.chains.detail(id),
     queryFn: () => getApprovalChain(id),
     enabled: !!id,
   });
 }
 
 export function useCreateApprovalChain() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ApprovalChainCreate) => createApprovalChain(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains"],
-      });
-      toast.success("Approval chain created");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create approval chain"),
+    invalidateKeys: [queryKeys.budgetApprovals.chains.all],
+    successMessage: "Approval chain created",
+    errorMessage: "Failed to create approval chain",
   });
 }
 
 export function useUpdateApprovalChain() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: ApprovalChainUpdate }) =>
       updateApprovalChain(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains"],
-      });
-      toast.success("Approval chain updated");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update approval chain"),
+    invalidateKeys: [queryKeys.budgetApprovals.chains.all],
+    successMessage: "Approval chain updated",
+    errorMessage: "Failed to update approval chain",
   });
 }
 
 export function useDeleteApprovalChain() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteApprovalChain(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains"],
-      });
-      toast.success("Approval chain deleted");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to delete approval chain"),
+    invalidateKeys: [queryKeys.budgetApprovals.chains.all],
+    successMessage: "Approval chain deleted",
+    errorMessage: "Failed to delete approval chain",
   });
 }
 
@@ -224,10 +182,10 @@ export function useAddChainStep() {
     }) => addChainStep(chainId, data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains", variables.chainId],
+        queryKey: queryKeys.budgetApprovals.chains.detail(variables.chainId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains", { isActive: undefined }],
+        queryKey: queryKeys.budgetApprovals.chains.all,
       });
       toast.success("Step added");
     },
@@ -243,10 +201,10 @@ export function useRemoveChainStep() {
       removeChainStep(chainId, stepId),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains", variables.chainId],
+        queryKey: queryKeys.budgetApprovals.chains.detail(variables.chainId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["budget-approvals", "chains"],
+        queryKey: queryKeys.budgetApprovals.chains.all,
       });
       toast.success("Step removed");
     },

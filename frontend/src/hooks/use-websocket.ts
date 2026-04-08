@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { queryKeys } from "@/lib/query-keys";
 import type {
   WSMessage,
   WSNotificationMessage,
@@ -103,8 +104,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               currentOptions.onNotification(notification);
             }
             // Invalidate notifications query
-            queryClient.invalidateQueries({ queryKey: ["notifications"] });
-            queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
             // Show a toast for the incoming notification
             const toastFn =
               notification.priority === "urgent"
@@ -120,8 +121,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               currentOptions.onNewMessage(msgMsg.data as Communication);
             }
             // Invalidate messages and conversations queries
-            queryClient.invalidateQueries({ queryKey: ["messages"] });
-            queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.conversations.all });
           } else if (message.type === "typing") {
             const typingMsg = message as WSTypingMessage;
             const currentOptions = optionsRef.current;
@@ -140,13 +140,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
               currentOptions.onMessageRead(readData);
             }
             // Invalidate messages to refresh read receipts
-            queryClient.invalidateQueries({ queryKey: ["messages", readData.conversation_id] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.conversations.messagesAll(readData.conversation_id) });
           } else if (message.type === "escalation") {
             const escalationMsg = message as WSEscalationMessage;
             const action = escalationMsg.action;
             const data = escalationMsg.data;
             // Invalidate escalation queries to refresh lists and counts
-            queryClient.invalidateQueries({ queryKey: ["escalations"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.escalations.all });
             // Show a toast for the escalation event
             const label = action === "created" ? "New escalation" : "Escalation updated";
             toast.warning(`${label}: ${data.title}`, {
@@ -156,8 +156,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             const programMsg = message as WSProgramUpdateMessage;
             const data = programMsg.data;
             // Invalidate program queries for both dashboard and portal views
-            queryClient.invalidateQueries({ queryKey: ["programs"] });
-            queryClient.invalidateQueries({ queryKey: ["portal", "programs"] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.portal.programs.all });
             // Show a toast for the status change
             toast.info(`Program updated: ${data.title}`, {
               description: `Status changed from ${data.previous_status} to ${data.status}`,

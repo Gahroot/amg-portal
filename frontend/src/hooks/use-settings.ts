@@ -12,6 +12,7 @@ import {
   updateClientPreferences,
   type ClientPreferencesUpdate,
 } from "@/lib/api/client-portal";
+import { queryKeys } from "@/lib/query-keys";
 import type {
   ProfileUpdateRequest,
   UserNotificationPreferencesUpdate,
@@ -20,7 +21,7 @@ import type {
 
 export function useNotificationPreferences() {
   return useQuery({
-    queryKey: ["notification-preferences"],
+    queryKey: queryKeys.settings.notificationPreferences(),
     queryFn: getNotificationPreferences,
   });
 }
@@ -32,7 +33,7 @@ export function useUpdateNotificationPreferences() {
       updateNotificationPreferences(data),
     onSuccess: () => {
       toast.success("Notification preferences updated");
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.notificationPreferences() });
     },
     onError: (error) => {
       const message =
@@ -48,7 +49,7 @@ export function useUpdateProfile() {
     mutationFn: (data: ProfileUpdateRequest) => updateProfile(data),
     onSuccess: () => {
       toast.success("Profile updated");
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
     },
     onError: (error) => {
       const message =
@@ -74,7 +75,7 @@ export function useChangePassword() {
 
 export function useClientPreferences() {
   return useQuery({
-    queryKey: ["client-preferences"],
+    queryKey: queryKeys.settings.clientPreferences(),
     queryFn: getClientPreferences,
   });
 }
@@ -85,7 +86,7 @@ export function useUpdateClientPreferences() {
     mutationFn: (data: ClientPreferencesUpdate) => updateClientPreferences(data),
     onSuccess: () => {
       toast.success("Communication preferences updated");
-      queryClient.invalidateQueries({ queryKey: ["client-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.clientPreferences() });
     },
     onError: (error) => {
       const message =

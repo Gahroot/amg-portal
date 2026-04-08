@@ -1,5 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   activatePulseSurvey,
   closePulseSurvey,
@@ -13,6 +12,8 @@ import {
   submitPulseResponse,
   updatePulseSurvey,
 } from "@/lib/api/pulse-surveys";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   PulseSurveyCreateData,
   PulseSurveyListParams,
@@ -24,14 +25,14 @@ import type {
 
 export function usePulseSurveys(params?: PulseSurveyListParams) {
   return useQuery({
-    queryKey: ["pulse-surveys", params],
+    queryKey: queryKeys.pulseSurveys.list(params),
     queryFn: () => listPulseSurveys(params),
   });
 }
 
 export function usePulseSurvey(id: string) {
   return useQuery({
-    queryKey: ["pulse-surveys", id],
+    queryKey: queryKeys.pulseSurveys.detail(id),
     queryFn: () => getPulseSurvey(id),
     enabled: !!id,
   });
@@ -39,7 +40,7 @@ export function usePulseSurvey(id: string) {
 
 export function usePulseSurveyStats(id: string) {
   return useQuery({
-    queryKey: ["pulse-surveys", id, "stats"],
+    queryKey: queryKeys.pulseSurveys.stats(id),
     queryFn: () => getPulseSurveyStats(id),
     enabled: !!id,
   });
@@ -50,65 +51,45 @@ export function usePulseSurveyResponses(
   params?: { skip?: number; limit?: number }
 ) {
   return useQuery({
-    queryKey: ["pulse-surveys", id, "responses", params],
+    queryKey: queryKeys.pulseSurveys.responses(id, params),
     queryFn: () => listPulseSurveyResponses(id, params),
     enabled: !!id,
   });
 }
 
 export function useCreatePulseSurvey() {
-  const qc = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: PulseSurveyCreateData) => createPulseSurvey(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pulse-surveys"] });
-      toast.success("Pulse survey created");
-    },
-    onError: () => {
-      toast.error("Failed to create pulse survey");
-    },
+    invalidateKeys: [queryKeys.pulseSurveys.all],
+    successMessage: "Pulse survey created",
+    errorMessage: "Failed to create pulse survey",
   });
 }
 
 export function useUpdatePulseSurvey(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: PulseSurveyUpdateData) => updatePulseSurvey(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pulse-surveys"] });
-      toast.success("Pulse survey updated");
-    },
-    onError: () => {
-      toast.error("Failed to update pulse survey");
-    },
+    invalidateKeys: [queryKeys.pulseSurveys.all],
+    successMessage: "Pulse survey updated",
+    errorMessage: "Failed to update pulse survey",
   });
 }
 
 export function useActivatePulseSurvey() {
-  const qc = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => activatePulseSurvey(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pulse-surveys"] });
-      toast.success("Pulse survey activated");
-    },
-    onError: () => {
-      toast.error("Failed to activate pulse survey");
-    },
+    invalidateKeys: [queryKeys.pulseSurveys.all],
+    successMessage: "Pulse survey activated",
+    errorMessage: "Failed to activate pulse survey",
   });
 }
 
 export function useClosePulseSurvey() {
-  const qc = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => closePulseSurvey(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pulse-surveys"] });
-      toast.success("Pulse survey closed");
-    },
-    onError: () => {
-      toast.error("Failed to close pulse survey");
-    },
+    invalidateKeys: [queryKeys.pulseSurveys.all],
+    successMessage: "Pulse survey closed",
+    errorMessage: "Failed to close pulse survey",
   });
 }
 
@@ -120,7 +101,7 @@ export function useClosePulseSurvey() {
  */
 export function useActivePulseForMe() {
   return useQuery({
-    queryKey: ["pulse-surveys", "active-for-me"],
+    queryKey: queryKeys.pulseSurveys.activeForMe(),
     queryFn: () => getActivePulseForMe(),
     // Poll every 5 minutes; the endpoint already enforces anti-fatigue logic
     refetchInterval: 5 * 60 * 1000,
@@ -130,15 +111,14 @@ export function useActivePulseForMe() {
 
 export function useMyPulseStatus(surveyId: string) {
   return useQuery({
-    queryKey: ["pulse-surveys", surveyId, "my-status"],
+    queryKey: queryKeys.pulseSurveys.myStatus(surveyId),
     queryFn: () => getMyPulseStatus(surveyId),
     enabled: !!surveyId,
   });
 }
 
 export function useSubmitPulseResponse() {
-  const qc = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       surveyId,
       data,
@@ -146,12 +126,7 @@ export function useSubmitPulseResponse() {
       surveyId: string;
       data: PulseSurveyResponseCreateData;
     }) => submitPulseResponse(surveyId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pulse-surveys", "active-for-me"] });
-      qc.invalidateQueries({ queryKey: ["pulse-surveys"] });
-    },
-    onError: () => {
-      toast.error("Failed to submit feedback");
-    },
+    invalidateKeys: [queryKeys.pulseSurveys.all],
+    errorMessage: "Failed to submit feedback",
   });
 }

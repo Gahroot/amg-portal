@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getClientTimeline } from "@/lib/api/client-timeline";
+import { queryKeys } from "@/lib/query-keys";
 import type { TimelineFilters } from "@/types/client-timeline";
 
 const PAGE_SIZE = 50;
@@ -9,7 +10,7 @@ export function useClientTimeline(
   filters?: TimelineFilters
 ) {
   return useInfiniteQuery({
-    queryKey: ["client-timeline", profileId, filters],
+    queryKey: queryKeys.clients.timeline(profileId, filters),
     queryFn: async ({ pageParam = 0 }) => {
       return getClientTimeline(profileId!, {
         event_types: filters?.event_types?.join(","),

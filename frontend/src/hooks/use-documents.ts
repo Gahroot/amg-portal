@@ -14,18 +14,19 @@ import {
   deliverDocument,
   listExpiringDocuments,
 } from "@/lib/api/documents";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 
 export function useDocuments(entityType: string, entityId: string) {
   return useQuery({
-    queryKey: ["documents", entityType, entityId],
+    queryKey: queryKeys.documents.entity(entityType, entityId),
     queryFn: () => listDocuments({ entity_type: entityType, entity_id: entityId }),
     enabled: !!entityType && !!entityId,
   });
 }
 
 export function useUploadDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (params: {
       file: File;
       entityType: string;
@@ -40,27 +41,22 @@ export function useUploadDocument() {
         params.category,
         params.description,
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to upload document"),
+    invalidateKeys: [queryKeys.documents.all],
+    errorMessage: "Failed to upload document",
   });
 }
 
 export function useDeleteDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteDocument(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to delete document"),
+    invalidateKeys: [queryKeys.documents.all],
+    errorMessage: "Failed to delete document",
   });
 }
 
 export function useDocumentVersions(documentId: string, enabled = false) {
   return useQuery({
-    queryKey: ["document-versions", documentId],
+    queryKey: queryKeys.documents.versions(documentId),
     queryFn: () => getDocumentVersions(documentId),
     enabled: !!documentId && enabled,
   });
@@ -68,14 +64,14 @@ export function useDocumentVersions(documentId: string, enabled = false) {
 
 export function useVaultDocuments(vaultStatus?: string) {
   return useQuery({
-    queryKey: ["vault-documents", vaultStatus],
+    queryKey: queryKeys.documents.vault(vaultStatus),
     queryFn: () => listVaultDocuments({ vault_status: vaultStatus }),
   });
 }
 
 export function useCustodyChain(documentId: string, enabled = false) {
   return useQuery({
-    queryKey: ["custody-chain", documentId],
+    queryKey: queryKeys.documents.custodyChain(documentId),
     queryFn: () => getCustodyChain(documentId),
     enabled: !!documentId && enabled,
   });
@@ -83,7 +79,7 @@ export function useCustodyChain(documentId: string, enabled = false) {
 
 export function useDocumentDeliveries(documentId: string, enabled = false) {
   return useQuery({
-    queryKey: ["document-deliveries", documentId],
+    queryKey: queryKeys.documents.deliveries(documentId),
     queryFn: () => getDocumentDeliveries(documentId),
     enabled: !!documentId && enabled,
   });
@@ -95,8 +91,7 @@ export function useSealDocument() {
     mutationFn: (params: { documentId: string; retentionPolicy?: string }) =>
       sealDocument(params.documentId, { retention_policy: params.retentionPolicy }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-      queryClient.invalidateQueries({ queryKey: ["vault-documents"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.all });
       toast.success("Document sealed successfully");
     },
     onError: (error: Error) => toast.error(error.message || "Failed to seal document"),
@@ -118,7 +113,7 @@ export function useDeliverDocument() {
         notes: params.notes,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["document-deliveries"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.all });
       toast.success("Document delivered successfully");
     },
     onError: (error: Error) => toast.error(error.message || "Failed to deliver document"),
@@ -133,7 +128,7 @@ export function useExpiringDocuments(params?: {
   limit?: number;
 }) {
   return useQuery({
-    queryKey: ["expiring-documents", params],
+    queryKey: queryKeys.documents.expiring(params),
     queryFn: () => listExpiringDocuments(params),
   });
 }
@@ -144,7 +139,7 @@ export function useDocumentCompare(
   enabled = false,
 ) {
   return useQuery({
-    queryKey: ["document-compare", versionAId, versionBId],
+    queryKey: queryKeys.documents.compare(versionAId, versionBId),
     queryFn: () => compareDocumentVersions(versionAId!, versionBId!),
     enabled: !!versionAId && !!versionBId && enabled,
   });

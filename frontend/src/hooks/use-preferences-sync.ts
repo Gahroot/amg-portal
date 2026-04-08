@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { queryKeys } from "@/lib/query-keys";
 import {
   usePreferencesStore,
   useDeviceId,
@@ -132,7 +133,7 @@ export function usePreferencesSync() {
       retryCountRef.current = 0;
 
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
 
       return response;
     } catch (error) {

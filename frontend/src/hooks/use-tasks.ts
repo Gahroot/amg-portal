@@ -1,6 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   getTasks,
   createTask,
@@ -10,6 +9,8 @@ import {
   getAssigneesForFilter,
   getMilestonesForProgram,
 } from "@/lib/api/tasks";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type { TaskCreate, TaskUpdate, TaskReorder } from "@/types/task";
 
 interface TaskFilters {
@@ -24,66 +25,54 @@ interface TaskFilters {
 
 export function useTasks(params?: TaskFilters) {
   return useQuery({
-    queryKey: ["tasks", params],
+    queryKey: queryKeys.tasks.list(params),
     queryFn: () => getTasks(params),
   });
 }
 
 export function useTaskPrograms() {
   return useQuery({
-    queryKey: ["tasks", "programs"],
+    queryKey: queryKeys.tasks.programs(),
     queryFn: () => getProgramsForFilter(),
   });
 }
 
 export function useTaskAssignees() {
   return useQuery({
-    queryKey: ["tasks", "assignees"],
+    queryKey: queryKeys.tasks.assignees(),
     queryFn: () => getAssigneesForFilter(),
   });
 }
 
 export function useTaskMilestones(programId: string | null) {
   return useQuery({
-    queryKey: ["tasks", "milestones", programId],
+    queryKey: queryKeys.tasks.milestones(programId),
     queryFn: () => getMilestonesForProgram(programId!),
     enabled: !!programId,
   });
 }
 
 export function useCreateTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: TaskCreate) => createTask(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create task"),
+    invalidateKeys: [queryKeys.tasks.all],
+    errorMessage: "Failed to create task",
   });
 }
 
 export function useUpdateTaskStatus() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: TaskUpdate }) =>
       updateTask(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update task"),
+    invalidateKeys: [queryKeys.tasks.all],
+    errorMessage: "Failed to update task",
   });
 }
 
 export function useReorderTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: TaskReorder) => reorderTask(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to reorder task"),
+    invalidateKeys: [queryKeys.tasks.all],
+    errorMessage: "Failed to reorder task",
   });
 }

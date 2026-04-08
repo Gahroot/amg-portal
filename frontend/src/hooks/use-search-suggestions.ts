@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getSearchSuggestions } from "@/lib/api/search";
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * Hook to fetch search suggestions with debouncing.
@@ -17,7 +18,7 @@ export function useSearchSuggestions(
   const debouncedQuery = useDebounce(query, debounceMs);
 
   const result = useQuery({
-    queryKey: ["search-suggestions", debouncedQuery],
+    queryKey: queryKeys.searchSuggestions(debouncedQuery),
     queryFn: () => getSearchSuggestions(debouncedQuery, 10),
     enabled: enabled,
     staleTime: 60_000, // 1 minute

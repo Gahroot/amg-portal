@@ -11,6 +11,8 @@ import {
   updateMilestone,
   updateTask,
 } from "@/lib/api/programs";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   ProgramListParams,
   ProgramCreate,
@@ -22,14 +24,14 @@ import type {
 
 export function usePrograms(params?: ProgramListParams) {
   return useQuery({
-    queryKey: ["programs", params],
+    queryKey: queryKeys.programs.list(params),
     queryFn: () => listPrograms(params),
   });
 }
 
 export function useProgram(id: string) {
   return useQuery({
-    queryKey: ["programs", id],
+    queryKey: queryKeys.programs.detail(id),
     queryFn: () => getProgram(id),
     enabled: !!id,
   });
@@ -37,21 +39,17 @@ export function useProgram(id: string) {
 
 export function useProgramSummary(id: string) {
   return useQuery({
-    queryKey: ["programs", id, "summary"],
+    queryKey: queryKeys.programs.summary(id),
     queryFn: () => getProgramSummary(id),
     enabled: !!id,
   });
 }
 
 export function useCreateProgram() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ProgramCreate) => createProgram(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create program"),
+    invalidateKeys: [queryKeys.programs.all],
+    errorMessage: "Failed to create program",
   });
 }
 
@@ -61,8 +59,8 @@ export function useUpdateProgram() {
     mutationFn: ({ id, data }: { id: string; data: ProgramUpdate }) =>
       updateProgram(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      queryClient.invalidateQueries({ queryKey: ["programs", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.detail(variables.id) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to update program"),
@@ -81,9 +79,9 @@ export function useCreateMilestone() {
     }) => createMilestone(programId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["programs", variables.programId],
+        queryKey: queryKeys.programs.detail(variables.programId),
       });
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to create milestone"),
@@ -91,27 +89,19 @@ export function useCreateMilestone() {
 }
 
 export function useUpdateMilestone() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: MilestoneUpdate }) =>
       updateMilestone(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update milestone"),
+    invalidateKeys: [queryKeys.programs.all],
+    errorMessage: "Failed to update milestone",
   });
 }
 
 export function useUpdateTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: TaskUpdate }) =>
       updateTask(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update task"),
+    invalidateKeys: [queryKeys.programs.all],
+    errorMessage: "Failed to update task",
   });
 }

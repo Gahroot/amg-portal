@@ -21,6 +21,8 @@ import {
   acknowledgeNPSFollowUp,
   completeNPSFollowUp,
 } from "@/lib/api/nps-surveys";
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   NPSSurveyListParams,
   NPSResponseListParams,
@@ -33,21 +35,21 @@ import type {
 
 export function useNPSSurveys(params?: NPSSurveyListParams) {
   return useQuery({
-    queryKey: ["nps-surveys", params],
+    queryKey: queryKeys.npsSurveys.list(params),
     queryFn: () => listNPSSurveys(params),
   });
 }
 
 export function useActiveNPSSurvey() {
   return useQuery({
-    queryKey: ["nps-surveys", "active"],
+    queryKey: queryKeys.npsSurveys.active(),
     queryFn: () => getActiveNPSSurvey(),
   });
 }
 
 export function useNPSSurvey(id: string) {
   return useQuery({
-    queryKey: ["nps-surveys", id],
+    queryKey: queryKeys.npsSurveys.detail(id),
     queryFn: () => getNPSSurvey(id),
     enabled: !!id,
   });
@@ -55,7 +57,7 @@ export function useNPSSurvey(id: string) {
 
 export function useNPSSurveyStats(id: string) {
   return useQuery({
-    queryKey: ["nps-surveys", id, "stats"],
+    queryKey: queryKeys.npsSurveys.stats(id),
     queryFn: () => getNPSSurveyStats(id),
     enabled: !!id,
   });
@@ -66,14 +68,14 @@ export function useNPSTrendAnalysis(params?: {
   quarters?: number;
 }) {
   return useQuery({
-    queryKey: ["nps-surveys", "trends", params],
+    queryKey: queryKeys.npsSurveys.trends(params),
     queryFn: () => getNPSTrendAnalysis(params),
   });
 }
 
 export function useNPSResponses(surveyId: string, params?: NPSResponseListParams) {
   return useQuery({
-    queryKey: ["nps-surveys", surveyId, "responses", params],
+    queryKey: queryKeys.npsSurveys.responses(surveyId, params),
     queryFn: () => listNPSResponses(surveyId, params),
     enabled: !!surveyId,
   });
@@ -81,7 +83,7 @@ export function useNPSResponses(surveyId: string, params?: NPSResponseListParams
 
 export function useNPSResponse(surveyId: string, responseId: string) {
   return useQuery({
-    queryKey: ["nps-surveys", surveyId, "responses", responseId],
+    queryKey: queryKeys.npsSurveys.response(surveyId, responseId),
     queryFn: () => getNPSResponse(surveyId, responseId),
     enabled: !!surveyId && !!responseId,
   });
@@ -89,7 +91,7 @@ export function useNPSResponse(surveyId: string, responseId: string) {
 
 export function useNPSFollowUps(surveyId: string, params?: NPSFollowUpListParams) {
   return useQuery({
-    queryKey: ["nps-surveys", surveyId, "follow-ups", params],
+    queryKey: queryKeys.npsSurveys.followUps.bySurvey(surveyId, params),
     queryFn: () => listNPSFollowUps(surveyId, params),
     enabled: !!surveyId,
   });
@@ -97,28 +99,24 @@ export function useNPSFollowUps(surveyId: string, params?: NPSFollowUpListParams
 
 export function useMyNPSFollowUps(params?: NPSFollowUpListParams) {
   return useQuery({
-    queryKey: ["nps-surveys", "follow-ups", "my", params],
+    queryKey: queryKeys.npsSurveys.followUps.my(params),
     queryFn: () => listMyNPSFollowUps(params),
   });
 }
 
 export function useNPSFollowUp(followUpId: string) {
   return useQuery({
-    queryKey: ["nps-surveys", "follow-ups", followUpId],
+    queryKey: queryKeys.npsSurveys.followUps.detail(followUpId),
     queryFn: () => getNPSFollowUp(followUpId),
     enabled: !!followUpId,
   });
 }
 
 export function useCreateNPSSurvey() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: NPSSurveyCreateData) => createNPSSurvey(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to create NPS survey"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to create NPS survey",
   });
 }
 
@@ -128,8 +126,8 @@ export function useUpdateNPSSurvey() {
     mutationFn: ({ id, data }: { id: string; data: NPSSurveyUpdateData }) =>
       updateNPSSurvey(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.npsSurveys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.npsSurveys.detail(variables.id) });
     },
     onError: (error: Error) =>
       toast.error(error.message || "Failed to update NPS survey"),
@@ -137,26 +135,18 @@ export function useUpdateNPSSurvey() {
 }
 
 export function useActivateNPSSurvey() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => activateNPSSurvey(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to activate NPS survey"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to activate NPS survey",
   });
 }
 
 export function useCloseNPSSurvey() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => closeNPSSurvey(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to close NPS survey"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to close NPS survey",
   });
 }
 
@@ -172,10 +162,10 @@ export function useSubmitNPSResponse() {
     }) => submitNPSResponse(surveyId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["nps-surveys", variables.surveyId, "responses"],
+        queryKey: queryKeys.npsSurveys.responsesAll(variables.surveyId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["nps-surveys", variables.surveyId, "stats"],
+        queryKey: queryKeys.npsSurveys.stats(variables.surveyId),
       });
     },
     onError: (error: Error) =>
@@ -184,8 +174,7 @@ export function useSubmitNPSResponse() {
 }
 
 export function useUpdateNPSFollowUp() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       followUpId,
       data,
@@ -193,29 +182,21 @@ export function useUpdateNPSFollowUp() {
       followUpId: string;
       data: NPSFollowUpUpdateData;
     }) => updateNPSFollowUp(followUpId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update NPS follow-up"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to update NPS follow-up",
   });
 }
 
 export function useAcknowledgeNPSFollowUp() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (followUpId: string) => acknowledgeNPSFollowUp(followUpId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to acknowledge NPS follow-up"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to acknowledge NPS follow-up",
   });
 }
 
 export function useCompleteNPSFollowUp() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({
       followUpId,
       resolutionNotes,
@@ -223,10 +204,7 @@ export function useCompleteNPSFollowUp() {
       followUpId: string;
       resolutionNotes?: string;
     }) => completeNPSFollowUp(followUpId, resolutionNotes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["nps-surveys"] });
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to complete NPS follow-up"),
+    invalidateKeys: [queryKeys.npsSurveys.all],
+    errorMessage: "Failed to complete NPS follow-up",
   });
 }
