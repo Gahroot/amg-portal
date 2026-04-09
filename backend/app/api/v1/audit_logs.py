@@ -70,7 +70,7 @@ async def list_audit_logs(
 
     logs, total = await paginate(db, base, skip=skip, limit=limit)
 
-    return AuditLogListResponse(logs=logs, total=total)  # type: ignore[arg-type]
+    return AuditLogListResponse(logs=logs, total=total)
 
 
 @router.get("/export", dependencies=[Depends(require_compliance)])
@@ -167,4 +167,4 @@ async def get_entity_history(
 
     logs, total = await paginate(db, base, skip=skip, limit=limit)
 
-    return AuditLogListResponse(logs=logs, total=total)  # type: ignore[arg-type]
+    return AuditLogListResponse(logs=logs, total=total)

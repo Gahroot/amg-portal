@@ -116,7 +116,7 @@ function PartnersPageContent() {
 
   // Navigation state for scroll and filter preservation
   const {
-    _restoreScrollPosition,
+    restoreScrollPosition: _restoreScrollPosition,
     markForRestore,
     resetFilters,
     hasPendingRestore,

@@ -76,7 +76,7 @@ function ProgramsPageContent() {
 
   // Navigation state for scroll and filter preservation
   const {
-    _isRestored,
+    isRestored: _isRestored,
     restoreScrollPosition,
     markForRestore,
     resetFilters,
@@ -367,7 +367,7 @@ function ProgramsPageContent() {
                       <StatusBadge status={program.status} />
                     </TableCell>
                     <TableCell>
-                      <RagBadge status={program.rag_status} />
+                      <RagBadge status={program.rag_status as "green" | "amber" | "red"} />
                     </TableCell>
                     <TableCell>
                       {program.start_date

@@ -103,6 +103,21 @@ export interface EscalationRecurringPattern {
   count: number;
 }
 
+/**
+ * Detailed metrics response used by the EscalationMetricsDashboard.
+ * This extends the generated EscalationMetricsResponse with additional
+ * properties that may be provided by the backend metrics endpoint.
+ */
+export interface EscalationDetailedMetrics {
+  summary: EscalationMetricsSummary;
+  by_level: EscalationByLevel[];
+  by_status: EscalationByStatus[];
+  trend: EscalationTrendPoint[];
+  by_assignee: EscalationByAssignee[];
+  recurring_patterns: EscalationRecurringPattern[];
+  insights: string[];
+}
+
 export interface EscalationSimpleMetrics {
   open_by_level: Record<EscalationLevel, number>;
   avg_resolution_time_hours: number | null;

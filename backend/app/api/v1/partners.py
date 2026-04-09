@@ -140,7 +140,7 @@ async def list_partners(
     query = query.order_by(PartnerProfile.created_at.desc())
     profiles, total = await paginate(db, query, skip=skip, limit=limit)
 
-    return PartnerProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
+    return PartnerProfileListResponse(profiles=profiles, total=total)
 
 
 # ── Threshold Endpoints ──────────────────────────────────────────────────────

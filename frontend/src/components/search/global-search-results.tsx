@@ -221,7 +221,7 @@ export function GlobalSearchResults({
   groups,
   total,
   isLoading = false,
-  _showTypeBadges = false,
+  showTypeBadges: _showTypeBadges = false,
   maxPerGroup = 5,
   onSelect,
   onShowMore,

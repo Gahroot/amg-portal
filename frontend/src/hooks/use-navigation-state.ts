@@ -108,7 +108,7 @@ export function useNavigationState<F extends RouteFilterState = RouteFilterState
     restoreScroll = true,
     restoreFilters = true,
     restorePagination = true,
-    _scrollDebounce = 100,
+    scrollDebounce: _scrollDebounce = 100,
     restoreOnce = true,
   } = options;
 

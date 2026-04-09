@@ -41,7 +41,7 @@ async def list_users(
     query = query.order_by(User.created_at.desc())
     users, total = await paginate(db, query, skip=skip, limit=limit)
 
-    return UserListResponse(users=users, total=total)  # type: ignore[arg-type]
+    return UserListResponse(users=users, total=total)
 
 
 @router.post(

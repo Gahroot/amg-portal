@@ -462,9 +462,9 @@ function SelectEditableCell({
   validationRules,
   placeholder = "Select...",
   className,
-  _showEditIcon = true,
+  showEditIcon: _showEditIcon = true,
   formatDisplay,
-  _type,
+  type: _type,
   options,
   selectPlaceholder = "Select an option",
 }: SelectEditableCellProps) {
@@ -582,9 +582,9 @@ function DateEditableCell({
   validationRules,
   placeholder = "Select date",
   className,
-  _showEditIcon = true,
+  showEditIcon: _showEditIcon = true,
   formatDisplay,
-  _type,
+  type: _type,
   dateFormat = "PPP",
 }: DateEditableCellProps) {
   const [editValue, setEditValue] = useState<Date | undefined>(
@@ -844,7 +844,7 @@ export function createEditableColumn(
   return {
     id: columnId,
     accessorKey: columnId,
-    cell: ({ row, getValue, _table }: { row: { id: string }; getValue: () => unknown; table: unknown }) => {
+    cell: ({ row, getValue, table: _table }: { row: { id: string }; getValue: () => unknown; table: unknown }) => {
       // These props should be provided by the EditableTable wrapper
       const cellProps = {
         ...config,

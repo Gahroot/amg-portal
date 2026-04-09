@@ -579,7 +579,7 @@ function SurveysTab({
                     Q{survey.quarter} {survey.year}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={SURVEY_STATUS_VARIANT[survey.status]}>
+                    <Badge variant={SURVEY_STATUS_VARIANT[survey.status as NPSSurveyStatus]}>
                       {survey.status}
                     </Badge>
                   </TableCell>
@@ -1034,9 +1034,9 @@ export default function NPSSurveysPage() {
               </CardHeader>
               <CardContent>
                 <p
-                  className={`text-3xl font-bold ${getTrendColor(trends.trend_direction)}`}
+                  className={`text-3xl font-bold ${getTrendColor(trends.trend_direction as "up" | "down" | "stable")}`}
                 >
-                  {getTrendIcon(trends.trend_direction)}{" "}
+                  {getTrendIcon(trends.trend_direction as "up" | "down" | "stable")}{" "}
                   {trends.change !== null
                     ? `${trends.change > 0 ? "+" : ""}${trends.change}`
                     : "—"}

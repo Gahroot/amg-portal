@@ -83,7 +83,7 @@ async def list_invoices(
     query = query.order_by(Invoice.created_at.desc())
     invoices, total = await paginate(db, query, skip=skip, limit=limit)
 
-    return InvoiceListResponse(invoices=invoices, total=total)  # type: ignore[arg-type]
+    return InvoiceListResponse(invoices=invoices, total=total)
 
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)

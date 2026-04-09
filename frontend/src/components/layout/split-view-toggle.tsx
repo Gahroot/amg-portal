@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  * Toggle button for split view in the header
  */
 export function SplitViewToggle({ className }: { className?: string }) {
-  const { isSplitView, exitSplitView, _leftPanel, _rightPanel } = useSplitView();
+  const { isSplitView, exitSplitView, leftPanel: _leftPanel, rightPanel: _rightPanel } = useSplitView();
 
   if (!isSplitView) {
     return null;
@@ -225,7 +225,7 @@ export function SplitViewContainer({
  */
 function SplitPanel({
   panel,
-  _side,
+  side: _side,
   scrollRef,
   syncScroll,
   onClose,

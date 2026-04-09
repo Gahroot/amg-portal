@@ -2,8 +2,8 @@ import api from "@/lib/api";
 import type {
   Escalation,
   EscalationCreate,
+  EscalationDetailedMetrics,
   EscalationListResponse,
-  EscalationMetrics,
   EscalationMetricsParams,
   EscalationSimpleMetrics,
   EscalationUpdate,
@@ -94,8 +94,8 @@ export async function exportEscalationsCsv(
 
 export async function getEscalationMetrics(
   params?: EscalationMetricsParams,
-): Promise<EscalationMetrics> {
-  const response = await api.get<EscalationMetrics>("/api/v1/escalations/metrics", {
+): Promise<EscalationDetailedMetrics> {
+  const response = await api.get<EscalationDetailedMetrics>("/api/v1/escalations/metrics", {
     params,
   });
   return response.data;

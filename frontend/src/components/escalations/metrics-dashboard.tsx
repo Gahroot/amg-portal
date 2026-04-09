@@ -31,7 +31,7 @@ import {
 import { getEscalationMetrics } from "@/lib/api/escalations";
 import type {
   EscalationByLevel,
-  EscalationMetrics,
+  EscalationDetailedMetrics,
   EscalationMetricsParams,
   EscalationTrendPoint,
 } from "@/types/escalation";
@@ -187,7 +187,7 @@ function ChartTooltip({
 
 // ── Export CSV helper ─────────────────────────────────────────────────────────
 
-function exportMetricsCsv(metrics: EscalationMetrics, params: EscalationMetricsParams) {
+function exportMetricsCsv(metrics: EscalationDetailedMetrics, params: EscalationMetricsParams) {
   const rows: string[][] = [];
 
   rows.push(["# Escalation Metrics Export"]);

@@ -125,7 +125,7 @@ function ResizeHandle({
  */
 function SplitPanelWrapper({
   children,
-  _side,
+  side: _side,
   panel,
   onClose,
   onOpenFull,
@@ -411,8 +411,8 @@ export function SplitViewContainer({
  */
 function SplitPanelContent({
   panel,
-  _side,
-  _isSplit,
+  side: _side,
+  isSplit: _isSplit,
 }: SplitPanelPanelContentProps) {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);

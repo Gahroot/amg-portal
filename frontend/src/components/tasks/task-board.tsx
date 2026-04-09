@@ -79,9 +79,9 @@ export function TaskBoard() {
 
   // Navigation state for scroll and filter preservation
   const {
-    _restoreScrollPosition,
-    _markForRestore,
-    _resetFilters,
+    restoreScrollPosition: _restoreScrollPosition,
+    markForRestore: _markForRestore,
+    resetFilters: _resetFilters,
     hasPendingRestore,
   } = useNavigationState({
     routeKey: TASKS_ROUTE_KEY,

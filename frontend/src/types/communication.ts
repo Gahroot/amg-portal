@@ -168,7 +168,14 @@ export interface NotificationPreference {
   digest_frequency: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  granular_preferences?: Record<string, Record<string, boolean>> | null;
   grouping_mode?: "type" | "entity" | "time" | null;
+  quiet_hours_enabled?: boolean | null;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  timezone?: string | null;
+  milestone_reminder_days?: number[] | null;
+  milestone_reminder_program_overrides?: Record<string, number[]> | null;
   created_at: string;
   updated_at: string;
 }
@@ -178,6 +185,7 @@ export interface NotificationPreferenceUpdateData {
   digest_frequency?: DigestFrequency;
   notification_type_preferences?: Record<string, string>;
   channel_preferences?: Record<string, boolean>;
+  granular_preferences?: Record<string, Record<string, boolean>> | null;
   grouping_mode?: "type" | "entity" | "time" | null;
 }
 
