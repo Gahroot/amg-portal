@@ -20,7 +20,7 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.models.communication import Communication
-from app.models.enums import MessageStatus, TaskStatus
+from app.models.enums import MessageStatus, ProgramStatus, TaskStatus
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.program_closure import ProgramClosure
@@ -177,7 +177,7 @@ async def archive_program(db: AsyncSession, program_id: uuid.UUID) -> Program:
             )
 
     # --- 4. Mark program as archived ---
-    program.status = "archived"
+    program.status = ProgramStatus.archived
     program.archived_at = now
 
     await db.commit()

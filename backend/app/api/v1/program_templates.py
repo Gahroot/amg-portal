@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 
 from app.api.deps import (
@@ -74,7 +74,7 @@ async def create_program_template(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    _: None = require_rm_or_above,
+    _: None = Depends(require_rm_or_above),
 ) -> ProgramTemplateResponse:
     """Create a custom program template. Requires RM or above."""
     template = ProgramTemplate(

@@ -1,16 +1,10 @@
 "use client";
 
-import * as React from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  CheckCircle2,
-  Clock,
-  ShieldAlert,
-  TrendingUp,
-  Users,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -202,61 +196,6 @@ function QuickActions({ role }: { role: string }) {
 // ============================================================================
 // Role-gated metric grid (kept for portfolio summary view)
 // ============================================================================
-
-interface MetricCardProps {
-  title: string;
-  value: number;
-  description?: string;
-  icon: React.ReactNode;
-  alert?: boolean;
-}
-
-function MetricCard({
-  title,
-  value,
-  description,
-  icon,
-  alert = false,
-}: MetricCardProps) {
-  return (
-    <Card
-      className={
-        alert && value > 0 ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30" : ""
-      }
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle
-          className={`text-sm font-medium ${
-            alert && value > 0 ? "text-red-700 dark:text-red-300" : "text-muted-foreground"
-          }`}
-        >
-          {title}
-        </CardTitle>
-        <span
-          className={`h-4 w-4 ${
-            alert && value > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
-          }`}
-        >
-          {icon}
-        </span>
-      </CardHeader>
-      <CardContent>
-        <p
-          className={`text-2xl font-bold ${
-            alert && value > 0 ? "text-red-700 dark:text-red-300" : ""
-          }`}
-        >
-          {value}
-        </p>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================================
 // Main page
 // ============================================================================
 
@@ -272,7 +211,7 @@ export default function DashboardPage() {
   ].includes(role);
 
   // Redirect non-internal users to their appropriate portal
-  React.useEffect(() => {
+  useEffect(() => {
     if (role === "client") {
       router.replace("/portal/dashboard");
     } else if (role === "partner") {

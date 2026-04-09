@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -68,14 +69,14 @@ export function PerformanceNoticeDialog({
 }: PerformanceNoticeDialogProps) {
   const queryClient = useQueryClient();
 
-  const [noticeType, setNoticeType] = React.useState<NoticeType>("sla_breach");
-  const [severity, setSeverity] = React.useState<NoticeSeverity>("formal_notice");
-  const [selectedProgramId, setSelectedProgramId] = React.useState<string>("");
-  const [title, setTitle] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [requiredAction, setRequiredAction] = React.useState("");
-  const [confirmed, setConfirmed] = React.useState(false);
-  const [formError, setFormError] = React.useState<string | null>(null);
+  const [noticeType, setNoticeType] = useState<NoticeType>("sla_breach");
+  const [severity, setSeverity] = useState<NoticeSeverity>("formal_notice");
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [requiredAction, setRequiredAction] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: createPerformanceNotice,
@@ -104,7 +105,7 @@ export function PerformanceNoticeDialog({
     onOpenChange(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
 
@@ -132,7 +133,7 @@ export function PerformanceNoticeDialog({
     });
   }
 
-  const uniquePrograms = React.useMemo(() => {
+  const uniquePrograms = useMemo(() => {
     const seen = new Set<string>();
     return programs.filter((p) => {
       if (seen.has(p.program_id)) return false;

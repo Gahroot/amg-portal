@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,13 +35,13 @@ export function SavedFiltersDropdown({
   const updateMutation = useUpdateSavedFilter();
   const deleteMutation = useDeleteSavedFilter();
 
-  const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
-  const [editingFilter, setEditingFilter] = React.useState<SavedFilter | null>(
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [editingFilter, setEditingFilter] = useState<SavedFilter | null>(
     null
   );
 
   // Find which preset matches current filters (if any)
-  const activePreset = React.useMemo(() => {
+  const activePreset = useMemo(() => {
     const items = data?.items;
     if (!items) return null;
     return (

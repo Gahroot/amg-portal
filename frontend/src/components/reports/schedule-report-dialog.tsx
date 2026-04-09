@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,25 +95,25 @@ export function ScheduleReportDialog({
   const { user } = useAuth();
   const isEdit = !!schedule;
 
-  const [reportType, setReportType] = React.useState<ReportType>(
+  const [reportType, setReportType] = useState<ReportType>(
     (schedule?.report_type as ReportType) ?? "portfolio",
   );
-  const [frequency, setFrequency] = React.useState<ReportFrequency>(
+  const [frequency, setFrequency] = useState<ReportFrequency>(
     (schedule?.frequency as ReportFrequency) ?? "weekly",
   );
-  const [format, setFormat] = React.useState<ReportFormat>(
+  const [format, setFormat] = useState<ReportFormat>(
     (schedule?.format as ReportFormat) ?? "pdf",
   );
-  const [entityId, setEntityId] = React.useState<string>(
+  const [entityId, setEntityId] = useState<string>(
     schedule?.entity_id ?? "",
   );
-  const [recipients, setRecipients] = React.useState<string[]>(
+  const [recipients, setRecipients] = useState<string[]>(
     schedule?.recipients ?? [],
   );
-  const [recipientInput, setRecipientInput] = React.useState("");
+  const [recipientInput, setRecipientInput] = useState("");
 
   // Reset form when dialog opens/schedule changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setReportType((schedule?.report_type as ReportType) ?? "portfolio");
       setFrequency((schedule?.frequency as ReportFrequency) ?? "weekly");
@@ -123,7 +124,7 @@ export function ScheduleReportDialog({
     }
   }, [open, schedule]);
 
-  const availableReportTypes = React.useMemo(() => {
+  const availableReportTypes = useMemo(() => {
     const canSeePartnerPerf = user && PARTNER_PERF_ROLES.includes(user.role);
     return ALL_REPORT_TYPES.filter(
       (t) => t !== "partner_performance" || canSeePartnerPerf,
@@ -159,7 +160,7 @@ export function ScheduleReportDialog({
     setRecipients((prev) => prev.filter((r) => r !== email));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     if (recipients.length === 0) {

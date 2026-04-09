@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,9 +35,9 @@ export function UploadZone({
   maxSizeMB = 50,
   maxFiles = 20,
 }: UploadZoneProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [errors, setErrors] = React.useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
 
   function processFiles(rawFiles: FileList | File[]) {
     const fileArray = Array.from(rawFiles);
@@ -66,23 +67,23 @@ export function UploadZone({
     }
   }
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragOver(e: DragEvent) {
     e.preventDefault();
     setIsDragging(true);
   }
 
-  function handleDragLeave(e: React.DragEvent) {
+  function handleDragLeave(e: DragEvent) {
     e.preventDefault();
     setIsDragging(false);
   }
 
-  function handleDrop(e: React.DragEvent) {
+  function handleDrop(e: DragEvent) {
     e.preventDefault();
     setIsDragging(false);
     processFiles(e.dataTransfer.files);
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
       processFiles(e.target.files);
       // Reset input so the same file can be re-selected after removal

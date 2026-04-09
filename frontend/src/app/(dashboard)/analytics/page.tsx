@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { useProgramHealth, usePortfolioSummary } from "@/hooks/use-dashboard";

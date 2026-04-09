@@ -2,14 +2,14 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
 
-class ImportEntityType(str, Enum):
+class ImportEntityType(StrEnum):
     """Supported entity types for import."""
 
     CLIENTS = "clients"
@@ -18,7 +18,7 @@ class ImportEntityType(str, Enum):
     TASKS = "tasks"
 
 
-class ImportStatus(str, Enum):
+class ImportStatus(StrEnum):
     """Status of an import job."""
 
     PENDING = "pending"
@@ -35,7 +35,8 @@ class ColumnMapping(BaseModel):
 
     source_column: str
     target_field: str
-    transform: str | None = None  # Optional transform: "uppercase", "lowercase", "date:YYYY-MM-DD", etc.
+    # Optional transform: "uppercase", "lowercase", "date:YYYY-MM-DD", etc.
+    transform: str | None = None
 
 
 class ImportError(BaseModel):

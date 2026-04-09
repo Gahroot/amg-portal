@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,17 +33,17 @@ export function SaveFilterDialog({
   initialIsDefault = false,
   mode = "create",
 }: SaveFilterDialogProps) {
-  const [name, setName] = React.useState(initialName);
-  const [isDefault, setIsDefault] = React.useState(initialIsDefault);
+  const [name, setName] = useState(initialName);
+  const [isDefault, setIsDefault] = useState(initialIsDefault);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setName(initialName);
       setIsDefault(initialIsDefault);
     }
   }, [open, initialName, initialIsDefault]);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (name.trim()) {
       onSave(name.trim(), isDefault);

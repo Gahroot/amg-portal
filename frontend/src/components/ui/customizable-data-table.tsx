@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnCustomizer } from "@/components/ui/column-customizer";
@@ -39,7 +39,7 @@ export interface CustomizableDataTableProps<TData, TValue> {
   /** Class name for the toolbar container */
   toolbarClassName?: string;
   /** Additional toolbar elements to render before the customizer */
-  toolbarContent?: React.ReactNode;
+  toolbarContent?: ReactNode;
   /** Enable column resizing */
   enableColumnResizing?: boolean;
 }

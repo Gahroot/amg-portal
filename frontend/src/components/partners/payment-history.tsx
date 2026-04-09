@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   Download,
@@ -163,7 +163,7 @@ interface FiltersProps {
 }
 
 function Filters({ filters, onChange }: FiltersProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -271,10 +271,10 @@ interface PaymentTableProps {
 }
 
 function PaymentTable({ filters }: PaymentTableProps) {
-  const [page, setPage] = React.useState(0);
+  const [page, setPage] = useState(0);
 
   // Reset page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setPage(0);
   }, [filters]);
 
@@ -389,7 +389,7 @@ function PaymentTable({ filters }: PaymentTableProps) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function PaymentHistory() {
-  const [filters, setFilters] = React.useState<FilterState>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
   // Build the CSV export URL reflecting active filters
   const exportUrl = buildPaymentExportUrl({

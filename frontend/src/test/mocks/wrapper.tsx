@@ -1,4 +1,4 @@
-import * as React from "react";
+import type { ReactElement, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { RenderOptions } from "@testing-library/react";
 import { render } from "@testing-library/react";
@@ -22,7 +22,7 @@ export function createTestQueryClient() {
 }
 
 interface WrapperProps {
-  children: React.ReactNode;
+  children: ReactNode;
   queryClient?: QueryClient;
 }
 
@@ -37,13 +37,13 @@ export function TestWrapper({ children, queryClient }: WrapperProps) {
  * Custom render that wraps the component in all providers needed for tests.
  */
 export function renderWithProviders(
-  ui: React.ReactElement,
+  ui: ReactElement,
   options?: Omit<RenderOptions, "wrapper"> & { queryClient?: QueryClient }
 ) {
   const { queryClient, ...renderOptions } = options ?? {};
   const client = queryClient ?? createTestQueryClient();
 
-  function Wrapper({ children }: { children: React.ReactNode }) {
+  function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
   }
 

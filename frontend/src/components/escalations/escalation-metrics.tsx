@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useSimpleEscalationMetrics } from "@/hooks/use-escalations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Clock, TrendingUp, CheckCircle } from "lucide-react";

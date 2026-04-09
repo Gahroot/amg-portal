@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { useCreateDeletionRequest } from "@/hooks/use-deletion-requests";
@@ -80,14 +81,14 @@ export default function NewDeletionRequestPage() {
   const { user } = useAuth();
   const createMutation = useCreateDeletionRequest();
 
-  const [form, setForm] = React.useState<FormState>({
+  const [form, setForm] = useState<FormState>({
     entity_type: "",
     entity_id: "",
     reason: "",
   });
-  const [acknowledged, setAcknowledged] = React.useState(false);
-  const [errors, setErrors] = React.useState<FormErrors>({});
-  const [submitted, setSubmitted] = React.useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [submitted, setSubmitted] = useState(false);
 
   // Any internal user can submit a request (require_internal on backend)
   const canAccess =
@@ -106,7 +107,7 @@ export default function NewDeletionRequestPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     const validationErrors = validate(form, acknowledged);
@@ -128,7 +129,7 @@ export default function NewDeletionRequestPage() {
 
   const handleChange =
     (field: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
       if (submitted) {
         setErrors((prev) => ({ ...prev, [field]: undefined }));

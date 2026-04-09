@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -19,7 +19,7 @@ interface Stage {
   key: DocumentRequestStatus;
   label: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 const STAGES: Stage[] = [

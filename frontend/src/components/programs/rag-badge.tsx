@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 
 const RAG_CONFIG: Record<string, { label: string; className: string }> = {

@@ -43,15 +43,15 @@ _ACTIVE_STATUSES = {"draft", "dispatched", "accepted", "in_progress"}
 
 def _blocker_covers_date(blocker: PartnerBlocker, d: date) -> bool:
     """Return True if the blocker covers a specific date."""
-    start: date = blocker.start_date  # type: ignore[assignment]
-    end: date = blocker.end_date  # type: ignore[assignment]
+    start: date = blocker.start_date
+    end: date = blocker.end_date
     if not (start <= d <= end):
         return False
     if not blocker.is_recurring:
         return True
     # Weekly recurrence — check ISO weekday (1=Mon … 7=Sun)
     if blocker.recurrence_type == "weekly":
-        days: list[int] = blocker.recurrence_days or []  # type: ignore[assignment]
+        days: list[int] = blocker.recurrence_days or []
         return d.isoweekday() in days
     return True
 
@@ -84,8 +84,8 @@ async def _detect_conflicts(
     blocker: PartnerBlocker,
 ) -> list[BlockerConflict]:
     """Find active assignments whose due_date falls inside the blocker range."""
-    start: date = blocker.start_date  # type: ignore[assignment]
-    end: date = blocker.end_date  # type: ignore[assignment]
+    start: date = blocker.start_date
+    end: date = blocker.end_date
 
     result = await db.execute(
         select(PartnerAssignment, Program.title.label("program_title"))
@@ -133,7 +133,9 @@ async def list_blockers(
     current_user: CurrentUser,
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
-    upcoming_only: bool = Query(default=False, description="Only return blockers ending today or later"),
+    upcoming_only: bool = Query(
+        default=False, description="Only return blockers ending today or later"
+    ),
 ) -> list[PartnerBlockerResponse]:
     """List capacity blockers for a partner.
 

@@ -11,7 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.ws_connection import connection_manager
 from app.models.communication import Communication
 from app.models.conversation import Conversation
-from app.models.enums import CommunicationType, ConversationType, NotificationType, UserRole
+from app.models.enums import (
+    CommunicationApprovalStatus,
+    CommunicationType,
+    ConversationType,
+    NotificationType,
+    UserRole,
+)
 from app.models.user import User
 from app.schemas.communication import CommunicationCreate, SendMessageRequest
 from app.services.crud_base import CRUDBase
@@ -435,7 +441,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         if communication.approval_status != "draft":
             raise ValueError("Only draft communications can be submitted for review")
 
-        communication.approval_status = "pending_review"
+        communication.approval_status = CommunicationApprovalStatus.pending_review
         await db.commit()
         await db.refresh(communication)
 
@@ -465,7 +471,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
             result = await db.execute(
                 select(User).where(
                     User.role.in_([UserRole.relationship_manager, UserRole.managing_director]),
-                    User.is_active == True,  # noqa: E712
+                    User.status == "active",
                     User.id != user.id,
                 )
             )
@@ -510,7 +516,11 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         if action not in ("approve", "reject"):
             raise ValueError("Action must be 'approve' or 'reject'")
 
-        communication.approval_status = "approved" if action == "approve" else "rejected"
+        communication.approval_status = (
+            CommunicationApprovalStatus.approved
+            if action == "approve"
+            else CommunicationApprovalStatus.rejected
+        )
         communication.reviewer_id = reviewer.id
         communication.reviewed_at = datetime.now(UTC)
         communication.reviewer_notes = notes

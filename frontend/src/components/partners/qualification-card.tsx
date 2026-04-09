@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Plus, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,20 +57,20 @@ export function QualificationCard({
   canEdit = false,
   canApprove = false,
 }: QualificationCardProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [approvingQualification, setApprovingQualification] =
-    React.useState<PartnerQualification | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
+    useState<PartnerQualification | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Form state
-  const [formState, setFormState] = React.useState({
+  const [formState, setFormState] = useState({
     category_id: "",
     qualification_level: "qualified" as QualificationLevel,
     notes: "",
   });
 
   // Approve dialog state
-  const [approveState, setApproveState] = React.useState({
+  const [approveState, setApproveState] = useState({
     status: "approved" as ApprovalStatus,
     notes: "",
   });

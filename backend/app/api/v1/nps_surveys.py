@@ -1,6 +1,6 @@
 """NPS Survey API endpoints."""
-
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -50,7 +50,7 @@ async def create_nps_survey(
     data: NPSSurveyCreate,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Create a new NPS survey."""
     return await nps_survey_service.create_survey(db, data=data, created_by_id=current_user.id)
 
@@ -67,7 +67,7 @@ async def list_nps_surveys(
     quarter: int | None = Query(None, ge=1, le=4, description="Filter by quarter"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List NPS surveys with optional filtering."""
     surveys, total = await nps_survey_service.get_surveys(
         db,
@@ -77,7 +77,7 @@ async def list_nps_surveys(
         skip=skip,
         limit=limit,
     )
-    return NPSSurveyListResponse(surveys=surveys, total=total)
+    return NPSSurveyListResponse(surveys=surveys, total=total)  # type: ignore[arg-type]
 
 
 @router.get(
@@ -85,7 +85,7 @@ async def list_nps_surveys(
     response_model=NPSSurveyResponse | None,
     dependencies=[Depends(require_internal)],
 )
-async def get_active_nps_survey(db: DB):
+async def get_active_nps_survey(db: DB) -> Any:
     """Get the currently active NPS survey (if any)."""
     surveys, _ = await nps_survey_service.get_surveys(
         db,
@@ -103,7 +103,7 @@ async def get_active_nps_survey(db: DB):
 async def get_nps_survey(
     survey_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Get a specific NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -120,7 +120,7 @@ async def update_nps_survey(
     survey_id: uuid.UUID,
     data: NPSSurveyUpdate,
     db: DB,
-):
+) -> Any:
     """Update an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -141,7 +141,7 @@ async def update_nps_survey(
 async def activate_nps_survey(
     survey_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Activate an NPS survey for distribution."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -161,7 +161,7 @@ async def activate_nps_survey(
 async def close_nps_survey(
     survey_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Close an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -181,7 +181,7 @@ async def close_nps_survey(
 async def get_nps_survey_stats(
     survey_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Get statistics for an NPS survey."""
     stats = await nps_survey_service.get_survey_stats(db, survey_id)
     if not stats:
@@ -198,7 +198,7 @@ async def get_nps_trend_analysis(
     db: DB,
     client_profile_id: uuid.UUID | None = Query(None, description="Filter by client"),
     quarters: int = Query(4, ge=1, le=12, description="Number of quarters to analyze"),
-):
+) -> Any:
     """Get NPS trend analysis."""
     return await nps_survey_service.get_trend_analysis(
         db,
@@ -221,7 +221,7 @@ async def list_nps_responses(
     score_category: str | None = Query(None, description="Filter by score category"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List responses for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -234,7 +234,7 @@ async def list_nps_responses(
         skip=skip,
         limit=limit,
     )
-    return NPSResponseListResponse(responses=responses, total=total)
+    return NPSResponseListResponse(responses=responses, total=total)  # type: ignore[arg-type]
 
 
 @router.post(
@@ -247,7 +247,7 @@ async def submit_nps_response(
     data: NPSResponseCreate,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Submit an NPS response (client endpoint)."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -290,7 +290,7 @@ async def get_nps_response(
     survey_id: uuid.UUID,
     response_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Get a specific NPS response."""
     responses, _ = await nps_response_service.get_responses(
         db,
@@ -318,7 +318,7 @@ async def list_nps_follow_ups(
     priority: str | None = Query(None, description="Filter by priority"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List follow-ups for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
     if not survey:
@@ -332,7 +332,7 @@ async def list_nps_follow_ups(
         skip=skip,
         limit=limit,
     )
-    return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)
+    return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)  # type: ignore[arg-type]
 
 
 @router.get(
@@ -346,7 +346,7 @@ async def list_my_nps_follow_ups(
     status: str | None = Query(None, description="Filter by status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List follow-ups assigned to the current user."""
     follow_ups, total = await nps_follow_up_service.get_my_follow_ups(
         db,
@@ -355,7 +355,7 @@ async def list_my_nps_follow_ups(
         skip=skip,
         limit=limit,
     )
-    return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)
+    return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)  # type: ignore[arg-type]
 
 
 @router.get(
@@ -366,7 +366,7 @@ async def list_my_nps_follow_ups(
 async def get_nps_follow_up(
     follow_up_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Get a specific NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
@@ -384,7 +384,7 @@ async def update_nps_follow_up(
     data: NPSFollowUpUpdate,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Update an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
@@ -419,7 +419,7 @@ async def acknowledge_nps_follow_up(
     follow_up_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Acknowledge an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:
@@ -439,9 +439,9 @@ async def acknowledge_nps_follow_up(
 async def complete_nps_follow_up(
     follow_up_id: uuid.UUID,
     resolution_notes: str | None = None,
-    db: DB = None,
-    current_user: CurrentUser = None,
-):
+    db: DB = None,  # type: ignore[assignment]
+    current_user: CurrentUser = None,  # type: ignore[assignment]
+) -> Any:
     """Complete an NPS follow-up."""
     follow_up = await nps_follow_up_service.get(db, follow_up_id)
     if not follow_up:

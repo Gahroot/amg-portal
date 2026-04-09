@@ -2,6 +2,7 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import or_, select
@@ -19,7 +20,7 @@ from app.api.deps import (
 )
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
 from app.models.client import Client  # noqa: F401
-from app.models.enums import UserRole
+from app.models.enums import ProgramStatus, UserRole
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -110,7 +111,7 @@ async def create_program(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     from app.models.enums import BudgetRequestType
     from app.services.program_budget_service import (
         create_budget_approval_for_program,
@@ -148,7 +149,7 @@ async def create_program(
         )
         if approval_request:
             approval_request_id = approval_request.id
-            program.status = "design"
+            program.status = ProgramStatus.design
             logger.info(
                 "Program %s created with budget %s — approval required (request %s); "
                 "status set to 'design'.",
@@ -222,7 +223,7 @@ async def list_programs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     _: None = Depends(require_internal),
-):
+) -> Any:
     query = select(Program).options(
         selectinload(Program.client),
         selectinload(Program.milestones).selectinload(Milestone.tasks),
@@ -263,7 +264,7 @@ async def compare_programs(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Return detailed data for 2-4 programs for side-by-side comparison."""
     if len(ids) < 2 or len(ids) > 4:
         raise ValidationException("Please select 2 to 4 programs to compare")
@@ -296,7 +297,7 @@ async def compare_programs(
     response_model=ProgramDetailResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_program(program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext):
+async def get_program(program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext) -> Any:  # noqa: E501
     result = await db.execute(
         select(Program)
         .options(
@@ -329,7 +330,7 @@ async def update_program(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     from app.models.enums import BudgetRequestType
     from app.services.program_budget_service import (
         create_budget_approval_for_program,
@@ -395,11 +396,11 @@ async def update_program(
                     approval_request_id = approval_request.id
                     current_program_status = str(program.status)
                     if current_program_status in ("intake", "design"):
-                        program.status = "design"
+                        program.status = ProgramStatus.design
                     elif current_program_status == "active":
                         # Put an active program on hold until the budget increase
                         # is approved — active → on_hold is a valid transition.
-                        program.status = "on_hold"
+                        program.status = ProgramStatus.on_hold
                     logger.info(
                         "Program %s budget increased by %s — approval required (request %s); "
                         "status set to '%s'.",
@@ -499,7 +500,7 @@ async def emergency_activate_program(
     retrospective_due = now + timedelta(hours=4)
 
     from_status = str(program.status)
-    program.status = "active"
+    program.status = ProgramStatus.active
     program.emergency_reason = data.emergency_reason
     program.retrospective_due_at = retrospective_due
 
@@ -587,10 +588,40 @@ async def emergency_activate_program(
     return build_program_detail_response(program)
 
 
+@router.post(
+    "/{program_id}/brief/share",
+    response_model=ProgramResponse,
+    dependencies=[Depends(require_rm_or_above)],
+)
+async def share_program_brief(
+    program_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+) -> Any:
+    """Mark the program brief as visible to the client and record the share timestamp."""
+    result = await db.execute(
+        select(Program)
+        .options(
+            selectinload(Program.client),
+            selectinload(Program.milestones).selectinload(Milestone.tasks),
+        )
+        .where(Program.id == program_id)
+    )
+    program = result.scalar_one_or_none()
+    if not program:
+        raise NotFoundException("Program not found")
+    program.brief_visible_to_client = True
+    program.brief_shared_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(program)
+    return build_program_response(program)
+
+
 @router.get("/{program_id}/summary", response_model=ProgramSummary)
 async def get_program_summary(
     program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext
-):
+) -> Any:
     result = await db.execute(
         select(Program).options(selectinload(Program.milestones)).where(Program.id == program_id)
     )
@@ -626,7 +657,7 @@ async def get_program_summary(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB, _rls: RLSContext):
+async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB, _rls: RLSContext) -> Any:  # noqa: E501
     program_result = await db.execute(select(Program).where(Program.id == program_id))
     program = program_result.scalar_one_or_none()
     if not program:
@@ -665,7 +696,7 @@ async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB, _r
 )
 async def update_milestone(
     milestone_id: uuid.UUID, data: MilestoneUpdate, db: DB, _rls: RLSContext
-):
+) -> Any:
     result = await db.execute(
         select(Milestone).options(selectinload(Milestone.tasks)).where(Milestone.id == milestone_id)
     )
@@ -707,7 +738,7 @@ async def update_milestone(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_rm_or_above)],
 )
-async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext):
+async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext) -> Any:
     result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
     milestone = result.scalar_one_or_none()
     if not milestone:
@@ -726,7 +757,7 @@ async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB, _rls: RLSContext):
+async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB, _rls: RLSContext) -> Any:
     result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
     if not result.scalar_one_or_none():
         raise NotFoundException("Milestone not found")
@@ -762,7 +793,7 @@ async def add_task(milestone_id: uuid.UUID, data: TaskCreate, db: DB, _rls: RLSC
     response_model=TaskResponse,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB, _rls: RLSContext):
+async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB, _rls: RLSContext) -> Any:
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
@@ -802,7 +833,7 @@ async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB, _rls: RLSCon
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def delete_task(task_id: uuid.UUID, db: DB, _rls: RLSContext):
+async def delete_task(task_id: uuid.UUID, db: DB, _rls: RLSContext) -> Any:
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:

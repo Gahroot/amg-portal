@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import { listSLATrackers, getSLABreaches } from "@/lib/api/sla";
@@ -51,9 +51,9 @@ const hasRespondedAt = (tracker: TrackerRow): tracker is SLATracker & { responde
 
 export default function SLATrackerPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = React.useState<TabType>("all");
-  const [breachFilter, setBreachFilter] = React.useState<string>("all");
-  const [page, setPage] = React.useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>("all");
+  const [breachFilter, setBreachFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
 
   const queryParams = {
     skip: page * PAGE_SIZE,

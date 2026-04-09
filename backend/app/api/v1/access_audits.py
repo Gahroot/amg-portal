@@ -1,6 +1,7 @@
 """Access audit endpoints for quarterly access review and compliance."""
 
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
@@ -30,7 +31,7 @@ from app.services.crud_base import paginate
 router = APIRouter()
 
 
-def _enrich_audit(audit: AccessAudit) -> dict:
+def _enrich_audit(audit: AccessAudit) -> dict[str, Any]:
     """Add computed fields to audit response."""
     data = {
         "id": audit.id,
@@ -54,7 +55,7 @@ def _enrich_audit(audit: AccessAudit) -> dict:
     return data
 
 
-def _enrich_finding(finding: AccessAuditFinding) -> dict:
+def _enrich_finding(finding: AccessAuditFinding) -> dict[str, Any]:
     """Add computed fields to finding response."""
     data = {
         "id": finding.id,
@@ -156,8 +157,8 @@ async def create_access_audit(
         year=data.year,
         auditor_id=data.auditor_id or current_user.id,
     )
-    audit = await access_audit_service.get_audit_with_findings(db, audit.id)
-    return AccessAuditResponse(**_enrich_audit(audit))
+    loaded_audit = await access_audit_service.get_audit_with_findings(db, audit.id)
+    return AccessAuditResponse(**_enrich_audit(loaded_audit))  # type: ignore[arg-type]
 
 
 @router.get("/findings", response_model=AccessAuditFindingListResponse)
@@ -206,11 +207,12 @@ async def update_access_audit(
     current_user: User = Depends(require_compliance),
 ) -> AccessAuditResponse:
     """Update an access audit."""
-    audit = await access_audit_service.update(db, audit_id, data)
-    if not audit:
+    existing = await access_audit_service.get(db, audit_id)
+    if not existing:
         raise NotFoundException("Access audit not found")
-    audit = await access_audit_service.get_audit_with_findings(db, audit.id)
-    return AccessAuditResponse(**_enrich_audit(audit))
+    updated = await access_audit_service.update(db, db_obj=existing, obj_in=data)
+    loaded = await access_audit_service.get_audit_with_findings(db, updated.id)
+    return AccessAuditResponse(**_enrich_audit(loaded))  # type: ignore[arg-type]
 
 
 @router.post("/{audit_id}/scan", response_model=AccessAuditResponse)
@@ -247,8 +249,8 @@ async def complete_access_audit(
     audit = await access_audit_service.complete_audit(db, audit_id)
     if not audit:
         raise NotFoundException("Access audit not found")
-    audit = await access_audit_service.get_audit_with_findings(db, audit.id)
-    return AccessAuditResponse(**_enrich_audit(audit))
+    detail = await access_audit_service.get_audit_with_findings(db, audit.id)
+    return AccessAuditResponse(**_enrich_audit(detail))  # type: ignore[arg-type]
 
 
 @router.post(

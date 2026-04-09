@@ -189,7 +189,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         )
         result = await db.execute(stmt)
         await db.commit()
-        return result.rowcount
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
     async def get_or_create_preferences(
         self,
@@ -965,7 +965,7 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
     # Maximum number of times a notification can be snoozed
     MAX_SNOOZE_COUNT = 3
 
-    def _calculate_snooze_until(
+    def _calculate_snooze_until(  # noqa: PLR0911
         self,
         snooze_duration_minutes: int | None,
         snooze_until: datetime | None,

@@ -450,7 +450,7 @@ class CustomReportService:
             "columns": [{"key": f.key, "label": f.label} for f in fields],
             "rows": rows,
         }
-        return pdf_service.generate_custom_report_pdf(report_data)
+        return await pdf_service.generate_custom_report_pdf(report_data)
 
 
 custom_report_service = CustomReportService()

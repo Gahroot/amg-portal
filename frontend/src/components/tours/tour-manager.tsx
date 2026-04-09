@@ -156,7 +156,7 @@ function NewUserPrompt({
         </DialogHeader>
         <div className="flex flex-col gap-3 py-4">
           <div className="rounded-lg border p-4 bg-muted/50">
-            <h4 className="font-medium mb-2">You'll learn about:</h4>
+            <h4 className="font-medium mb-2">You&apos;ll learn about:</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Navigation and sidebar</li>
               <li>• Quick actions and shortcuts</li>

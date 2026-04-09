@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
@@ -135,9 +135,9 @@ function ClientKYCRows({
 }
 
 export default function KYCVerificationsPage() {
-  const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [typeFilter, setTypeFilter] = React.useState("all");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
   const { data: clientsData, isLoading: clientsLoading } = useClientProfiles(
     {},

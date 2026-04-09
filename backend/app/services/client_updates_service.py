@@ -300,7 +300,7 @@ async def _collect_document_deliveries(
         doc = delivery.document
         if not doc:
             continue
-        ts: datetime | None = delivery.delivered_at  # type: ignore[assignment]
+        ts: datetime | None = delivery.delivered_at
         if not ts:
             continue
         ts = ts if ts.tzinfo else ts.replace(tzinfo=UTC)

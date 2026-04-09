@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
-import { globalSearch, type SearchEntityType, type GlobalSearchParams } from "@/lib/api/search";
+import { globalSearch, type SearchEntityType } from "@/lib/api/search";
 import { recordRecentItem, type RecentItemType } from "@/lib/api/recent-items";
 
 export interface RecentItem {

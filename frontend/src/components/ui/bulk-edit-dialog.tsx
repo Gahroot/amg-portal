@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Edit3, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -93,18 +94,18 @@ export function BulkEditDialog<TRecord>({
   config,
   onComplete,
 }: BulkEditDialogProps<TRecord>) {
-  const [step, setStep] = React.useState<Step>("select");
-  const [selectedField, setSelectedField] = React.useState<BulkEditField | null>(null);
-  const [newValue, setNewValue] = React.useState<unknown>(null);
-  const [clearValue, setClearValue] = React.useState(false);
-  const [isDelete, setIsDelete] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [step, setStep] = useState<Step>("select");
+  const [selectedField, setSelectedField] = useState<BulkEditField | null>(null);
+  const [newValue, setNewValue] = useState<unknown>(null);
+  const [clearValue, setClearValue] = useState(false);
+  const [isDelete, setIsDelete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const maxPreviewRows = config.maxPreviewRows ?? 10;
 
   // Reset state when dialog closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setStep("select");
       setSelectedField(null);
@@ -591,7 +592,7 @@ interface BulkEditToolbarProps {
   /** Whether all rows are selected */
   isAllSelected?: boolean;
   /** Additional actions to show in the toolbar */
-  additionalActions?: React.ReactNode;
+  additionalActions?: ReactNode;
   /** Custom label for the entity type */
   entityLabel?: string;
 }

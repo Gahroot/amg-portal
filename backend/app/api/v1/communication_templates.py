@@ -12,6 +12,7 @@ from app.api.deps import (
     require_coordinator_or_above,
 )
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
+from app.models.communication_template import TemplateStatus
 from app.schemas.communication_template import (
     TemplateCreate,
     TemplateListResponse,
@@ -172,7 +173,7 @@ async def update_template_status(
     if data.action == "submit":
         if template.status not in ("draft", "rejected"):
             raise ValidationException(f"Cannot submit a template with status '{template.status}'")
-        template.status = "pending"
+        template.status = TemplateStatus.pending
         template.rejection_reason = None
         template.reviewed_by = None
         template.reviewed_at = None
@@ -181,7 +182,7 @@ async def update_template_status(
             raise ForbiddenException("Only managing directors can approve templates")
         if template.status != "pending":
             raise ValidationException(f"Cannot approve a template with status '{template.status}'")
-        template.status = "approved"
+        template.status = TemplateStatus.approved
         template.rejection_reason = None
         template.reviewed_by = current_user.id
         template.reviewed_at = datetime.now(UTC)
@@ -190,7 +191,7 @@ async def update_template_status(
             raise ForbiddenException("Only managing directors can reject templates")
         if template.status != "pending":
             raise ValidationException(f"Cannot reject a template with status '{template.status}'")
-        template.status = "rejected"
+        template.status = TemplateStatus.rejected
         template.rejection_reason = data.reason
         template.reviewed_by = current_user.id
         template.reviewed_at = datetime.now(UTC)

@@ -99,7 +99,7 @@ async def calculate_milestone_risk_score(  # noqa: PLR0912, PLR0915
         select(Milestone)
         .options(
             selectinload(Milestone.program).selectinload(Program.client),
-            selectinload(Milestone.program).selectinload(Program.partner_assignments),  # type: ignore[attr-defined]
+            selectinload(Milestone.program).selectinload(Program.partner_assignments),
             selectinload(Milestone.tasks),
         )
         .where(Milestone.id == milestone_id)

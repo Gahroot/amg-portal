@@ -114,7 +114,7 @@ async def export_program_summary_pdf(
         .options(
             selectinload(Program.client),
             selectinload(Program.milestones),
-            selectinload(Program.partner_assignments).selectinload(  # type: ignore[attr-defined]
+            selectinload(Program.partner_assignments).selectinload(
                 PartnerAssignment.partner
             ),
         )
@@ -152,7 +152,7 @@ async def export_program_summary_pdf(
             "contact_email": pa.partner.contact_email if pa.partner else "N/A",
             "status": pa.status,
         }
-        for pa in (program.partner_assignments or [])  # type: ignore[attr-defined]
+        for pa in (program.partner_assignments or [])
     ]
 
     # Calculate milestone progress

@@ -1,16 +1,12 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { SearchSuggestions } from "@/components/search/search-suggestions";
 import { useSearchSuggestions } from "@/hooks/use-search-suggestions";
 import { useAddRecentSearch } from "@/hooks/use-recent-searches";
@@ -56,12 +52,12 @@ export function GlobalSearch({
   inDialog = false,
 }: GlobalSearchProps) {
   const router = useRouter();
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const [query, setQuery] = React.useState("");
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Fetch suggestions
   const {
@@ -75,13 +71,62 @@ export function GlobalSearch({
   const totalItems = suggestionsData?.suggestions.length || 0;
 
   // Reset selected index when suggestions change
-  React.useEffect(() => {
+  useEffect(() => {
     setSelectedIndex(0);
   }, [suggestionsData?.suggestions]);
 
+  // Handle selecting a suggestion
+  const handleSelectSuggestion = useCallback(
+    (suggestion: SearchSuggestion) => {
+      setQuery(suggestion.text);
+      setIsOpen(false);
+
+      // Record the search
+      addRecentSearch(suggestion.text, "global");
+
+      // If it's an entity suggestion, navigate to search with that term
+      if (onSearch) {
+        onSearch(suggestion.text);
+      } else {
+        router.push(`${searchUrl}?q=${encodeURIComponent(suggestion.text)}`);
+      }
+    },
+    [addRecentSearch, onSearch, router, searchUrl]
+  );
+
+  // Handle selecting a recent search
+  const handleSelectRecentSearch = useCallback(
+    (recentQuery: string) => {
+      setQuery(recentQuery);
+      setIsOpen(false);
+
+      if (onSearch) {
+        onSearch(recentQuery);
+      } else {
+        router.push(`${searchUrl}?q=${encodeURIComponent(recentQuery)}`);
+      }
+    },
+    [onSearch, router, searchUrl]
+  );
+
+  // Handle submitting the search form
+  const handleSubmitSearch = useCallback(() => {
+    if (!query.trim()) return;
+
+    // Record the search
+    addRecentSearch(query.trim(), "global");
+    setIsOpen(false);
+
+    if (onSearch) {
+      onSearch(query.trim());
+    } else {
+      router.push(`${searchUrl}?q=${encodeURIComponent(query.trim())}`);
+    }
+  }, [query, addRecentSearch, onSearch, router, searchUrl]);
+
   // Handle keyboard navigation
-  const handleKeyDown = React.useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
@@ -106,60 +151,11 @@ export function GlobalSearch({
           break;
       }
     },
-    [selectedIndex, totalItems, suggestionsData, query]
+    [selectedIndex, totalItems, suggestionsData, query, handleSelectSuggestion, handleSubmitSearch]
   );
-
-  // Handle selecting a suggestion
-  const handleSelectSuggestion = React.useCallback(
-    (suggestion: SearchSuggestion) => {
-      setQuery(suggestion.text);
-      setIsOpen(false);
-
-      // Record the search
-      addRecentSearch(suggestion.text, "global");
-
-      // If it's an entity suggestion, navigate to search with that term
-      if (onSearch) {
-        onSearch(suggestion.text);
-      } else {
-        router.push(`${searchUrl}?q=${encodeURIComponent(suggestion.text)}`);
-      }
-    },
-    [addRecentSearch, onSearch, router, searchUrl]
-  );
-
-  // Handle selecting a recent search
-  const handleSelectRecentSearch = React.useCallback(
-    (recentQuery: string) => {
-      setQuery(recentQuery);
-      setIsOpen(false);
-
-      if (onSearch) {
-        onSearch(recentQuery);
-      } else {
-        router.push(`${searchUrl}?q=${encodeURIComponent(recentQuery)}`);
-      }
-    },
-    [onSearch, router, searchUrl]
-  );
-
-  // Handle submitting the search form
-  const handleSubmitSearch = React.useCallback(() => {
-    if (!query.trim()) return;
-
-    // Record the search
-    addRecentSearch(query.trim(), "global");
-    setIsOpen(false);
-
-    if (onSearch) {
-      onSearch(query.trim());
-    } else {
-      router.push(`${searchUrl}?q=${encodeURIComponent(query.trim())}`);
-    }
-  }, [query, addRecentSearch, onSearch, router, searchUrl]);
 
   // Handle clicking a search result
-  const handleSelectResult = React.useCallback(
+  const _handleSelectResult = useCallback(
     (result: { id: string; type: string; url: string }) => {
       setIsOpen(false);
 
@@ -173,13 +169,13 @@ export function GlobalSearch({
   );
 
   // Handle input focus
-  const handleFocus = React.useCallback(() => {
+  const handleFocus = useCallback(() => {
     setIsOpen(true);
   }, []);
 
   // Handle input change
-  const handleChange = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
       setQuery(e.target.value);
       setIsOpen(true);
     },
@@ -187,13 +183,13 @@ export function GlobalSearch({
   );
 
   // Handle clearing the input
-  const handleClear = React.useCallback(() => {
+  const handleClear = useCallback(() => {
     setQuery("");
     inputRef.current?.focus();
   }, []);
 
   // Handle click outside to close
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         containerRef.current &&

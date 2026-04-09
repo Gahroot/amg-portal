@@ -66,7 +66,7 @@ def _compute_expiry_status(doc: Document) -> str | None:
     from datetime import date as _date
 
     from app.services.document_expiry_service import compute_expiry_status
-    expiry: _date = doc.expiry_date  # type: ignore[assignment]
+    expiry: _date = doc.expiry_date
     return compute_expiry_status(expiry).value
 
 

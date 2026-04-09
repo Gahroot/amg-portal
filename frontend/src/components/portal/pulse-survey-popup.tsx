@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useState } from "react";
 import { MessageSquareText, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

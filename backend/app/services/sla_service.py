@@ -88,9 +88,9 @@ async def check_sla_breaches(
         new_status = tracker.breach_status
 
         if elapsed_hours >= sla_threshold:
-            new_status = SLABreachStatus.breached.value
+            new_status = SLABreachStatus.breached
         elif elapsed_hours >= approaching_threshold:
-            new_status = SLABreachStatus.approaching_breach.value
+            new_status = SLABreachStatus.approaching_breach
 
         if new_status != tracker.breach_status:
             tracker.breach_status = new_status
@@ -125,12 +125,12 @@ async def respond_to_sla(
     elapsed_hours = (tracker.responded_at - tracker.started_at).total_seconds() / 3600
 
     if elapsed_hours > tracker.sla_hours:
-        tracker.breach_status = SLABreachStatus.breached.value
+        tracker.breach_status = SLABreachStatus.breached
         logger.warning(
             f"SLA {tracker_id} breached: {elapsed_hours:.2f}h elapsed vs {tracker.sla_hours}h SLA"
         )
     else:
-        tracker.breach_status = SLABreachStatus.within_sla.value
+        tracker.breach_status = SLABreachStatus.within_sla
         logger.info(
             f"SLA {tracker_id} responded within SLA: {elapsed_hours:.2f}h elapsed "
             f"vs {tracker.sla_hours}h SLA"
@@ -227,13 +227,13 @@ async def close_open_sla_for_entity(
         tracker.responded_at = now
         elapsed_hours = (now - tracker.started_at).total_seconds() / 3600
         if elapsed_hours > tracker.sla_hours:
-            tracker.breach_status = SLABreachStatus.breached.value
+            tracker.breach_status = SLABreachStatus.breached
             logger.warning(
                 f"SLA {tracker.id} closed as breached: "
                 f"{elapsed_hours:.2f}h elapsed vs {tracker.sla_hours}h SLA"
             )
         else:
-            tracker.breach_status = SLABreachStatus.within_sla.value
+            tracker.breach_status = SLABreachStatus.within_sla
             logger.info(
                 f"SLA {tracker.id} closed within SLA: "
                 f"{elapsed_hours:.2f}h elapsed vs {tracker.sla_hours}h SLA"

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { FileText, Trash2, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
@@ -208,7 +208,7 @@ export function DraftRecoveryBanner({
   onDiscard,
   className,
 }: DraftRecoveryBannerProps) {
-  const [dismissed, setDismissed] = React.useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   if (!hasDraft || dismissed) {
     return null;

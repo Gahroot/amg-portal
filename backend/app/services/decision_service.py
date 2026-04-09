@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.decision_request import DecisionRequest
-from app.models.enums import INTERNAL_ROLES, UserRole
+from app.models.enums import INTERNAL_ROLES, DecisionRequestStatus, UserRole
 from app.models.partner_assignment import PartnerAssignment
 from app.models.user import User
 from app.schemas.decision_request import (
@@ -44,12 +44,12 @@ class DecisionService(CRUDBase[DecisionRequest, DecisionRequestCreate, DecisionR
             # Get partner's user profile first to link to assignments
             query = query.join(
                 PartnerAssignment,
-                DecisionRequest.client_id == PartnerAssignment.client_id,
-            ).where(PartnerAssignment.partner_user_id == user_id)
+                DecisionRequest.client_id == PartnerAssignment.client_id,  # type: ignore[attr-defined]
+            ).where(PartnerAssignment.partner_user_id == user_id)  # type: ignore[attr-defined]
             count_query = count_query.join(
                 PartnerAssignment,
-                DecisionRequest.client_id == PartnerAssignment.client_id,
-            ).where(PartnerAssignment.partner_user_id == user_id)
+                DecisionRequest.client_id == PartnerAssignment.client_id,  # type: ignore[attr-defined]
+            ).where(PartnerAssignment.partner_user_id == user_id)  # type: ignore[attr-defined]
         # Internal users (RM, coordinator) can see all for their clients
         # For simplicity, internal users see all decisions
 
@@ -88,8 +88,8 @@ class DecisionService(CRUDBase[DecisionRequest, DecisionRequestCreate, DecisionR
         if current_user.role == UserRole.partner:
             result = await db.execute(
                 select(PartnerAssignment).where(
-                    PartnerAssignment.client_id == decision.client_id,
-                    PartnerAssignment.partner_user_id == current_user.id,
+                    PartnerAssignment.client_id == decision.client_id,  # type: ignore[attr-defined]
+                    PartnerAssignment.partner_user_id == current_user.id,  # type: ignore[attr-defined]
                 ),
             )
             return result.scalar_one_or_none() is not None
@@ -110,8 +110,8 @@ class DecisionService(CRUDBase[DecisionRequest, DecisionRequestCreate, DecisionR
             "responded_at": datetime.now(UTC).isoformat(),
         }
 
-        decision.response = response_data  # type: ignore
-        decision.status = "responded"
+        decision.response = response_data
+        decision.status = DecisionRequestStatus.responded
         decision.responded_at = datetime.now(UTC)
         decision.responded_by = user_id
 

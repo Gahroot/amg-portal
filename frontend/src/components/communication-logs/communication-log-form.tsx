@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,28 +54,28 @@ export function CommunicationLogForm({
   isLoading,
   initialData,
 }: CommunicationLogFormProps) {
-  const [channel, setChannel] = React.useState<CommunicationLogChannel>(
+  const [channel, setChannel] = useState<CommunicationLogChannel>(
     initialData?.channel ?? "email"
   );
-  const [direction, setDirection] = React.useState<CommunicationLogDirection>(
+  const [direction, setDirection] = useState<CommunicationLogDirection>(
     initialData?.direction ?? "outbound"
   );
-  const [subject, setSubject] = React.useState(initialData?.subject ?? "");
-  const [summary, setSummary] = React.useState(initialData?.summary ?? "");
-  const [contactName, setContactName] = React.useState(
+  const [subject, setSubject] = useState(initialData?.subject ?? "");
+  const [summary, setSummary] = useState(initialData?.summary ?? "");
+  const [contactName, setContactName] = useState(
     initialData?.contact_name ?? ""
   );
-  const [contactEmail, setContactEmail] = React.useState(
+  const [contactEmail, setContactEmail] = useState(
     initialData?.contact_email ?? ""
   );
-  const [occurredAt, setOccurredAt] = React.useState(
+  const [occurredAt, setOccurredAt] = useState(
     initialData?.occurred_at
       ? new Date(initialData.occurred_at).toISOString().slice(0, 16)
       : new Date().toISOString().slice(0, 16)
   );
-  const [tags, setTags] = React.useState(initialData?.tags?.join(", ") ?? "");
+  const [tags, setTags] = useState(initialData?.tags?.join(", ") ?? "");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setChannel(initialData?.channel ?? "email");
       setDirection(initialData?.direction ?? "outbound");
@@ -91,7 +92,7 @@ export function CommunicationLogForm({
     }
   }, [open, initialData]);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const data: CommunicationLogCreateData = {
       channel,

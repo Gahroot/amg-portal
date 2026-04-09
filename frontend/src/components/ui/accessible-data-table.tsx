@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import {
   type ColumnDef,
   flexRender,
@@ -42,7 +43,7 @@ interface TableContextValue {
   onRowClick?: (row: Row<any>) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-const TableContext = React.createContext<TableContextValue>({
+const TableContext = createContext<TableContextValue>({
   navigateMode: "row",
 });
 
@@ -73,10 +74,10 @@ export function AccessibleDataTable<TData, TValue>({
   onRowClick,
   navigationMode = "row",
 }: AccessibleDataTableProps<TData, TValue>) {
-  const [focusedRowIndex, setFocusedRowIndex] = React.useState<number>(0);
-  const [focusedCellIndex, setFocusedCellIndex] = React.useState<number>(0);
-  const tableRef = React.useRef<HTMLTableElement>(null);
-  const announceRef = React.useRef<HTMLDivElement>(null);
+  const [focusedRowIndex, setFocusedRowIndex] = useState<number>(0);
+  const [focusedCellIndex, setFocusedCellIndex] = useState<number>(0);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const announceRef = useRef<HTMLDivElement>(null);
 
   const table = useReactTable({
     data,
@@ -98,15 +99,15 @@ export function AccessibleDataTable<TData, TValue>({
   const headerGroups = table.getHeaderGroups();
 
   // Announce changes to screen readers
-  const announce = React.useCallback((message: string) => {
+  const announce = useCallback((message: string) => {
     if (announceRef.current) {
       announceRef.current.textContent = message;
     }
   }, []);
 
   // Handle keyboard navigation
-  const handleTableKeyDown = React.useCallback(
-    (event: React.KeyboardEvent) => {
+  const handleTableKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       const totalRows = rows.length;
       const totalCols = columns.length;
 
@@ -184,7 +185,7 @@ export function AccessibleDataTable<TData, TValue>({
   );
 
   // Focus management
-  React.useEffect(() => {
+  useEffect(() => {
     if (tableRef.current && rows.length > 0) {
       const cells = tableRef.current.querySelectorAll(
         "tbody tr td, tbody tr th"

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent, MouseEvent } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/providers/auth-provider";
@@ -176,16 +177,16 @@ interface CreateSurveyDialogProps {
 function CreateSurveyDialog({ open, onClose }: CreateSurveyDialogProps) {
   const createMutation = useCreateNPSSurvey();
 
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [quarter, setQuarter] = React.useState<string>(
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [quarter, setQuarter] = useState<string>(
     String(getCurrentQuarter())
   );
-  const [year, setYear] = React.useState<string>(
+  const [year, setYear] = useState<string>(
     String(new Date().getFullYear())
   );
-  const [closesAt, setClosesAt] = React.useState("");
-  const [targetClientTypes, setTargetClientTypes] = React.useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [targetClientTypes, setTargetClientTypes] = useState("");
 
   function resetForm() {
     setName("");
@@ -196,7 +197,7 @@ function CreateSurveyDialog({ open, onClose }: CreateSurveyDialogProps) {
     setTargetClientTypes("");
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
       toast.error("Survey name is required");
@@ -356,7 +357,7 @@ function CompleteFollowUpDialog({
   followUpId,
   onClose,
 }: CompleteFollowUpDialogProps) {
-  const [notes, setNotes] = React.useState("");
+  const [notes, setNotes] = useState("");
   const completeMutation = useCompleteNPSFollowUp();
 
   async function handleComplete() {
@@ -514,7 +515,7 @@ function SurveysTab({
   const activateMutation = useActivateNPSSurvey();
   const closeMutation = useCloseNPSSurvey();
 
-  async function handleActivate(survey: NPSSurvey, e: React.MouseEvent) {
+  async function handleActivate(survey: NPSSurvey, e: MouseEvent) {
     e.stopPropagation();
     try {
       await activateMutation.mutateAsync(survey.id);
@@ -524,7 +525,7 @@ function SurveysTab({
     }
   }
 
-  async function handleClose(survey: NPSSurvey, e: React.MouseEvent) {
+  async function handleClose(survey: NPSSurvey, e: MouseEvent) {
     e.stopPropagation();
     try {
       await closeMutation.mutateAsync(survey.id);
@@ -776,8 +777,8 @@ function FollowUpsTab({
   selectedSurveyId,
   onSelectSurvey,
 }: FollowUpsTabProps) {
-  const [completeId, setCompleteId] = React.useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = React.useState<string>("pending");
+  const [completeId, setCompleteId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
 
   const { data: surveyFollowUps, isLoading: surveyLoading } = useNPSFollowUps(
     selectedSurveyId ?? "",
@@ -949,11 +950,11 @@ function FollowUpsTab({
 
 export default function NPSSurveysPage() {
   const { user } = useAuth();
-  const [selectedSurveyId, setSelectedSurveyId] = React.useState<
+  const [selectedSurveyId, setSelectedSurveyId] = useState<
     string | null
   >(null);
-  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("surveys");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("surveys");
 
   const { data: surveysData } = useNPSSurveys();
   const { data: trends, isLoading: trendsLoading } = useNPSTrendAnalysis({

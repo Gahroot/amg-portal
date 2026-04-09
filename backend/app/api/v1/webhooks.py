@@ -48,7 +48,7 @@ async def list_webhooks(
     """List all webhooks for the current partner."""
     service = WebhookService(db)
     webhooks = await service.get_webhooks_for_partner(
-        partner_id=partner.id,  # type: ignore[arg-type]
+        partner_id=partner.id,
         include_inactive=include_inactive,
     )
     return WebhookListResponse(
@@ -68,7 +68,7 @@ async def create_webhook(
     """Create a new webhook configuration."""
     service = WebhookService(db)
     webhook = await service.create_webhook(
-        partner_id=partner.id,  # type: ignore[arg-type]
+        partner_id=partner.id,
         data=data,
     )
     return WebhookResponse.from_webhook(webhook)
@@ -84,7 +84,7 @@ async def get_webhook(
 ) -> WebhookResponse:
     """Get a specific webhook configuration."""
     service = WebhookService(db)
-    webhook = await service.get_webhook(webhook_id, partner.id)  # type: ignore[arg-type]
+    webhook = await service.get_webhook(webhook_id, partner.id)
     if not webhook:
         raise NotFoundException("Webhook not found")
     return WebhookResponse.from_webhook(webhook)
@@ -101,7 +101,7 @@ async def update_webhook(
 ) -> WebhookResponse:
     """Update a webhook configuration."""
     service = WebhookService(db)
-    webhook = await service.update_webhook(webhook_id, partner.id, data)  # type: ignore[arg-type]
+    webhook = await service.update_webhook(webhook_id, partner.id, data)
     if not webhook:
         raise NotFoundException("Webhook not found")
     return WebhookResponse.from_webhook(webhook)
@@ -117,7 +117,7 @@ async def delete_webhook(
 ) -> None:
     """Delete a webhook configuration."""
     service = WebhookService(db)
-    deleted = await service.delete_webhook(webhook_id, partner.id)  # type: ignore[arg-type]
+    deleted = await service.delete_webhook(webhook_id, partner.id)
     if not deleted:
         raise NotFoundException("Webhook not found")
 
@@ -135,7 +135,7 @@ async def test_webhook(
     service = WebhookService(db)
     success, status_code, error_message, duration_ms, payload = await service.test_webhook(
         webhook_id=webhook_id,
-        partner_id=partner.id,  # type: ignore[arg-type]
+        partner_id=partner.id,
         data=data,
     )
     return WebhookTestResponse(
@@ -161,7 +161,7 @@ async def list_webhook_deliveries(
     service = WebhookService(db)
     deliveries, total = await service.get_deliveries(
         webhook_id=webhook_id,
-        partner_id=partner.id,  # type: ignore[arg-type]
+        partner_id=partner.id,
         limit=limit,
         offset=offset,
     )
@@ -183,7 +183,7 @@ async def list_all_deliveries(
     """Get all delivery logs for the partner's webhooks."""
     service = WebhookService(db)
     deliveries, total = await service.get_all_deliveries_for_partner(
-        partner_id=partner.id,  # type: ignore[arg-type]
+        partner_id=partner.id,
         limit=limit,
         offset=offset,
     )

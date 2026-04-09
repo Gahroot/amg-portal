@@ -106,7 +106,7 @@ async def dispatch_template_message(
             user_id=uid,
             notification_type=template_type,
             title=subject or template.name,
-            body=body,
+            body=body or "",
             entity_type="communication",
             entity_id=comm.id,
             priority="normal",

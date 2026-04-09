@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useFormContext, useFormState, FieldPath, FieldValues } from "react-hook-form";
 import {
   CollapsibleSection,
@@ -132,10 +133,10 @@ export function FormSection<T extends FieldValues = FieldValues>({
   const values = form.watch();
 
   // Track previous error state for auto-expand
-  const prevErrorCountRef = React.useRef(0);
+  const prevErrorCountRef = useRef(0);
 
   // Calculate completion status
-  const completionStatus = React.useMemo(() => {
+  const completionStatus = useMemo(() => {
     if (!showCompletionStatus) return undefined;
 
     if (getCompletionStatus) {
@@ -153,16 +154,16 @@ export function FormSection<T extends FieldValues = FieldValues>({
   }, [showCompletionStatus, getCompletionStatus, values, fields, requiredFields, errors]);
 
   // Count errors in this section
-  const errorCount = React.useMemo(() => {
+  const errorCount = useMemo(() => {
     if (fields.length === 0) return 0;
     return countFieldErrors(fields, errors);
   }, [fields, errors]);
 
   // Auto-expand on error
-  const [internalExpanded, setInternalExpanded] = React.useState(props.defaultExpanded ?? false);
+  const [internalExpanded, setInternalExpanded] = useState(props.defaultExpanded ?? false);
   const isControlled = props.expanded !== undefined;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (autoExpandOnError && errorCount > 0 && prevErrorCountRef.current === 0) {
       // New errors appeared, expand section
       if (!isControlled) {
@@ -245,7 +246,7 @@ export function FormSectionSummary({
  */
 export interface FormSectionGroupProps {
   /** Form sections */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Show expand/collapse all controls */
   showControls?: boolean;
   /** Additional className */
@@ -255,9 +256,9 @@ export interface FormSectionGroupProps {
 /**
  * Context for form section group state
  */
-const FormSectionGroupContext = React.createContext<{
+const FormSectionGroupContext = createContext<{
   expandedSections: Set<string>;
-  setExpandedSections: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setExpandedSections: Dispatch<SetStateAction<Set<string>>>;
   sectionIds: string[];
   registerSection: (id: string) => void;
   unregisterSection: (id: string) => void;
@@ -267,7 +268,7 @@ const FormSectionGroupContext = React.createContext<{
  * Hook to access form section group context
  */
 export function useFormSectionGroup() {
-  return React.useContext(FormSectionGroupContext);
+  return useContext(FormSectionGroupContext);
 }
 
 /**
@@ -278,28 +279,28 @@ export function FormSectionGroup({
   showControls = true,
   className,
 }: FormSectionGroupProps) {
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set());
-  const [sectionIds, setSectionIds] = React.useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [sectionIds, setSectionIds] = useState<string[]>([]);
 
-  const registerSection = React.useCallback((id: string) => {
+  const registerSection = useCallback((id: string) => {
     setSectionIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }, []);
 
-  const unregisterSection = React.useCallback((id: string) => {
+  const unregisterSection = useCallback((id: string) => {
     setSectionIds((prev) => prev.filter((sid) => sid !== id));
   }, []);
 
-  const expandAll = React.useCallback(() => {
+  const expandAll = useCallback(() => {
     setExpandedSections(new Set(sectionIds));
   }, [sectionIds]);
 
-  const collapseAll = React.useCallback(() => {
+  const collapseAll = useCallback(() => {
     setExpandedSections(new Set());
   }, []);
 
   const allExpanded = sectionIds.length > 0 && expandedSections.size === sectionIds.length;
 
-  const contextValue = React.useMemo(
+  const contextValue = useMemo(
     () => ({
       expandedSections,
       setExpandedSections,

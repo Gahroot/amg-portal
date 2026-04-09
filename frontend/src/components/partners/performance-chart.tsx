@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { PartnerTrends, TrendDataPoint, TrendAnnotation } from "@/types/partner";
+import type { PartnerTrends, TrendAnnotation } from "@/types/partner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -206,10 +206,10 @@ export function PerformanceChart({
   onDateRangeChange,
   hideAnnotations = false,
 }: PerformanceChartProps) {
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Metric visibility toggles
-  const [visibleMetrics, setVisibleMetrics] = React.useState<Set<MetricKey>>(
+  const [visibleMetrics, setVisibleMetrics] = useState<Set<MetricKey>>(
     new Set(["sla_compliance_pct", "avg_overall", "avg_quality"])
   );
 
@@ -243,7 +243,7 @@ export function PerformanceChart({
   }
 
   // Map annotations to reference-line dates (week keys)
-  const annotationDates = React.useMemo(() => {
+  const annotationDates = useMemo(() => {
     if (!trends?.annotations?.length || hideAnnotations) return new Map<string, TrendAnnotation>();
     const map = new Map<string, TrendAnnotation>();
     for (const ann of trends.annotations) {

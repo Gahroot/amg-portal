@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
@@ -604,18 +604,18 @@ function AnnualReviewPreview({
 export default function ReportsPage() {
   const { user } = useAuth();
 
-  const [reportType, setReportType] = React.useState<ReportType>("rm_portfolio");
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
-  const [generated, setGenerated] = React.useState(false);
+  const [reportType, setReportType] = useState<ReportType>("rm_portfolio");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [generated, setGenerated] = useState(false);
 
   // Derived year from dateRange (for annual_review)
-  const selectedYear = React.useMemo(() => {
+  const selectedYear = useMemo(() => {
     if (dateRange?.from) return dateRange.from.getFullYear();
     return new Date().getFullYear();
   }, [dateRange]);
 
   // Filter available report types based on user role
-  const availableReports = React.useMemo(() => {
+  const availableReports = useMemo(() => {
     if (!user) return [];
     return REPORT_OPTIONS.filter((r) => r.roles.includes(user.role));
   }, [user]);

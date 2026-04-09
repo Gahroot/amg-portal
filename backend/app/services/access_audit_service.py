@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.access_audit import AccessAudit, AccessAuditFinding
+from app.models.access_audit import AccessAudit, AccessAuditFinding, FindingStatus
 from app.models.user import User
 from app.schemas.access_audit import (
     CreateAccessAuditFindingRequest,
@@ -245,7 +245,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         if not finding:
             return None
 
-        finding.status = "remediated"
+        finding.status = FindingStatus.remediated
         finding.remediated_by = user_id
         finding.remediated_at = datetime.now(UTC)
         if remediation_notes:
@@ -269,7 +269,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         if not finding:
             return None
 
-        finding.status = "acknowledged"
+        finding.status = FindingStatus.acknowledged
         finding.acknowledged_by = user_id
         finding.acknowledged_at = datetime.now(UTC)
 
@@ -292,7 +292,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         if not finding:
             return None
 
-        finding.status = "waived"
+        finding.status = FindingStatus.waived
         finding.waived_by = user_id
         finding.waived_at = datetime.now(UTC)
         finding.waived_reason = waived_reason

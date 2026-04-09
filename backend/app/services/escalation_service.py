@@ -365,7 +365,7 @@ async def check_and_escalate_milestone_risk(
             escalation_level == EscalationLevel.program
             and existing.level != EscalationLevel.program.value
         ):
-            existing.level = EscalationLevel.program.value
+            existing.level = EscalationLevel.program
         existing.escalation_chain = existing.escalation_chain or []
         existing.escalation_chain.append(
             {
@@ -431,7 +431,7 @@ async def update_escalation_status(
     if not escalation:
         raise ValueError(f"Escalation {escalation_id} not found")
 
-    escalation.status = new_status.value
+    escalation.status = new_status
 
     # Update timestamps based on status
     now = datetime.now(UTC)
@@ -939,7 +939,7 @@ async def progress_escalation_chain(
 
     # Update escalation level
     from_level = escalation.level
-    escalation.level = next_level.value
+    escalation.level = next_level
 
     # Re-determine owner for the new level
     new_owner_id = await determine_escalation_owner(

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createGovernanceAction } from "@/lib/api/partner-governance";
 import type { GovernanceActionType } from "@/types/partner-governance";
@@ -45,9 +45,9 @@ export function GovernanceActionForm({
   onOpenChange,
 }: GovernanceActionFormProps) {
   const queryClient = useQueryClient();
-  const [action, setAction] = React.useState<GovernanceActionType>("warning");
-  const [reason, setReason] = React.useState("");
-  const [expiryDate, setExpiryDate] = React.useState("");
+  const [action, setAction] = useState<GovernanceActionType>("warning");
+  const [reason, setReason] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const mutation = useMutation({
     mutationFn: () =>

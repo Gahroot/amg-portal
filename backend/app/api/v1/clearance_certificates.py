@@ -1,6 +1,7 @@
 """Compliance clearance certificate API endpoints."""
 
 import contextlib
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response
@@ -166,7 +167,8 @@ async def preview_certificate(
 ) -> CertificatePreviewResponse:
     """Preview certificate content with auto-populated data."""
     # Get template content
-    template_content = certificate_service.DEFAULT_TEMPLATE
+    from app.services.certificate_service import DEFAULT_TEMPLATE
+    template_content = DEFAULT_TEMPLATE
     if data.template_id:
         result = await db.execute(
             select(CertificateTemplate).where(CertificateTemplate.id == data.template_id)
@@ -176,7 +178,7 @@ async def preview_certificate(
             template_content = template.content
 
     # Get populated data
-    populated_data: dict = {}
+    populated_data: dict[str, Any] = {}
     if data.program_id:
         populated_data = await certificate_service.get_program_data_for_certificate(
             db, data.program_id
@@ -220,7 +222,7 @@ async def preview_certificate(
 def build_certificate_response(
     cert: ClearanceCertificate,
     include_download_url: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Build certificate response with related data."""
     data = {
         "id": cert.id,
@@ -308,8 +310,8 @@ async def create_certificate(
         )
         .where(ClearanceCertificate.id == certificate.id)
     )
-    certificate = result.scalar_one()
-    return ClearanceCertificateResponse.model_validate(build_certificate_response(certificate))
+    loaded_cert = cast(ClearanceCertificate, result.scalar_one())
+    return ClearanceCertificateResponse.model_validate(build_certificate_response(loaded_cert))
 
 
 @router.get("/", response_model=ClearanceCertificateListResponse)

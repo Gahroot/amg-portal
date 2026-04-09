@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { cloneElement, useId } from "react";
+import type { InputHTMLAttributes, ReactElement, ReactNode, Ref, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,7 +16,7 @@ interface FormFieldWithHelpBaseProps {
   /** Field label */
   label: string;
   /** Help content - can be string or React node for rich content */
-  helpContent?: React.ReactNode;
+  helpContent?: ReactNode;
   /** Props to pass to the help tooltip */
   tooltipProps?: Partial<HelpTooltipProps>;
   /** Error message to display */
@@ -37,7 +38,7 @@ interface FormFieldWithHelpBaseProps {
  */
 export interface InputWithHelpProps
   extends FormFieldWithHelpBaseProps,
-    Omit<React.InputHTMLAttributes<HTMLInputElement>, "id" | "label"> {}
+    Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "label"> {}
 
 /**
  * An input field with integrated label, help tooltip, and error display.
@@ -66,8 +67,8 @@ export function InputWithHelp({
   id,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: InputWithHelpProps & { ref?: React.Ref<HTMLInputElement> }) {
-  const generatedId = React.useId();
+}: InputWithHelpProps & { ref?: Ref<HTMLInputElement> }) {
+  const generatedId = useId();
   const inputId = id || generatedId;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
@@ -141,7 +142,7 @@ export function InputWithHelp({
  */
 export interface TextareaWithHelpProps
   extends FormFieldWithHelpBaseProps,
-    Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "id" | "label"> {}
+    Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id" | "label"> {}
 
 /**
  * A textarea field with integrated label, help tooltip, and error display.
@@ -174,8 +175,8 @@ export function TextareaWithHelp({
   value,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: TextareaWithHelpProps & { ref?: React.Ref<HTMLTextAreaElement> }) {
-  const generatedId = React.useId();
+}: TextareaWithHelpProps & { ref?: Ref<HTMLTextAreaElement> }) {
+  const generatedId = useId();
   const textareaId = id || generatedId;
   const errorId = `${textareaId}-error`;
   const helperId = `${textareaId}-helper`;
@@ -272,7 +273,7 @@ export function TextareaWithHelp({
  */
 export interface SelectWithHelpProps extends FormFieldWithHelpBaseProps {
   /** The select trigger element */
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
@@ -310,8 +311,8 @@ export function SelectWithHelp({
   className,
   id,
   children,
-}: SelectWithHelpProps & { ref?: React.Ref<HTMLDivElement> }) {
-  const generatedId = React.useId();
+}: SelectWithHelpProps & { ref?: Ref<HTMLDivElement> }) {
+  const generatedId = useId();
   const selectId = id || generatedId;
   const errorId = `${selectId}-error`;
   const helperId = `${selectId}-helper`;
@@ -336,7 +337,7 @@ export function SelectWithHelp({
         </Label>
         {helpContent && <HelpTooltip content={helpContent} size="sm" {...tooltipProps} />}
       </div>
-      {React.cloneElement(children as React.ReactElement<{ id?: string; "aria-invalid"?: boolean; "aria-required"?: boolean }>, {
+      {cloneElement(children as ReactElement<{ id?: string; "aria-invalid"?: boolean; "aria-required"?: boolean }>, {
         id: selectId,
         "aria-invalid": !!error,
         "aria-required": required,
@@ -364,11 +365,11 @@ export function SelectWithHelp({
  * Props for CheckboxWithHelp component
  */
 export interface CheckboxWithHelpProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "label"> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "label"> {
   /** Checkbox label */
   label: string;
   /** Help content for tooltip */
-  helpContent?: React.ReactNode;
+  helpContent?: ReactNode;
   /** Tooltip props */
   tooltipProps?: Partial<HelpTooltipProps>;
   /** Error message */
@@ -401,8 +402,8 @@ export function CheckboxWithHelp({
   id,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: CheckboxWithHelpProps & { ref?: React.Ref<HTMLInputElement> }) {
-  const generatedId = React.useId();
+}: CheckboxWithHelpProps & { ref?: Ref<HTMLInputElement> }) {
+  const generatedId = useId();
   const checkboxId = id || generatedId;
   const errorId = `${checkboxId}-error`;
   const helperId = `${checkboxId}-helper`;

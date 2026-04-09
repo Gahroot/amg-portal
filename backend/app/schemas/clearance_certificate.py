@@ -2,6 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,7 +16,7 @@ class CertificateTemplateCreate(BaseModel):
     description: str | None = None
     template_type: str = Field(..., pattern="^(program|client|partner)$")
     content: str = Field(..., min_length=1)
-    placeholders: dict | None = None
+    placeholders: dict[str, Any] | None = None
     is_active: bool = True
 
 
@@ -23,7 +24,7 @@ class CertificateTemplateUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
     content: str | None = Field(None, min_length=1)
-    placeholders: dict | None = None
+    placeholders: dict[str, Any] | None = None
     is_active: bool | None = None
 
 
@@ -33,7 +34,7 @@ class CertificateTemplateResponse(BaseModel):
     description: str | None
     template_type: str
     content: str
-    placeholders: dict | None
+    placeholders: dict[str, Any] | None
     is_active: bool
     created_by: UUID
     created_at: datetime
@@ -105,7 +106,7 @@ class ClearanceCertificateResponse(BaseModel):
     client_name: str = ""
     title: str
     content: str
-    populated_data: dict | None
+    populated_data: dict[str, Any] | None
     certificate_type: str
     status: str
     issue_date: date | None
@@ -154,7 +155,7 @@ class ProgramDataForCertificate(BaseModel):
     completed_milestones: int
     total_deliverables: int
     approved_deliverables: int
-    assigned_partners: list[dict]
+    assigned_partners: list[dict[str, Any]]
     completion_date: date | None = None
 
 
@@ -172,5 +173,5 @@ class CertificatePreviewResponse(BaseModel):
     """Preview of certificate content before generation."""
     title: str
     content: str
-    populated_data: dict
+    populated_data: dict[str, Any]
     available_placeholders: list[str]

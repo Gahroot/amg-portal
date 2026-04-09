@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,12 +25,12 @@ export function IntelligenceNotesEditor({
   onSave,
   isSaving = false,
 }: IntelligenceNotesEditorProps) {
-  const [data, setData] = React.useState<Record<string, string>>(initialData);
-  const [hasChanges, setHasChanges] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
+  const [data, setData] = useState<Record<string, string>>(initialData);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Update local state when initialData changes
-  React.useEffect(() => {
+  useEffect(() => {
     setData(initialData);
     setHasChanges(false);
   }, [initialData]);

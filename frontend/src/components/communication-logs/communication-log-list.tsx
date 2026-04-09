@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,15 +91,15 @@ const DIRECTION_VARIANT: Record<
 };
 
 export function CommunicationLogList() {
-  const [searchInput, setSearchInput] = React.useState("");
+  const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
-  const [channelFilter, setChannelFilter] = React.useState("all");
-  const [directionFilter, setDirectionFilter] = React.useState("all");
-  const [formOpen, setFormOpen] = React.useState(false);
-  const [editingLog, setEditingLog] = React.useState<CommunicationLog | null>(
+  const [channelFilter, setChannelFilter] = useState("all");
+  const [directionFilter, setDirectionFilter] = useState("all");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<CommunicationLog | null>(
     null
   );
-  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const params: CommunicationLogListParams = {
     search: debouncedSearch || undefined,

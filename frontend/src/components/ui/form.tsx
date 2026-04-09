@@ -1,6 +1,7 @@
 "use client"
 
-import * as React from "react"
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { Label as LabelPrimitive } from "radix-ui"
 import { Slot } from "radix-ui"
 import {
@@ -50,7 +51,7 @@ interface FormUndoContextValue {
   redoCount: number
 }
 
-const FormUndoContext = React.createContext<FormUndoContextValue | null>(null)
+const FormUndoContext = createContext<FormUndoContextValue | null>(null)
 
 /**
  * Hook to access form undo/redo functionality.
@@ -71,7 +72,7 @@ const FormUndoContext = React.createContext<FormUndoContextValue | null>(null)
  * ```
  */
 export function useFormUndo() {
-  const context = React.useContext(FormUndoContext)
+  const context = useContext(FormUndoContext)
   if (!context) {
     throw new Error("useFormUndo must be used within a FormUndoProvider")
   }
@@ -82,7 +83,7 @@ export function useFormUndo() {
  * Props for FormUndoProvider
  */
 export interface FormUndoProviderProps<T extends FieldValues> {
-  children: React.ReactNode
+  children: ReactNode
   /** React Hook Form control object */
   control: Control<T>
   /** Maximum number of history entries */
@@ -126,7 +127,7 @@ export function FormUndoProvider<T extends FieldValues>({
   }
 
   // History state using useState to trigger re-renders
-  const [historyState, setHistoryState] = React.useState<{
+  const [historyState, setHistoryState] = useState<{
     past: T[]
     future: T[]
   }>({
@@ -135,7 +136,7 @@ export function FormUndoProvider<T extends FieldValues>({
   })
 
   // Debounce tracking
-  const debounceRef = React.useRef<{
+  const debounceRef = useRef<{
     timeoutId: ReturnType<typeof setTimeout> | null
     pendingSnapshot: T | null
   }>({
@@ -144,7 +145,7 @@ export function FormUndoProvider<T extends FieldValues>({
   })
 
   // Track the last snapshot for comparison
-  const lastSnapshotRef = React.useRef<T | null>(null)
+  const lastSnapshotRef = useRef<T | null>(null)
 
   // Watch form values
   const watchedValues = useWatch({
@@ -153,14 +154,14 @@ export function FormUndoProvider<T extends FieldValues>({
   }) as T
 
   // Get current form values as a snapshot
-  const getSnapshot = React.useCallback(() => {
+  const getSnapshot = useCallback(() => {
     const values = getValues()
     // Deep clone to avoid reference issues
     return JSON.parse(JSON.stringify(values)) as T
   }, [getValues])
 
   // Push current state to history
-  const pushToHistory = React.useCallback(
+  const pushToHistory = useCallback(
     (snapshot: T) => {
       // Don't push if it's the same as the last snapshot
       if (
@@ -183,7 +184,7 @@ export function FormUndoProvider<T extends FieldValues>({
   )
 
   // Debounced history push
-  const debouncedPush = React.useCallback(
+  const debouncedPush = useCallback(
     (snapshot: T) => {
       // Store pending snapshot
       debounceRef.current.pendingSnapshot = snapshot
@@ -206,7 +207,7 @@ export function FormUndoProvider<T extends FieldValues>({
   )
 
   // Watch for form changes
-  React.useEffect(() => {
+  useEffect(() => {
     const snapshot = getSnapshot()
     debouncedPush(snapshot)
 
@@ -219,7 +220,7 @@ export function FormUndoProvider<T extends FieldValues>({
   }, [watchedValues, debouncedPush, getSnapshot])
 
   // Undo function
-  const undo = React.useCallback(() => {
+  const undo = useCallback(() => {
     if (historyState.past.length === 0) return
 
     // Clear any pending debounce
@@ -246,7 +247,7 @@ export function FormUndoProvider<T extends FieldValues>({
   }, [historyState.past, historyState.future, getSnapshot, setValue])
 
   // Redo function
-  const redo = React.useCallback(() => {
+  const redo = useCallback(() => {
     if (historyState.future.length === 0) return
 
     const current = getSnapshot()
@@ -267,7 +268,7 @@ export function FormUndoProvider<T extends FieldValues>({
   }, [historyState.past, historyState.future, getSnapshot, setValue])
 
   // Clear history function
-  const clearHistory = React.useCallback(() => {
+  const clearHistory = useCallback(() => {
     lastSnapshotRef.current = getSnapshot()
     setHistoryState({
       past: [],
@@ -275,7 +276,7 @@ export function FormUndoProvider<T extends FieldValues>({
     })
   }, [getSnapshot])
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       canUndo: historyState.past.length > 0,
       canRedo: historyState.future.length > 0,
@@ -341,7 +342,7 @@ type FormFieldContextValue<
   name: TName
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
+const FormFieldContext = createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
 
@@ -359,8 +360,8 @@ const FormField = <
 }
 
 const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const itemContext = React.useContext(FormItemContext)
+  const fieldContext = useContext(FormFieldContext)
+  const itemContext = useContext(FormItemContext)
   const { getFieldState } = useFormContext()
   const formState = useFormState({ name: fieldContext.name })
   const fieldState = getFieldState(fieldContext.name, formState)
@@ -385,12 +386,12 @@ type FormItemContextValue = {
   id: string
 }
 
-const FormItemContext = React.createContext<FormItemContextValue>(
+const FormItemContext = createContext<FormItemContextValue>(
   {} as FormItemContextValue
 )
 
-function FormItem({ className, ...props }: React.ComponentProps<"div">) {
-  const id = React.useId()
+function FormItem({ className, ...props }: ComponentProps<"div">) {
+  const id = useId()
 
   return (
     <FormItemContext.Provider value={{ id }}>
@@ -406,7 +407,7 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
 function FormLabel({
   className,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: ComponentProps<typeof LabelPrimitive.Root>) {
   const { error, formItemId } = useFormField()
 
   return (
@@ -420,7 +421,7 @@ function FormLabel({
   )
 }
 
-function FormControl({ ...props }: React.ComponentProps<typeof Slot.Root>) {
+function FormControl({ ...props }: ComponentProps<typeof Slot.Root>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
@@ -438,7 +439,7 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot.Root>) {
   )
 }
 
-function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
+function FormDescription({ className, ...props }: ComponentProps<"p">) {
   const { formDescriptionId } = useFormField()
 
   return (
@@ -451,7 +452,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
-function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
+function FormMessage({ className, ...props }: ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : props.children
 

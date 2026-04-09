@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -49,14 +48,14 @@ function AssignmentsPageContent() {
   const isInternal = user?.role !== "client" && user?.role !== "partner";
 
   // Read initial values from URL
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const statusParam = searchParams.get("status") ?? "all";
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -70,7 +69,7 @@ function AssignmentsPageContent() {
   );
 
   // Sync debounced search to URL
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 

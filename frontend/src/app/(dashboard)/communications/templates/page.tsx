@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { useAuth } from "@/providers/auth-provider";
@@ -170,7 +170,7 @@ function TemplateFormDialog({ open, onOpenChange, editing }: TemplateFormDialogP
   });
 
   // Populate form when editing
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       if (editing) {
         reset({
@@ -487,19 +487,19 @@ export default function TemplatesPage() {
   const { user } = useAuth();
   const isMD = user?.role === "managing_director";
 
-  const [typeFilter, setTypeFilter] = React.useState<string>("all");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
-  const [approvalFilter, setApprovalFilter] = React.useState<string>("all");
-  const [search, setSearch] = React.useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [approvalFilter, setApprovalFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
-  const [formOpen, setFormOpen] = React.useState(false);
-  const [editingTemplate, setEditingTemplate] = React.useState<CommunicationTemplate | null>(null);
-  const [previewTemplate, setPreviewTemplate] = React.useState<CommunicationTemplate | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<CommunicationTemplate | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<CommunicationTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<CommunicationTemplate | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CommunicationTemplate | null>(null);
 
   // Approval dialog state
-  const [approvalTarget, setApprovalTarget] = React.useState<CommunicationTemplate | null>(null);
-  const [approvalAction, setApprovalAction] = React.useState<"approve" | "reject">("approve");
+  const [approvalTarget, setApprovalTarget] = useState<CommunicationTemplate | null>(null);
+  const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
 
   const statusMutation = useUpdateTemplateStatus();
 

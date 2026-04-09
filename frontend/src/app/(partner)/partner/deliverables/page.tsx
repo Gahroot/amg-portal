@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import Link from "next/link";
 import { usePartnerDeliverables, useSubmitPartnerDeliverable } from "@/hooks/use-partner-portal";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   approved: "default", returned: "destructive", rejected: "destructive",
 };
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
+const STATUS_ICONS: Record<string, ReactNode> = {
   pending: <Clock className="h-4 w-4" />, submitted: <Upload className="h-4 w-4" />,
   under_review: <AlertCircle className="h-4 w-4" />, approved: <CheckCircle2 className="h-4 w-4" />,
   returned: <XCircle className="h-4 w-4" />, rejected: <XCircle className="h-4 w-4" />,
@@ -38,15 +39,15 @@ function getDueDateDisplay(dateStr: string | null) {
 }
 
 export default function PartnerDeliverablesPage() {
-  const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [error, setError] = React.useState<string | null>(null);
-  const [uploadingId, setUploadingId] = React.useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const { data, isLoading } = usePartnerDeliverables(statusFilter !== "all" ? { status: statusFilter } : undefined);
   const submitMutation = useSubmitPartnerDeliverable();
 
-  const handleFileUpload = (deliverableId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (deliverableId: string, e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadingId(deliverableId);
@@ -139,7 +140,7 @@ export default function PartnerDeliverablesPage() {
 function DeliverableTable({ deliverables, uploadingId, handleFileUpload }: {
   deliverables: DeliverableItem[];
   uploadingId: string | null;
-  handleFileUpload: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileUpload: (id: string, e: ChangeEvent<HTMLInputElement>) => void;
 }) {
   if (deliverables.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No deliverables found.</p>;

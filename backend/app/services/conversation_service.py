@@ -128,7 +128,7 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
         db: AsyncSession,
         conversation_id: uuid.UUID,
         user_id: uuid.UUID,
-    ) -> Conversation:
+    ) -> Conversation | None:
         """Add a user to a conversation."""
         conversation = await self.get(db, conversation_id)
         if not conversation:

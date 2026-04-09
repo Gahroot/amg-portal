@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,17 +20,17 @@ import { emergencyActivateProgram } from "@/lib/api/programs";
 
 interface EmergencyActivationDialogProps {
   programId: string;
-  trigger: React.ReactNode;
+  trigger: ReactNode;
 }
 
 export function EmergencyActivationDialog({
   programId,
   trigger,
 }: EmergencyActivationDialogProps) {
-  const [open, setOpen] = React.useState(false);
-  const [reason, setReason] = React.useState("");
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
   const [accountabilityAccepted, setAccountabilityAccepted] =
-    React.useState(false);
+    useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({

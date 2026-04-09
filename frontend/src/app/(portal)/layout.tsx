@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { AuthGuard } from "@/components/auth/auth-guard";
@@ -32,7 +33,7 @@ import { HelpPanel, HelpButton } from "@/components/help/help-panel";
 function PortalKeyboardShortcuts() {
   const { toggleSidebar } = useSidebar();
   const { open: openShortcutsDialog } = useKeyboardShortcutsDialog();
-  const router = useRouter();
+  const _router = useRouter();
 
   useKeyboardShortcuts({
     onShowShortcuts: openShortcutsDialog,
@@ -50,9 +51,9 @@ function PortalKeyboardShortcuts() {
   return null;
 }
 
-function PortalContent({ children }: { children: React.ReactNode }) {
+function PortalContent({ children }: { children: ReactNode }) {
   useWebSocket();
-  const [helpPanelOpen, setHelpPanelOpen] = React.useState(false);
+  const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   return (
     <QuickActionsProvider>
       <KeyboardShortcutsDialogProvider>
@@ -106,7 +107,7 @@ function PortalContent({ children }: { children: React.ReactNode }) {
 export default function PortalLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { user } = useAuth();
   const router = useRouter();

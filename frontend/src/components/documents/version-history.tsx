@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Download, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,8 +32,8 @@ interface VersionHistoryProps {
 
 export function VersionHistory({ documentId, fileName }: VersionHistoryProps) {
   const { data, isLoading } = useDocumentVersions(documentId, true);
-  const [selected, setSelected] = React.useState<string[]>([]);
-  const [compareOpen, setCompareOpen] = React.useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   if (isLoading) {
     return <p className="py-2 text-xs text-muted-foreground">Loading version history…</p>;

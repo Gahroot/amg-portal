@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   usePartnerAssignment,
@@ -57,7 +57,7 @@ const DELIVERABLE_STATUS_VARIANT: Record<string, "default" | "secondary" | "dest
   rejected: "destructive",
 };
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
+const STATUS_ICONS: Record<string, ReactNode> = {
   pending: <Clock className="h-4 w-4" />,
   submitted: <Upload className="h-4 w-4" />,
   under_review: <AlertCircle className="h-4 w-4" />,
@@ -79,8 +79,8 @@ export default function PartnerAssignmentDetailPage() {
   const router = useRouter();
   const assignmentId = params.id as string;
   const queryClient = useQueryClient();
-  const [error, setError] = React.useState<string | null>(null);
-  const [uploadingId, setUploadingId] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const { data: assignment, isLoading } = usePartnerAssignment(assignmentId);
   const { data: documentsData } = useAssignmentDocuments(assignmentId);
@@ -105,7 +105,7 @@ export default function PartnerAssignmentDetailPage() {
     },
   });
 
-  const handleFileUpload = (deliverableId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (deliverableId: string, e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadingId(deliverableId);

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Download, Shield, ShieldCheck, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +57,7 @@ function VaultStatusBadge({ status }: { status: string }) {
 }
 
 export function DocumentVault() {
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data, isLoading } = useVaultDocuments(
     statusFilter === "all" ? undefined : statusFilter,
   );

@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
@@ -99,7 +98,7 @@ function ClientPreferencePopoverCell({
   name: string;
   onClick: () => void;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -139,7 +138,7 @@ function ClientsPageContent() {
 
   // Navigation state for scroll and filter preservation
   const {
-    restoreScrollPosition,
+    _restoreScrollPosition,
     markForRestore,
     resetFilters,
     hasPendingRestore,
@@ -157,7 +156,7 @@ function ClientsPageContent() {
   useScrollRestore(pathname, !!isInternal && hasPendingRestore);
 
   // Read initial values from URL
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -168,7 +167,7 @@ function ClientsPageContent() {
   // Check if any filters are active
   const hasActiveFilters = complianceStatus !== "all" || approvalStatus !== "all" || searchInput !== "";
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -182,15 +181,15 @@ function ClientsPageContent() {
   );
 
   // Sync debounced search to URL
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 
   const { data: savedFiltersData } = useSavedFilters("clients");
 
   // Auto-apply default saved filter when no URL params present
-  const hasAppliedDefault = React.useRef(false);
-  React.useEffect(() => {
+  const hasAppliedDefault = useRef(false);
+  useEffect(() => {
     if (hasAppliedDefault.current) return;
     if (!savedFiltersData?.items) return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -217,23 +216,23 @@ function ClientsPageContent() {
   });
 
   const { data: bookmarksData } = useBookmarks("client");
-  const bookmarkedIds = React.useMemo(
+  const bookmarkedIds = useMemo(
     () => new Set(bookmarksData?.items.map((b) => b.entity_id) ?? []),
     [bookmarksData]
   );
 
-  const sortedProfiles = React.useMemo(() => {
+  const sortedProfiles = useMemo(() => {
     if (!data?.profiles) return [];
     return [...data.profiles].sort((a, b) => {
       const aPin = bookmarkedIds.has(a.id) ? 0 : 1;
       const bPin = bookmarkedIds.has(b.id) ? 0 : 1;
       return aPin - bPin;
     });
-  }, [data?.profiles, bookmarkedIds]);
+  }, [data, bookmarkedIds]);
 
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const toggleSelection = React.useCallback((id: string) => {
+  const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -245,13 +244,13 @@ function ClientsPageContent() {
     });
   }, []);
 
-  const handleCompare = React.useCallback(() => {
+  const handleCompare = useCallback(() => {
     const ids = Array.from(selectedIds).join(",");
     router.push(`/clients/compare?ids=${ids}`);
   }, [selectedIds, router]);
 
   // Handle navigation to detail page - mark for restoration
-  const handleNavigateToDetail = React.useCallback(
+  const handleNavigateToDetail = useCallback(
     (clientId: string) => {
       markForRestore();
       router.push(`/clients/${clientId}`);
@@ -260,7 +259,7 @@ function ClientsPageContent() {
   );
 
   // Handle reset filters
-  const handleResetFilters = React.useCallback(() => {
+  const handleResetFilters = useCallback(() => {
     setSearchInput("");
     router.replace(pathname);
     resetFilters();

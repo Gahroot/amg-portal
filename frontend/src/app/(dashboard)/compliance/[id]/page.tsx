@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { useClientProfile, useComplianceReview } from "@/hooks/use-clients";
@@ -54,7 +55,7 @@ const KYC_STATUS_VARIANT: Record<
   expired: "destructive",
 };
 
-const KYC_STATUS_ICON: Record<string, React.ReactNode> = {
+const KYC_STATUS_ICON: Record<string, ReactNode> = {
   pending: <Clock className="h-4 w-4 text-amber-500" />,
   verified: <CheckCircle className="h-4 w-4 text-green-500" />,
   rejected: <XCircle className="h-4 w-4 text-red-500" />,
@@ -71,13 +72,13 @@ export default function ComplianceReviewPage() {
   const { data: kycData, isLoading: kycLoading } = useKYCDocuments(id);
   const verifyKycMutation = useVerifyKYCDocument(id);
 
-  const [status, setStatus] = React.useState<string>("");
-  const [notes, setNotes] = React.useState("");
-  const [validationError, setValidationError] = React.useState<string | null>(null);
-  const [verifyKycOpen, setVerifyKycOpen] = React.useState(false);
-  const [selectedKyc, setSelectedKyc] = React.useState<string | null>(null);
-  const [kycVerifyStatus, setKycVerifyStatus] = React.useState<"verified" | "rejected">("verified");
-  const [kycNotes, setKycNotes] = React.useState("");
+  const [status, setStatus] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [verifyKycOpen, setVerifyKycOpen] = useState(false);
+  const [selectedKyc, setSelectedKyc] = useState<string | null>(null);
+  const [kycVerifyStatus, setKycVerifyStatus] = useState<"verified" | "rejected">("verified");
+  const [kycNotes, setKycNotes] = useState("");
 
   if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return (
@@ -109,7 +110,7 @@ export default function ComplianceReviewPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 

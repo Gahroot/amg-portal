@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment } from "react";
+import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,7 +11,7 @@ export function Kbd({
   children,
   className,
   ...props
-}: React.ComponentProps<"kbd">) {
+}: ComponentProps<"kbd">) {
   return (
     <kbd
       className={cn(
@@ -39,12 +40,12 @@ export function ShortcutDisplay({
   return (
     <div className={cn("flex items-center gap-0.5", className)}>
       {keys.map((key, index) => (
-        <React.Fragment key={key}>
+        <Fragment key={key}>
           <Kbd>{key}</Kbd>
           {index < keys.length - 1 && (
             <span className="text-muted-foreground text-xs">{separator}</span>
           )}
-        </React.Fragment>
+        </Fragment>
       ))}
     </div>
   );

@@ -72,4 +72,4 @@ async def archive_program_endpoint(
     )
     program = result.scalar_one()
 
-    return ProgramResponse(**build_program_response(program))
+    return build_program_response(program)

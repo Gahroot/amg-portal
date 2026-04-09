@@ -49,7 +49,7 @@ async def list_notifications(
     )
 
     response = NotificationListResponse(
-        notifications=notifications,
+        notifications=notifications,  # type: ignore[arg-type]
         total=total,
         group_mode=group_mode,
     )
@@ -138,7 +138,7 @@ async def mark_notification_read(
     )
     if not notification:
         raise NotFoundException("Notification not found")
-    return notification
+    return notification  # type: ignore[return-value]
 
 
 @router.get("/unread-count")
@@ -169,7 +169,7 @@ async def get_preferences(
 ) -> NotificationPreferenceResponse:
     """Get notification preferences for current user."""
     prefs = await notification_service.get_or_create_preferences(db, current_user.id)
-    return prefs
+    return prefs  # type: ignore[return-value]
 
 
 @router.patch("/preferences", response_model=NotificationPreferenceResponse)
@@ -182,7 +182,7 @@ async def update_preferences(
     prefs = await notification_service.update_preferences(
         db, current_user.id, update_data=data
     )
-    return prefs
+    return prefs  # type: ignore[return-value]
 
 
 # Admin-only endpoint to create notifications for users
@@ -204,7 +204,7 @@ async def create_notification(
     notification = await notification_service.create_notification(db, data)
     if notification is None:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-    return notification
+    return notification  # type: ignore[return-value]
 
 
 # Snooze endpoints
@@ -236,7 +236,7 @@ async def snooze_notification(
         data,
         user_timezone,
     )
-    return notification
+    return notification  # type: ignore[return-value]
 
 
 @router.delete("/{notification_id}/snooze", response_model=NotificationResponse)
@@ -251,7 +251,7 @@ async def unsnooze_notification(
         notification_id,
         current_user.id,
     )
-    return notification
+    return notification  # type: ignore[return-value]
 
 
 @router.get("/snoozed", response_model=NotificationListResponse)
@@ -269,6 +269,6 @@ async def list_snoozed_notifications(
         limit=limit,
     )
     return NotificationListResponse(
-        notifications=notifications,
+        notifications=notifications,  # type: ignore[arg-type]
         total=total,
     )

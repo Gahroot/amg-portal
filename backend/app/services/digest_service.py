@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.communication import Communication
 from app.models.conversation import Conversation
+from app.models.enums import DigestFrequency
 from app.models.message_digest import MessageDigestPreference
 from app.models.user import User
 from app.schemas.message_digest import DigestMessageSummary
@@ -43,7 +44,7 @@ async def update_digest_preference(
 ) -> MessageDigestPreference:
     """Update the user's message digest frequency."""
     pref = await get_or_create_digest_preference(db, user_id)
-    pref.digest_frequency = frequency
+    pref.digest_frequency = DigestFrequency(frequency)
     await db.commit()
     await db.refresh(pref)
     return pref

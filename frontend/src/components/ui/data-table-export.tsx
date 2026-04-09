@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Download, FileSpreadsheet, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export function DataTableExport<T>({
 }: DataTableExportProps<T>) {
   const hasSelected = selectedRows && selectedRows.length > 0;
   const hasAll = allRows && allRows.length > 0;
-  const [serverExporting, setServerExporting] = React.useState(false);
+  const [serverExporting, setServerExporting] = useState(false);
 
   function handleExport(rows: T[], format: ExportFormat, label: string) {
     exportData(rows, columns, `${fileName}-${label}`, format);

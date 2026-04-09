@@ -1,6 +1,7 @@
 "use client"
 
-import * as React from "react"
+import { ComponentRef } from "react";
+import type { ComponentPropsWithoutRef, Ref } from "react";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
 import { Circle } from "lucide-react"
 
@@ -10,8 +11,8 @@ function RadioGroup({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> & {
-  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Root>>;
+}: ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> & {
+  ref?: Ref<ComponentRef<typeof RadioGroupPrimitive.Root>>;
 }) {
   return (
     <RadioGroupPrimitive.Root
@@ -26,8 +27,8 @@ function RadioGroupItem({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> & {
-  ref?: React.Ref<React.ComponentRef<typeof RadioGroupPrimitive.Item>>;
+}: ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> & {
+  ref?: Ref<ComponentRef<typeof RadioGroupPrimitive.Item>>;
 }) {
   return (
     <RadioGroupPrimitive.Item

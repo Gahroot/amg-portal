@@ -197,7 +197,7 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
     for doc in docs:
         expiry_date: date = doc.expiry_date  # type: ignore[assignment]
         days_until = (expiry_date - today).days
-        sent_thresholds: list[int] = list(doc.expiry_alert_sent or [])
+        sent_thresholds: list[int] = list(doc.expiry_alert_sent or [])  # type: ignore[arg-type]
 
         # Determine which threshold we're at or past
         for threshold in ALERT_THRESHOLDS:
@@ -218,7 +218,7 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
                 title, body = _build_alert_message(doc, days_until, threshold)
                 priority = "urgent" if threshold == 0 or days_until < 0 else "high"
 
-                doc_id: UUID = doc.id  # type: ignore[assignment]
+                doc_id: UUID = doc.id
                 await notification_service.create_notification(
                     db,
                     CreateNotificationRequest(
@@ -241,7 +241,7 @@ async def check_and_send_expiry_alerts(db: AsyncSession) -> int:
                     rm_id,
                 )
 
-        if sent_thresholds != list(doc.expiry_alert_sent or []):
+        if sent_thresholds != list(doc.expiry_alert_sent or []):  # type: ignore[comparison-overlap]
             doc.expiry_alert_sent = sent_thresholds  # type: ignore[assignment]
 
     await db.commit()

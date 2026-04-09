@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -147,12 +148,12 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
     (a) => a.status === "accepted"
   );
 
-  const [queue, setQueue] = React.useState<FileQueueItem[]>([]);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
-  const [uploadProgress, setUploadProgress] = React.useState(0);
-  const [summary, setSummary] = React.useState<{ succeeded: number; failed: number } | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [queue, setQueue] = useState<FileQueueItem[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [summary, setSummary] = useState<{ succeeded: number; failed: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── File queue management ─────────────────────────────────────────────────
 
@@ -192,18 +193,18 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
 
   // ── Drag and drop ─────────────────────────────────────────────────────────
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragOver(e: DragEvent) {
     e.preventDefault();
     setIsDragging(true);
   }
 
-  function handleDragLeave(e: React.DragEvent) {
+  function handleDragLeave(e: DragEvent) {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDragging(false);
     }
   }
 
-  function handleDrop(e: React.DragEvent) {
+  function handleDrop(e: DragEvent) {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files.length > 0) {
@@ -211,7 +212,7 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
     }
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
       addFiles(e.target.files);
       // Reset so the same file can be re-selected

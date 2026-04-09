@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
+import { ElementType } from "react";
 import {
   FileText,
   Users,
@@ -13,7 +12,6 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type {
   SearchResultGroup,
@@ -22,7 +20,7 @@ import type {
 } from "@/lib/api/search";
 
 // Icon mapping for entity types
-const TYPE_ICONS: Record<SearchEntityType, React.ElementType> = {
+const TYPE_ICONS: Record<SearchEntityType, ElementType> = {
   program: Briefcase,
   client: Users,
   partner: Building2,
@@ -223,7 +221,7 @@ export function GlobalSearchResults({
   groups,
   total,
   isLoading = false,
-  showTypeBadges = false,
+  _showTypeBadges = false,
   maxPerGroup = 5,
   onSelect,
   onShowMore,

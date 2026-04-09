@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import {
   useApprovalThresholds,
@@ -144,11 +145,11 @@ function ThresholdDialog({
   const createThreshold = useCreateApprovalThreshold();
   const updateThreshold = useUpdateApprovalThreshold();
 
-  const [form, setForm] = React.useState<ThresholdFormState>(
+  const [form, setForm] = useState<ThresholdFormState>(
     defaultThresholdForm
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       if (threshold) {
         setForm({
@@ -169,7 +170,7 @@ function ThresholdDialog({
   const isEditing = !!threshold;
   const isPending = createThreshold.isPending || updateThreshold.isPending;
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     const payload = {
@@ -370,11 +371,11 @@ function ChainDialog({ open, onOpenChange, chain }: ChainDialogProps) {
   const createChain = useCreateApprovalChain();
   const updateChain = useUpdateApprovalChain();
 
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [isActive, setIsActive] = React.useState(true);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       if (chain) {
         setName(chain.name);
@@ -391,7 +392,7 @@ function ChainDialog({ open, onOpenChange, chain }: ChainDialogProps) {
   const isEditing = !!chain;
   const isPending = createChain.isPending || updateChain.isPending;
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const payload = {
       name: name.trim(),
@@ -504,13 +505,13 @@ function AddStepDialog({
 }: AddStepDialogProps) {
   const addStep = useAddChainStep();
 
-  const [stepNumber, setStepNumber] = React.useState(nextStepNumber);
-  const [requiredRole, setRequiredRole] = React.useState("");
-  const [isParallel, setIsParallel] = React.useState(false);
-  const [timeoutHours, setTimeoutHours] = React.useState("");
-  const [autoApprove, setAutoApprove] = React.useState(false);
+  const [stepNumber, setStepNumber] = useState(nextStepNumber);
+  const [requiredRole, setRequiredRole] = useState("");
+  const [isParallel, setIsParallel] = useState(false);
+  const [timeoutHours, setTimeoutHours] = useState("");
+  const [autoApprove, setAutoApprove] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setStepNumber(nextStepNumber);
       setRequiredRole("");
@@ -520,7 +521,7 @@ function AddStepDialog({
     }
   }, [open, nextStepNumber]);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const data: ApprovalChainStepCreate = {
       step_number: stepNumber,
@@ -656,8 +657,8 @@ interface ChainDetailProps {
 function ChainDetail({ chainId, onBack }: ChainDetailProps) {
   const { data: chain, isLoading } = useApprovalChain(chainId);
   const removeStep = useRemoveChainStep();
-  const [addStepOpen, setAddStepOpen] = React.useState(false);
-  const [deleteStepId, setDeleteStepId] = React.useState<string | null>(null);
+  const [addStepOpen, setAddStepOpen] = useState(false);
+  const [deleteStepId, setDeleteStepId] = useState<string | null>(null);
 
   if (isLoading || !chain) {
     return (
@@ -827,19 +828,19 @@ export default function BudgetThresholdsPage() {
   const deleteChain = useDeleteApprovalChain();
 
   // Threshold dialog state
-  const [thresholdDialogOpen, setThresholdDialogOpen] = React.useState(false);
+  const [thresholdDialogOpen, setThresholdDialogOpen] = useState(false);
   const [editingThreshold, setEditingThreshold] =
-    React.useState<ApprovalThreshold | null>(null);
-  const [deleteThresholdId, setDeleteThresholdId] = React.useState<
+    useState<ApprovalThreshold | null>(null);
+  const [deleteThresholdId, setDeleteThresholdId] = useState<
     string | null
   >(null);
 
   // Chain dialog / detail state
-  const [chainDialogOpen, setChainDialogOpen] = React.useState(false);
+  const [chainDialogOpen, setChainDialogOpen] = useState(false);
   const [editingChain, setEditingChain] =
-    React.useState<ApprovalChainSummary | null>(null);
-  const [deleteChainId, setDeleteChainId] = React.useState<string | null>(null);
-  const [selectedChainId, setSelectedChainId] = React.useState<string | null>(
+    useState<ApprovalChainSummary | null>(null);
+  const [deleteChainId, setDeleteChainId] = useState<string | null>(null);
+  const [selectedChainId, setSelectedChainId] = useState<string | null>(
     null
   );
 

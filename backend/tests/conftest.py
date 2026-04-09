@@ -22,6 +22,20 @@ from collections.abc import AsyncGenerator, Generator
 import asyncpg
 import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text as _text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
+
+from app.core.rate_limit import _fallback_cache
+from app.core.security import create_access_token, hash_password
+from app.db.base import Base
+from app.db.session import get_db
+from app.main import app
+from app.models.client import Client
+from app.models.client_profile import ClientProfile
+from app.models.enums import UserRole
+from app.models.user import User
 
 # ---------------------------------------------------------------------------
 # Custom pytest markers
@@ -38,20 +52,6 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "integration: marks integration tests requiring database",
     )
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text as _text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
-
-from app.core.rate_limit import _fallback_cache
-from app.core.security import create_access_token, hash_password
-from app.db.base import Base
-from app.db.session import get_db
-from app.main import app
-from app.models.client import Client
-from app.models.client_profile import ClientProfile
-from app.models.enums import UserRole
-from app.models.user import User
 
 # ---------------------------------------------------------------------------
 # Test database configuration

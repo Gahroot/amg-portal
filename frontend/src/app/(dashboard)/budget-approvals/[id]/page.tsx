@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -111,8 +111,8 @@ function ApprovalChainStep({
   onDecide: (stepId: string, decision: "approved" | "rejected", comments: string) => void;
   isPending: boolean;
 }) {
-  const [comments, setComments] = React.useState("");
-  const [showForm, setShowForm] = React.useState(false);
+  const [comments, setComments] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const canAct =
     isCurrentStep &&

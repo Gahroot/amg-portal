@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createEscalationRule,
@@ -63,15 +64,15 @@ export function EscalationRuleForm({
   editingRule,
 }: EscalationRuleFormProps) {
   const queryClient = useQueryClient();
-  const [name, setName] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [triggerType, setTriggerType] = React.useState("sla_breach");
-  const [escalationLevel, setEscalationLevel] = React.useState("task");
-  const [autoAssignToRole, setAutoAssignToRole] = React.useState("");
-  const [isActive, setIsActive] = React.useState(true);
-  const [conditionsJson, setConditionsJson] = React.useState("{}");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [triggerType, setTriggerType] = useState("sla_breach");
+  const [escalationLevel, setEscalationLevel] = useState("task");
+  const [autoAssignToRole, setAutoAssignToRole] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [conditionsJson, setConditionsJson] = useState("{}");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingRule) {
       setName(editingRule.name);
       setDescription(editingRule.description || "");
@@ -112,7 +113,7 @@ export function EscalationRuleForm({
     onError: () => toast.error("Failed to update rule"),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
     let conditions: Record<string, unknown>;

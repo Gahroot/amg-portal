@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
+import type { MouseEvent, RefObject } from "react";
 import type { GanttItem, GanttDependency } from "@/hooks/use-program-gantt";
 import type { ZoomLevel, GanttFilters } from "./gantt-toolbar";
 
@@ -141,7 +142,7 @@ interface GanttChartProps {
   projectEnd: Date;
   zoom: ZoomLevel;
   filters: GanttFilters;
-  svgRef?: React.RefObject<SVGSVGElement | null>;
+  svgRef?: RefObject<SVGSVGElement | null>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ export function GanttChart({
   filters,
   svgRef,
 }: GanttChartProps) {
-  const [tooltip, setTooltip] = React.useState<{
+  const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
     item: GanttItem;
@@ -163,7 +164,7 @@ export function GanttChart({
   const pxPerDay = PX_PER_DAY[zoom];
 
   // Apply filters
-  const visibleItems = React.useMemo(() => {
+  const visibleItems = useMemo(() => {
     return items.filter((item) => {
       if (filters.hideTasks && item.type === "task") return false;
       if (filters.hideCompleted && (item.status === "completed" || item.status === "done")) return false;
@@ -173,7 +174,7 @@ export function GanttChart({
   }, [items, filters]);
 
   // Build a map: id -> row index (within visible items)
-  const rowByItemId = React.useMemo(() => {
+  const rowByItemId = useMemo(() => {
     const map = new Map<string, number>();
     visibleItems.forEach((item, i) => map.set(item.id, i));
     return map;
@@ -202,7 +203,7 @@ export function GanttChart({
   );
 
   const handleMouseEnter = (
-    e: React.MouseEvent<SVGRectElement>,
+    e: MouseEvent<SVGRectElement>,
     item: GanttItem,
   ) => {
     const rect = (e.currentTarget as SVGRectElement).getBoundingClientRect();

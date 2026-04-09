@@ -6,7 +6,6 @@ import {
   useNavigationStore,
   type RouteFilterState,
   type RoutePaginationState,
-  type RouteNavigationState,
 } from "@/stores/navigation-store";
 
 /**
@@ -109,53 +108,55 @@ export function useNavigationState<F extends RouteFilterState = RouteFilterState
     restoreScroll = true,
     restoreFilters = true,
     restorePagination = true,
-    scrollDebounce = 100,
+    _scrollDebounce = 100,
     restoreOnce = true,
   } = options;
 
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter();
   const routeKey = propRouteKey || pathname;
 
   // Store references
   const { saveState, getState, clearState, setPendingRestore, hasPendingRestore: checkPendingRestore, clearPendingRestore } = useNavigationStore();
 
   // Track if we've already restored state this session
-  const hasRestoredRef = useRef(false);
+  const [hasRestored, setHasRestored] = useState(false);
 
   // Get the saved state
   const savedState = getState(routeKey);
   const shouldRestore = checkPendingRestore(routeKey);
 
   // Determine if we should restore
-  const canRestore = restoreOnce ? !hasRestoredRef.current && shouldRestore : shouldRestore;
+  const canRestore = restoreOnce ? !hasRestored && shouldRestore : shouldRestore;
   const isRestored = canRestore && !!savedState;
 
   // Initialize state from saved state or initial values
   const [filters, setFiltersState] = useState<F>(() => {
-    if (restoreFilters && canRestore && savedState?.filters) {
-      return { ...initialFilters, ...savedState.filters } as F;
-    }
     return initialFilters;
   });
 
   const [pagination, setPaginationState] = useState<RoutePaginationState>(() => {
-    if (restorePagination && canRestore && savedState?.pagination) {
-      return { ...initialPagination, ...savedState.pagination };
-    }
     return initialPagination;
   });
 
   const scrollY = restoreScroll && canRestore && savedState?.scrollY ? savedState.scrollY : 0;
 
-  // Mark as restored on mount
+  // Restore state on mount
   useEffect(() => {
     if (isRestored) {
-      hasRestoredRef.current = true;
+      setHasRestored(true);
+      // Restore filters
+      if (restoreFilters && savedState?.filters) {
+        setFiltersState((prev) => ({ ...prev, ...savedState.filters } as F));
+      }
+      // Restore pagination
+      if (restorePagination && savedState?.pagination) {
+        setPaginationState((prev) => ({ ...prev, ...savedState.pagination }));
+      }
       // Clear the pending restore flag after restoration
       clearPendingRestore(routeKey);
     }
-  }, [isRestored, routeKey, clearPendingRestore]);
+  }, [isRestored, routeKey, clearPendingRestore, restoreFilters, restorePagination, savedState]);
 
   // Update filters and save to store
   const setFilters = useCallback(

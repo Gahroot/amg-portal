@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAccessAudit, createAuditFinding } from "@/lib/api/access-audits";
@@ -55,12 +56,12 @@ export default function NewAuditFindingPage() {
   const auditId = params.id as string;
   const { user } = useAuth();
 
-  const [findingType, setFindingType] = React.useState<FindingType>("other");
-  const [severity, setSeverity] = React.useState<FindingSeverity>("medium");
-  const [userId, setUserId] = React.useState<string>("");
-  const [description, setDescription] = React.useState("");
-  const [recommendation, setRecommendation] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [findingType, setFindingType] = useState<FindingType>("other");
+  const [severity, setSeverity] = useState<FindingSeverity>("medium");
+  const [userId, setUserId] = useState<string>("");
+  const [description, setDescription] = useState("");
+  const [recommendation, setRecommendation] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const { data: audit } = useQuery({
     queryKey: ["access-audit", auditId],
@@ -95,7 +96,7 @@ export default function NewAuditFindingPage() {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 

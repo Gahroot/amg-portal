@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   listDeliverableTemplates,
@@ -40,7 +41,7 @@ import { toast } from "sonner";
 // Constants
 // ---------------------------------------------------------------------------
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+const CATEGORY_ICONS: Record<string, ReactNode> = {
   security_reports: <Shield className="h-4 w-4" />,
   travel_assessments: <MapPin className="h-4 w-4" />,
   incident_reports: <AlertTriangle className="h-4 w-4" />,
@@ -75,7 +76,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template }: TemplateCardProps) {
-  const [downloading, setDownloading] = React.useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
     if (!template.file_name && !template.download_url) {
@@ -223,12 +224,12 @@ function TemplateGrid({ category, search }: TemplateGridProps) {
 // ---------------------------------------------------------------------------
 
 export function TemplateLibrary() {
-  const [search, setSearch] = React.useState("");
-  const [debouncedSearch, setDebouncedSearch] = React.useState("");
-  const [activeCategory, setActiveCategory] = React.useState("all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
 
   // Debounce search input
-  React.useEffect(() => {
+  useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(id);
   }, [search]);
@@ -239,7 +240,7 @@ export function TemplateLibrary() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const allCategories: TemplateCategoryInfo[] = React.useMemo(
+  const allCategories: TemplateCategoryInfo[] = useMemo(
     () => [{ key: "all", label: "All Templates", count: categories?.reduce((s, c) => s + c.count, 0) ?? 0 }, ...(categories ?? [])],
     [categories]
   );

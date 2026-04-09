@@ -3,6 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,7 +84,7 @@ class BudgetApprovalService:
         return list(result.scalars().all())
 
     async def update_threshold(
-        self, threshold_id: uuid.UUID, **kwargs
+        self, threshold_id: uuid.UUID, **kwargs: Any
     ) -> ApprovalThreshold | None:
         """Update an approval threshold."""
         threshold = await self.get_threshold(threshold_id)
@@ -113,7 +114,7 @@ class BudgetApprovalService:
         created_by: uuid.UUID,
         description: str | None = None,
         is_active: bool = True,
-        steps: list[dict] | None = None,
+        steps: list[dict[str, Any]] | None = None,
     ) -> ApprovalChain:
         """Create a new approval chain with steps."""
         chain = ApprovalChain(
@@ -164,7 +165,7 @@ class BudgetApprovalService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def update_chain(self, chain_id: uuid.UUID, **kwargs) -> ApprovalChain | None:
+    async def update_chain(self, chain_id: uuid.UUID, **kwargs: Any) -> ApprovalChain | None:
         """Update an approval chain."""
         chain = await self.get_chain(chain_id)
         if not chain:
@@ -229,7 +230,7 @@ class BudgetApprovalService:
 
     async def calculate_budget_impact(
         self, program_id: uuid.UUID, requested_amount: Decimal
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Calculate budget impact and determine required approval chain."""
         result = await self.db.execute(
             select(Program).where(Program.id == program_id)
@@ -476,9 +477,9 @@ class BudgetApprovalService:
 
         # Record the decision
         step.status = (
-            BudgetApprovalStepStatus.approved.value
+            BudgetApprovalStepStatus.approved
             if decision == "approved"
-            else BudgetApprovalStepStatus.rejected.value
+            else BudgetApprovalStepStatus.rejected
         )
         step.decision = decision
         step.decided_by = user.id
@@ -557,7 +558,7 @@ class BudgetApprovalService:
         # Check if this was the last step
         if current_step_num >= total_steps:
             # Final approval
-            request.status = BudgetApprovalStatus.approved.value
+            request.status = BudgetApprovalStatus.approved
             request.final_decision_at = datetime.now(UTC)
             request.approved_by = approver.id
             await self._record_history(
@@ -623,7 +624,7 @@ class BudgetApprovalService:
         if request.requested_by != user.id and user.role != UserRole.managing_director.value:
             raise ValueError("Not authorized to cancel this request")
 
-        request.status = BudgetApprovalStatus.cancelled.value
+        request.status = BudgetApprovalStatus.cancelled
         request.final_comments = reason
         request.final_decision_at = datetime.now(UTC)
 
@@ -648,7 +649,7 @@ class BudgetApprovalService:
         from_status: str | None = None,
         to_status: str | None = None,
         comments: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> BudgetApprovalHistory:
         """Record an action in the approval history."""
         # Get actor details

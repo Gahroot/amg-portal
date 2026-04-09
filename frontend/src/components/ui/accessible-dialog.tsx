@@ -1,7 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { useCallback, useEffect, useId, useRef } from "react";
+import type { KeyboardEvent, ReactNode, RefObject } from "react";
+import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export interface AccessibleDialogProps {
@@ -14,13 +15,13 @@ export interface AccessibleDialogProps {
   /** Accessible description for the dialog */
   description?: string;
   /** Dialog content */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Size variant */
   size?: "sm" | "default" | "lg" | "xl" | "full";
   /** Whether to show close button */
   showClose?: boolean;
   /** Element to return focus to when dialog closes */
-  initialFocus?: React.RefObject<HTMLElement>;
+  initialFocus?: RefObject<HTMLElement>;
   /** Additional class name */
   className?: string;
 }
@@ -67,13 +68,13 @@ export function AccessibleDialog({
   initialFocus,
   className,
 }: AccessibleDialogProps) {
-  const dialogRef = React.useRef<HTMLDivElement>(null);
-  const titleId = React.useId();
-  const descriptionId = React.useId();
-  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Store previous focus and handle focus management
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement;
 
@@ -98,7 +99,7 @@ export function AccessibleDialog({
   }, [open, initialFocus]);
 
   // Handle escape key
-  React.useEffect(() => {
+  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (open && event.key === "Escape") {
         onOpenChange(false);
@@ -110,8 +111,8 @@ export function AccessibleDialog({
   }, [open, onOpenChange]);
 
   // Focus trap
-  const handleKeyDown = React.useCallback(
-    (event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       if (event.key !== "Tab") return;
 
       const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(

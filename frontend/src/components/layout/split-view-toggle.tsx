@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { Columns2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
  * Toggle button for split view in the header
  */
 export function SplitViewToggle({ className }: { className?: string }) {
-  const { isSplitView, exitSplitView, leftPanel, rightPanel } = useSplitView();
+  const { isSplitView, exitSplitView, _leftPanel, _rightPanel } = useSplitView();
 
   if (!isSplitView) {
     return null;
@@ -53,7 +54,7 @@ export function SplitViewToggle({ className }: { className?: string }) {
  * Props for SplitViewContainer
  */
 interface SplitViewContainerProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -67,11 +68,11 @@ export function SplitViewContainer({
   const { isSplitView, leftPanel, rightPanel, splitRatio, syncScroll, setSplitRatio, closePanel, swapPanels, toggleSyncScroll } =
     useSplitView();
 
-  const leftScrollRef = React.useRef<HTMLDivElement>(null);
-  const rightScrollRef = React.useRef<HTMLDivElement>(null);
+  const leftScrollRef = useRef<HTMLDivElement>(null);
+  const rightScrollRef = useRef<HTMLDivElement>(null);
 
   // Sync scroll between panels when enabled
-  React.useEffect(() => {
+  useEffect(() => {
     if (!syncScroll || !isSplitView) return;
 
     const leftEl = leftScrollRef.current;
@@ -224,14 +225,14 @@ export function SplitViewContainer({
  */
 function SplitPanel({
   panel,
-  side,
+  _side,
   scrollRef,
   syncScroll,
   onClose,
 }: {
   panel: SplitViewPanel | null;
   side: "left" | "right";
-  scrollRef: React.RefObject<HTMLDivElement | null>;
+  scrollRef: RefObject<HTMLDivElement | null>;
   syncScroll: boolean;
   onClose: () => void;
 }) {
@@ -338,10 +339,10 @@ function ResizeHandle({
   onDrag: (ratio: number) => void;
   splitRatio: number;
 }) {
-  const [isDragging, setIsDragging] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {

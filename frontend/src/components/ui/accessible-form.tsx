@@ -1,10 +1,11 @@
 "use client";
 
-import * as React from "react";
+import { FieldsetHTMLAttributes, useId } from "react";
+import type { InputHTMLAttributes, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export interface AccessibleInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends InputHTMLAttributes<HTMLInputElement> {
   /** Label text (required for accessibility) */
   label: string;
   /** Whether to visually hide the label */
@@ -41,8 +42,8 @@ export function AccessibleInput({
   id,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: AccessibleInputProps & { ref?: React.Ref<HTMLInputElement> }) {
-  const generatedId = React.useId();
+}: AccessibleInputProps & { ref?: Ref<HTMLInputElement> }) {
+  const generatedId = useId();
   const inputId = id || generatedId;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
@@ -110,7 +111,7 @@ export function AccessibleInput({
 }
 
 export interface AccessibleTextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Label text (required for accessibility) */
   label: string;
   /** Whether to visually hide the label */
@@ -152,8 +153,8 @@ export function AccessibleTextarea({
   value,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: AccessibleTextareaProps & { ref?: React.Ref<HTMLTextAreaElement> }) {
-  const generatedId = React.useId();
+}: AccessibleTextareaProps & { ref?: Ref<HTMLTextAreaElement> }) {
+  const generatedId = useId();
   const textareaId = id || generatedId;
   const errorId = `${textareaId}-error`;
   const helperId = `${textareaId}-helper`;
@@ -240,7 +241,7 @@ export function AccessibleTextarea({
 }
 
 export interface AccessibleSelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  extends SelectHTMLAttributes<HTMLSelectElement> {
   /** Label text (required for accessibility) */
   label: string;
   /** Whether to visually hide the label */
@@ -281,8 +282,8 @@ export function AccessibleSelect({
   id,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: AccessibleSelectProps & { ref?: React.Ref<HTMLSelectElement> }) {
-  const generatedId = React.useId();
+}: AccessibleSelectProps & { ref?: Ref<HTMLSelectElement> }) {
+  const generatedId = useId();
   const selectId = id || generatedId;
   const errorId = `${selectId}-error`;
   const helperId = `${selectId}-helper`;
@@ -364,7 +365,7 @@ export function AccessibleSelect({
 }
 
 export interface AccessibleCheckboxProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   /** Label text (required for accessibility) */
   label: string;
   /** Error message */
@@ -392,8 +393,8 @@ export function AccessibleCheckbox({
   id,
   "aria-describedby": ariaDescribedBy,
   ...props
-}: AccessibleCheckboxProps & { ref?: React.Ref<HTMLInputElement> }) {
-  const generatedId = React.useId();
+}: AccessibleCheckboxProps & { ref?: Ref<HTMLInputElement> }) {
+  const generatedId = useId();
   const checkboxId = id || generatedId;
   const errorId = `${checkboxId}-error`;
   const helperId = `${checkboxId}-helper`;
@@ -453,7 +454,7 @@ export function AccessibleCheckbox({
   );
 }
 
-export interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSetElement> {
+export interface FieldsetProps extends FieldsetHTMLAttributes<HTMLFieldSetElement> {
   /** Legend text (required for accessibility) */
   legend: string;
   /** Whether to visually hide the legend */
@@ -476,7 +477,7 @@ export function Fieldset({
   className,
   children,
   ...props
-}: FieldsetProps & { ref?: React.Ref<HTMLFieldSetElement> }) {
+}: FieldsetProps & { ref?: Ref<HTMLFieldSetElement> }) {
   return (
     <fieldset
       ref={ref}

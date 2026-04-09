@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   type ColumnDef,
   type RowSelectionState,
@@ -158,33 +158,35 @@ export function EditableTable<TData>({
   disabled = false,
 }: EditableTableProps<TData>) {
   // Internal edit state (uncontrolled mode)
-  const [internalEditingCell, setInternalEditingCell] = React.useState<CellEditState | null>(null);
+  const [internalEditingCell, setInternalEditingCell] = useState<CellEditState | null>(null);
   
   // Use controlled or internal state
   const editingCell = controlledEditingCell ?? internalEditingCell;
-  const setEditingCell = (cell: CellEditState | null) => {
+  const setEditingCell = useCallback((cell: CellEditState | null) => {
     if (onEditingCellChange) {
       onEditingCellChange(cell);
     } else {
       setInternalEditingCell(cell);
     }
-  };
+  }, [onEditingCellChange]);
 
   // Internal saving state
-  const [internalSavingCells, setInternalSavingCells] = React.useState<Record<string, boolean>>({});
-  const isCellSaving = (rowId: string, columnId: string) => 
-    savingCells[`${rowId}.${columnId}`] ?? internalSavingCells[`${rowId}.${columnId}`] ?? false;
+  const [internalSavingCells, setInternalSavingCells] = useState<Record<string, boolean>>({});
+  const isCellSaving = useCallback((rowId: string, columnId: string) =>
+    savingCells[`${rowId}.${columnId}`] ?? internalSavingCells[`${rowId}.${columnId}`] ?? false,
+  [savingCells, internalSavingCells]);
 
   // Internal error state
-  const [internalCellErrors, setInternalCellErrors] = React.useState<Record<string, string | null>>({});
-  const getCellError = (rowId: string, columnId: string) =>
-    cellErrors[`${rowId}.${columnId}`] ?? internalCellErrors[`${rowId}.${columnId}`] ?? null;
+  const [internalCellErrors, setInternalCellErrors] = useState<Record<string, string | null>>({});
+  const getCellError = useCallback((rowId: string, columnId: string) =>
+    cellErrors[`${rowId}.${columnId}`] ?? internalCellErrors[`${rowId}.${columnId}`] ?? null,
+  [cellErrors, internalCellErrors]);
 
   // Optimistic data state
-  const [optimisticData, setOptimisticData] = React.useState<Record<string, Record<string, unknown>>>({});
+  const [optimisticData, setOptimisticData] = useState<Record<string, Record<string, unknown>>>({});
 
   // Start editing a cell
-  const handleStartEdit = React.useCallback((rowId: string, columnId: string) => {
+  const handleStartEdit = useCallback((rowId: string, columnId: string) => {
     setEditingCell({ rowId, columnId });
     // Clear any previous error
     setInternalCellErrors((prev) => {
@@ -195,12 +197,12 @@ export function EditableTable<TData>({
   }, [setEditingCell]);
 
   // Cancel editing
-  const handleCancelEdit = React.useCallback(() => {
+  const handleCancelEdit = useCallback(() => {
     setEditingCell(null);
   }, [setEditingCell]);
 
   // Save cell value
-  const handleSave = React.useCallback(
+  const handleSave = useCallback(
     async (rowId: string, columnId: string, value: unknown): Promise<ValidationResult | void> => {
       const cellKey = `${rowId}.${columnId}`;
 
@@ -279,7 +281,7 @@ export function EditableTable<TData>({
   );
 
   // Validate cell
-  const handleValidate = React.useCallback(
+  const handleValidate = useCallback(
     async (rowId: string, columnId: string, value: unknown): Promise<ValidationResult> => {
       return onCellValidate?.(rowId, columnId, value) ?? { isValid: true };
     },
@@ -287,7 +289,7 @@ export function EditableTable<TData>({
   );
 
   // Transform columns to include editable cell renderers
-  const tableColumns = React.useMemo(() => {
+  const tableColumns = useMemo(() => {
     return columns.map((column) => {
       const editableCol = column as EditableColumnDef<TData>;
       const colId = editableCol.id ?? (column as { accessorKey?: string }).accessorKey ?? "";
@@ -297,7 +299,7 @@ export function EditableTable<TData>({
           ...column,
           id: colId,
           cell: ({ row, getValue }: { row: { id: string }; getValue: () => unknown }) => {
-            const cellKey = `${row.id}.${colId}`;
+            const _cellKey = `${row.id}.${colId}`;
             const isEditing =
               editingCell?.rowId === row.id && editingCell?.columnId === colId;
             const isSaving = isCellSaving(row.id, colId);
@@ -337,10 +339,8 @@ export function EditableTable<TData>({
     handleValidate,
     disabled,
     optimisticData,
-    internalSavingCells,
-    savingCells,
-    internalCellErrors,
-    cellErrors,
+    getCellError,
+    isCellSaving,
   ]);
 
   // Create table instance

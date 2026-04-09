@@ -254,7 +254,7 @@ def _compute_partner_match(
     # --- Email check (exact match on normalised email) ---
     if query_email and candidate.contact_email:
         qe = _normalize_email(query_email)
-        ce = _normalize_email(candidate.contact_email)  # type: ignore[arg-type]
+        ce = _normalize_email(candidate.contact_email)
         if qe == ce:
             reasons.append("Exact email match")
             score = max(score, 1.0)
@@ -265,7 +265,7 @@ def _compute_partner_match(
 
     # --- Firm name check ---
     if query_firm_name:
-        firm_sim = _name_similarity(query_firm_name, candidate.firm_name)  # type: ignore[arg-type]
+        firm_sim = _name_similarity(query_firm_name, candidate.firm_name)
         if firm_sim >= NAME_SIMILARITY_THRESHOLD:
             label = "Exact firm name match" if firm_sim >= 0.99 else "Similar firm name"
             reasons.append(f"{label} ({int(firm_sim * 100)}%)")
@@ -273,7 +273,7 @@ def _compute_partner_match(
 
     # --- Contact name check ---
     if query_contact_name:
-        contact_sim = _name_similarity(query_contact_name, candidate.contact_name)  # type: ignore[arg-type]
+        contact_sim = _name_similarity(query_contact_name, candidate.contact_name)
         if contact_sim >= NAME_SIMILARITY_THRESHOLD:
             label = "Exact contact match" if contact_sim >= 0.99 else "Similar contact name"
             reasons.append(f"{label} ({int(contact_sim * 100)}%)")
@@ -282,7 +282,7 @@ def _compute_partner_match(
     # --- Phone check ---
     if query_phone and candidate.contact_phone:
         qp = _normalize_phone(query_phone)
-        cp = _normalize_phone(candidate.contact_phone)  # type: ignore[arg-type]
+        cp = _normalize_phone(candidate.contact_phone)
         if qp and cp and len(qp) >= 7 and qp == cp:
             reasons.append("Same phone number")
             score = max(score, 0.9)
@@ -291,11 +291,11 @@ def _compute_partner_match(
         return None
 
     return PartnerDuplicateMatch(
-        partner_id=candidate.id,  # type: ignore[arg-type]
-        firm_name=candidate.firm_name,  # type: ignore[arg-type]
-        contact_name=candidate.contact_name,  # type: ignore[arg-type]
-        contact_email=candidate.contact_email,  # type: ignore[arg-type]
-        contact_phone=candidate.contact_phone,  # type: ignore[arg-type]
+        partner_id=candidate.id,
+        firm_name=candidate.firm_name,
+        contact_name=candidate.contact_name,
+        contact_email=candidate.contact_email,
+        contact_phone=candidate.contact_phone,
         similarity_score=round(score, 3),
         match_reasons=reasons,
     )

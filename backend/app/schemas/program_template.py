@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -40,7 +41,7 @@ class ProgramTemplateResponse(BaseModel):
     name: str
     description: str | None
     category: str
-    milestones_template: list[dict] | None
+    milestones_template: list[dict[str, Any]] | None
     estimated_duration_days: int | None
     is_system_template: bool
     is_active: bool

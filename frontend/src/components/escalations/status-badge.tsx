@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 
 const ESCALATION_STATUS_CONFIG: Record<

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useReducer, useState } from "react";
 import Link from "next/link";
 import {
   differenceInHours,
@@ -20,7 +20,6 @@ import {
 } from "@/hooks/use-partner-portal";
 import { useQuery } from "@tanstack/react-query";
 import { getMyTrends } from "@/lib/api/partners";
-import type { PartnerTrends } from "@/types/partner";
 import { PerformanceChart } from "@/components/partners/performance-chart";
 import { PerformanceAlerts } from "@/components/partners/performance-alerts";
 import {
@@ -61,9 +60,9 @@ interface SLACountdownProps {
 }
 
 function SLACountdown({ dueDate, compact = false }: SLACountdownProps) {
-  const [, forceUpdate] = React.useReducer((n: number) => n + 1, 0);
+  const [, forceUpdate] = useReducer((n: number) => n + 1, 0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const id = setInterval(forceUpdate, 60_000);
     return () => clearInterval(id);
   }, []);
@@ -770,7 +769,7 @@ function useMyTrendsQuery(days: number) {
 }
 
 function MyPerformanceTrends() {
-  const [dateRange, setDateRange] = React.useState<30 | 90 | 365>(90);
+  const [dateRange, setDateRange] = useState<30 | 90 | 365>(90);
   const { data: trends, isLoading } = useMyTrendsQuery(dateRange);
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ export default function PlaybookPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = React.use(params);
+  const { id } = use(params);
   const { user } = useAuth();
   const router = useRouter();
 

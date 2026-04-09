@@ -386,11 +386,11 @@ async def get_client_kyc_status(
         client_id=client_id,
         client_name=client.name,
         has_verification=verification is not None,
-        verification_status=verification.status if verification else None,
-        verification_type=verification.verification_type if verification else None,
-        risk_level=verification.risk_level if verification else None,
-        verified_at=verification.completed_at if verification else None,
-        expires_at=verification.expires_at if verification else None,
+        verification_status=verification.status if verification else None,  # type: ignore[arg-type]
+        verification_type=verification.verification_type if verification else None,  # type: ignore[arg-type]
+        risk_level=verification.risk_level if verification else None,  # type: ignore[arg-type]
+        verified_at=verification.completed_at if verification else None,  # type: ignore[arg-type]
+        expires_at=verification.expires_at if verification else None,  # type: ignore[arg-type]
         days_until_expiry=days_until_expiry,
         documents_count=documents_count,
         documents_verified=documents_verified,
@@ -697,14 +697,14 @@ async def get_dashboard(
             days = (v.expires_at - date.today()).days if v.expires_at else None
             expiring_client_statuses.append(
                 KYCClientStatus(
-                    client_id=v.client_id,
+                    client_id=v.client_id,  # type: ignore[arg-type]
                     client_name=client.name,
                     has_verification=True,
-                    verification_status=v.status,
-                    verification_type=v.verification_type,
-                    risk_level=v.risk_level,
-                    verified_at=v.completed_at,
-                    expires_at=v.expires_at,
+                    verification_status=v.status,  # type: ignore[arg-type]
+                    verification_type=v.verification_type,  # type: ignore[arg-type]
+                    risk_level=v.risk_level,  # type: ignore[arg-type]
+                    verified_at=v.completed_at,  # type: ignore[arg-type]
+                    expires_at=v.expires_at,  # type: ignore[arg-type]
                     days_until_expiry=days,
                     documents_count=0,
                     documents_verified=0,

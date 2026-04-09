@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def compute_next_due(rrule_str: str, after: date) -> date | None:
     """Parse RRULE and compute the next occurrence after `after`."""
-    from dateutil.rrule import rrulestr
+    from dateutil.rrule import rrulestr  # type: ignore[import-untyped]
 
     dtstart = datetime(after.year, after.month, after.day, tzinfo=UTC)
     rule = rrulestr(rrule_str, dtstart=dtstart)
@@ -88,7 +89,7 @@ async def generate_task_from_template(
         from app.services.notification_service import notification_service
 
         async with db.begin_nested():
-            notif_user_ids: list = []
+            notif_user_ids: list[Any] = []
             if template.assignee_id:
                 notif_user_ids.append(template.assignee_id)
             if template.created_by and template.created_by not in notif_user_ids:

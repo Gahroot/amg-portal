@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Clock } from "lucide-react";
 
 interface SLAClockProps {
@@ -17,7 +17,7 @@ export function SLAClock({
   respondedAt,
   className = "",
 }: SLAClockProps) {
-  const [timeDisplay, setTimeDisplay] = useState<React.ReactNode>("");
+  const [timeDisplay, setTimeDisplay] = useState<ReactNode>("");
   const [colorClass, setColorClass] = useState("text-green-600 dark:text-green-400");
 
   useEffect(() => {

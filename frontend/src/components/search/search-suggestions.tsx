@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { ElementType } from "react";
+import type { ReactNode } from "react";
 import { Building2, FileText, TrendingUp, User, Briefcase, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SearchSuggestion, SuggestionCategory } from "@/lib/api/search";
@@ -9,7 +10,7 @@ import { useRecentSearches } from "@/hooks/use-recent-searches";
 /**
  * Category icon mapping
  */
-const CATEGORY_ICONS: Record<SuggestionCategory, React.ElementType> = {
+const CATEGORY_ICONS: Record<SuggestionCategory, ElementType> = {
   recent: Clock,
   popular: TrendingUp,
   client: User,
@@ -57,7 +58,7 @@ interface SearchSuggestionsProps {
 /**
  * Parse display text with **bold** markers into React elements
  */
-function parseHighlightedText(text: string, query: string): React.ReactNode {
+function parseHighlightedText(text: string, _query: string): ReactNode {
   if (!text.includes("**")) {
     return text;
   }
@@ -277,7 +278,7 @@ export function SearchSuggestions({
     return (
       <div className={cn("w-full bg-popover border rounded-md shadow-lg p-4", className)}>
         <p className="text-sm text-muted-foreground text-center">
-          No suggestions for "{query}"
+          No suggestions for &ldquo;{query}&rdquo;
         </p>
       </div>
     );

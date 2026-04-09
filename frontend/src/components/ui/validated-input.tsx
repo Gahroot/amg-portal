@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useId } from "react";
+import type { ChangeEvent, InputHTMLAttributes, Ref, TextareaHTMLAttributes } from "react";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ export interface FieldValidationReturn extends FieldValidationState {
  * Props for ValidatedInput component
  */
 export interface ValidatedInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "onBlur" | "value"> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "onBlur" | "value"> {
   /** Label text */
   label: string;
   /** Whether to visually hide the label */
@@ -102,8 +103,8 @@ export function ValidatedInput({
   required,
   disabled,
   ...props
-}: ValidatedInputProps & { ref?: React.Ref<HTMLInputElement> }) {
-  const generatedId = React.useId();
+}: ValidatedInputProps & { ref?: Ref<HTMLInputElement> }) {
+  const generatedId = useId();
   const inputId = id || generatedId;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
@@ -122,13 +123,13 @@ export function ValidatedInput({
   const validationReturn = validation as FieldValidationReturn;
 
   // Sync controlled value
-  React.useEffect(() => {
+  useEffect(() => {
     if (isControlled && controlledValue !== validation.value) {
       validation.onChange(controlledValue);
     }
   }, [controlledValue, isControlled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     validation.onChange(newValue);
     onChange?.(newValue, validationReturn);
@@ -232,7 +233,7 @@ export function ValidatedInput({
  * Props for ValidatedTextarea component
  */
 export interface ValidatedTextareaProps
-  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "onBlur" | "value"> {
+  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "onBlur" | "value"> {
   /** Label text */
   label: string;
   /** Whether to visually hide the label */
@@ -295,8 +296,8 @@ export function ValidatedTextarea({
   disabled,
   maxLength,
   ...props
-}: ValidatedTextareaProps & { ref?: React.Ref<HTMLTextAreaElement> }) {
-  const generatedId = React.useId();
+}: ValidatedTextareaProps & { ref?: Ref<HTMLTextAreaElement> }) {
+  const generatedId = useId();
   const textareaId = id || generatedId;
   const errorId = `${textareaId}-error`;
   const helperId = `${textareaId}-helper`;
@@ -316,13 +317,13 @@ export function ValidatedTextarea({
   const validationReturn = validation as FieldValidationReturn;
 
   // Sync controlled value
-  React.useEffect(() => {
+  useEffect(() => {
     if (isControlled && controlledValue !== validation.value) {
       validation.onChange(controlledValue);
     }
   }, [controlledValue, isControlled]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     validation.onChange(newValue);
     onChange?.(newValue, validationReturn);

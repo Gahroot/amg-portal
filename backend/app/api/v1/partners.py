@@ -1,6 +1,6 @@
 """Partner directory management endpoints (internal views)."""
-
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
@@ -8,7 +8,7 @@ from sqlalchemy import and_, or_, select
 
 from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
 from app.core.exceptions import BadRequestException, NotFoundException
-from app.models.enums import UserRole
+from app.models.enums import PartnerStatus, UserRole
 from app.models.partner import PartnerBlockedDate, PartnerProfile
 from app.models.partner_threshold import PartnerThreshold
 from app.models.user import User
@@ -53,7 +53,7 @@ async def create_partner(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     partner = PartnerProfile(
         firm_name=data.firm_name,
         contact_name=data.contact_name,
@@ -120,7 +120,7 @@ async def list_partners(
     availability: str | None = None,
     status: str | None = None,
     search: str | None = None,
-):
+) -> Any:
     query = select(PartnerProfile)
 
     if status:
@@ -140,7 +140,7 @@ async def list_partners(
     query = query.order_by(PartnerProfile.created_at.desc())
     profiles, total = await paginate(db, query, skip=skip, limit=limit)
 
-    return PartnerProfileListResponse(profiles=profiles, total=total)
+    return PartnerProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
 
 
 # ── Threshold Endpoints ──────────────────────────────────────────────────────
@@ -190,10 +190,10 @@ async def upsert_global_threshold(
         )
         db.add(threshold)
     else:
-        threshold.sla_compliance_threshold = data.sla_compliance_threshold  # type: ignore[assignment]
-        threshold.quality_score_threshold = data.quality_score_threshold  # type: ignore[assignment]
-        threshold.overall_score_threshold = data.overall_score_threshold  # type: ignore[assignment]
-        threshold.trend_window_weeks = data.trend_window_weeks  # type: ignore[assignment]
+        threshold.sla_compliance_threshold = data.sla_compliance_threshold
+        threshold.quality_score_threshold = data.quality_score_threshold
+        threshold.overall_score_threshold = data.overall_score_threshold
+        threshold.trend_window_weeks = data.trend_window_weeks
 
     await db.commit()
     await db.refresh(threshold)
@@ -262,7 +262,7 @@ async def list_refresh_due_partners(
 
     partner_responses: list[RefreshDuePartnerResponse] = []
     for p in partners:
-        p_refresh_due: datetime | None = p.refresh_due_at  # type: ignore[assignment]
+        p_refresh_due: datetime | None = p.refresh_due_at
         if p_refresh_due and p_refresh_due.tzinfo is None:
             p_refresh_due = p_refresh_due.replace(tzinfo=UTC)
 
@@ -270,12 +270,12 @@ async def list_refresh_due_partners(
         p_days: int | None = (
             int((p_refresh_due - now).days) if (p_refresh_due and not p_overdue) else None
         )
-        p_id: UUID = p.id  # type: ignore[assignment]
-        p_firm_name: str = p.firm_name  # type: ignore[assignment]
-        p_contact_name: str = p.contact_name  # type: ignore[assignment]
-        p_contact_email: str = p.contact_email  # type: ignore[assignment]
-        p_status: str = p.status  # type: ignore[assignment]
-        p_last_refreshed: datetime | None = p.last_refreshed_at  # type: ignore[assignment]
+        p_id: UUID = p.id
+        p_firm_name: str = p.firm_name
+        p_contact_name: str = p.contact_name
+        p_contact_email: str = p.contact_email
+        p_status: str = p.status
+        p_last_refreshed: datetime | None = p.last_refreshed_at
 
         partner_responses.append(
             RefreshDuePartnerResponse(
@@ -300,7 +300,7 @@ async def get_partner(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
@@ -315,7 +315,7 @@ async def update_partner(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
@@ -337,7 +337,7 @@ async def provision_partner(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_admin),
-):
+) -> Any:
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
@@ -362,7 +362,7 @@ async def provision_partner(
     await db.flush()
 
     partner.user_id = user.id
-    partner.status = "active"
+    partner.status = PartnerStatus.active
     await db.commit()
     await db.refresh(partner)
     return partner
@@ -375,14 +375,16 @@ async def upload_compliance_doc(
     current_user: CurrentUser,
     file: UploadFile = File(...),
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
     if not partner:
         raise NotFoundException("Partner not found")
 
     await storage_service.validate_file(file)
-    object_path, _ = await storage_service.upload_file(file, f"partners/{partner_id}/compliance")
+    object_path, _size = await storage_service.upload_file(
+        file, f"partners/{partner_id}/compliance"
+    )
     partner.compliance_doc_url = object_path
     await db.commit()
     await db.refresh(partner)
@@ -396,7 +398,7 @@ async def get_partner_trends_endpoint(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
     days: int = Query(90, ge=7, le=365, description="Number of days of history to return"),
-) -> dict:
+) -> dict[str, Any]:
     """Return weekly performance trend data for a partner.
 
     Includes SLA compliance %, quality scores, and assignment completion
@@ -693,10 +695,10 @@ async def upsert_partner_threshold(
         )
         db.add(threshold)
     else:
-        threshold.sla_compliance_threshold = data.sla_compliance_threshold  # type: ignore[assignment]
-        threshold.quality_score_threshold = data.quality_score_threshold  # type: ignore[assignment]
-        threshold.overall_score_threshold = data.overall_score_threshold  # type: ignore[assignment]
-        threshold.trend_window_weeks = data.trend_window_weeks  # type: ignore[assignment]
+        threshold.sla_compliance_threshold = data.sla_compliance_threshold
+        threshold.quality_score_threshold = data.quality_score_threshold
+        threshold.overall_score_threshold = data.overall_score_threshold
+        threshold.trend_window_weeks = data.trend_window_weeks
 
     await db.commit()
     await db.refresh(threshold)

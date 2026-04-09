@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,15 +83,15 @@ export default function ProgramClosurePage() {
   const completeMutation = useCompleteClosure();
 
   // Local state for initiation notes
-  const [initiateNotes, setInitiateNotes] = React.useState("");
+  const [initiateNotes, setInitiateNotes] = useState("");
 
   // Local state for debrief notes form
-  const [debriefDraft, setDebriefDraft] = React.useState("");
-  const [debriefEditing, setDebriefEditing] = React.useState(false);
+  const [debriefDraft, setDebriefDraft] = useState("");
+  const [debriefEditing, setDebriefEditing] = useState(false);
   const DEBRIEF_MAX_CHARS = 5000;
 
   // Local state for partner rating form
-  const [ratingForm, setRatingForm] = React.useState({
+  const [ratingForm, setRatingForm] = useState({
     partner_id: "",
     quality_score: 0,
     timeliness_score: 0,

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
@@ -130,27 +130,27 @@ export function GranularNotificationPreferences() {
   const updatePreferences = useUpdateNotificationPreferences();
   const { user } = useAuth();
 
-  const [granularPrefs, setGranularPrefs] = React.useState<
+  const [granularPrefs, setGranularPrefs] = useState<
     Record<string, Record<string, boolean>>
   >({});
-  const [hasChanges, setHasChanges] = React.useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Mute-all state per channel
-  const [muteAll, setMuteAll] = React.useState<Record<NotificationChannelKey, boolean>>({
+  const [muteAll, setMuteAll] = useState<Record<NotificationChannelKey, boolean>>({
     push: false,
     email: false,
     in_app: false,
   });
 
   // Initialise granular preferences from backend data or defaults
-  React.useEffect(() => {
+  useEffect(() => {
     if (preferences) {
       setGranularPrefs(preferences.granular_preferences ?? buildDefaultGranularPreferences());
     }
   }, [preferences]);
 
   // Determine which categories this user can see
-  const visibleCategories = React.useMemo(() => {
+  const visibleCategories = useMemo(() => {
     if (!user) return [];
     return NOTIFICATION_CATEGORIES.filter((cat) => {
       if (!cat.roles) return true; // visible to all

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, ExternalLink, Building2, UserCheck, Merge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -301,8 +301,8 @@ export function DuplicateWarningDialog({
   onMerge,
   showMergeOption = false,
 }: DuplicateWarningDialogProps) {
-  const [selectedForMerge, setSelectedForMerge] = React.useState<string | null>(null);
-  const [fieldSelections, setFieldSelections] = React.useState<
+  const [selectedForMerge, setSelectedForMerge] = useState<string | null>(null);
+  const [fieldSelections, setFieldSelections] = useState<
     Record<string, "new" | "existing">
   >({});
 
@@ -310,7 +310,7 @@ export function DuplicateWarningDialog({
   const entityLabelPlural = entityType === "client" ? "clients" : "partners";
 
   // Reset state when dialog closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setSelectedForMerge(null);
       setFieldSelections({});

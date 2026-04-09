@@ -1,7 +1,10 @@
 """add_meeting_scheduler
 
 Revision ID: add_meeting_scheduler
-Revises: add_doc_req_status_tracking, add_milestone_reminder_preferences, add_notification_snooze_fields, add_program_templates, add_pulse_surveys, add_recurring_tasks
+Revises: add_doc_req_status_tracking,
+    add_milestone_reminder_preferences,
+    add_notification_snooze_fields, add_program_templates,
+    add_pulse_surveys, add_recurring_tasks
 Create Date: 2026-03-23 12:00:00.000000
 
 """
@@ -166,14 +169,21 @@ def upgrade() -> None:
     op.create_index("ix_meetings_status", "meetings", ["status"])
 
     # Seed the three default meeting types
-    op.execute("""
-        INSERT INTO meeting_types (id, slug, label, duration_minutes, description, display_order)
+    op.execute(
+        """
+        INSERT INTO meeting_types
+            (id, slug, label, duration_minutes,
+             description, display_order)
         VALUES
-          (gen_random_uuid(), 'quick_checkin',  'Quick Check-in',      15, 'A brief 15-minute touch-base with your Relationship Manager.', 0),
-          (gen_random_uuid(), 'standard',       'Standard Meeting',    30, 'A 30-minute meeting to discuss updates, questions, or next steps.', 1),
-          (gen_random_uuid(), 'extended',       'Extended Discussion',  60, 'A 60-minute in-depth session for strategic reviews or complex topics.', 2)
+          (gen_random_uuid(), 'quick_checkin', 'Quick Check-in',
+           15, 'A brief 15-minute touch-base with your RM.', 0),
+          (gen_random_uuid(), 'standard', 'Standard Meeting',
+           30, 'A 30-minute meeting to discuss updates.', 1),
+          (gen_random_uuid(), 'extended', 'Extended Discussion',
+           60, 'A 60-minute in-depth strategic session.', 2)
         ON CONFLICT (slug) DO NOTHING
-    """)
+        """
+    )
 
 
 def downgrade() -> None:

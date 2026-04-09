@@ -1,11 +1,12 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export type LiveRegionPoliteness = "polite" | "assertive" | "off";
 
-export interface LiveRegionProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "role"> {
+export interface LiveRegionProps extends Omit<HTMLAttributes<HTMLDivElement>, "role"> {
   /** Politeness level for screen reader announcements */
   politeness?: LiveRegionPoliteness;
   /** Whether the entire region should be announced as a whole */
@@ -66,7 +67,7 @@ export function LiveRegion({
 }
 
 export interface StatusMessageProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "role"> {
+  extends Omit<HTMLAttributes<HTMLDivElement>, "role"> {
   /** The status message to announce */
   message: string;
   /** Whether to announce assertively */
@@ -125,9 +126,9 @@ export function LoadingAnnouncer({
   message = "Loading",
   progress,
 }: LoadingAnnouncerProps) {
-  const [announced, setAnnounced] = React.useState(false);
+  const [announced, setAnnounced] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoading && !announced) {
       setAnnounced(true);
     } else if (!isLoading && announced) {
@@ -179,9 +180,9 @@ export function AlertAnnouncer({
   type = "info",
   onAnnounced,
 }: AlertAnnouncerProps) {
-  const [announced, setAnnounced] = React.useState(false);
+  const [announced, setAnnounced] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (message && !announced) {
       // Give screen reader time to process
       const timer = setTimeout(() => {

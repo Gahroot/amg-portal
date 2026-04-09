@@ -1,13 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useRef } from "react";
+import type { HTMLAttributes, KeyboardEvent, RefObject } from "react";
 
-export interface FocusTrapProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface FocusTrapProps extends HTMLAttributes<HTMLDivElement> {
   /** Whether focus trapping is active */
   active?: boolean;
   /** Element to return focus to when trap is deactivated */
-  returnFocusTo?: React.RefObject<HTMLElement>;
+  returnFocusTo?: RefObject<HTMLElement>;
   /** Whether to autoFocus the first focusable element */
   autoFocus?: boolean;
   /** Callback when focus trap is activated */
@@ -39,11 +39,11 @@ export function FocusTrap({
   children,
   ...props
 }: FocusTrapProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Store the previously focused element
-  React.useEffect(() => {
+  useEffect(() => {
     if (active) {
       previousFocusRef.current = document.activeElement as HTMLElement;
       onActivate?.();
@@ -65,8 +65,8 @@ export function FocusTrap({
   }, [active, autoFocus, onActivate, onDeactivate, returnFocusTo]);
 
   // Handle Tab key to trap focus
-  const handleKeyDown = React.useCallback(
-    (event: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       if (!active || event.key !== "Tab") return;
 
       const container = containerRef.current;

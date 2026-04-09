@@ -1,10 +1,21 @@
 "use client";
 
-import * as React from "react";
+import { useEffect } from "react";
+import type { ComponentType } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Bell, Mail, Monitor, Smartphone } from "lucide-react";
+import {
+  Bell,
+  Mail,
+  Monitor,
+  Smartphone,
+  CheckCircle2,
+  MessageSquare,
+  ClipboardCheck,
+  FileText,
+  Moon,
+} from "lucide-react";
 import { ReminderPreferences } from "@/components/portal/reminder-preferences";
 import {
   useNotificationPreferences,
@@ -38,10 +49,18 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-const DIGEST_FREQUENCY_OPTIONS = ["immediate", "daily", "weekly"] as const;
+const DIGEST_FREQUENCY_OPTIONS = [
+  "immediate",
+  "hourly",
+  "daily",
+  "weekly",
+  "never",
+] as const;
 type DigestFrequency = (typeof DIGEST_FREQUENCY_OPTIONS)[number];
 
 const CADENCE_OPTIONS = ["immediate", "daily", "weekly"] as const;
@@ -55,8 +74,10 @@ const DIGEST_FREQUENCY_LABELS: Record<
   { label: string; description: string }
 > = {
   immediate: { label: "Immediate", description: "As soon as events occur" },
+  hourly: { label: "Hourly digest", description: "Bundled every hour" },
   daily: { label: "Daily digest", description: "Bundled once per day" },
   weekly: { label: "Weekly digest", description: "Bundled once per week" },
+  never: { label: "Paused", description: "Pause all email notifications" },
 };
 
 const CADENCE_LABELS: Record<Cadence, string> = {
@@ -69,7 +90,7 @@ const CHANNEL_CONFIG: {
   value: Channel;
   label: string;
   description: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 }[] = [
   {
     value: "email",
@@ -91,19 +112,109 @@ const CHANNEL_CONFIG: {
   },
 ];
 
+const CADENCE_CONFIG: {
+  key: "cadence_milestone_update" | "cadence_communication" | "cadence_decision_pending" | "cadence_deliverable_ready";
+  prefKey: string;
+  label: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+}[] = [
+  {
+    key: "cadence_milestone_update",
+    prefKey: "milestone_update",
+    label: "Milestone Updates",
+    description: "Status changes, at-risk flags, and completions",
+    icon: CheckCircle2,
+  },
+  {
+    key: "cadence_communication",
+    prefKey: "communication",
+    label: "Messages from RM",
+    description: "New messages from your Relationship Manager",
+    icon: MessageSquare,
+  },
+  {
+    key: "cadence_decision_pending",
+    prefKey: "decision_pending",
+    label: "Approval Requests",
+    description: "Decision requests requiring your input",
+    icon: ClipboardCheck,
+  },
+  {
+    key: "cadence_deliverable_ready",
+    prefKey: "deliverable_ready",
+    label: "Reports & Deliverables",
+    description: "When a report or document is ready to review",
+    icon: FileText,
+  },
+];
+
+const TIMEZONE_OPTIONS = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Zurich",
+  "Asia/Dubai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
+
 // ─── Schema ────────────────────────────────────────────────────────────────
 
-const schema = z.object({
-  email_digest_frequency: z.enum(DIGEST_FREQUENCY_OPTIONS, {
-    error: "Please select a digest frequency.",
-  }),
-  status_update_cadence: z.enum(CADENCE_OPTIONS, {
-    error: "Please select a status update cadence.",
-  }),
-  preferred_channel: z.enum(CHANNEL_OPTIONS, {
-    error: "Please select a preferred channel.",
-  }),
-});
+const schema = z
+  .object({
+    email_digest_frequency: z.enum(DIGEST_FREQUENCY_OPTIONS, {
+      error: "Please select a digest frequency.",
+    }),
+    cadence_milestone_update: z.enum(CADENCE_OPTIONS, {
+      error: "Please select a milestone update cadence.",
+    }),
+    cadence_communication: z.enum(CADENCE_OPTIONS, {
+      error: "Please select a communication cadence.",
+    }),
+    cadence_decision_pending: z.enum(CADENCE_OPTIONS, {
+      error: "Please select an approval request cadence.",
+    }),
+    cadence_deliverable_ready: z.enum(CADENCE_OPTIONS, {
+      error: "Please select a deliverable cadence.",
+    }),
+    preferred_channel: z.enum(CHANNEL_OPTIONS, {
+      error: "Please select a preferred channel.",
+    }),
+    quiet_hours_enabled: z.boolean(),
+    quiet_hours_start: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, "Use HH:MM format")
+      .optional(),
+    quiet_hours_end: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, "Use HH:MM format")
+      .optional(),
+    timezone: z.string().min(1),
+  })
+  .superRefine((data, ctx) => {
+    if (data.quiet_hours_enabled) {
+      if (!data.quiet_hours_start) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Start time is required when quiet hours are enabled.",
+          path: ["quiet_hours_start"],
+        });
+      }
+      if (!data.quiet_hours_end) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "End time is required when quiet hours are enabled.",
+          path: ["quiet_hours_end"],
+        });
+      }
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -155,13 +266,20 @@ export default function PortalNotificationsPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       email_digest_frequency: "daily",
-      status_update_cadence: "daily",
+      cadence_milestone_update: "daily",
+      cadence_communication: "daily",
+      cadence_decision_pending: "daily",
+      cadence_deliverable_ready: "daily",
       preferred_channel: "email",
+      quiet_hours_enabled: false,
+      quiet_hours_start: "22:00",
+      quiet_hours_end: "08:00",
+      timezone: "UTC",
     },
   });
 
   // Populate form once preferences are fetched
-  React.useEffect(() => {
+  useEffect(() => {
     if (!prefs) return;
 
     const digestFreq = (DIGEST_FREQUENCY_OPTIONS as readonly string[]).includes(
@@ -170,30 +288,56 @@ export default function PortalNotificationsPage() {
       ? (prefs.digest_frequency as DigestFrequency)
       : "daily";
 
-    const rawCadence =
-      prefs.notification_type_preferences?.["milestone_update"] ?? "daily";
-    const cadence = (CADENCE_OPTIONS as readonly string[]).includes(rawCadence)
-      ? (rawCadence as Cadence)
-      : "daily";
+    const cadenceFor = (key: string): Cadence => {
+      const val = prefs.notification_type_preferences?.[key];
+      return (CADENCE_OPTIONS as readonly string[]).includes(val ?? "")
+        ? (val as Cadence)
+        : "daily";
+    };
 
     const preferred = derivePreferredChannel(prefs.channel_preferences);
 
-    form.reset({ email_digest_frequency: digestFreq, status_update_cadence: cadence, preferred_channel: preferred });
+    form.reset({
+      email_digest_frequency: digestFreq,
+      cadence_milestone_update: cadenceFor("milestone_update"),
+      cadence_communication: cadenceFor("communication"),
+      cadence_decision_pending: cadenceFor("decision_pending"),
+      cadence_deliverable_ready: cadenceFor("deliverable_ready"),
+      preferred_channel: preferred,
+      quiet_hours_enabled: prefs.quiet_hours_enabled ?? false,
+      quiet_hours_start: prefs.quiet_hours_start ?? "22:00",
+      quiet_hours_end: prefs.quiet_hours_end ?? "08:00",
+      timezone: prefs.timezone ?? "UTC",
+    });
   }, [prefs, form]);
 
   const onSubmit = (values: FormValues) => {
     updateMutation.mutate({
       digest_frequency: values.email_digest_frequency,
+      digest_enabled: values.email_digest_frequency !== "never",
       notification_type_preferences: {
         ...(prefs?.notification_type_preferences ?? {}),
-        milestone_update: values.status_update_cadence,
+        milestone_update: values.cadence_milestone_update,
+        communication: values.cadence_communication,
+        decision_pending: values.cadence_decision_pending,
+        deliverable_ready: values.cadence_deliverable_ready,
       },
       channel_preferences: buildChannelPrefs(
         values.preferred_channel,
         prefs?.channel_preferences
       ),
+      quiet_hours_enabled: values.quiet_hours_enabled,
+      quiet_hours_start: values.quiet_hours_enabled
+        ? values.quiet_hours_start
+        : undefined,
+      quiet_hours_end: values.quiet_hours_enabled
+        ? values.quiet_hours_end
+        : undefined,
+      timezone: values.timezone,
     });
   };
+
+  const quietHoursEnabled = form.watch("quiet_hours_enabled");
 
   return (
     <div className="space-y-6">
@@ -214,7 +358,7 @@ export default function PortalNotificationsPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-sm text-muted-foreground">
-              Loading preferences…
+              Loading preferences...
             </p>
           ) : (
             <Form {...form}>
@@ -249,7 +393,7 @@ export default function PortalNotificationsPage() {
                         <RadioGroup
                           onValueChange={field.onChange}
                           value={field.value}
-                          className="grid gap-3 sm:grid-cols-3"
+                          className="grid gap-3 sm:grid-cols-5"
                         >
                           {DIGEST_FREQUENCY_OPTIONS.map((option) => {
                             const { label, description } =
@@ -289,40 +433,54 @@ export default function PortalNotificationsPage() {
 
                 <Separator />
 
-                {/* ── Status Update Cadence ── */}
-                <FormField
-                  control={form.control}
-                  name="status_update_cadence"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-semibold">
-                        Status Update Cadence
-                      </FormLabel>
-                      <FormDescription>
-                        How frequently should you receive milestone and program
-                        status updates?
-                      </FormDescription>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full sm:w-[220px]">
-                            <SelectValue placeholder="Select cadence" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CADENCE_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {CADENCE_LABELS[option]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* ── Notification Cadences ── */}
+                <div className="space-y-4">
+                  <FormLabel className="text-base font-semibold">
+                    Notification Cadences
+                  </FormLabel>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {CADENCE_CONFIG.map(
+                      ({ key, label, description, icon: Icon }) => (
+                        <FormField
+                          key={key}
+                          control={form.control}
+                          name={key}
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <FormLabel className="text-sm font-medium">
+                                  {label}
+                                </FormLabel>
+                              </div>
+                              <FormDescription className="text-xs mb-2">
+                                {description}
+                              </FormDescription>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select cadence" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {CADENCE_OPTIONS.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {CADENCE_LABELS[option]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )
+                    )}
+                  </div>
+                </div>
 
                 <Separator />
 
@@ -381,6 +539,104 @@ export default function PortalNotificationsPage() {
                   )}
                 />
 
+                <Separator />
+
+                {/* ── Quiet Hours ── */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="quiet_hours_enabled"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Moon className="h-4 w-4 text-muted-foreground" />
+                          <FormLabel className="text-base font-semibold">
+                            Quiet Hours
+                          </FormLabel>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Pause non-urgent notifications during off-hours. Escalations
+                    always break through.
+                  </p>
+
+                  {quietHoursEnabled && (
+                    <div className="rounded-lg border p-4 space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="quiet_hours_start"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Time</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  value={field.value ?? ""}
+                                  onChange={field.onChange}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="quiet_hours_end"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>End Time</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  value={field.value ?? ""}
+                                  onChange={field.onChange}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="timezone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Timezone</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select timezone" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {TIMEZONE_OPTIONS.map((tz) => (
+                                  <SelectItem key={tz} value={tz}>
+                                    {tz}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center gap-3 pt-2">
                   <Button
                     type="submit"
@@ -388,7 +644,7 @@ export default function PortalNotificationsPage() {
                       !form.formState.isDirty || updateMutation.isPending
                     }
                   >
-                    {updateMutation.isPending ? "Saving…" : "Save Preferences"}
+                    {updateMutation.isPending ? "Saving..." : "Save Preferences"}
                   </Button>
                   {form.formState.isDirty && (
                     <Button

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { FileText, Loader2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ function ExportPDFOptionsDialog({
   isExporting,
   title,
 }: ExportPDFOptionsDialogProps) {
-  const [options, setOptions] = React.useState<PDFExportOptions>({
+  const [options, setOptions] = useState<PDFExportOptions>({
     orientation: "portrait",
     includeHeader: true,
     includeFooter: true,
@@ -234,9 +234,9 @@ export function ExportPDFButton({
   showOptions = true,
   queryParams,
 }: ExportPDFButtonProps) {
-  const [isExporting, setIsExporting] = React.useState(false);
-  const [showOptionsDialog, setShowOptionsDialog] = React.useState(false);
-  const [defaultOptions] = React.useState<PDFExportOptions>({
+  const [isExporting, setIsExporting] = useState(false);
+  const [showOptionsDialog, setShowOptionsDialog] = useState(false);
+  const [defaultOptions] = useState<PDFExportOptions>({
     orientation: "portrait",
     includeHeader: true,
     includeFooter: true,

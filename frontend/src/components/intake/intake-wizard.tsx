@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,10 +57,10 @@ export function IntakeWizard({
 }: IntakeWizardProps) {
   const { user } = useAuth();
   const router = useRouter();
-  const [currentStep, setCurrentStep] = React.useState(1);
-  const [duplicates, setDuplicates] = React.useState<ClientDuplicateMatch[]>([]);
-  const [duplicateDialogOpen, setDuplicateDialogOpen] = React.useState(false);
-  const [pendingNextStep, setPendingNextStep] = React.useState<number | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [duplicates, setDuplicates] = useState<ClientDuplicateMatch[]>([]);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [pendingNextStep, setPendingNextStep] = useState<number | null>(null);
   const submitMutation = useSubmitIntake();
 
   const methods = useForm<IntakeFormData>({

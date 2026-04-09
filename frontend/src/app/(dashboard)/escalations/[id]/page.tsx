@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -47,14 +47,14 @@ export default function EscalationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = React.use(params);
+  const { id } = use(params);
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [resolveOpen, setResolveOpen] = React.useState(false);
-  const [acknowledgeOpen, setAcknowledgeOpen] = React.useState(false);
-  const [statusUpdate, setStatusUpdate] = React.useState<string>("");
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [acknowledgeOpen, setAcknowledgeOpen] = useState(false);
+  const [statusUpdate, setStatusUpdate] = useState<string>("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["escalations", id],
@@ -78,7 +78,7 @@ export default function EscalationDetailPage({
     onError: () => toast.error("Failed to update status"),
   });
 
-  const handleResolve = (notes: string, status: "resolved" | "closed") => {
+  const handleResolve = (notes: string, _status: "resolved" | "closed") => {
     resolveMutation.mutate(
       { id: id, notes },
       {

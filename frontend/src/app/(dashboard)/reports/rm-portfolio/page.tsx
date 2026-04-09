@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import { getRMPortfolioReport } from "@/lib/api/reports";
@@ -47,7 +47,7 @@ export default function RMPortfolioReportPage() {
   const { user } = useAuth();
   const isMD = user?.role === "managing_director";
 
-  const [selectedRmId, setSelectedRmId] = React.useState<string | undefined>(undefined);
+  const [selectedRmId, setSelectedRmId] = useState<string | undefined>(undefined);
 
   // MDs can pick any RM; RMs are locked to themselves
   const { data: usersData } = useQuery({

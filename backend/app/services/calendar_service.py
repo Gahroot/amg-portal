@@ -78,7 +78,7 @@ def generate_ical_content(
 
     for milestone in milestones:
         program = programs.get(milestone.program_id)
-        program_name = program.name if program else "Unknown Program"
+        program_name = program.name if program else "Unknown Program"  # type: ignore[attr-defined]
 
         # Create unique event ID
         event_uid = f"milestone-{milestone.id}@amg-portal"
@@ -141,7 +141,7 @@ async def generate_ical_for_user(db: AsyncSession, user_id: uuid.UUID) -> str:
 
     # Get all programs where user is the assigned RM
     programs_result = await db.execute(
-        select(Program).where(Program.assigned_rm_id == user_id, Program.status == "active")
+        select(Program).where(Program.assigned_rm_id == user_id, Program.status == "active")  # type: ignore[attr-defined]
     )
     programs = programs_result.scalars().all()
     program_ids = [p.id for p in programs]
@@ -204,7 +204,7 @@ async def push_milestone_to_google(
         if isinstance(token_data, str):
             token_data = json.loads(token_data)
 
-        credentials = Credentials(
+        credentials = Credentials(  # type: ignore[no-untyped-call]
             token=token_data.get("access_token"),
             refresh_token=token_data.get("refresh_token"),
             token_uri="https://oauth2.googleapis.com/token",
@@ -432,7 +432,7 @@ async def push_milestone_to_outlook(
                 raise OutlookCalendarError(f"Outlook API error: {response.status_code}")
 
             event_data = response.json()
-            return event_data.get("id")
+            return event_data.get("id")  # type: ignore[no-any-return]
 
     except httpx.HTTPError as e:
         logger.error("HTTP error pushing to Outlook: %s", e)
@@ -464,7 +464,7 @@ async def sync_all_milestones_to_calendar(
 
     # Get all programs where user is the assigned RM
     programs_result = await db.execute(
-        select(Program).where(Program.assigned_rm_id == user_id, Program.status == "active")
+        select(Program).where(Program.assigned_rm_id == user_id, Program.status == "active")  # type: ignore[attr-defined]
     )
     programs = programs_result.scalars().all()
     program_ids = [p.id for p in programs]
@@ -493,7 +493,7 @@ async def sync_all_milestones_to_calendar(
 
     for milestone in milestones:
         program = programs_by_id.get(milestone.program_id)
-        program_name = program.name if program else "Unknown Program"
+        program_name = program.name if program else "Unknown Program"  # type: ignore[attr-defined]
 
         if provider in ("google", "all") and user.google_calendar_token:
             try:

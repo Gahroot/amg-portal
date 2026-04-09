@@ -1,6 +1,7 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as React from "react";
+import { createElement } from "react";
+import type { ReactNode } from "react";
 import { AuthProvider, useAuth, MFARequiredError, MFASetupRequiredError } from "@/providers/auth-provider";
 import type { User, LoginCredentials, AuthResponse } from "@/types/user";
 
@@ -61,8 +62,8 @@ const partnerUser: User = {
 };
 
 function createWrapper() {
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(AuthProvider, null, children);
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(AuthProvider, null, children);
   };
 }
 

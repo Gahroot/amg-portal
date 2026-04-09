@@ -1,7 +1,10 @@
 """add document expiry tracking fields
 
 Revision ID: add_document_expiry
-Revises: add_partner_capacity, add_program_templates, add_recurring_tasks, add_onboarding_completed, add_task_dependencies, add_quiet_hours_fields, add_bookmarks, add_notification_snooze_fields
+Revises: add_partner_capacity, add_program_templates,
+    add_recurring_tasks, add_onboarding_completed,
+    add_task_dependencies, add_quiet_hours_fields,
+    add_bookmarks, add_notification_snooze_fields
 Create Date: 2026-03-23 12:00:00.000000
 
 """

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,10 +35,10 @@ export function ResolutionDialog({
   isPending,
   escalationTitle,
 }: ResolutionDialogProps) {
-  const [notes, setNotes] = React.useState("");
-  const [status, setStatus] = React.useState<"resolved" | "closed">("resolved");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState<"resolved" | "closed">("resolved");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onResolve(notes, status);
   };

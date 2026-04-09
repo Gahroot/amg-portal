@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -96,7 +95,7 @@ function PartnersPageContent() {
   const isInternal = user && INTERNAL_ROLES.includes(user.role);
 
   // Compare selection state
-  const [compareIds, setCompareIds] = React.useState<Set<string>>(new Set());
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
 
   function toggleCompare(id: string) {
     setCompareIds((prev) => {
@@ -117,7 +116,7 @@ function PartnersPageContent() {
 
   // Navigation state for scroll and filter preservation
   const {
-    restoreScrollPosition,
+    _restoreScrollPosition,
     markForRestore,
     resetFilters,
     hasPendingRestore,
@@ -135,7 +134,7 @@ function PartnersPageContent() {
   useScrollRestore(pathname, !!isInternal && hasPendingRestore);
 
   // Read initial values from URL
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -146,7 +145,7 @@ function PartnersPageContent() {
   // Check if any filters are active
   const hasActiveFilters = statusParam !== "all" || availabilityParam !== "all" || searchInput !== "";
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -160,15 +159,15 @@ function PartnersPageContent() {
   );
 
   // Sync debounced search to URL
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 
   const { data: savedFiltersData } = useSavedFilters("partners");
 
   // Auto-apply default saved filter when no URL params present
-  const hasAppliedDefault = React.useRef(false);
-  React.useEffect(() => {
+  const hasAppliedDefault = useRef(false);
+  useEffect(() => {
     if (hasAppliedDefault.current) return;
     if (!savedFiltersData?.items) return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -209,22 +208,22 @@ function PartnersPageContent() {
   const probationaryCount = data?.profiles.filter((p) => p.is_on_probation).length ?? 0;
 
   const { data: bookmarksData } = useBookmarks("partner");
-  const bookmarkedIds = React.useMemo(
+  const bookmarkedIds = useMemo(
     () => new Set(bookmarksData?.items.map((b) => b.entity_id) ?? []),
     [bookmarksData]
   );
 
-  const sortedPartners = React.useMemo(() => {
+  const sortedPartners = useMemo(() => {
     if (!data?.profiles) return [];
     return [...data.profiles].sort((a, b) => {
       const aPin = bookmarkedIds.has(a.id) ? 0 : 1;
       const bPin = bookmarkedIds.has(b.id) ? 0 : 1;
       return aPin - bPin;
     });
-  }, [data?.profiles, bookmarkedIds]);
+  }, [data, bookmarkedIds]);
 
   // Handle navigation to detail page - mark for restoration
-  const handleNavigateToDetail = React.useCallback(
+  const handleNavigateToDetail = useCallback(
     (partnerId: string) => {
       markForRestore();
       router.push(`/partners/${partnerId}`);
@@ -233,7 +232,7 @@ function PartnersPageContent() {
   );
 
   // Handle reset filters
-  const handleResetFilters = React.useCallback(() => {
+  const handleResetFilters = useCallback(() => {
     setSearchInput("");
     router.replace(pathname);
     resetFilters();

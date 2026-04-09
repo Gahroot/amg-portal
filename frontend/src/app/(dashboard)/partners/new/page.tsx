@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
@@ -48,16 +48,16 @@ export default function NewPartnerPage() {
   const { user } = useAuth();
   const router = useRouter();
   const createPartnerMutation = useCreatePartner();
-  const [selectedCapabilities, setSelectedCapabilities] = React.useState<
+  const [selectedCapabilities, setSelectedCapabilities] = useState<
     string[]
   >([]);
 
   // Duplicate detection state
-  const [duplicates, setDuplicates] = React.useState<PartnerDuplicateMatch[]>([]);
-  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
+  const [duplicates, setDuplicates] = useState<PartnerDuplicateMatch[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [pendingFormData, setPendingFormData] =
-    React.useState<CreatePartnerFormData | null>(null);
-  const [isCheckingDuplicates, setIsCheckingDuplicates] = React.useState(false);
+    useState<CreatePartnerFormData | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
 
   const {
     register,
@@ -76,7 +76,7 @@ export default function NewPartnerPage() {
   const contactPhoneValue = watch("contact_phone");
 
   // Debounced duplicate check
-  React.useEffect(() => {
+  useEffect(() => {
     // Only check if we have at least an email or firm name
     if (!contactEmailValue && !firmNameValue) {
       setDuplicates([]);

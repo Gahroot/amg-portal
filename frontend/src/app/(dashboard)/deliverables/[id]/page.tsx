@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -56,8 +56,8 @@ export default function DeliverableDetailPage() {
   const deliverableId = params.id as string;
   const queryClient = useQueryClient();
 
-  const [reviewOpen, setReviewOpen] = React.useState(false);
-  const [reviewData, setReviewData] = React.useState<DeliverableReviewData>({
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewData, setReviewData] = useState<DeliverableReviewData>({
     status: "approved",
     review_comments: "",
   });
@@ -81,7 +81,7 @@ export default function DeliverableDetailPage() {
     onError: (error: Error) => toast.error(error.message || "Failed to submit review"),
   });
 
-  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleDownload = () => {
     if (!deliverable?.download_url) {

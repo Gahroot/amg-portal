@@ -63,7 +63,6 @@ export default function TaskDetailPage({
     if (isError) {
       toast.error("Failed to load task");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isError]);
 
   if (isLoading) {

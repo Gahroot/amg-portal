@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useCommunicationAuditTrail, useCommunicationAuditSearch } from "@/hooks/use-communication-audit";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

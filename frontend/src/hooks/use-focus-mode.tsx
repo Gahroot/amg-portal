@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 interface FocusModeState {
   /** Whether focus mode is currently active */
   isFocusMode: boolean;
@@ -13,14 +13,14 @@ interface FocusModeState {
   disableFocusMode: () => void;
 }
 
-const FocusModeContext = React.createContext<FocusModeState | null>(null);
+const FocusModeContext = createContext<FocusModeState | null>(null);
 
 /**
  * Hook to access focus mode state
  * Must be used within a FocusModeProvider
  */
 export function useFocusMode(): FocusModeState {
-  const context = React.useContext(FocusModeContext);
+  const context = useContext(FocusModeContext);
   if (!context) {
     throw new Error("useFocusMode must be used within a FocusModeProvider");
   }
@@ -28,7 +28,7 @@ export function useFocusMode(): FocusModeState {
 }
 
 interface FocusModeProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
@@ -37,10 +37,10 @@ interface FocusModeProviderProps {
  */
 export function FocusModeProvider({ children }: FocusModeProviderProps) {
   // Per-session state - not persisted to localStorage
-  const [isFocusMode, setIsFocusMode] = React.useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Handle Escape key to exit focus mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isFocusMode) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -54,7 +54,7 @@ export function FocusModeProvider({ children }: FocusModeProviderProps) {
   }, [isFocusMode]);
 
   // Lock body scroll when in focus mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFocusMode) {
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
@@ -65,7 +65,7 @@ export function FocusModeProvider({ children }: FocusModeProviderProps) {
   }, [isFocusMode]);
 
   // Add class to document element for global styling
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFocusMode) {
       document.documentElement.classList.add("focus-mode");
       return () => {
@@ -74,19 +74,19 @@ export function FocusModeProvider({ children }: FocusModeProviderProps) {
     }
   }, [isFocusMode]);
 
-  const toggleFocusMode = React.useCallback(() => {
+  const toggleFocusMode = useCallback(() => {
     setIsFocusMode((prev) => !prev);
   }, []);
 
-  const enableFocusMode = React.useCallback(() => {
+  const enableFocusMode = useCallback(() => {
     setIsFocusMode(true);
   }, []);
 
-  const disableFocusMode = React.useCallback(() => {
+  const disableFocusMode = useCallback(() => {
     setIsFocusMode(false);
   }, []);
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       isFocusMode,
       toggleFocusMode,

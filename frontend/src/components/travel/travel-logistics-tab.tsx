@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { ElementType, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plane, Building2, Car, MapPin, Plus, Pencil, Trash2, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   getProgramTravel,
   createTravelBooking,
@@ -43,7 +42,7 @@ interface TravelLogisticsTabProps {
 
 const BOOKING_TYPE_CONFIG: Record<
   TravelBookingType,
-  { icon: React.ElementType; label: string; color: string }
+  { icon: ElementType; label: string; color: string }
 > = {
   flight: { icon: Plane, label: "Flight", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300" },
   hotel: { icon: Building2, label: "Hotel", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300" },
@@ -195,9 +194,9 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
     },
   });
 
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingBooking, setEditingBooking] = React.useState<TravelBooking | null>(null);
-  const [formData, setFormData] = React.useState<TravelBookingCreate>({
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<TravelBooking | null>(null);
+  const [formData, setFormData] = useState<TravelBookingCreate>({
     booking_ref: "",
     vendor: "",
     type: "flight",
@@ -206,7 +205,7 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
     passengers: [],
     status: "confirmed",
   });
-  const [passengersInput, setPassengersInput] = React.useState("");
+  const [passengersInput, setPassengersInput] = useState("");
 
   function resetForm() {
     setFormData({

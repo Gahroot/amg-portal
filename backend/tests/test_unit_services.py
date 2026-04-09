@@ -447,7 +447,7 @@ class TestEnums:
     def test_escalation_level_values(self) -> None:
         from app.models.enums import EscalationLevel
 
-        levels = {l.value for l in EscalationLevel}
+        levels = {level.value for level in EscalationLevel}
         expected = {"task", "milestone", "program", "client_impact"}
         assert levels == expected
 

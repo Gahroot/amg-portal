@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ const statusColors: Record<CertificateStatus, string> = {
 
 export default function CertificatesPage() {
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = React.useState<CertificateStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<CertificateStatus | "all">("all");
 
   const params = statusFilter !== "all" ? { status: statusFilter } : undefined;
   const { data, isLoading } = useCertificates(params);

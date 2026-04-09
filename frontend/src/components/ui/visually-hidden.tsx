@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
+import type { HTMLAttributes } from "react";
 import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 export interface VisuallyHiddenProps
-  extends React.HTMLAttributes<HTMLSpanElement> {
+  extends HTMLAttributes<HTMLSpanElement> {
   /** Use a different element via Radix Slot */
   asChild?: boolean;
 }

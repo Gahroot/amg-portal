@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, isValidElement } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +14,7 @@ interface ClientComparisonProps {
 
 interface ComparisonRow {
   label: string;
-  getValue: (c: ClientProfile) => React.ReactNode;
+  getValue: (c: ClientProfile) => ReactNode;
   highlightDifferences?: boolean;
 }
 
@@ -55,10 +56,10 @@ function formatLabel(value: string | null): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function valuesAreDifferent(clients: ClientProfile[], getValue: (c: ClientProfile) => React.ReactNode): boolean {
+function valuesAreDifferent(clients: ClientProfile[], getValue: (c: ClientProfile) => ReactNode): boolean {
   const values = clients.map((c) => {
     const v = getValue(c);
-    if (React.isValidElement(v)) return null;
+    if (isValidElement(v)) return null;
     return String(v ?? "");
   });
   if (values.some((v) => v === null)) return false;
@@ -176,7 +177,7 @@ export function ClientComparison({ clients }: ClientComparisonProps) {
           {rows.map((row, index) => {
             const isDifferent = row.highlightDifferences && valuesAreDifferent(clients, row.getValue);
             return (
-              <React.Fragment key={row.label}>
+              <Fragment key={row.label}>
                 {index > 0 && <Separator />}
                 <div
                   className={cn(
@@ -198,7 +199,7 @@ export function ClientComparison({ clients }: ClientComparisonProps) {
                     </div>
                   ))}
                 </div>
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </CardContent>

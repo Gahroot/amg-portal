@@ -185,10 +185,10 @@ async def verify_kyc_document(
         raise NotFoundException("KYC document not found")
 
     kyc.status = data.status  # type: ignore[assignment]
-    kyc.verified_by = current_user.id  # type: ignore[assignment]
-    kyc.verified_at = datetime.now(UTC)  # type: ignore[assignment]
-    kyc.rejection_reason = data.rejection_reason  # type: ignore[assignment]
-    kyc.notes = data.notes  # type: ignore[assignment]
+    kyc.verified_by = current_user.id
+    kyc.verified_at = datetime.now(UTC)
+    kyc.rejection_reason = data.rejection_reason
+    kyc.notes = data.notes
 
     await db.commit()
     await db.refresh(kyc)

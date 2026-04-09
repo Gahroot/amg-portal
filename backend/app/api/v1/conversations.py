@@ -1,6 +1,6 @@
 """Conversation management endpoints."""
-
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -86,7 +86,7 @@ async def create_conversation(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Create a new conversation."""
     # Ensure the creator is included as a participant
     if current_user.id not in data.participant_ids:
@@ -102,7 +102,7 @@ async def list_conversations(
     _rls: RLSContext,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List conversations for current user, with per-conversation unread counts."""
     conversations, total = await conversation_service.get_conversations_for_user(
         db,
@@ -138,7 +138,7 @@ async def get_conversation(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Get a specific conversation."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:
@@ -158,7 +158,7 @@ async def update_conversation(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Update conversation metadata."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:
@@ -174,7 +174,7 @@ async def send_message(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Send a message to a conversation with scope enforcement."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:
@@ -200,7 +200,7 @@ async def get_messages(
     _rls: RLSContext,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
-):
+) -> Any:
     """Get messages for a conversation, including read_receipts on each message."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:
@@ -223,7 +223,7 @@ async def mark_conversation_read(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Mark all messages in a conversation as read for the current user."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:
@@ -242,7 +242,7 @@ async def add_participant(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Add a participant to a conversation."""
     conversation = await conversation_service.add_participant(db, conversation_id, data.user_id)
     if not conversation:

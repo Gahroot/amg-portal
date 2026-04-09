@@ -15,6 +15,7 @@ from app.api.v1.partner_assignments import build_assignment_response
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.conversation import Conversation
 from app.models.deliverable import Deliverable
+from app.models.enums import AssignmentStatus
 from app.models.partner_assignment import AssignmentHistory, PartnerAssignment
 from app.models.user import User
 from app.schemas.communication import CommunicationResponse, SendMessageRequest
@@ -58,7 +59,7 @@ async def get_my_profile(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     return partner
 
 
@@ -68,7 +69,7 @@ async def get_my_assignments(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
@@ -77,7 +78,7 @@ async def get_my_assignments(
     )
     assignments = result.scalars().all()
     return AssignmentListResponse(
-        assignments=[build_assignment_response(a) for a in assignments],
+        assignments=[build_assignment_response(a) for a in assignments],  # type: ignore[misc]
         total=len(assignments),
     )
 
@@ -89,7 +90,7 @@ async def get_my_assignment(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     result = await db.execute(
         select(PartnerAssignment)
         .options(
@@ -114,7 +115,7 @@ async def accept_my_assignment(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Accept a dispatched assignment.
 
     Sets accepted_at (SLA clock start), records history, and notifies the coordinator.
@@ -133,7 +134,7 @@ async def accept_my_assignment(
         raise BadRequestException("Only dispatched assignments can be accepted")
 
     now = datetime.now(UTC)
-    assignment.status = "accepted"
+    assignment.status = AssignmentStatus.accepted
     assignment.accepted_at = now  # SLA clock starts here
 
     # Immutable history entry
@@ -190,7 +191,7 @@ async def decline_my_assignment(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Decline a dispatched assignment.
 
     A reason is required. Records history and notifies coordinator and RM for reassignment.
@@ -209,7 +210,7 @@ async def decline_my_assignment(
         raise BadRequestException("Only dispatched assignments can be declined")
 
     now = datetime.now(UTC)
-    assignment.status = "declined"
+    assignment.status = AssignmentStatus.declined
     assignment.declined_at = now
     assignment.decline_reason = data.reason
 
@@ -271,7 +272,7 @@ async def get_assignment_history(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Return the accept/decline history for one of the partner's assignments."""
     # Verify ownership
     owner_result = await db.execute(
@@ -297,7 +298,7 @@ async def get_my_deliverables(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     # Get all assignments for this partner, then all deliverables
     assignments_result = await db.execute(
         select(PartnerAssignment.id).where(PartnerAssignment.partner_id == partner.id)
@@ -314,7 +315,7 @@ async def get_my_deliverables(
     )
     deliverables = result.scalars().all()
 
-    def build_response(d):
+    def build_response(d: Any) -> Any:
         data = {
             "id": d.id,
             "assignment_id": d.assignment_id,
@@ -592,7 +593,7 @@ async def get_brief_summary_report(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Active brief summary — active assignments with tasks, deadlines, and coordinator contact.
 
     Scoped to the current partner only. No client metadata or budget info is included.
@@ -610,7 +611,7 @@ async def get_deliverable_feedback_report(
     partner: CurrentPartner,
     _rls: RLSContext,
     assignment_id: UUID | None = Query(None, description="Filter by assignment ID"),
-):
+) -> Any:
     """Deliverable feedback report — history of all submissions with review status and comments.
 
     Optionally filter by a specific assignment via the `assignment_id` query parameter.
@@ -627,7 +628,7 @@ async def get_engagement_history_report(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Engagement history — all past engagements with completion status and deliverable count."""
     report = await partner_report_service.get_engagement_history(db, partner.id)
     if not report:
@@ -698,7 +699,7 @@ async def submit_capability_refresh(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-):
+) -> Any:
     """Submit an annual capability refresh.
 
     The partner confirms their current accreditations, insurance, and capacity.
@@ -712,8 +713,8 @@ async def submit_capability_refresh(
         raise BadRequestException("Capacity must be confirmed to complete the refresh.")
 
     now = datetime.now(UTC)
-    partner.last_refreshed_at = now  # type: ignore[assignment]
-    partner.refresh_due_at = now + timedelta(days=365)  # type: ignore[assignment]
+    partner.last_refreshed_at = now
+    partner.refresh_due_at = now + timedelta(days=365)
 
     await db.commit()
     await db.refresh(partner)
@@ -727,7 +728,7 @@ async def get_my_trends(
     partner: CurrentPartner,
     _rls: RLSContext,
     days: int = Query(90, ge=7, le=365, description="Number of days of history to return"),
-) -> dict:
+) -> dict[str, Any]:
     """Return weekly performance trend data for the current partner.
 
     Partners can view their own SLA compliance, quality scores, and assignment
@@ -788,7 +789,7 @@ async def get_my_scorecard(
         description="Time period: '30d', '90d', or 'ytd'",
         pattern="^(30d|90d|ytd)$",
     ),
-) -> dict:
+) -> dict[str, Any]:
     """Return the performance scorecard for the current partner.
 
     Includes SLA compliance, quality ratings, response times, on-time delivery,
@@ -814,7 +815,7 @@ async def get_my_performance_status(
     current_user: CurrentUser,
     partner: CurrentPartner,
     _rls: RLSContext,
-) -> dict:
+) -> dict[str, Any]:
     """Return the current partner's performance metrics compared to thresholds.
 
     Includes current values for SLA compliance, quality score, and overall score,

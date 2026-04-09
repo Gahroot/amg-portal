@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ interface ApprovalDialogProps {
   approvalId: string;
   programId: string;
   action: "approved" | "rejected";
-  trigger: React.ReactNode;
+  trigger: ReactNode;
 }
 
 export function ApprovalDialog({
@@ -29,8 +30,8 @@ export function ApprovalDialog({
   action,
   trigger,
 }: ApprovalDialogProps) {
-  const [open, setOpen] = React.useState(false);
-  const [note, setNote] = React.useState("");
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
   const queryClient = useQueryClient();
 
   const mutation = useMutation({

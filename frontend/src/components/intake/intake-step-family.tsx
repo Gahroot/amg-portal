@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,11 @@ export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps)
   const { setValue, watch } = useFormContext<IntakeFormData>();
   const familyMembers = watch("family_members") ?? [];
 
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   // Initialize family_members from initialMembers if empty and initialMembers provided
-  React.useEffect(() => {
+  useEffect(() => {
     if (familyMembers.length === 0 && initialMembers.length > 0) {
       setValue(
         "family_members",

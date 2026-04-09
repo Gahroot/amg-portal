@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { ChevronDown, CheckCircle2, AlertCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ export interface CollapsibleSectionProps {
   /** Optional description shown below the title */
   description?: string;
   /** Section content */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Whether the section is expanded by default */
   defaultExpanded?: boolean;
   /** Controlled expanded state (makes component controlled) */
@@ -37,7 +38,7 @@ export interface CollapsibleSectionProps {
   /** Number of validation errors in this section */
   errorCount?: number;
   /** Additional badge to show in header */
-  badge?: React.ReactNode;
+  badge?: ReactNode;
   /** Additional className for the container */
   className?: string;
   /** Additional className for the header */
@@ -145,7 +146,7 @@ export function CollapsibleSection({
   forceExpanded = false,
 }: CollapsibleSectionProps) {
   // Initialize state from localStorage if persisting
-  const getInitialState = React.useCallback(() => {
+  const getInitialState = useCallback(() => {
     if (shouldPersistState) {
       const persisted = getPersistedState(id);
       if (persisted !== null) return persisted;
@@ -153,20 +154,20 @@ export function CollapsibleSection({
     return defaultExpanded;
   }, [id, defaultExpanded, shouldPersistState]);
 
-  const [internalExpanded, setInternalExpanded] = React.useState(getInitialState);
+  const [internalExpanded, setInternalExpanded] = useState(getInitialState);
 
   // Handle controlled vs uncontrolled state
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = forceExpanded || (isControlled ? controlledExpanded : internalExpanded);
 
   // Update internal state when controlled prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (isControlled && controlledExpanded !== internalExpanded) {
       setInternalExpanded(controlledExpanded);
     }
   }, [isControlled, controlledExpanded, internalExpanded]);
 
-  const handleToggle = React.useCallback(() => {
+  const handleToggle = useCallback(() => {
     if (disabled || forceExpanded) return;
 
     const newExpanded = !isExpanded;
@@ -290,7 +291,7 @@ export function CollapsibleSection({
  */
 export interface CollapsibleSectionGroupProps {
   /** Group of collapsible sections */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Whether to allow multiple sections to be expanded at once */
   allowMultiple?: boolean;
   /** Callback when any section's expanded state changes */
@@ -304,7 +305,7 @@ export interface CollapsibleSectionGroupProps {
 /**
  * Context for managing a group of collapsible sections
  */
-const CollapsibleSectionGroupContext = React.createContext<{
+const CollapsibleSectionGroupContext = createContext<{
   allowMultiple: boolean;
   expandedSections: Set<string>;
   toggleSection: (id: string) => void;
@@ -315,7 +316,7 @@ const CollapsibleSectionGroupContext = React.createContext<{
  * Hook to access collapsible section group context
  */
 export function useCollapsibleSectionGroup() {
-  const context = React.useContext(CollapsibleSectionGroupContext);
+  const context = useContext(CollapsibleSectionGroupContext);
   return context;
 }
 
@@ -342,9 +343,9 @@ export function CollapsibleSectionGroup({
   expandAll = false,
   className,
 }: CollapsibleSectionGroupProps) {
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  const toggleSection = React.useCallback(
+  const toggleSection = useCallback(
     (id: string) => {
       setExpandedSections((prev) => {
         const next = new Set(prev);
@@ -373,7 +374,7 @@ export function CollapsibleSectionGroup({
     [allowMultiple, onSectionChange]
   );
 
-  const contextValue = React.useMemo(
+  const contextValue = useMemo(
     () => ({
       allowMultiple,
       expandedSections,

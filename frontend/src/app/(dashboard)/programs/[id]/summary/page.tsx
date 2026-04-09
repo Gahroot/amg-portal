@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getProgramSummary } from "@/lib/api/programs";

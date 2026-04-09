@@ -46,7 +46,7 @@ async def get_capacity_heatmap(
     if partner is None:
         return {}
 
-    max_concurrent: int = partner.max_concurrent_assignments or 5  # type: ignore[assignment]
+    max_concurrent: int = partner.max_concurrent_assignments or 5
 
     # Fetch active assignments that have a due_date within or before end_date.
     # An assignment is active on any day from created_at.date() to due_date (inclusive).
@@ -74,7 +74,7 @@ async def get_capacity_heatmap(
     )
     blocked_rows = blocked_result.scalars().all()
     blocked_map: dict[date, str | None] = {
-        row.blocked_date: row.reason  # type: ignore[misc]
+        row.blocked_date: row.reason
         for row in blocked_rows
     }
 

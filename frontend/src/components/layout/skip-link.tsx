@@ -1,9 +1,10 @@
 "use client";
 
-import * as React from "react";
+import { useCallback } from "react";
+import type { AnchorHTMLAttributes, MouseEvent } from "react";
 import { cn } from "@/lib/utils";
 
-interface SkipLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface SkipLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   /** The target element ID to skip to (without #) */
   targetId: string;
   /** Label for the skip link */
@@ -29,8 +30,8 @@ export function SkipLink({
   className,
   ...props
 }: SkipLinkProps) {
-  const handleClick = React.useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
       const target = document.getElementById(targetId);
       if (target) {

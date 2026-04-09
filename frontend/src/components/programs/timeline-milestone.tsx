@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -59,7 +59,7 @@ export function TimelineMilestone({
   isLast,
   connectorFill,
 }: TimelineMilestoneProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const styles = STATE_STYLES[displayState];
 
   const statusLabel =

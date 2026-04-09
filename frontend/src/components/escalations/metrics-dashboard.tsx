@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -101,7 +102,7 @@ interface SummaryCardProps {
   title: string;
   value: string | number;
   subtext?: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   trend?: number | null;
   highlight?: "warn" | "ok" | "neutral";
 }
@@ -242,9 +243,9 @@ function exportMetricsCsv(metrics: EscalationMetrics, params: EscalationMetricsP
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function EscalationMetricsDashboard() {
-  const [preset, setPreset] = React.useState<DatePreset>("90d");
-  const [levelFilter, setLevelFilter] = React.useState<string>("all");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [preset, setPreset] = useState<DatePreset>("90d");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { from, to } = presetToDates(preset);
   const params: EscalationMetricsParams = {
@@ -261,7 +262,7 @@ export function EscalationMetricsDashboard() {
   });
 
   // Level bar chart data
-  const levelChartData = React.useMemo(
+  const levelChartData = useMemo(
     () =>
       data?.by_level.map((b: EscalationByLevel) => ({
         name: LEVEL_LABELS[b.level] ?? b.level,
@@ -272,7 +273,7 @@ export function EscalationMetricsDashboard() {
   );
 
   // Status bar chart data
-  const statusChartData = React.useMemo(
+  const statusChartData = useMemo(
     () =>
       data?.by_status.map((b) => ({
         name: STATUS_LABELS[b.status] ?? b.status,
@@ -283,7 +284,7 @@ export function EscalationMetricsDashboard() {
   );
 
   // Trend line chart data
-  const trendData = React.useMemo(
+  const trendData = useMemo(
     () =>
       data?.trend.map((t: EscalationTrendPoint) => ({
         ...t,

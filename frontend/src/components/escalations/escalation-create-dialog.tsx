@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEscalation } from "@/lib/api/escalations";
 import type { EscalationCreate, EscalationLevel } from "@/types/escalation";
@@ -55,15 +56,15 @@ export function EscalationCreateDialog({
   onOpenChange,
 }: EscalationCreateDialogProps) {
   const queryClient = useQueryClient();
-  const [templatePickerOpen, setTemplatePickerOpen] = React.useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [appliedTemplate, setAppliedTemplate] =
-    React.useState<EscalationTemplate | null>(null);
-  const [form, setForm] = React.useState(DEFAULT_FORM);
+    useState<EscalationTemplate | null>(null);
+  const [form, setForm] = useState(DEFAULT_FORM);
 
   // Suggested actions from template shown below textarea
-  const [suggestedActions, setSuggestedActions] = React.useState<string[]>([]);
+  const [suggestedActions, setSuggestedActions] = useState<string[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setForm(DEFAULT_FORM);
       setAppliedTemplate(null);
@@ -97,7 +98,7 @@ export function EscalationCreateDialog({
     onError: () => toast.error("Failed to create escalation"),
   });
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.title.trim()) {
       toast.error("Title is required");

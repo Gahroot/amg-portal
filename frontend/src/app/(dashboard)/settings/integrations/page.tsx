@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
@@ -76,23 +76,23 @@ function getErrorMessage(err: unknown, fallback: string): string {
 }
 
 export default function IntegrationsPage() {
-  const [webhooks, setWebhooks] = React.useState<PublicWebhook[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-  const [newWebhook, setNewWebhook] = React.useState({
+  const [webhooks, setWebhooks] = useState<PublicWebhook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newWebhook, setNewWebhook] = useState({
     url: "",
     description: "",
     events: [] as string[],
   });
-  const [newSecret, setNewSecret] = React.useState<string | null>(null);
-  const [copied, setCopied] = React.useState(false);
-  const [apiKey, setApiKey] = React.useState<string | null>(null);
-  const [noApiKey, setNoApiKey] = React.useState(false);
+  const [newSecret, setNewSecret] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [noApiKey, setNoApiKey] = useState(false);
 
   // Resolve the user's API key: prefer localStorage cache, fall back to fetching
   // the first active key's prefix (the full key is only available at creation time
   // and should have been saved to localStorage by the API keys manager).
-  React.useEffect(() => {
+  useEffect(() => {
     const stored = localStorage.getItem("api_key");
     if (stored) {
       setApiKey(stored);
@@ -118,7 +118,7 @@ export default function IntegrationsPage() {
       });
   }, []);
 
-  const fetchWebhooks = React.useCallback(async () => {
+  const fetchWebhooks = useCallback(async () => {
     if (!apiKey) return;
     try {
       setLoading(true);
@@ -131,7 +131,7 @@ export default function IntegrationsPage() {
     }
   }, [apiKey]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (apiKey) {
       fetchWebhooks();
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   useClientProfile,
@@ -73,10 +73,10 @@ export default function ClientDetailPage() {
   const { user } = useAuth();
   const { data: profile, isLoading } = useClientProfile(id);
   const { data: familyMembersData } = useFamilyMembers(id);
-  const [activeTab, setActiveTab] = React.useState<Tab>("overview");
-  const [provisionOpen, setProvisionOpen] = React.useState(false);
-  const [familyDialogOpen, setFamilyDialogOpen] = React.useState(false);
-  const [editingMemberId, setEditingMemberId] = React.useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [provisionOpen, setProvisionOpen] = useState(false);
+  const [familyDialogOpen, setFamilyDialogOpen] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
   const isInternalSenior =
     user?.role === "managing_director" || user?.role === "relationship_manager";
@@ -365,7 +365,7 @@ function IntelligenceTab({
 }) {
   const updateProfileMutation = useUpdateClientProfile(id);
 
-  const notesInitialData = React.useMemo<Record<string, string>>(
+  const notesInitialData = useMemo<Record<string, string>>(
     () => ({
       sensitivities: profile.sensitivities ?? "",
       special_instructions: profile.special_instructions ?? "",

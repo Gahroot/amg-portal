@@ -11,6 +11,7 @@ import {
 } from "@/hooks/use-partner-portal";
 import { ConversationList } from "@/components/communications/conversation-list";
 import { ConversationView } from "@/components/communications/conversation-view";
+import type { InboxFilter, InboxTypeFilter } from "@/components/communications/inbox-filter-bar";
 import { MessageSquare } from "lucide-react";
 
 function PartnerConversationView({
@@ -47,6 +48,8 @@ export default function PartnerMessagesPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | undefined
   >();
+  const [activeFilter, setActiveFilter] = useState<InboxFilter>("all");
+  const [activeTypeFilter, setActiveTypeFilter] = useState<InboxTypeFilter>("all");
   const { data, isLoading } = usePartnerConversations({ limit: 50 });
 
   return (
@@ -68,6 +71,11 @@ export default function PartnerMessagesPage() {
             }
             conversations={data}
             isLoading={isLoading}
+            showFilterBar={true}
+            activeFilter={activeFilter}
+            activeTypeFilter={activeTypeFilter}
+            onFilterChange={setActiveFilter}
+            onTypeFilterChange={setActiveTypeFilter}
           />
         </div>
 

@@ -43,7 +43,7 @@ class TemplateService(CRUDBase[CommunicationTemplate, TemplateCreate, TemplateUp
 
         return templates, total
 
-    async def delete(self, db: AsyncSession, template_id: uuid.UUID) -> bool:
+    async def delete(self, db: AsyncSession, template_id: uuid.UUID) -> bool:  # type: ignore[override]
         """Hard-delete a template. Returns True if deleted, False if not found."""
         template = await self.get(db, template_id)
         if not template:

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   useClientCommunicationPreferences,
   useUpdateClientCommunicationPreferences,
@@ -52,10 +52,10 @@ export function ClientPreferencesForm({
     useClientCommunicationPreferences(clientId);
   const updateMutation = useUpdateClientCommunicationPreferences(clientId);
 
-  const [formData, setFormData] = React.useState<CommunicationPreferencesUpdate>({});
-  const [isDirty, setIsDirty] = React.useState(false);
+  const [formData, setFormData] = useState<CommunicationPreferencesUpdate>({});
+  const [isDirty, setIsDirty] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (preferences) {
       setFormData({
         preferred_channels: preferences.preferred_channels,

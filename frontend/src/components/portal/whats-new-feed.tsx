@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -42,7 +43,7 @@ const UPDATE_TYPE_LABELS: Record<UpdateType, string> = {
   decision_resolved: "Decision Resolved",
 };
 
-const UPDATE_TYPE_ICONS: Record<UpdateType, React.ReactNode> = {
+const UPDATE_TYPE_ICONS: Record<UpdateType, ReactNode> = {
   program_status: <Activity className="h-4 w-4 text-blue-500" />,
   milestone_completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
   document_delivered: <FileText className="h-4 w-4 text-purple-500" />,
@@ -186,10 +187,10 @@ export function WhatsNewFeed({ compact = false }: WhatsNewFeedProps) {
   const queryClient = useQueryClient();
   const { data: programs } = usePortalPrograms();
 
-  const [updateTypeFilter, setUpdateTypeFilter] = React.useState<UpdateType | "all">("all");
-  const [programFilter, setProgramFilter] = React.useState<string>("all");
-  const [dateRangeFilter, setDateRangeFilter] = React.useState<string>("all");
-  const [page, setPage] = React.useState(0);
+  const [updateTypeFilter, setUpdateTypeFilter] = useState<UpdateType | "all">("all");
+  const [programFilter, setProgramFilter] = useState<string>("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
 
   const dateRange = getDateRange(dateRangeFilter);
 

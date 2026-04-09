@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProgram } from "@/hooks/use-programs";
 import { useProgramGantt } from "@/hooks/use-program-gantt";
@@ -20,17 +20,17 @@ export default function ProgramTimelinePage() {
   const { data: program, isLoading } = useProgram(programId);
   const ganttData = useProgramGantt(program);
 
-  const [zoom, setZoom] = React.useState<ZoomLevel>("week");
-  const [filters, setFilters] = React.useState<GanttFilters>({
+  const [zoom, setZoom] = useState<ZoomLevel>("week");
+  const [filters, setFilters] = useState<GanttFilters>({
     hideCompleted: false,
     showOnlyCritical: false,
     hideTasks: false,
   });
-  const [isExporting, setIsExporting] = React.useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const handleExport = React.useCallback(async () => {
+  const handleExport = useCallback(async () => {
     if (!svgRef.current) return;
     setIsExporting(true);
     try {

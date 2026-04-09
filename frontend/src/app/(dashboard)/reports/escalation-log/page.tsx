@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -71,7 +71,7 @@ function formatAge(days: number): string {
 
 export default function EscalationLogReportPage() {
   const { user } = useAuth();
-  const [filters, setFilters] = React.useState<EscalationLogParams>({});
+  const [filters, setFilters] = useState<EscalationLogParams>({});
 
   const { data: report, isLoading } = useQuery({
     queryKey: ["escalation-log-report", filters],

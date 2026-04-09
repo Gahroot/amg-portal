@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,12 +63,12 @@ export function CapabilityMatrix({
   canEdit = false,
   canVerify = false,
 }: CapabilityMatrixProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [editingCapability, setEditingCapability] = React.useState<PartnerCapability | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingCapability, setEditingCapability] = useState<PartnerCapability | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Form state
-  const [formState, setFormState] = React.useState({
+  const [formState, setFormState] = useState({
     capability_name: "",
     proficiency_level: "intermediate" as ProficiencyLevel,
     years_experience: "",

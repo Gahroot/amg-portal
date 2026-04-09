@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +35,7 @@ const POPULAR_DESTINATIONS = [
 export function IntakeStepLifestyle() {
   const { register, setValue, watch } = useFormContext<IntakeFormData>();
   const preferredDestinations = watch("preferred_destinations") || [];
-  const [newDestination, setNewDestination] = React.useState("");
+  const [newDestination, setNewDestination] = useState("");
 
   const addDestination = (destination: string) => {
     if (destination && !preferredDestinations.includes(destination)) {

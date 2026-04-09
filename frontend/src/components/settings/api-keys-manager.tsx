@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listAPIKeys,
@@ -74,15 +74,15 @@ import { toast } from "sonner";
 
 export function APIKeysManager() {
   const queryClient = useQueryClient();
-  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [newKeyData, setNewKeyData] = React.useState<APIKeyCreated | null>(null);
-  const [showKey, setShowKey] = React.useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newKeyData, setNewKeyData] = useState<APIKeyCreated | null>(null);
+  const [showKey, setShowKey] = useState(false);
 
   // Form state
-  const [keyName, setKeyName] = React.useState("");
-  const [selectedScopes, setSelectedScopes] = React.useState<string[]>(["read:clients", "read:programs"]);
-  const [expiresInDays, setExpiresInDays] = React.useState<string>("never");
-  const [rateLimit, setRateLimit] = React.useState<string>("60");
+  const [keyName, setKeyName] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(["read:clients", "read:programs"]);
+  const [expiresInDays, setExpiresInDays] = useState<string>("never");
+  const [rateLimit, setRateLimit] = useState<string>("60");
 
   // Fetch API keys
   const { data: keysData, isLoading } = useQuery({

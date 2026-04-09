@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
@@ -43,7 +43,7 @@ class CapabilityReview(Base, TimestampMixin):
     capabilities_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     certifications_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     qualifications_reviewed: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    findings: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
+    findings: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     # List of {type, description, severity, recommendation}
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     recommendations: Mapped[str | None] = mapped_column(Text, nullable=True)

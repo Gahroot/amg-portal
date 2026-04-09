@@ -36,7 +36,7 @@ def _table_exists(table: str) -> bool:
     return table in inspector.get_table_names()
 
 
-def upgrade() -> None:
+def upgrade() -> None:  # noqa: PLR0912, PLR0915
     """Add missing columns and tables to sync DB with models."""
 
     # --- New tables ---
@@ -51,8 +51,16 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id')
         )
-        op.create_index('ix_document_acknowledgments_document_id', 'document_acknowledgments', ['document_id'])
-        op.create_index('ix_document_acknowledgments_user_id', 'document_acknowledgments', ['user_id'])
+        op.create_index(
+            'ix_document_acknowledgments_document_id',
+            'document_acknowledgments',
+            ['document_id'],
+        )
+        op.create_index(
+            'ix_document_acknowledgments_user_id',
+            'document_acknowledgments',
+            ['user_id'],
+        )
 
     if not _table_exists("family_members"):
         op.create_table('family_members',
@@ -66,10 +74,14 @@ def upgrade() -> None:
             sa.Column('is_primary_contact', sa.Boolean(), nullable=False),
             sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
             sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-            sa.ForeignKeyConstraint(['client_profile_id'], ['client_profiles.id'], ondelete='CASCADE'),
+            sa.ForeignKeyConstraint(['client_profile_id'], ['client_profiles.id'], ondelete='CASCADE'),  # noqa: E501
             sa.PrimaryKeyConstraint('id')
         )
-        op.create_index('ix_family_members_client_profile_id', 'family_members', ['client_profile_id'])
+        op.create_index(
+            'ix_family_members_client_profile_id',
+            'family_members',
+            ['client_profile_id'],
+        )
 
     if not _table_exists("family_relationships"):
         op.create_table('family_relationships',
@@ -82,8 +94,16 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(['to_member_id'], ['family_members.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id')
         )
-        op.create_index('ix_family_relationships_from_member_id', 'family_relationships', ['from_member_id'])
-        op.create_index('ix_family_relationships_to_member_id', 'family_relationships', ['to_member_id'])
+        op.create_index(
+            'ix_family_relationships_from_member_id',
+            'family_relationships',
+            ['from_member_id'],
+        )
+        op.create_index(
+            'ix_family_relationships_to_member_id',
+            'family_relationships',
+            ['to_member_id'],
+        )
 
     if not _table_exists("performance_notices"):
         op.create_table('performance_notices',
@@ -133,55 +153,55 @@ def upgrade() -> None:
 
     # --- Missing columns on existing tables ---
     if not _column_exists("users", "last_login_at"):
-        op.add_column('users', sa.Column('last_login_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('users', sa.Column('last_login_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("users", "google_calendar_token"):
-        op.add_column('users', sa.Column('google_calendar_token', postgresql.JSON(astext_type=sa.Text()), nullable=True))
+        op.add_column('users', sa.Column('google_calendar_token', postgresql.JSON(astext_type=sa.Text()), nullable=True))  # noqa: E501
     if not _column_exists("users", "outlook_calendar_token"):
-        op.add_column('users', sa.Column('outlook_calendar_token', postgresql.JSON(astext_type=sa.Text()), nullable=True))
+        op.add_column('users', sa.Column('outlook_calendar_token', postgresql.JSON(astext_type=sa.Text()), nullable=True))  # noqa: E501
     if not _column_exists("users", "calendar_last_synced_at"):
-        op.add_column('users', sa.Column('calendar_last_synced_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('users', sa.Column('calendar_last_synced_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
 
     if not _column_exists("client_profiles", "security_profile_level"):
-        op.add_column('client_profiles', sa.Column('security_profile_level', sa.String(length=50), server_default='standard', nullable=False))
+        op.add_column('client_profiles', sa.Column('security_profile_level', sa.String(length=50), server_default='standard', nullable=False))  # noqa: E501
 
     if not _column_exists("communications", "template_context"):
         op.add_column('communications', sa.Column('template_context', sa.JSON(), nullable=True))
 
     if not _column_exists("partner_profiles", "last_refreshed_at"):
-        op.add_column('partner_profiles', sa.Column('last_refreshed_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('partner_profiles', sa.Column('last_refreshed_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("partner_profiles", "refresh_due_at"):
-        op.add_column('partner_profiles', sa.Column('refresh_due_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('partner_profiles', sa.Column('refresh_due_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
 
     if not _column_exists("program_closures", "debrief_notes"):
         op.add_column('program_closures', sa.Column('debrief_notes', sa.Text(), nullable=True))
     if not _column_exists("program_closures", "debrief_notes_at"):
-        op.add_column('program_closures', sa.Column('debrief_notes_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('program_closures', sa.Column('debrief_notes_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("program_closures", "debrief_notes_by"):
         op.add_column('program_closures', sa.Column('debrief_notes_by', sa.UUID(), nullable=True))
-        op.create_foreign_key('fk_program_closures_debrief_notes_by', 'program_closures', 'users', ['debrief_notes_by'], ['id'])
+        op.create_foreign_key('fk_program_closures_debrief_notes_by', 'program_closures', 'users', ['debrief_notes_by'], ['id'])  # noqa: E501
     if not _column_exists("program_closures", "debrief_notes_by_name"):
-        op.add_column('program_closures', sa.Column('debrief_notes_by_name', sa.String(length=255), nullable=True))
+        op.add_column('program_closures', sa.Column('debrief_notes_by_name', sa.String(length=255), nullable=True))  # noqa: E501
 
     if not _column_exists("programs", "archived_at"):
-        op.add_column('programs', sa.Column('archived_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('programs', sa.Column('archived_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("programs", "emergency_reason"):
         op.add_column('programs', sa.Column('emergency_reason', sa.Text(), nullable=True))
     if not _column_exists("programs", "retrospective_due_at"):
-        op.add_column('programs', sa.Column('retrospective_due_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('programs', sa.Column('retrospective_due_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("programs", "brief_content"):
         op.add_column('programs', sa.Column('brief_content', sa.Text(), nullable=True))
     if not _column_exists("programs", "brief_visible_to_client"):
-        op.add_column('programs', sa.Column('brief_visible_to_client', sa.Boolean(), server_default='false', nullable=False))
+        op.add_column('programs', sa.Column('brief_visible_to_client', sa.Boolean(), server_default='false', nullable=False))  # noqa: E501
     if not _column_exists("programs", "brief_shared_at"):
-        op.add_column('programs', sa.Column('brief_shared_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('programs', sa.Column('brief_shared_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
 
     # deletion_requests: add missing timestamp columns
     if not _column_exists("deletion_requests", "requested_at"):
-        op.add_column('deletion_requests', sa.Column('requested_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('deletion_requests', sa.Column('requested_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("deletion_requests", "approved_at"):
-        op.add_column('deletion_requests', sa.Column('approved_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('deletion_requests', sa.Column('approved_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
     if not _column_exists("deletion_requests", "executed_at"):
-        op.add_column('deletion_requests', sa.Column('executed_at', sa.DateTime(timezone=True), nullable=True))
+        op.add_column('deletion_requests', sa.Column('executed_at', sa.DateTime(timezone=True), nullable=True))  # noqa: E501
 
 
 def downgrade() -> None:
@@ -195,7 +215,7 @@ def downgrade() -> None:
     op.drop_column('partner_profiles', 'refresh_due_at')
     op.drop_column('partner_profiles', 'last_refreshed_at')
     op.drop_column('program_closures', 'debrief_notes_by_name')
-    op.drop_constraint('fk_program_closures_debrief_notes_by', 'program_closures', type_='foreignkey')
+    op.drop_constraint('fk_program_closures_debrief_notes_by', 'program_closures', type_='foreignkey')  # noqa: E501
     op.drop_column('program_closures', 'debrief_notes_by')
     op.drop_column('program_closures', 'debrief_notes_at')
     op.drop_column('program_closures', 'debrief_notes')

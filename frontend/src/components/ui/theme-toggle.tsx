@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { Moon, Sun, Monitor, Contrast } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -29,9 +29,9 @@ interface ThemeToggleProps {
 
 /** Hook to manage high contrast mode */
 function useHighContrast() {
-  const [highContrast, setHighContrast] = React.useState(false);
+  const [highContrast, setHighContrast] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Check localStorage
     const stored = localStorage.getItem("high-contrast");
     if (stored !== null) {
@@ -43,7 +43,7 @@ function useHighContrast() {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Apply or remove high-contrast class on html element
     const html = document.documentElement;
     if (highContrast) {
@@ -56,7 +56,7 @@ function useHighContrast() {
   }, [highContrast]);
 
   // Listen for system preference changes
-  React.useEffect(() => {
+  useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-contrast: more)");
     const handleChange = (e: MediaQueryListEvent) => {
       const stored = localStorage.getItem("high-contrast");
@@ -84,10 +84,10 @@ export function ThemeToggle({
 }: ThemeToggleProps) {
   const { setTheme, theme } = useTheme();
   const { highContrast, setHighContrast } = useHighContrast();
-  const [mounted, setMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -179,9 +179,9 @@ export function ThemeToggle({
 export function ThemeToggleInline() {
   const { setTheme, theme } = useTheme();
   const { highContrast, setHighContrast } = useHighContrast();
-  const [mounted, setMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 

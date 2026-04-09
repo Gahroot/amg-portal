@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { Bell, Mail, Monitor, Smartphone, Settings2 } from "lucide-react";
 import {
   Card,
@@ -79,12 +79,12 @@ export function ReminderPreferences() {
   const updateMutation = useUpdateNotificationPreferences();
 
   // Local state derived from server preferences
-  const [selectedDays, setSelectedDays] = React.useState<ReminderDay[]>(DEFAULT_DAYS);
-  const [selectedChannels, setSelectedChannels] = React.useState<ReminderChannel[]>(DEFAULT_CHANNELS);
-  const [isDirty, setIsDirty] = React.useState(false);
+  const [selectedDays, setSelectedDays] = useState<ReminderDay[]>(DEFAULT_DAYS);
+  const [selectedChannels, setSelectedChannels] = useState<ReminderChannel[]>(DEFAULT_CHANNELS);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Populate from server data once loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (!prefs) return;
     setSelectedDays(toValidDays(prefs.milestone_reminder_days));
     setSelectedChannels(toValidChannels(prefs.milestone_reminder_channels));

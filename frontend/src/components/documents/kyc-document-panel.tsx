@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,16 +75,16 @@ export function KYCDocumentPanel({ clientId, canVerify = false }: KYCDocumentPan
   const uploadMutation = useUploadKYCDocument(clientId);
   const verifyMutation = useVerifyKYCDocument(clientId);
 
-  const [uploadOpen, setUploadOpen] = React.useState(false);
-  const [file, setFile] = React.useState<File | null>(null);
-  const [docType, setDocType] = React.useState<string>("passport");
-  const [expiryDate, setExpiryDate] = React.useState("");
-  const [notes, setNotes] = React.useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [docType, setDocType] = useState<string>("passport");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const [verifyDoc, setVerifyDoc] = React.useState<KYCDocumentItem | null>(null);
-  const [verifyStatus, setVerifyStatus] = React.useState<"verified" | "rejected">("verified");
-  const [rejectionReason, setRejectionReason] = React.useState("");
-  const [verifyNotes, setVerifyNotes] = React.useState("");
+  const [verifyDoc, setVerifyDoc] = useState<KYCDocumentItem | null>(null);
+  const [verifyStatus, setVerifyStatus] = useState<"verified" | "rejected">("verified");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [verifyNotes, setVerifyNotes] = useState("");
 
   function handleUpload() {
     if (!file) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { usePartnerDeliverableFeedback } from "@/hooks/use-partner-portal";
@@ -43,7 +43,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function DeliverableFeedbackPage() {
-  const [selectedAssignment, setSelectedAssignment] = React.useState<string>("all");
+  const [selectedAssignment, setSelectedAssignment] = useState<string>("all");
   const { data: assignmentsData } = usePartnerAssignments();
   const { data: report, isLoading } = usePartnerDeliverableFeedback(
     selectedAssignment !== "all" ? selectedAssignment : undefined

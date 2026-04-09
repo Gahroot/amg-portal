@@ -13,7 +13,6 @@ import {
   Library,
   Wallet,
   RefreshCw,
-  Webhook,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 

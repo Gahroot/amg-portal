@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
@@ -49,18 +49,18 @@ export default function PartnerNotificationsPage() {
   const { data: preferences, isLoading } = useNotificationPreferences();
   const updatePreferences = useUpdateNotificationPreferences();
 
-  const [digestEnabled, setDigestEnabled] = React.useState(true);
-  const [digestFrequency, setDigestFrequency] = React.useState("daily");
-  const [emailEnabled, setEmailEnabled] = React.useState(true);
-  const [portalEnabled, setPortalEnabled] = React.useState(true);
-  const [pushEnabled, setPushEnabled] = React.useState(true);
-  const [quietHoursEnabled, setQuietHoursEnabled] = React.useState(false);
-  const [quietHoursStart, setQuietHoursStart] = React.useState("22:00");
-  const [quietHoursEnd, setQuietHoursEnd] = React.useState("07:00");
-  const [timezone, setTimezone] = React.useState("UTC");
-  const [hasChanges, setHasChanges] = React.useState(false);
+  const [digestEnabled, setDigestEnabled] = useState(true);
+  const [digestFrequency, setDigestFrequency] = useState("daily");
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [portalEnabled, setPortalEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+  const [quietHoursStart, setQuietHoursStart] = useState("22:00");
+  const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
+  const [timezone, setTimezone] = useState("UTC");
+  const [hasChanges, setHasChanges] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (preferences) {
       setDigestEnabled(preferences.digest_enabled);
       setDigestFrequency(preferences.digest_frequency);

@@ -99,6 +99,8 @@ class ProgramUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     status: ProgramStatus | None = None
+    brief_content: str | None = None
+    brief_visible_to_client: bool | None = None
 
 
 class EmergencyActivationRequest(BaseModel):
@@ -125,6 +127,9 @@ class ProgramResponse(BaseModel):
     completed_milestone_count: int = 0
     created_at: datetime
     updated_at: datetime
+    brief_content: str | None = None
+    brief_visible_to_client: bool = False
+    brief_shared_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

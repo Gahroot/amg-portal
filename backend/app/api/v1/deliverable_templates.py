@@ -258,10 +258,10 @@ async def create_template(
         object_name, file_size = await storage_service.upload_file(
             file, f"deliverable-templates/{template.id}"
         )
-        template.file_path = object_name  # type: ignore[assignment]
-        template.file_name = original_name  # type: ignore[assignment]
-        template.file_type = original_type  # type: ignore[assignment]
-        template.file_size = file_size  # type: ignore[assignment]
+        template.file_path = object_name
+        template.file_name = original_name
+        template.file_type = original_type
+        template.file_size = file_size
 
     db.add(template)
     await db.commit()
@@ -316,10 +316,10 @@ async def upload_template_file(
     object_name, file_size = await storage_service.upload_file(
         file, f"deliverable-templates/{template_id}"
     )
-    t.file_path = object_name  # type: ignore[assignment]
-    t.file_name = original_name  # type: ignore[assignment]
-    t.file_type = original_type  # type: ignore[assignment]
-    t.file_size = file_size  # type: ignore[assignment]
+    t.file_path = object_name
+    t.file_name = original_name
+    t.file_type = original_type
+    t.file_size = file_size
 
     await db.commit()
     await db.refresh(t)
@@ -340,7 +340,7 @@ async def delete_template(
     t = result.scalar_one_or_none()
     if not t:
         raise NotFoundException("Template not found")
-    t.is_active = False  # type: ignore[assignment]
+    t.is_active = False
     await db.commit()
 
 

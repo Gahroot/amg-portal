@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -81,18 +81,18 @@ export default function AssignmentDetailPage() {
   const assignmentId = params.id as string;
   const queryClient = useQueryClient();
 
-  const [deliverableOpen, setDeliverableOpen] = React.useState(false);
-  const [newDeliverable, setNewDeliverable] = React.useState({
+  const [deliverableOpen, setDeliverableOpen] = useState(false);
+  const [newDeliverable, setNewDeliverable] = useState({
     title: "",
     deliverable_type: "document",
     description: "",
     due_date: "",
   });
-  const [docMode, setDocMode] = React.useState<DocMode>("none");
-  const [uploadFile, setUploadFile] = React.useState<File | null>(null);
-  const [selectedDocId, setSelectedDocId] = React.useState<string | null>(null);
-  const [docSearch, setDocSearch] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [docMode, setDocMode] = useState<DocMode>("none");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [docSearch, setDocSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: ["assignments", assignmentId],
@@ -172,7 +172,7 @@ export default function AssignmentDetailPage() {
     },
   });
 
-  const filteredDocs = React.useMemo(() => {
+  const filteredDocs = useMemo(() => {
     const docs = allDocs?.documents ?? [];
     if (!docSearch.trim()) return docs;
     const lower = docSearch.toLowerCase();

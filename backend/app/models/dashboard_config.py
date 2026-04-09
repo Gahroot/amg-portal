@@ -1,13 +1,18 @@
 """Dashboard configuration model for storing user widget layouts."""
 
+from __future__ import annotations
+
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import JSON, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class DashboardConfig(Base, TimestampMixin):
@@ -28,7 +33,7 @@ class DashboardConfig(Base, TimestampMixin):
     columns: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
 
     # Relationship
-    user: Mapped["User"] = relationship("User", back_populates="dashboard_config")
+    user: Mapped[User] = relationship("User", back_populates="dashboard_config")
 
     def __repr__(self) -> str:
         return f"<DashboardConfig(user_id={self.user_id}, widgets={len(self.widgets)})>"

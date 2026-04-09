@@ -100,7 +100,7 @@ async def submit_intake_form(
     data: IntakeFormData,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Submit a complete client intake form."""
     # Check for existing client with same email
     existing = await db.execute(
@@ -168,7 +168,7 @@ async def submit_intake_form(
         intelligence_file=profile.intelligence_file,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
-        family_members=family_members,
+        family_members=family_members,  # type: ignore[arg-type]
         lifestyle=_extract_lifestyle_from_intel(profile.intelligence_file),
     )
 
@@ -181,7 +181,7 @@ async def submit_intake_form(
 async def get_draft_intake(
     profile_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Get draft intake data for a client profile."""
     result = await db.execute(
         select(ClientProfile).where(ClientProfile.id == profile_id)
@@ -217,7 +217,7 @@ async def get_draft_intake(
         intelligence_file=profile.intelligence_file,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
-        family_members=list(family_members),
+        family_members=list(family_members),  # type: ignore[arg-type]
         lifestyle=_extract_lifestyle_from_intel(profile.intelligence_file),
     )
 
@@ -232,7 +232,7 @@ async def save_intake_step(
     step: int,
     data: IntakeDraftData,
     db: DB,
-):
+) -> Any:
     """Save a specific step of the intake form."""
     if step < 1 or step > 5:
         raise BadRequestException("Step must be between 1 and 5")
@@ -320,7 +320,7 @@ async def save_intake_step(
         intelligence_file=profile.intelligence_file,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
-        family_members=list(family_members),
+        family_members=list(family_members),  # type: ignore[arg-type]
         lifestyle=_extract_lifestyle_from_intel(profile.intelligence_file),
     )
 
@@ -333,7 +333,7 @@ async def save_intake_step(
 async def submit_completed_intake(
     profile_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Submit a completed intake form for compliance review."""
     result = await db.execute(
         select(ClientProfile).where(ClientProfile.id == profile_id)
@@ -383,6 +383,6 @@ async def submit_completed_intake(
         intelligence_file=profile.intelligence_file,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
-        family_members=list(family_members),
+        family_members=list(family_members),  # type: ignore[arg-type]
         lifestyle=_extract_lifestyle_from_intel(profile.intelligence_file),
     )

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useReducer, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -47,10 +47,10 @@ interface StepRowProps {
 }
 
 function StepRow({ step, state, escalationId, onUpdate }: StepRowProps) {
-  const [expanded, setExpanded] = React.useState(false);
-  const [notes, setNotes] = React.useState(state?.notes ?? "");
-  const [skipReason, setSkipReason] = React.useState(state?.skip_reason ?? "");
-  const [showSkip, setShowSkip] = React.useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [notes, setNotes] = useState(state?.notes ?? "");
+  const [skipReason, setSkipReason] = useState(state?.skip_reason ?? "");
+  const [showSkip, setShowSkip] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -334,7 +334,7 @@ function SuggestedActions({ actions }: { actions: SuggestedAction[] }) {
 export function PlaybookViewer({ escalationId, data }: PlaybookViewerProps) {
   const { playbook, execution, suggested_actions } = data;
 
-  const stepMap = React.useMemo(() => {
+  const stepMap = useMemo(() => {
     const map = new Map<number, StepState>();
     if (execution) {
       for (const s of execution.step_states as StepState[]) {
@@ -351,7 +351,7 @@ export function PlaybookViewer({ escalationId, data }: PlaybookViewerProps) {
     percentage: 0,
   };
 
-  const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   return (
     <div className="space-y-6">

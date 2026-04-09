@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listEscalationTemplates } from "@/lib/api/escalation-templates";
 import type {
@@ -55,8 +55,8 @@ export function TemplatePicker({
   onOpenChange,
   onSelect,
 }: TemplatePickerProps) {
-  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
-  const [selected, setSelected] = React.useState<EscalationTemplate | null>(
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<EscalationTemplate | null>(
     null,
   );
 

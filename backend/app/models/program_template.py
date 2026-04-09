@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -14,7 +15,7 @@ class ProgramTemplate(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    milestones_template: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    milestones_template: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
     estimated_duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_system_template: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"

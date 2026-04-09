@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import * as React from "react";
+import { createElement } from "react";
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useClientProfiles, useClientProfile } from "../use-clients";
 import type { ClientProfileListResponse, ClientProfile } from "@/types/client";
@@ -70,8 +71,8 @@ function createWrapper() {
       queries: { retry: false, staleTime: 0, gcTime: 0 },
     },
   });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(
       QueryClientProvider,
       { client: queryClient },
       children

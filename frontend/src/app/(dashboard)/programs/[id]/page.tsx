@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -61,6 +61,7 @@ import { GanttToolbar } from "@/components/programs/gantt-toolbar";
 import type { ZoomLevel, GanttFilters } from "@/components/programs/gantt-toolbar";
 import { useProgramGantt } from "@/hooks/use-program-gantt";
 import { TravelLogisticsTab } from "@/components/travel/travel-logistics-tab";
+import { ProgramBriefCard } from "@/components/programs/program-brief-card";
 import { AlertTriangle, Clock } from "lucide-react";
 
 const TASK_STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
@@ -96,8 +97,8 @@ export default function ProgramDashboardPage() {
     },
   });
 
-  const [milestoneOpen, setMilestoneOpen] = React.useState(false);
-  const [newMilestone, setNewMilestone] = React.useState<MilestoneCreate>({
+  const [milestoneOpen, setMilestoneOpen] = useState(false);
+  const [newMilestone, setNewMilestone] = useState<MilestoneCreate>({
     title: "",
     description: "",
     due_date: "",
@@ -105,16 +106,16 @@ export default function ProgramDashboardPage() {
 
   // Gantt state
   const ganttData = useProgramGantt(program);
-  const [ganttZoom, setGanttZoom] = React.useState<ZoomLevel>("week");
-  const [ganttFilters, setGanttFilters] = React.useState<GanttFilters>({
+  const [ganttZoom, setGanttZoom] = useState<ZoomLevel>("week");
+  const [ganttFilters, setGanttFilters] = useState<GanttFilters>({
     hideCompleted: false,
     showOnlyCritical: false,
     hideTasks: false,
   });
-  const [isExporting, setIsExporting] = React.useState(false);
-  const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const handleGanttExport = React.useCallback(async () => {
+  const handleGanttExport = useCallback(async () => {
     if (!svgRef.current) return;
     setIsExporting(true);
     try {
@@ -160,12 +161,12 @@ export default function ProgramDashboardPage() {
     },
   });
 
-  const [activeTab, setActiveTab] = React.useState("overview");
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Tick every 30 s so the retrospective countdown stays fresh without impure
   // Date.now() calls inline during render.
-  const [nowMs, setNowMs] = React.useState(0);
-  React.useEffect(() => {
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => {
     setNowMs(Date.now());
     const id = setInterval(() => setNowMs(Date.now()), 30_000);
     return () => clearInterval(id);
@@ -473,6 +474,19 @@ export default function ProgramDashboardPage() {
                   </p>
                 </CardContent>
               </Card>
+            )}
+
+            {isInternalSenior && (
+              <ProgramBriefCard
+                programId={programId}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- brief fields not yet in generated types
+                briefContent={(program as Record<string, any>).brief_content ?? null}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                briefVisibleToClient={(program as Record<string, any>).brief_visible_to_client ?? false}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                briefSharedAt={(program as Record<string, any>).brief_shared_at ?? null}
+                canEdit={isInternalSenior}
+              />
             )}
           </TabsContent>
 

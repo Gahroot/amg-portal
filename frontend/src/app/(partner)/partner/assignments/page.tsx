@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyAssignments } from "@/lib/api/partner-portal";
@@ -31,7 +31,7 @@ const STATUS_VARIANT: Record<
 
 export default function PartnerAssignmentsPage() {
   const queryClient = useQueryClient();
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["partner-portal", "assignments"],

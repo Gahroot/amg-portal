@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,9 @@ import {
 // ─── Offer deadline countdown ────────────────────────────────────────────────
 
 function useOfferCountdown(offerExpiresAt: string | null): string | null {
-  const [label, setLabel] = React.useState<string | null>(null);
+  const [label, setLabel] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!offerExpiresAt) return;
 
     const tick = () => {
@@ -55,7 +56,7 @@ function useOfferCountdown(offerExpiresAt: string | null): string | null {
 
 const EVENT_CONFIG: Record<
   string,
-  { label: string; icon: React.ReactNode; color: string }
+  { label: string; icon: ReactNode; color: string }
 > = {
   dispatched: {
     label: "Dispatched",
@@ -126,9 +127,9 @@ export function AssignmentActions({
   onStatusChange,
 }: AssignmentActionsProps) {
   const queryClient = useQueryClient();
-  const [declineOpen, setDeclineOpen] = React.useState(false);
-  const [declineReason, setDeclineReason] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const countdown = useOfferCountdown(assignment.offer_expires_at);
 
   const { data: history = [] } = useQuery({
@@ -162,7 +163,7 @@ export function AssignmentActions({
     onError: () => setError("Failed to decline assignment. Please try again."),
   });
 
-  const handleDeclineSubmit = (e: React.FormEvent) => {
+  const handleDeclineSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!declineReason.trim()) return;
     setError(null);

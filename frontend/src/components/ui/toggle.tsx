@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ButtonHTMLAttributes, MouseEvent, Ref } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,7 @@ const toggleVariants = cva(
 );
 
 interface ToggleProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof toggleVariants> {
   pressed?: boolean;
   onPressedChange?: (pressed: boolean) => void;
@@ -40,8 +40,8 @@ function Toggle({
   pressed = false,
   onPressedChange,
   ...props
-}: ToggleProps & { ref?: React.Ref<HTMLButtonElement> }) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+}: ToggleProps & { ref?: Ref<HTMLButtonElement> }) {
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     onPressedChange?.(!pressed);
     props.onClick?.(e);
   };

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Search, X } from "lucide-react";
 import {
   Dialog,
@@ -35,11 +36,11 @@ export function KeyboardShortcutsDialog({
   onOpenChange,
   shortcuts = DEFAULT_SHORTCUTS,
 }: KeyboardShortcutsDialogProps) {
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus search input when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       // Small delay to ensure dialog is rendered
       const timer = setTimeout(() => {
@@ -52,7 +53,7 @@ export function KeyboardShortcutsDialog({
   }, [open]);
 
   // Filter shortcuts based on search query
-  const filteredShortcuts = React.useMemo(() => {
+  const filteredShortcuts = useMemo(() => {
     if (!searchQuery.trim()) return shortcuts;
 
     const query = searchQuery.toLowerCase();
@@ -68,7 +69,7 @@ export function KeyboardShortcutsDialog({
   }, [shortcuts, searchQuery]);
 
   // Group filtered shortcuts by category
-  const groupedShortcuts = React.useMemo(() => {
+  const groupedShortcuts = useMemo(() => {
     const groups = new Map<ShortcutCategory, KeyboardShortcut[]>();
 
     filteredShortcuts.forEach((shortcut) => {
@@ -143,7 +144,7 @@ export function KeyboardShortcutsDialog({
               })
             ) : (
               <div className="py-8 text-center text-muted-foreground">
-                <p className="text-sm">No shortcuts found for "{searchQuery}"</p>
+                <p className="text-sm">No shortcuts found for &ldquo;{searchQuery}&rdquo;</p>
                 <Button
                   variant="link"
                   size="sm"
@@ -241,12 +242,12 @@ function ShortcutKeysDisplay({ shortcut }: { shortcut: KeyboardShortcut }) {
   return (
     <div className="flex items-center gap-0.5">
       {keys.map((key, index) => (
-        <React.Fragment key={`${key}-${index}`}>
+        <Fragment key={`${key}-${index}`}>
           <Kbd>{key}</Kbd>
           {index < keys.length - 1 && (
             <span className="text-muted-foreground text-[10px] mx-0.5">+</span>
           )}
-        </React.Fragment>
+        </Fragment>
       ))}
     </div>
   );
@@ -255,7 +256,7 @@ function ShortcutKeysDisplay({ shortcut }: { shortcut: KeyboardShortcut }) {
 /**
  * Context for the keyboard shortcuts dialog state
  */
-const KeyboardShortcutsDialogContext = React.createContext<{
+const KeyboardShortcutsDialogContext = createContext<{
   isOpen: boolean;
   open: () => void;
   close: () => void;
@@ -273,11 +274,11 @@ const KeyboardShortcutsDialogContext = React.createContext<{
 export function KeyboardShortcutsDialogProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       isOpen,
       open: () => setIsOpen(true),
@@ -302,5 +303,5 @@ export function KeyboardShortcutsDialogProvider({
  * Hook to access keyboard shortcuts dialog state
  */
 export function useKeyboardShortcutsDialog() {
-  return React.useContext(KeyboardShortcutsDialogContext);
+  return useContext(KeyboardShortcutsDialogContext);
 }

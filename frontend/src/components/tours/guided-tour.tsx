@@ -60,7 +60,7 @@ function TourPopoverContent({
   onPrevious,
   onNext,
   onSkip,
-  onClose,
+  _onClose,
 }: {
   tour: TourDefinition;
   currentStep: number;

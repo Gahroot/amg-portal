@@ -16,6 +16,7 @@ from app.api.deps import (
     require_rm_or_above,
 )
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.models.enums import AssignmentStatus
 from app.models.partner import PartnerProfile
 from app.models.partner_assignment import AssignmentHistory, PartnerAssignment
 from app.models.partner_blocker import PartnerBlocker
@@ -36,14 +37,14 @@ router = APIRouter()
 
 def _is_due_date_blocked(blocker: PartnerBlocker, d: date) -> bool:
     """Return True if the blocker covers the given date."""
-    start: date = blocker.start_date  # type: ignore[assignment]
-    end: date = blocker.end_date  # type: ignore[assignment]
+    start: date = blocker.start_date
+    end: date = blocker.end_date
     if not (start <= d <= end):
         return False
     if not blocker.is_recurring:
         return True
     if blocker.recurrence_type == "weekly":
-        days: list[int] = blocker.recurrence_days or []  # type: ignore[assignment]
+        days: list[int] = blocker.recurrence_days or []
         return d.isoweekday() in days
     return True
 
@@ -78,7 +79,7 @@ async def create_assignment(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     # Verify partner exists
     partner_result = await db.execute(
         select(PartnerProfile).where(PartnerProfile.id == data.partner_id)
@@ -150,7 +151,7 @@ async def list_assignments(
     program_id: UUID | None = None,
     status: str | None = None,
     search: str | None = None,
-):
+) -> Any:
     query = select(PartnerAssignment).options(
         selectinload(PartnerAssignment.partner),
         selectinload(PartnerAssignment.program),
@@ -169,8 +170,8 @@ async def list_assignments(
     assignments, total = await paginate(db, query, skip=skip, limit=limit)
 
     return AssignmentListResponse(
-        assignments=[build_assignment_response(a) for a in assignments],
-        total=total,
+        assignments=[build_assignment_response(a) for a in assignments],  # type: ignore[misc]
+        total=total or 0,
     )
 
 
@@ -180,7 +181,7 @@ async def get_assignment(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
@@ -199,7 +200,7 @@ async def update_assignment(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
@@ -233,7 +234,7 @@ async def dispatch_assignment(
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
     offer_hours: int = Query(48, ge=1, le=720, description="Hours partner has to accept the offer"),
-):
+) -> Any:
     result = await db.execute(
         select(PartnerAssignment)
         .options(selectinload(PartnerAssignment.partner), selectinload(PartnerAssignment.program))
@@ -246,7 +247,7 @@ async def dispatch_assignment(
         raise BadRequestException("Only draft assignments can be dispatched")
 
     now = datetime.now(UTC)
-    assignment.status = "dispatched"
+    assignment.status = AssignmentStatus.dispatched
     assignment.offer_expires_at = now + timedelta(hours=offer_hours)
 
     db.add(
@@ -297,7 +298,6 @@ async def dispatch_assignment(
 
 async def _generate_and_store_brief(db: DB, assignment: PartnerAssignment) -> None:
     """Render the brief template to PDF and persist the MinIO path on the assignment."""
-    from fastapi.concurrency import run_in_threadpool
 
     from app.services.pdf_service import pdf_service
 
@@ -315,7 +315,7 @@ async def _generate_and_store_brief(db: DB, assignment: PartnerAssignment) -> No
         "generated_at": dispatched_at,
     }
 
-    pdf_bytes: bytes = await run_in_threadpool(pdf_service.generate_brief_pdf, data)
+    pdf_bytes: bytes = await pdf_service.generate_brief_pdf(data)
     object_path: str = await pdf_service.store_report_pdf(
         pdf_bytes,
         report_type="briefs",
@@ -335,7 +335,7 @@ async def get_assignment_history_internal(
     assignment_id: UUID,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Return the full accept/decline history for an assignment (internal staff only)."""
     owner_result = await db.execute(
         select(PartnerAssignment.id).where(PartnerAssignment.id == assignment_id)

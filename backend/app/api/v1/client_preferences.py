@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser
-from app.api.v1.client_portal import require_client
+from app.api.deps import DB, CurrentUser, require_client
 from app.core.exceptions import NotFoundException
 from app.models.client import Client
+from app.models.enums import DigestFrequency
 from app.models.notification_preference import NotificationPreference
 from app.models.program import Program
 from app.schemas.client_preferences import (
@@ -91,7 +91,7 @@ async def update_preferences(
         db.add(pref)
 
     if body.digest_frequency is not None:
-        pref.digest_frequency = body.digest_frequency
+        pref.digest_frequency = DigestFrequency(body.digest_frequency)
         pref.digest_enabled = body.digest_frequency != "never"
 
     if body.notification_channels is not None:

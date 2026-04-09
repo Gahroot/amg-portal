@@ -75,13 +75,13 @@ const TASK_EXPORT_COLUMNS: ExportColumn<TaskBoard>[] = [
 
 export function TaskBoard() {
   const queryClient = useQueryClient();
-  const pathname = usePathname();
+  const _pathname = usePathname();
 
   // Navigation state for scroll and filter preservation
   const {
-    restoreScrollPosition,
-    markForRestore,
-    resetFilters,
+    _restoreScrollPosition,
+    _markForRestore,
+    _resetFilters,
     hasPendingRestore,
   } = useNavigationState({
     routeKey: TASKS_ROUTE_KEY,

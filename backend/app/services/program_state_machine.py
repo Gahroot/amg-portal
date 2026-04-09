@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ValidationException
 from app.models.audit_log import AuditLog
+from app.models.enums import ProgramStatus
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.program_closure import ProgramClosure
@@ -288,7 +289,7 @@ async def transition_program(
         await guard(db, program)
 
     # Apply the transition
-    program.status = new_status
+    program.status = ProgramStatus(new_status)
     await _write_audit_log(db, program, current_status, new_status, user)
     await db.flush()
 

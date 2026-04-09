@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { AlertTriangle, Bell, CheckCircle, ShieldAlert } from "lucide-react";
 import { useMyPerformanceNotices, useAcknowledgePerformanceNotice } from "@/hooks/use-partner-portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

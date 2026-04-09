@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { TimelineMilestone, type MilestoneDisplayState } from "./timeline-milestone";
 import type { ClientPortalMilestone, ClientPortalProgramDetail } from "@/lib/api/client-portal";
@@ -161,7 +161,7 @@ function CompactTimeline({
               : "bg-muted-foreground/15";
 
         return (
-          <React.Fragment key={milestone.id}>
+          <Fragment key={milestone.id}>
             <div
               className={cn(
                 "h-2.5 w-2.5 shrink-0 rounded-full transition-all",
@@ -172,7 +172,7 @@ function CompactTimeline({
             {!isLast && (
               <div className={cn("h-0.5 flex-1 transition-all", lineColor)} />
             )}
-          </React.Fragment>
+          </Fragment>
         );
       })}
     </div>

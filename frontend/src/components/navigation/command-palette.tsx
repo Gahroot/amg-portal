@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { ElementType, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileText,
@@ -50,7 +50,7 @@ const INTERNAL_ROLES = [
   "finance_compliance",
 ];
 
-const TYPE_ICONS: Record<string, React.ElementType> = {
+const TYPE_ICONS: Record<string, ElementType> = {
   program: Briefcase,
   client: Users,
   partner: Building2,
@@ -67,7 +67,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 // Type filter options
-const TYPE_FILTERS: { type: SearchEntityType | "all"; label: string; icon: React.ElementType }[] = [
+const TYPE_FILTERS: { type: SearchEntityType | "all"; label: string; icon: ElementType }[] = [
   { type: "all", label: "All", icon: Search },
   { type: "client", label: "Clients", icon: Users },
   { type: "program", label: "Programs", icon: Briefcase },
@@ -87,9 +87,9 @@ export function CommandPalette({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: CommandPaletteProps = {}) {
-  const [internalOpen, setInternalOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-  const [activeTypeFilter, setActiveTypeFilter] = React.useState<SearchEntityType | "all">("all");
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeTypeFilter, setActiveTypeFilter] = useState<SearchEntityType | "all">("all");
   const router = useRouter();
   const { user } = useAuth();
   const { open: openShortcutsDialog } = useKeyboardShortcutsDialog();
@@ -99,10 +99,10 @@ export function CommandPalette({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
 
   // Parse query for operators
-  const parsedQuery = React.useMemo(() => parseSearchQuery(query), [query]);
+  const parsedQuery = useMemo(() => parseSearchQuery(query), [query]);
 
   // Determine type filter from query operators or active filter
-  const typeFilter = React.useMemo(() => {
+  const typeFilter = useMemo(() => {
     // If query has type: operator, use that
     if (parsedQuery.types.length > 0) {
       return parsedQuery.types[0] as SearchEntityType;
@@ -122,17 +122,17 @@ export function CommandPalette({
 
   const hasQuery = debouncedQuery.trim().length > 0;
 
-  const navGroups = React.useMemo(() => {
+  const navGroups = useMemo(() => {
     if (!user) return {};
     const config = getNavConfigForRole(user.role);
     return getGroupedNavItems(config, user.role);
-  }, [user?.role]);
+  }, [user]);
 
   // Track if a search has been performed (for recording to recent searches)
-  const hasPerformedSearch = React.useRef(false);
+  const hasPerformedSearch = useRef(false);
 
   // Record search query when search results come back
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       hasQuery &&
       data &&
@@ -149,7 +149,7 @@ export function CommandPalette({
   }, [hasQuery, data, debouncedQuery, addRecentSearch]);
 
   // Keyboard shortcut: Cmd/Ctrl+K (only when not controlled)
-  React.useEffect(() => {
+  useEffect(() => {
     // Skip if controlled - parent handles the keyboard shortcut
     if (controlledOpen !== undefined) return;
 
@@ -164,7 +164,7 @@ export function CommandPalette({
   }, [controlledOpen]);
 
   // Reset query when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       setQuery("");
       setActiveTypeFilter("all");
@@ -232,11 +232,11 @@ export function CommandPalette({
     }
   }
 
-  const groups = data?.groups ?? [];
+  const groups = useMemo(() => data?.groups ?? [], [data]);
   const recentItems = recentItemsData?.items ?? [];
 
   // Group results by type for legacy rendering
-  const grouped = React.useMemo(() => {
+  const _grouped = useMemo(() => {
     const result: Record<string, SearchResultItem[]> = {};
     for (const group of groups) {
       result[group.type] = group.results;
@@ -430,7 +430,7 @@ export function CommandPalette({
 
             {/* Config-driven navigation groups */}
             {Object.entries(navGroups).map(([groupLabel, items]) => (
-              <React.Fragment key={groupLabel}>
+              <Fragment key={groupLabel}>
                 <CommandSeparator />
                 <CommandGroup heading={groupLabel}>
                   {items.map((item) => {
@@ -449,7 +449,7 @@ export function CommandPalette({
                     );
                   })}
                 </CommandGroup>
-              </React.Fragment>
+              </Fragment>
             ))}
 
             {/* Utilities */}

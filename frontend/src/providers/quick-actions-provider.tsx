@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import type { UserRole } from "@/types/user";
@@ -361,7 +362,7 @@ interface QuickActionsContextType {
   isPinned: (actionId: string) => boolean;
 }
 
-const QuickActionsContext = React.createContext<QuickActionsContextType | null>(null);
+const QuickActionsContext = createContext<QuickActionsContextType | null>(null);
 
 /**
  * Storage key for persisting preferences
@@ -427,27 +428,27 @@ function saveState(state: QuickActionsState): void {
 /**
  * Quick Actions Provider
  */
-export function QuickActionsProvider({ children }: { children: React.ReactNode }) {
+export function QuickActionsProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
 
-  const [state, setState] = React.useState<QuickActionsState>(loadState);
+  const [state, setState] = useState<QuickActionsState>(loadState);
 
   // Build context
-  const context: QuickActionContext = React.useMemo(() => ({
+  const context: QuickActionContext = useMemo(() => ({
     pathname,
     pageType: detectPageType(pathname),
     userRole: user?.role || "client",
   }), [pathname, user?.role]);
 
   // Get actions for current context
-  const allActions = React.useMemo(() => {
+  const allActions = useMemo(() => {
     return getDefaultActionsForContext(context.pageType, context.userRole, router);
   }, [context.pageType, context.userRole, router]);
 
   // Sort actions by order and custom order
-  const actions = React.useMemo(() => {
+  const actions = useMemo(() => {
     return [...allActions].sort((a, b) => {
       const orderA = state.customOrder[a.id] ?? a.order ?? 100;
       const orderB = state.customOrder[b.id] ?? b.order ?? 100;
@@ -456,12 +457,12 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
   }, [allActions, state.customOrder]);
 
   // Get pinned actions
-  const pinnedActions = React.useMemo(() => {
+  const pinnedActions = useMemo(() => {
     return actions.filter((a) => state.pinnedActions.includes(a.id));
   }, [actions, state.pinnedActions]);
 
   // Pin/unpin actions
-  const pinAction = React.useCallback((actionId: string) => {
+  const pinAction = useCallback((actionId: string) => {
     setState((prev) => {
       if (prev.pinnedActions.includes(actionId)) return prev;
       const newState = {
@@ -473,7 +474,7 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const unpinAction = React.useCallback((actionId: string) => {
+  const unpinAction = useCallback((actionId: string) => {
     setState((prev) => {
       const newState = {
         ...prev,
@@ -484,7 +485,7 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const togglePin = React.useCallback((actionId: string) => {
+  const togglePin = useCallback((actionId: string) => {
     setState((prev) => {
       const isPinned = prev.pinnedActions.includes(actionId);
       const newState = {
@@ -498,7 +499,7 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const reorderAction = React.useCallback((actionId: string, newOrder: number) => {
+  const reorderAction = useCallback((actionId: string, newOrder: number) => {
     setState((prev) => {
       const newState = {
         ...prev,
@@ -510,7 +511,7 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
   }, []);
 
   // Execute action
-  const executeAction = React.useCallback((action: QuickAction) => {
+  const executeAction = useCallback((action: QuickAction) => {
     // Check if disabled
     const disabled = typeof action.disabled === "function"
       ? action.disabled(context)
@@ -522,24 +523,24 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
   }, [context]);
 
   // Menu state
-  const openMenu = React.useCallback(() => {
+  const openMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: true }));
   }, []);
 
-  const closeMenu = React.useCallback(() => {
+  const closeMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: false }));
   }, []);
 
-  const toggleMenu = React.useCallback(() => {
+  const toggleMenu = useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: !prev.isOpen }));
   }, []);
 
   // Check if action is pinned
-  const isPinned = React.useCallback((actionId: string) => {
+  const isPinned = useCallback((actionId: string) => {
     return state.pinnedActions.includes(actionId);
   }, [state.pinnedActions]);
 
-  const value = React.useMemo(() => ({
+  const value = useMemo(() => ({
     context,
     actions,
     pinnedActions,
@@ -580,7 +581,7 @@ export function QuickActionsProvider({ children }: { children: React.ReactNode }
  * Hook to access quick actions context
  */
 export function useQuickActions(): QuickActionsContextType {
-  const context = React.useContext(QuickActionsContext);
+  const context = useContext(QuickActionsContext);
   if (!context) {
     throw new Error("useQuickActions must be used within a QuickActionsProvider");
   }

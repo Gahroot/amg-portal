@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -40,10 +41,10 @@ export default function MDApprovalReviewPage() {
     enabled: user?.role === "managing_director",
   });
 
-  const [approved, setApproved] = React.useState<string>("");
-  const [assignedRmId, setAssignedRmId] = React.useState<string>("");
-  const [notes, setNotes] = React.useState("");
-  const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [approved, setApproved] = useState<string>("");
+  const [assignedRmId, setAssignedRmId] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   if (user?.role !== "managing_director") {
     return (
@@ -75,7 +76,7 @@ export default function MDApprovalReviewPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 

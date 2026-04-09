@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { Undo2, Redo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -140,7 +141,7 @@ export function FormUndoRedo({
  * Props for FormUndoRedoProvider - wraps a form and provides keyboard shortcuts
  */
 export interface FormUndoRedoProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   /** Whether undo is available */
   canUndo: boolean;
   /** Whether redo is available */
@@ -180,7 +181,7 @@ export function FormUndoRedoProvider({
   onRedo,
   enabled = true,
 }: FormUndoRedoProviderProps) {
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -281,7 +282,7 @@ export function useUndoRedoShortcuts(
   onRedo: () => void,
   enabled = true
 ) {
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
 
     function handleKeyDown(event: KeyboardEvent) {

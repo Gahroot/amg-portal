@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -104,7 +104,7 @@ function formatThreshold(metric: string, threshold: number): string {
 // ── Alert Row ─────────────────────────────────────────────────────────────────
 
 function AlertRow({ alert }: { alert: MetricAlert }) {
-  const [expanded, setExpanded] = React.useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const valueColor =
     alert.status === "critical"

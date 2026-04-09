@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Share2, Trash2, Clock, Eye, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,18 +65,18 @@ export function ShareDocumentDialog({
   open,
   onOpenChange,
 }: ShareDocumentDialogProps) {
-  const [email, setEmail] = React.useState("");
-  const [accessLevel, setAccessLevel] = React.useState<"view" | "download">("view");
-  const [expiresHours, setExpiresHours] = React.useState("72");
-  const [shares, setShares] = React.useState<DocumentShare[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [revokingId, setRevokingId] = React.useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [accessLevel, setAccessLevel] = useState<"view" | "download">("view");
+  const [expiresHours, setExpiresHours] = useState("72");
+  const [shares, setShares] = useState<DocumentShare[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   // Load existing shares when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     setIsLoading(true);
     listDocumentShares(documentId)
@@ -84,7 +85,7 @@ export function ShareDocumentDialog({
       .finally(() => setIsLoading(false));
   }, [open, documentId]);
 
-  async function handleShare(e: React.FormEvent) {
+  async function handleShare(e: FormEvent) {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Download, AlertTriangle, Clock, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,7 +145,7 @@ const EXPORT_COLUMNS: ExportColumn<ExpiringDocumentItem>[] = [
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ExpiringDocumentsPage() {
-  const [statusFilter, setStatusFilter] = React.useState<
+  const [statusFilter, setStatusFilter] = useState<
     "all" | "expired" | "expiring_30" | "expiring_90"
   >("all");
 

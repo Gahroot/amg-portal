@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { HelpCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +14,7 @@ import {
  */
 export interface HelpTooltipProps {
   /** The help content to display in the tooltip */
-  content: React.ReactNode;
+  content: ReactNode;
   /** Icon variant to use */
   variant?: "default" | "info" | "muted";
   /** Size of the icon */
@@ -126,7 +126,7 @@ export function HelpTooltip({
  */
 export interface HelpTooltipWrapperProps extends HelpTooltipProps {
   /** The element to wrap with the help tooltip */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Position of the help icon relative to children */
   position?: "start" | "end";
   /** Gap between children and icon */
@@ -168,11 +168,11 @@ export function HelpTooltipWrapper({
 /**
  * Props for FormLabelWithHelp component
  */
-export interface FormLabelWithHelpProps extends React.ComponentProps<"label"> {
+export interface FormLabelWithHelpProps extends ComponentProps<"label"> {
   /** The label text */
   label: string;
   /** Help content for the tooltip */
-  helpContent: React.ReactNode;
+  helpContent: ReactNode;
   /** Whether the field is required */
   required?: boolean;
   /** Tooltip props to pass through */
@@ -197,7 +197,7 @@ export function FormLabelWithHelp({
   required,
   className,
   tooltipProps,
-  ...props
+  ..._props
 }: FormLabelWithHelpProps) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-sm font-medium leading-none", className)}>

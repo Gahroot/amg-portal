@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useCallback } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import {
   useFocusMode as useFocusModeBase,
   FocusModeProvider as BaseFocusModeProvider,
@@ -11,7 +12,7 @@ export { useFocusMode } from "@/hooks/use-focus-mode";
 
 interface FocusModeOverlayProps {
   /** Content to show in the overlay (usually exit button) */
-  children?: React.ReactNode;
+  children?: ReactNode;
   /** Callback when clicking outside content to exit */
   onExit?: () => void;
 }
@@ -26,8 +27,8 @@ export function FocusModeOverlay({
 }: FocusModeOverlayProps) {
   const { isFocusMode, disableFocusMode } = useFocusModeBase();
 
-  const handleBackdropClick = React.useCallback(
-    (event: React.MouseEvent) => {
+  const handleBackdropClick = useCallback(
+    (event: MouseEvent) => {
       // Only trigger if clicking the backdrop itself, not children
       if (event.target === event.currentTarget) {
         (onExit ?? disableFocusMode)();
@@ -72,7 +73,7 @@ export function FocusModeExitButton() {
 /**
  * Combined provider with overlay functionality
  */
-export function FocusModeProvider({ children }: { children: React.ReactNode }) {
+export function FocusModeProvider({ children }: { children: ReactNode }) {
   return (
     <BaseFocusModeProvider>
       {children}

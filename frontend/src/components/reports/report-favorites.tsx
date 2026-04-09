@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,7 +33,7 @@ export interface ReportMeta {
   label: string;
   description: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 }
 
 export const DASHBOARD_REPORT_META: ReportMeta[] = [

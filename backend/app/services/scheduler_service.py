@@ -597,7 +597,7 @@ async def _process_report_schedules_job() -> None:
                     # Read the attachment bytes for emailing
                     report_data = await _get_report_data(sched, db)
                     attachment_bytes = (
-                        _generate_attachment_bytes(sched, report_data)
+                        await _generate_attachment_bytes(sched, report_data)
                         if report_data
                         else b""
                     )
@@ -954,7 +954,7 @@ async def _check_data_retention_job() -> None:
         logger.exception("Error in data retention check job")
 
 
-async def _check_kyc_expiry_job() -> None:
+async def _check_kyc_expiry_job() -> None:  # noqa: PLR0915
     """Daily job: check KYC documents for expiry and notify relevant users.
 
     Per design doc Section 08: "Monthly compliance review: KYC expiry dates,
@@ -1064,7 +1064,7 @@ async def _check_kyc_expiry_job() -> None:
                     if kyc_doc.client and kyc_doc.client.rm_id:
                         recipient_ids.add(kyc_doc.client.rm_id)
 
-                    doc_id: UUID = kyc_doc.id  # type: ignore[assignment]
+                    doc_id: UUID = kyc_doc.id
                     for user_id in recipient_ids:
                         await notification_service.create_notification(
                             db,
@@ -1206,11 +1206,11 @@ async def _auto_progress_escalations_job() -> None:
     """
     logger.info("Running escalation auto-progression job")
     try:
-        from app.models.enums import EscalationStatus as ES
+        from app.models.enums import EscalationStatus as EscStatus
         from app.services.escalation_service import ESCALATION_PROGRESSION
 
         async with AsyncSessionLocal() as db:
-            active_statuses = [ES.open.value, ES.acknowledged.value]
+            active_statuses = [EscStatus.open.value, EscStatus.acknowledged.value]
             progressable_levels = list(ESCALATION_PROGRESSION.keys())
 
             result = await db.execute(

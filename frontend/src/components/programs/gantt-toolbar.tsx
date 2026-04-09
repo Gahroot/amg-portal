@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,7 +36,7 @@ interface GanttToolbarProps {
   isExporting?: boolean;
 }
 
-const ZOOM_LEVELS: { value: ZoomLevel; label: string; icon: React.ReactNode }[] = [
+const ZOOM_LEVELS: { value: ZoomLevel; label: string; icon: ReactNode }[] = [
   { value: "day", label: "Day", icon: <CalendarDays className="h-3.5 w-3.5" /> },
   { value: "week", label: "Week", icon: <CalendarRange className="h-3.5 w-3.5" /> },
   { value: "month", label: "Month", icon: <Calendar className="h-3.5 w-3.5" /> },

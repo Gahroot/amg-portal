@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Check } from "lucide-react";
-import type { NotificationGroup, Notification } from "@/types/communication";
+import type { NotificationGroup } from "@/types/communication";
 import { NotificationItem } from "./notification-item";
 
 interface NotificationGroupProps {
@@ -15,7 +15,7 @@ interface NotificationGroupProps {
   onMarkGroupRead?: (groupKey: string, groupMode: "type" | "entity" | "time") => void;
 }
 
-const priorityColors: Record<string, string> = {
+const _priorityColors: Record<string, string> = {
   urgent: "bg-red-100 text-red-700 dark:text-red-300 dark:bg-red-900/30",
   high: "bg-orange-100 text-orange-700 dark:text-orange-300 dark:bg-orange-900/30",
   normal: "bg-blue-100 text-blue-700 dark:text-blue-300 dark:bg-blue-900/30",

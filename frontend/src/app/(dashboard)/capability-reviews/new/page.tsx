@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { listPartners } from "@/lib/api/partners";
@@ -31,11 +32,11 @@ const YEARS = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
 export default function NewCapabilityReviewPage() {
   const router = useRouter();
 
-  const [partnerId, setPartnerId] = React.useState("");
-  const [reviewYear, setReviewYear] = React.useState(currentYear);
-  const [scheduledDate, setScheduledDate] = React.useState("");
-  const [notes, setNotes] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [partnerId, setPartnerId] = useState("");
+  const [reviewYear, setReviewYear] = useState(currentYear);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const { data: partnersData, isLoading: partnersLoading } = useQuery({
     queryKey: ["partners", { limit: 200 }],
@@ -53,7 +54,7 @@ export default function NewCapabilityReviewPage() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 

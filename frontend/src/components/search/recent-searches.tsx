@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { ElementType } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { Search, X, Clock, Trash2 } from "lucide-react";
 import {
   CommandGroup,
@@ -26,7 +27,7 @@ import { cn } from "@/lib/utils";
 /**
  * Icon mapping for search types
  */
-const SEARCH_TYPE_ICONS: Record<SearchType, React.ElementType> = {
+const SEARCH_TYPE_ICONS: Record<SearchType, ElementType> = {
   global: Search,
   client: Search,
   program: Search,
@@ -87,7 +88,7 @@ function RecentSearchItem({
 }: RecentSearchItemProps) {
   const Icon = SEARCH_TYPE_ICONS[search.type];
 
-  const handleRemove = (e: React.MouseEvent) => {
+  const handleRemove = (e: MouseEvent) => {
     e.stopPropagation();
     onRemove();
   };
@@ -248,7 +249,7 @@ export function CompactRecentSearches({
  * Recent searches menu with clear options
  */
 interface RecentSearchesMenuProps {
-  trigger: React.ReactNode;
+  trigger: ReactNode;
   limit?: number;
   onSelectSearch: (query: string) => void;
 }

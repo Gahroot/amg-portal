@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -38,7 +39,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; icon: React.ReactNode; color: string; description: string }
+  { label: string; icon: ReactNode; color: string; description: string }
 > = {
   pending: {
     label: "Pending",
@@ -90,7 +91,7 @@ export default function PartnerDeliverableDetailPage() {
   const params = useParams();
   const router = useRouter();
   const deliverableId = params.id as string;
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: deliverable, isLoading } = usePartnerDeliverable(deliverableId);
 
@@ -102,7 +103,7 @@ export default function PartnerDeliverableDetailPage() {
 
   const submitMutation = useSubmitPartnerDeliverable();
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       submitMutation.mutate(

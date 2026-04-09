@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 
 /**
@@ -57,7 +58,7 @@ interface SplitViewContextValue extends SplitViewState {
   setRightPanel: (panel: SplitViewPanel | null) => void;
 }
 
-const SplitViewContext = React.createContext<SplitViewContextValue | null>(null);
+const SplitViewContext = createContext<SplitViewContextValue | null>(null);
 
 const MIN_SPLIT_RATIO = 0.2;
 const MAX_SPLIT_RATIO = 0.8;
@@ -139,7 +140,7 @@ function buildSplitUrl(
  * Must be used within a SplitViewProvider
  */
 export function useSplitView(): SplitViewContextValue {
-  const context = React.useContext(SplitViewContext);
+  const context = useContext(SplitViewContext);
   if (!context) {
     throw new Error("useSplitView must be used within a SplitViewProvider");
   }
@@ -147,7 +148,7 @@ export function useSplitView(): SplitViewContextValue {
 }
 
 interface SplitViewProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   /** Whether to persist split view state in URL */
   syncWithUrl?: boolean;
 }
@@ -166,15 +167,15 @@ export function SplitViewProvider({
 
   // Initialize state from URL params if available
   const { leftPanel: initialLeft, rightPanel: initialRight, splitRatio: initialRatio } =
-    React.useMemo(() => parseSplitParams(searchParams), [searchParams]);
+    useMemo(() => parseSplitParams(searchParams), [searchParams]);
 
-  const [leftPanel, setLeftPanelState] = React.useState<SplitViewPanel | null>(initialLeft);
-  const [rightPanel, setRightPanelState] = React.useState<SplitViewPanel | null>(initialRight);
-  const [splitRatio, setSplitRatioState] = React.useState(initialRatio);
-  const [syncScroll, setSyncScroll] = React.useState(false);
+  const [leftPanel, setLeftPanelState] = useState<SplitViewPanel | null>(initialLeft);
+  const [rightPanel, setRightPanelState] = useState<SplitViewPanel | null>(initialRight);
+  const [splitRatio, setSplitRatioState] = useState(initialRatio);
+  const [syncScroll, setSyncScroll] = useState(false);
 
   // Update URL when split view state changes
-  const updateUrl = React.useCallback(
+  const updateUrl = useCallback(
     (newLeft: SplitViewPanel | null, newRight: SplitViewPanel | null, newRatio: number) => {
       if (!syncWithUrl) return;
 
@@ -186,7 +187,7 @@ export function SplitViewProvider({
 
   const isSplitView = leftPanel !== null && rightPanel !== null;
 
-  const enterSplitView = React.useCallback(
+  const enterSplitView = useCallback(
     (left: SplitViewPanel, right: SplitViewPanel, ratio = DEFAULT_SPLIT_RATIO) => {
       const clampedRatio = Math.max(MIN_SPLIT_RATIO, Math.min(MAX_SPLIT_RATIO, ratio));
       setLeftPanelState(left);
@@ -197,13 +198,13 @@ export function SplitViewProvider({
     [updateUrl]
   );
 
-  const exitSplitView = React.useCallback(() => {
+  const exitSplitView = useCallback(() => {
     // Keep left panel, close right
     setRightPanelState(null);
     updateUrl(leftPanel, null, splitRatio);
   }, [leftPanel, splitRatio, updateUrl]);
 
-  const swapPanels = React.useCallback(() => {
+  const swapPanels = useCallback(() => {
     if (!leftPanel || !rightPanel) return;
     setLeftPanelState(rightPanel);
     setRightPanelState(leftPanel);
@@ -211,7 +212,7 @@ export function SplitViewProvider({
     setSplitRatioState(1 - splitRatio);
   }, [leftPanel, rightPanel, splitRatio, updateUrl]);
 
-  const closePanel = React.useCallback(
+  const closePanel = useCallback(
     (side: "left" | "right") => {
       if (side === "left") {
         // If we have a right panel, it becomes the left panel
@@ -231,7 +232,7 @@ export function SplitViewProvider({
     [leftPanel, rightPanel, splitRatio, updateUrl]
   );
 
-  const setSplitRatio = React.useCallback(
+  const setSplitRatio = useCallback(
     (ratio: number) => {
       const clampedRatio = Math.max(MIN_SPLIT_RATIO, Math.min(MAX_SPLIT_RATIO, ratio));
       setSplitRatioState(clampedRatio);
@@ -240,11 +241,11 @@ export function SplitViewProvider({
     [leftPanel, rightPanel, updateUrl]
   );
 
-  const toggleSyncScroll = React.useCallback(() => {
+  const toggleSyncScroll = useCallback(() => {
     setSyncScroll((prev) => !prev);
   }, []);
 
-  const updatePanel = React.useCallback(
+  const updatePanel = useCallback(
     (side: "left" | "right", panel: SplitViewPanel) => {
       if (side === "left") {
         setLeftPanelState(panel);
@@ -257,7 +258,7 @@ export function SplitViewProvider({
     [rightPanel, leftPanel, splitRatio, updateUrl]
   );
 
-  const setLeftPanel = React.useCallback(
+  const setLeftPanel = useCallback(
     (panel: SplitViewPanel | null) => {
       setLeftPanelState(panel);
       if (panel && rightPanel) {
@@ -269,7 +270,7 @@ export function SplitViewProvider({
     [rightPanel, splitRatio, updateUrl]
   );
 
-  const setRightPanel = React.useCallback(
+  const setRightPanel = useCallback(
     (panel: SplitViewPanel | null) => {
       setRightPanelState(panel);
       if (leftPanel && panel) {
@@ -281,7 +282,7 @@ export function SplitViewProvider({
     [leftPanel, splitRatio, updateUrl]
   );
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       isSplitView,
       leftPanel,

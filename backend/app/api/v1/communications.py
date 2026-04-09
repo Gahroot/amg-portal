@@ -42,7 +42,7 @@ async def send_communication(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Send a new communication (message)."""
     # Convert to SendMessageRequest for internal handling
     send_data = SendMessageRequest(
@@ -69,7 +69,7 @@ async def list_communications(
     conversation_id: uuid.UUID | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List communications, optionally filtered by conversation."""
     if conversation_id:
         messages, total = await communication_service.get_messages_for_conversation(
@@ -80,7 +80,7 @@ async def list_communications(
         # This would need a more complex query filtering by user's conversations
         messages, total = [], 0
 
-    return CommunicationListResponse(communications=messages, total=total)
+    return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
@@ -88,7 +88,7 @@ async def get_unread_count(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Get unread message count for current user."""
     counts = await communication_service.get_unread_count(db, current_user.id)
     return UnreadCountResponse(**counts)
@@ -100,7 +100,7 @@ async def mark_message_read(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Mark a specific message as read."""
     await communication_service.mark_read(db, data.communication_id, current_user.id)
 
@@ -113,13 +113,13 @@ async def get_conversation_communications(
     conversation_id: uuid.UUID = Query(...),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """Get all communications for a specific conversation."""
     messages, total = await communication_service.get_messages_for_conversation(
         db, conversation_id, current_user.id, skip=skip, limit=limit
     )
 
-    return CommunicationListResponse(communications=messages, total=total)
+    return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
 
 @router.post("/preview", response_model=TemplatePreviewResponse)
@@ -142,7 +142,7 @@ async def preview_template(
     if rendered is None:
         raise NotFoundException("Template not found")
 
-    return TemplatePreviewResponse(subject=rendered.get("subject"), body=rendered["body"])
+    return TemplatePreviewResponse(subject=rendered.get("subject"), body=rendered["body"])  # type: ignore[arg-type]
 
 
 @router.post("/send-from-template", response_model=CommunicationResponse)
@@ -210,7 +210,7 @@ async def send_from_template(
             user_id=uid,
             notification_type=template.template_type,
             title=subject or template.name,
-            body=body,
+            body=body,  # type: ignore[arg-type]
             entity_type="communication",
             entity_id=comm.id,
             priority="normal",
@@ -229,12 +229,12 @@ async def get_pending_reviews(
     _rls: RLSContext,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """Get all communications pending review."""
     messages, total = await communication_service.get_pending_reviews(
         db, skip=skip, limit=limit
     )
-    return CommunicationListResponse(communications=messages, total=total)
+    return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
 
 @router.get("/by-status/{approval_status}", response_model=CommunicationListResponse)
@@ -245,12 +245,12 @@ async def get_communications_by_status(
     _rls: RLSContext,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """Get communications filtered by approval status."""
     messages, total = await communication_service.get_communications_by_approval_status(
         db, approval_status, skip=skip, limit=limit
     )
-    return CommunicationListResponse(communications=messages, total=total)
+    return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
 
 @router.post("/{communication_id}/submit-review", response_model=CommunicationResponse)
@@ -259,7 +259,7 @@ async def submit_for_review(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Submit a draft communication for review."""
     try:
         communication = await communication_service.submit_for_review(
@@ -277,7 +277,7 @@ async def review_communication(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Approve or reject a communication (requires internal role)."""
     try:
         communication = await communication_service.review_communication(

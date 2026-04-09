@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, useState } from "react";
 import { Download, Trash2, Plus, History, Upload, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,14 +99,14 @@ export function DocumentList({
   const uploadMutation = useUploadDocument();
   const deleteMutation = useDeleteDocument();
 
-  const [uploadOpen, setUploadOpen] = React.useState(false);
-  const [bulkOpen, setBulkOpen] = React.useState(false);
-  const [requestOpen, setRequestOpen] = React.useState(false);
-  const [file, setFile] = React.useState<File | null>(null);
-  const [category, setCategory] = React.useState<string>("general");
-  const [description, setDescription] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState<string | null>(null);
-  const [openVersions, setOpenVersions] = React.useState<string[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState<string>("general");
+  const [description, setDescription] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [openVersions, setOpenVersions] = useState<string[]>([]);
 
   function handleUpload() {
     if (!file) return;
@@ -199,7 +199,7 @@ export function DocumentList({
             {documents.map((doc) => {
               const isVersionOpen = openVersions.includes(doc.id);
               return (
-                <React.Fragment key={doc.id}>
+                <Fragment key={doc.id}>
                   <TableRow>
                     <TableCell className="max-w-[180px] truncate font-medium">
                       {doc.file_name}
@@ -273,7 +273,7 @@ export function DocumentList({
                       </TableCell>
                     </TableRow>
                   )}
-                </React.Fragment>
+                </Fragment>
               );
             })}
           </TableBody>

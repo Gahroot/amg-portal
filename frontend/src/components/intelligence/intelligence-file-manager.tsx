@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   Target,
@@ -149,7 +149,7 @@ export function IntelligenceFileManager({
   onUpdate,
   isUpdating = false,
 }: IntelligenceFileManagerProps) {
-  const [saving, setSaving] = React.useState(false);
+  const [saving, setSaving] = useState(false);
 
   const { register, control, handleSubmit, reset, formState } =
     useForm<IntelligenceFormValues>({
@@ -157,7 +157,7 @@ export function IntelligenceFileManager({
     });
 
   // Reset when parent data changes (e.g. after a successful save)
-  React.useEffect(() => {
+  useEffect(() => {
     reset(toFormValues(intelligenceFile));
   }, [intelligenceFile, reset]);
 

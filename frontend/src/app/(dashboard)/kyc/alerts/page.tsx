@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ function urgencyBadge(days: number) {
 }
 
 export default function KYCAlertsPage() {
-  const [windowDays, setWindowDays] = React.useState(30);
+  const [windowDays, setWindowDays] = useState(30);
 
   const { data, isLoading } = useExpiringKYCDocuments(windowDays);
 

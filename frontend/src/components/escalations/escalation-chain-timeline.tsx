@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Clock, User, ArrowUpRight, RotateCcw } from "lucide-react";
 

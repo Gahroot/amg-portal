@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { MessageSquare, Reply, Trash2, Eye, EyeOff } from "lucide-react";
@@ -185,11 +186,11 @@ function ComposeBox({
   onCancelReply,
 }: ComposeBoxProps) {
   const queryClient = useQueryClient();
-  const [content, setContent] = React.useState("");
-  const [isInternal, setIsInternal] = React.useState(true);
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [content, setContent] = useState("");
+  const [isInternal, setIsInternal] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (replyTo) {
       textareaRef.current?.focus();
     }
@@ -209,7 +210,7 @@ function ComposeBox({
     onError: () => toast.error("Failed to post comment"),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
     addMutation.mutate({
@@ -304,7 +305,7 @@ export function ApprovalComments({
   showInternal = true,
 }: ApprovalCommentsProps) {
   const { user } = useAuth();
-  const [replyTo, setReplyTo] = React.useState<{
+  const [replyTo, setReplyTo] = useState<{
     parentId: string;
     authorName: string;
   } | null>(null);
@@ -356,7 +357,7 @@ export function ApprovalComments({
       {comments.length > 0 && (
         <div className="divide-y divide-border">
           {comments.map((comment, i) => (
-            <React.Fragment key={comment.id}>
+            <Fragment key={comment.id}>
               <CommentItem
                 comment={comment}
                 entityId={entityId}
@@ -368,7 +369,7 @@ export function ApprovalComments({
                 currentUserRole={user?.role}
               />
               {i < comments.length - 1 && null}
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
       )}

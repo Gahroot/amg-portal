@@ -1,13 +1,13 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import { getWorkloadOverview, getStaffAssignments } from "@/lib/api/workload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -52,10 +52,10 @@ import { ROLE_LABELS } from "@/lib/constants";
 export default function WorkloadPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [selectedStaffId, setSelectedStaffId] = React.useState<string | null>(
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(
     null,
   );
-  const [capacityFilter, setCapacityFilter] = React.useState<string>("all");
+  const [capacityFilter, setCapacityFilter] = useState<string>("all");
 
   const { data, isLoading } = useQuery({
     queryKey: ["workload"],

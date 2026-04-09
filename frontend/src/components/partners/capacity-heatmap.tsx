@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, parseISO } from "date-fns";
 import {
   getPartnerCapacityHeatmap,
   addBlockedDate,
@@ -10,12 +10,6 @@ import {
   getPartnerBlockedDates,
 } from "@/lib/api/partners";
 import type { CapacityDayEntry, CapacityStatus } from "@/types/partner";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,7 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, Ban, Info, CalendarX, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ban, CalendarX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -86,10 +80,10 @@ export function CapacityHeatmap({
   className,
 }: CapacityHeatmapProps) {
   const queryClient = useQueryClient();
-  const [currentMonth, setCurrentMonth] = React.useState(() => new Date());
-  const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
-  const [blockDialogOpen, setBlockDialogOpen] = React.useState(false);
-  const [blockReason, setBlockReason] = React.useState("");
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useRouter } from "next/navigation";
 import {
   useSplitView,
@@ -23,7 +24,6 @@ import {
   ArrowLeftRight,
   Pin,
   PinOff,
-  Maximize2,
   ExternalLink,
   GripVertical,
 } from "lucide-react";
@@ -33,40 +33,22 @@ import {
  */
 interface SplitViewContainerProps {
   /** Content to render when not in split view */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Custom class name for the container */
   className?: string;
-}
-
-/**
- * Props for individual split view panels
- */
-interface SplitViewPanelContentProps {
-  /** Panel data */
-  panel: SplitViewPanel;
-  /** Side of the panel (left or right) */
-  side: "left" | "right";
-  /** Whether this is in split view mode */
-  isSplit: boolean;
-  /** Callback when panel wants to open in split view */
-  onOpenSplit?: (panel: SplitViewPanel) => void;
-  /** Callback to close this panel */
-  onClose?: () => void;
-  /** Callback to open panel in full page */
-  onOpenFull?: () => void;
 }
 
 /**
  * Props for the panel content wrapper
  */
 interface SplitPanelWrapperProps {
-  children: React.ReactNode;
+  children: ReactNode;
   side: "left" | "right";
   panel: SplitViewPanel | null;
   onClose?: () => void;
   onOpenFull?: () => void;
   syncScroll?: boolean;
-  scrollRef?: React.RefObject<HTMLDivElement | null>;
+  scrollRef?: RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -79,10 +61,10 @@ function ResizeHandle({
   onDrag: (delta: number) => void;
   splitRatio: number;
 }) {
-  const [isDragging, setIsDragging] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -143,7 +125,7 @@ function ResizeHandle({
  */
 function SplitPanelWrapper({
   children,
-  side,
+  _side,
   panel,
   onClose,
   onOpenFull,
@@ -163,7 +145,7 @@ function SplitPanelWrapper({
   }
 
   const entityLabel = getEntityLabel(panel.entityType);
-  const entityPath = getEntityPath(panel.entityType, panel.entityId);
+  const _entityPath = getEntityPath(panel.entityType, panel.entityId);
 
   return (
     <div className="flex h-full flex-col overflow-hidden border-r last:border-r-0">
@@ -232,28 +214,6 @@ function SplitPanelWrapper({
 }
 
 /**
- * Placeholder content when no entity is loaded
- */
-function EmptyPanelContent({ entityType }: { entityType?: SplitViewEntityType }) {
-  return (
-    <div className="flex h-full items-center justify-center p-8">
-      <div className="text-center text-muted-foreground">
-        {entityType ? (
-          <>
-            <p className="text-sm">Loading {getEntityLabel(entityType).toLowerCase()}...</p>
-          </>
-        ) : (
-          <>
-            <Columns2 className="mx-auto h-12 w-12 opacity-50" />
-            <p className="mt-2 text-sm">Select an item to view</p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
  * Main split view container component
  * Wraps the main content and shows split panels when activated
  */
@@ -274,11 +234,11 @@ export function SplitViewContainer({
   } = useSplitView();
 
   const router = useRouter();
-  const leftScrollRef = React.useRef<HTMLDivElement>(null);
-  const rightScrollRef = React.useRef<HTMLDivElement>(null);
+  const leftScrollRef = useRef<HTMLDivElement>(null);
+  const rightScrollRef = useRef<HTMLDivElement>(null);
 
   // Sync scroll between panels when enabled
-  React.useEffect(() => {
+  useEffect(() => {
     if (!syncScroll || !isSplitView) return;
 
     const leftEl = leftScrollRef.current;
@@ -451,15 +411,15 @@ export function SplitViewContainer({
  */
 function SplitPanelContent({
   panel,
-  side,
-  isSplit,
+  _side,
+  _isSplit,
 }: SplitPanelPanelContentProps) {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const entityPath = getEntityPath(panel.entityType, panel.entityId);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsLoading(true);
   }, [entityPath]);
 
@@ -515,7 +475,7 @@ export function SplitViewToggleButton({
   variant?: "default" | "outline" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   const { isSplitView, leftPanel, enterSplitView, setRightPanel, exitSplitView } = useSplitView();
 
@@ -602,9 +562,9 @@ export function OpenInSplitViewItem({
  * Hook to check if current page is being viewed in split view
  */
 export function useIsInSplitView(): boolean {
-  const [isInSplitView, setIsInSplitView] = React.useState(false);
+  const [isInSplitView, setIsInSplitView] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if we're in an iframe (split view uses iframes)
     setIsInSplitView(window !== window.top);
   }, []);

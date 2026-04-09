@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, isValidElement } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/programs/status-badge";
 import { RagBadge } from "@/components/programs/rag-badge";
@@ -15,7 +16,7 @@ interface ProgramComparisonProps {
 
 interface ComparisonRow {
   label: string;
-  getValue: (p: ProgramDetail) => React.ReactNode;
+  getValue: (p: ProgramDetail) => ReactNode;
   highlightDifferences?: boolean;
 }
 
@@ -40,10 +41,10 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
-function valuesAreDifferent(programs: ProgramDetail[], getValue: (p: ProgramDetail) => React.ReactNode): boolean {
+function valuesAreDifferent(programs: ProgramDetail[], getValue: (p: ProgramDetail) => ReactNode): boolean {
   const values = programs.map((p) => {
     const v = getValue(p);
-    if (React.isValidElement(v)) return null; // Can't compare React elements
+    if (isValidElement(v)) return null; // Can't compare React elements
     return String(v ?? "");
   });
   if (values.some((v) => v === null)) return false;
@@ -139,7 +140,7 @@ export function ProgramComparison({ programs }: ProgramComparisonProps) {
           {rows.map((row, index) => {
             const isDifferent = row.highlightDifferences && valuesAreDifferent(programs, row.getValue);
             return (
-              <React.Fragment key={row.label}>
+              <Fragment key={row.label}>
                 {index > 0 && <Separator />}
                 <div
                   className={cn(
@@ -161,7 +162,7 @@ export function ProgramComparison({ programs }: ProgramComparisonProps) {
                     </div>
                   ))}
                 </div>
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </CardContent>

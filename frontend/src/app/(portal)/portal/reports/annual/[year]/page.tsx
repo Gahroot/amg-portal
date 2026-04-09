@@ -2,12 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useAnnualReview, useExportAnnualReview, useDownloadAnnualReviewPDF } from "@/hooks/use-reports";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ReportContainer, ReportMetric, ReportStatusBadge, ReportCard } from "@/components/reports/report-container";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";

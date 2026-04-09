@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -57,8 +57,8 @@ const PAGE_SIZE = 50;
 export default function AuditLogsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [filters, setFilters] = React.useState<AuditLogListParams>({});
-  const [page, setPage] = React.useState(0);
+  const [filters, setFilters] = useState<AuditLogListParams>({});
+  const [page, setPage] = useState(0);
 
   const queryParams = { ...filters, skip: page * PAGE_SIZE, limit: PAGE_SIZE };
 

@@ -1,16 +1,16 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePartnerConversation, usePartnerMessages, useSendPartnerMessage, useMarkPartnerConversationRead } from "@/hooks/use-partner-portal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Communication, ParticipantInfo } from "@/types/communication";
+import { MessageCompose } from "@/components/communications/message-compose";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -28,30 +28,20 @@ export default function PartnerConversationPage() {
   const params = useParams();
   const router = useRouter();
   const conversationId = params.id as string;
-  const [message, setMessage] = React.useState("");
-  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversation, isLoading: conversationLoading } = usePartnerConversation(conversationId);
   const { data: messagesData, isLoading: messagesLoading } = usePartnerMessages(conversationId);
   const sendMessage = useSendPartnerMessage();
   const markRead = useMarkPartnerConversationRead();
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    sendMessage.mutate({ conversationId, body: message.trim() }, { onSuccess: () => setMessage("") });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (conversation && conversation.unread_count > 0) {
       markRead.mutate(conversationId);
     }
-  }, [conversationId, conversation?.unread_count]);
+  }, [conversationId, conversation, markRead]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -131,14 +121,13 @@ export default function PartnerConversationPage() {
       </ScrollArea>
 
       <div className="border-t pt-4 mt-4">
-        <div className="flex gap-2">
-          <Input placeholder="Type your message..." value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown} className="flex-1" disabled={sendMessage.isPending} />
-          <Button onClick={handleSend} disabled={!message.trim() || sendMessage.isPending}>
-            <Send className="h-4 w-4" />
-            {sendMessage.isPending ? "Sending..." : "Send"}
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">Press Enter to send, Shift+Enter for new line</p>
+        <MessageCompose
+          onSendMessage={(body) => {
+            sendMessage.mutate({ conversationId, body });
+          }}
+          isSending={sendMessage.isPending}
+          recipientUserIds={conversation.participants.map((p: ParticipantInfo) => p.id)}
+        />
       </div>
     </div>
   );

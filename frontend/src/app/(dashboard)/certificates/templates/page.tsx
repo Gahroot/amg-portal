@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,11 @@ const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
 export default function TemplatesPage() {
   const { user } = useAuth();
-  const [templates, setTemplates] = React.useState<CertificateTemplate[]>([]);
-  const [total, setTotal] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function loadTemplates() {
       setIsLoading(true);
       try {

@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -23,7 +24,7 @@ class CertificateTemplate(Base, TimestampMixin):
     # JSON or HTML template content
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # Available placeholder definitions
-    placeholders: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    placeholders: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
@@ -60,7 +61,7 @@ class ClearanceCertificate(Base, TimestampMixin):
     # Rendered content
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # Data used to populate
-    populated_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    populated_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     # Certificate metadata
     # program_completion, compliance_review, etc.
@@ -92,7 +93,11 @@ class ClearanceCertificate(Base, TimestampMixin):
     client = relationship("Client")
     creator = relationship("User", foreign_keys=[created_by])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
-    history = relationship("ClearanceCertificateHistory", back_populates="certificate", cascade="all, delete-orphan")
+    history = relationship(
+        "ClearanceCertificateHistory",
+        back_populates="certificate",
+        cascade="all, delete-orphan",
+    )
 
 
 class ClearanceCertificateHistory(Base):

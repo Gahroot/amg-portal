@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   useForm,
   FormProvider,
@@ -28,7 +29,7 @@ export interface AutoSaveFormProviderProps<T extends FieldValues> {
   form?: UseFormReturn<T>;
   defaultValues?: DefaultValues<T>;
   /** Children to render */
-  children: React.ReactNode | ((props: { autoSave: UseAutoSaveReturn<T> }) => React.ReactNode);
+  children: ReactNode | ((props: { autoSave: UseAutoSaveReturn<T> }) => ReactNode);
   /** Auto-save options */
   autoSaveOptions?: Omit<UseAutoSaveOptions<T>, "formId" | "initialData">;
   /** Whether to show the auto-save indicator */
@@ -97,7 +98,7 @@ export function AutoSaveFormProvider<T extends FieldValues>({
   const form = externalForm ?? internalForm;
 
   // Get initial data for auto-save
-  const initialData = React.useMemo(() => {
+  const initialData = useMemo(() => {
     return form.getValues() as Record<string, unknown>;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,17 +111,17 @@ export function AutoSaveFormProvider<T extends FieldValues>({
   });
 
   // Draft recovery state
-  const [showRecoveryDialog, setShowRecoveryDialog] = React.useState(false);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
 
   // Check for draft on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (enableDraftRecovery && autoSave.hasDraft()) {
       setShowRecoveryDialog(true);
     }
   }, [enableDraftRecovery, autoSave]);
 
   // Watch form changes and auto-save
-  React.useEffect(() => {
+  useEffect(() => {
     const subscription = form.watch((data) => {
       autoSave.save(data as T);
     });

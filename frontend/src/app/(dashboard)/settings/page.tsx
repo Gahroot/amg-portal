@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { NotificationPreferencesForm } from "@/components/settings/notification-preferences-form";
@@ -23,10 +23,10 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { setTheme, theme } = useTheme();
   const { highContrast, setHighContrast } = useHighContrast();
-  const [mounted, setMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 

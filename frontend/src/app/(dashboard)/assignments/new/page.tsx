@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -9,7 +9,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
 import { toast } from "sonner";
 import { listPartners } from "@/lib/api/partners";
-import { listPrograms } from "@/lib/api/programs";
+import { listPrograms, getProgram } from "@/lib/api/programs";
+import { AssignmentBriefBuilder } from "@/components/assignments/assignment-brief-builder";
 import {
   createAssignment,
   dispatchAssignment,
@@ -42,10 +43,13 @@ export default function NewAssignmentPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CreateAssignmentFormData>({
     resolver: zodResolver(createAssignmentSchema),
@@ -59,6 +63,12 @@ export default function NewAssignmentPage() {
   const { data: programsData } = useQuery({
     queryKey: ["programs"],
     queryFn: () => listPrograms(),
+  });
+
+  const { data: selectedProgram } = useQuery({
+    queryKey: ["programs", selectedProgramId],
+    queryFn: () => getProgram(selectedProgramId!),
+    enabled: !!selectedProgramId,
   });
 
   const createMutation = useMutation({
@@ -145,7 +155,10 @@ export default function NewAssignmentPage() {
               <div className="space-y-2">
                 <Label>Program</Label>
                 <Select
-                  onValueChange={(value) => setValue("program_id", value)}
+                  onValueChange={(value) => {
+                    setValue("program_id", value);
+                    setSelectedProgramId(value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a program" />
@@ -176,8 +189,12 @@ export default function NewAssignmentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="brief">Brief</Label>
-                <Textarea id="brief" {...register("brief")} />
+                <Label>Brief</Label>
+                <AssignmentBriefBuilder
+                  value={watch("brief") ?? ""}
+                  onChange={(compiled) => setValue("brief", compiled, { shouldValidate: true })}
+                  program={selectedProgram ?? null}
+                />
                 {errors.brief && (
                   <p className="text-sm text-destructive">
                     {errors.brief.message}

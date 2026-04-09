@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,11 +33,11 @@ const KYC_TYPES = [
 export default function NewKYCDocumentPage() {
   const router = useRouter();
 
-  const [clientId, setClientId] = React.useState("");
-  const [docType, setDocType] = React.useState("passport");
-  const [expiryDate, setExpiryDate] = React.useState("");
-  const [notes, setNotes] = React.useState("");
-  const [file, setFile] = React.useState<File | null>(null);
+  const [clientId, setClientId] = useState("");
+  const [docType, setDocType] = useState("passport");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   const { data: clientsData, isLoading: clientsLoading } = useClientProfiles(
     {},
@@ -45,7 +46,7 @@ export default function NewKYCDocumentPage() {
 
   const uploadMutation = useUploadKYCDocument(clientId);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!file || !clientId) return;
 

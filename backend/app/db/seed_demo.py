@@ -6,12 +6,13 @@ meetings, RM availability, vault documents, and richer document variety.
 Idempotent — checks before creating. Run with:
     cd backend && python3 -m app.db.seed_demo
 """
-
 import asyncio
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
 from app.models.approval import ProgramApproval
@@ -44,7 +45,7 @@ from app.models.notification import Notification
 from app.models.scheduled_event import ScheduledEvent
 
 
-async def get_ids(db):
+async def get_ids(db: AsyncSession) -> Any:
     """Fetch all the existing entity IDs we need to reference."""
     ids = {}
 
@@ -91,7 +92,7 @@ async def get_ids(db):
     return ids
 
 
-async def seed_scheduled_events(db, ids):
+async def seed_scheduled_events(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed calendar events — meetings, calls, reviews, deadlines."""
     r = await db.execute(select(ScheduledEvent).limit(1))
     if r.scalar_one_or_none():
@@ -120,7 +121,7 @@ async def seed_scheduled_events(db, ids):
         # Past events (show history)
         ScheduledEvent(
             title="Beaumont Estate Plan Kickoff",
-            description="Initial meeting to discuss estate planning objectives, jurisdictional considerations, and timeline.",
+            description="Initial meeting to discuss estate planning objectives, jurisdictional considerations, and timeline.",  # noqa: E501
             event_type=EventType.meeting,
             start_time=now - timedelta(days=45, hours=2),
             end_time=now - timedelta(days=45, hours=1),
@@ -131,11 +132,11 @@ async def seed_scheduled_events(db, ids):
             client_id=beaumont_client,
             attendee_ids=[rm_sarah, client_philippe, coord_elena],
             status=EventStatus.completed,
-            notes="Discussed Swiss, UK, and French holdings. Client wants aggressive tax optimization.",
+            notes="Discussed Swiss, UK, and French holdings. Client wants aggressive tax optimization.",  # noqa: E501
         ),
         ScheduledEvent(
             title="Tanaka Portfolio Final Review",
-            description="Final review of investment portfolio rebalancing results and performance report.",
+            description="Final review of investment portfolio rebalancing results and performance report.",  # noqa: E501
             event_type=EventType.review,
             start_time=now - timedelta(days=20, hours=5),
             end_time=now - timedelta(days=20, hours=4),
@@ -151,7 +152,7 @@ async def seed_scheduled_events(db, ids):
         # Today / this week
         ScheduledEvent(
             title="Beaumont Trust Structure Review",
-            description="Review proposed trust structures with legal team recommendations. Discuss trustee shortlist.",
+            description="Review proposed trust structures with legal team recommendations. Discuss trustee shortlist.",  # noqa: E501
             event_type=EventType.meeting,
             start_time=now.replace(hour=14, minute=0, second=0, microsecond=0) + timedelta(hours=2),
             end_time=now.replace(hour=15, minute=0, second=0, microsecond=0) + timedelta(hours=2),
@@ -182,7 +183,7 @@ async def seed_scheduled_events(db, ids):
         # This week
         ScheduledEvent(
             title="Tax Optimization Strategy Deadline",
-            description="Deadline for tax optimization memo delivery. Must be reviewed before client meeting.",
+            description="Deadline for tax optimization memo delivery. Must be reviewed before client meeting.",  # noqa: E501
             event_type=EventType.deadline,
             start_time=now.replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=3),
             end_time=now.replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=3),
@@ -209,7 +210,7 @@ async def seed_scheduled_events(db, ids):
         # Next week
         ScheduledEvent(
             title="Monthly Portfolio Review — All Clients",
-            description="Internal monthly review of all active client portfolios and program health.",
+            description="Internal monthly review of all active client portfolios and program health.",  # noqa: E501
             event_type=EventType.review,
             start_time=now.replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=7),
             end_time=now.replace(hour=11, minute=0, second=0, microsecond=0) + timedelta(days=7),
@@ -221,7 +222,7 @@ async def seed_scheduled_events(db, ids):
         ),
         ScheduledEvent(
             title="Northcott — Site Visit: International Schools",
-            description="Accompanied school visits for the Northcott family. Three schools in Singapore shortlisted.",
+            description="Accompanied school visits for the Northcott family. Three schools in Singapore shortlisted.",  # noqa: E501
             event_type=EventType.site_visit,
             start_time=now.replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=10),
             end_time=now.replace(hour=16, minute=0, second=0, microsecond=0) + timedelta(days=10),
@@ -239,14 +240,13 @@ async def seed_scheduled_events(db, ids):
     print(f"  Created {len(events)} scheduled events.")
 
 
-async def seed_invoices(db, ids):
+async def seed_invoices(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed invoices for finance dashboard."""
     r = await db.execute(select(Invoice).limit(1))
     if r.scalar_one_or_none():
         print("  Invoices already exist, skipping.")
         return
 
-    admin_id = ids["admin@anchormillgroup.com"]
     finance_id = ids["olivia.grant@amg.com"]
 
     beaumont_client = ids["client:Beaumont Family Office"]
@@ -344,7 +344,7 @@ async def seed_invoices(db, ids):
     print(f"  Created {len(invoices)} invoices.")
 
 
-async def seed_approvals(db, ids):
+async def seed_approvals(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed program approvals for the approvals dashboard."""
     r = await db.execute(select(ProgramApproval).limit(1))
     if r.scalar_one_or_none():
@@ -371,7 +371,7 @@ async def seed_approvals(db, ids):
             requested_by=rm_sarah,
             approved_by=admin_id,
             status=ProgramApprovalStatus.approved,
-            comments="Approved. High-value client, elevated oversight warranted. Proceed with trust design phase.",
+            comments="Approved. High-value client, elevated oversight warranted. Proceed with trust design phase.",  # noqa: E501
             decided_at=now - timedelta(days=40),
         ),
         # Pending — Northcott relocation (needs MD sign-off)
@@ -380,7 +380,7 @@ async def seed_approvals(db, ids):
             approval_type=ApprovalType.standard,
             requested_by=rm_james,
             status=ProgramApprovalStatus.pending,
-            comments="Requesting approval to proceed with executive relocation program. Immigration counsel retained.",
+            comments="Requesting approval to proceed with executive relocation program. Immigration counsel retained.",  # noqa: E501
         ),
         # Approved — Tanaka (completed)
         ProgramApproval(
@@ -398,7 +398,7 @@ async def seed_approvals(db, ids):
             approval_type=ApprovalType.strategic,
             requested_by=rm_sarah,
             status=ProgramApprovalStatus.pending,
-            comments="Strategic acquisition program — £5M budget envelope. Requesting MD approval to resume after hold. Curator shortlisted.",
+            comments="Strategic acquisition program — £5M budget envelope. Requesting MD approval to resume after hold. Curator shortlisted.",  # noqa: E501
         ),
         # Pending — Budget increase for Beaumont
         ProgramApproval(
@@ -406,7 +406,7 @@ async def seed_approvals(db, ids):
             approval_type=ApprovalType.elevated,
             requested_by=coord_elena,
             status=ProgramApprovalStatus.pending,
-            comments="Requesting budget increase of £300K for additional jurisdictional analysis (Monaco, Dubai). Client expanding scope.",
+            comments="Requesting budget increase of £300K for additional jurisdictional analysis (Monaco, Dubai). Client expanding scope.",  # noqa: E501
         ),
     ]
 
@@ -414,7 +414,7 @@ async def seed_approvals(db, ids):
     print(f"  Created {len(approvals)} approvals.")
 
 
-async def seed_document_requests(db, ids):
+async def seed_document_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed document requests for client portal."""
     r = await db.execute(select(DocumentRequest).limit(1))
     if r.scalar_one_or_none():
@@ -438,8 +438,8 @@ async def seed_document_requests(db, ids):
             requested_by=rm_sarah,
             document_type=DocumentRequestType.bank_statement,
             title="Q1 2026 Bank Statements — All Jurisdictions",
-            description="Please provide bank statements for all accounts across Switzerland, UK, and France for Q1 2026.",
-            message="Philippe, we need these for the trust structure analysis. Please upload at your earliest convenience.",
+            description="Please provide bank statements for all accounts across Switzerland, UK, and France for Q1 2026.",  # noqa: E501
+            message="Philippe, we need these for the trust structure analysis. Please upload at your earliest convenience.",  # noqa: E501
             status=DocumentRequestStatus.pending,
             deadline=now + timedelta(days=10),
             requested_at=now - timedelta(days=2),
@@ -463,7 +463,7 @@ async def seed_document_requests(db, ids):
             requested_by=rm_sarah,
             document_type=DocumentRequestType.signed_agreement,
             title="Trust Deed Signature — Beaumont Family Trust",
-            description="Signed copy of the proposed trust deed for the Beaumont Family Trust structure.",
+            description="Signed copy of the proposed trust deed for the Beaumont Family Trust structure.",  # noqa: E501
             status=DocumentRequestStatus.complete,
             deadline=now - timedelta(days=5),
             requested_at=now - timedelta(days=20),
@@ -475,8 +475,8 @@ async def seed_document_requests(db, ids):
             requested_by=rm_james,
             document_type=DocumentRequestType.passport,
             title="Passport Copies — All Family Members",
-            description="Certified passport copies for Diana, spouse, and dependents for EP application.",
-            message="Diana, the immigration counsel needs these urgently for the Employment Pass application.",
+            description="Certified passport copies for Diana, spouse, and dependents for EP application.",  # noqa: E501
+            message="Diana, the immigration counsel needs these urgently for the Employment Pass application.",  # noqa: E501
             status=DocumentRequestStatus.pending,
             deadline=now + timedelta(days=5),
             requested_at=now - timedelta(days=1),
@@ -499,7 +499,7 @@ async def seed_document_requests(db, ids):
             requested_by=rm_james,
             document_type=DocumentRequestType.financial_statement,
             title="Annual Financial Statement 2025",
-            description="Audited financial statements for Tanaka Holdings for the portfolio review.",
+            description="Audited financial statements for Tanaka Holdings for the portfolio review.",  # noqa: E501
             status=DocumentRequestStatus.complete,
             deadline=now - timedelta(days=60),
             requested_at=now - timedelta(days=90),
@@ -511,7 +511,7 @@ async def seed_document_requests(db, ids):
     print(f"  Created {len(requests)} document requests.")
 
 
-async def seed_rm_availability(db, ids):
+async def seed_rm_availability(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed RM availability slots for meeting booking."""
     r = await db.execute(select(RMAvailability).limit(1))
     if r.scalar_one_or_none():
@@ -559,7 +559,7 @@ async def seed_rm_availability(db, ids):
     print(f"  Created {len(slots)} RM availability slots.")
 
 
-async def seed_meetings(db, ids):
+async def seed_meetings(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed booked meetings for the scheduling pages."""
     r = await db.execute(select(Meeting).limit(1))
     if r.scalar_one_or_none():
@@ -640,7 +640,7 @@ async def seed_meetings(db, ids):
     print(f"  Created {len(meetings)} meetings.")
 
 
-async def seed_additional_documents(db, ids):
+async def seed_additional_documents(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed richer documents — reports, contracts, vault items."""
     # Check if we already have non-compliance docs
     r = await db.execute(
@@ -661,7 +661,6 @@ async def seed_additional_documents(db, ids):
     tanaka_client = ids["client:Tanaka Holdings"]
 
     beaumont_prog = ids["program:Beaumont Global Estate Plan"]
-    northcott_prog = ids["program:Northcott Executive Relocation"]
     tanaka_prog = ids["program:Tanaka Investment Portfolio Review"]
 
     now = datetime.now(UTC)
@@ -676,7 +675,7 @@ async def seed_additional_documents(db, ids):
             entity_type=DocumentEntityType.program,
             entity_id=beaumont_prog,
             category=DocumentCategory.report,
-            description="Comprehensive analysis of trust jurisdictions — Switzerland, UK, France, and Jersey.",
+            description="Comprehensive analysis of trust jurisdictions — Switzerland, UK, France, and Jersey.",  # noqa: E501
             version=2,
             uploaded_by=rm_sarah,
             vault_status=VaultStatus.active,
@@ -759,9 +758,9 @@ async def seed_additional_documents(db, ids):
             sealed_by=admin_id,
             retention_policy="7_years",
             chain_of_custody=[
-                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=35)).isoformat()},
-                {"action": "reviewed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=32)).isoformat()},
-                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=30)).isoformat()},
+                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=35)).isoformat()},  # noqa: E501
+                {"action": "reviewed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=32)).isoformat()},  # noqa: E501
+                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=30)).isoformat()},  # noqa: E501
             ],
         ),
         Document(
@@ -779,8 +778,8 @@ async def seed_additional_documents(db, ids):
             sealed_by=admin_id,
             retention_policy="7_years",
             chain_of_custody=[
-                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=20)).isoformat()},
-                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=15)).isoformat()},
+                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=20)).isoformat()},  # noqa: E501
+                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=15)).isoformat()},  # noqa: E501
             ],
         ),
         Document(
@@ -796,8 +795,8 @@ async def seed_additional_documents(db, ids):
             vault_status=VaultStatus.archived,
             retention_policy="5_years",
             chain_of_custody=[
-                {"action": "created", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=10)).isoformat()},
-                {"action": "archived", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=5)).isoformat()},
+                {"action": "created", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=10)).isoformat()},  # noqa: E501
+                {"action": "archived", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=5)).isoformat()},  # noqa: E501
             ],
         ),
         # Correspondence
@@ -819,7 +818,7 @@ async def seed_additional_documents(db, ids):
     print(f"  Created {len(documents)} additional documents.")
 
 
-async def seed_additional_notifications(db, ids):
+async def seed_additional_notifications(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed fresh notifications for the admin to see on login."""
     # Check if there are recent notifications (last 24h)
     now = datetime.now(UTC)
@@ -840,7 +839,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.approval_required,
             title="Approval Required: Northcott Executive Relocation",
-            body="James Chen has submitted the Northcott Executive Relocation program for your approval. Immigration counsel has been retained and is awaiting sign-off to proceed.",
+            body="James Chen has submitted the Northcott Executive Relocation program for your approval. Immigration counsel has been retained and is awaiting sign-off to proceed.",  # noqa: E501
             action_url="/approvals",
             action_label="Review Approval",
             priority="high",
@@ -851,7 +850,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.approval_required,
             title="Strategic Approval: Beaumont Art Collection — Resume Program",
-            body="Sarah Blackwood is requesting approval to resume the £5M art acquisition program. Curator shortlist ready for review.",
+            body="Sarah Blackwood is requesting approval to resume the £5M art acquisition program. Curator shortlist ready for review.",  # noqa: E501
             action_url="/approvals",
             action_label="Review Approval",
             priority="high",
@@ -862,7 +861,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.deliverable_ready,
             title="Deliverable Submitted: Cross-Border Tax Memo",
-            body="Meridian Advisors has submitted the Cross-Border Tax Memo for the Beaumont Estate Plan. Ready for your review.",
+            body="Meridian Advisors has submitted the Cross-Border Tax Memo for the Beaumont Estate Plan. Ready for your review.",  # noqa: E501
             action_url="/deliverables",
             action_label="Review Deliverable",
             priority="normal",
@@ -873,7 +872,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.milestone_update,
             title="Milestone At Risk: Tax Optimization Review",
-            body="The Tax Optimization Review milestone for Beaumont Estate Plan is flagged at-risk. Due date: April 15. Tax filings collection is behind schedule.",
+            body="The Tax Optimization Review milestone for Beaumont Estate Plan is flagged at-risk. Due date: April 15. Tax filings collection is behind schedule.",  # noqa: E501
             action_url="/programs",
             action_label="View Program",
             priority="high",
@@ -884,7 +883,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.communication,
             title="New Message: Philippe Beaumont",
-            body="Philippe has sent a message regarding the trust structure timeline. He's asking about Monaco options.",
+            body="Philippe has sent a message regarding the trust structure timeline. He's asking about Monaco options.",  # noqa: E501
             action_url="/communications",
             action_label="View Message",
             priority="normal",
@@ -895,7 +894,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.system,
             title="Invoice Overdue: Northcott Compliance Review",
-            body="Invoice for £50,000 (Compliance review and due diligence) is 14 days overdue. Client: Northcott Global Enterprises.",
+            body="Invoice for £50,000 (Compliance review and due diligence) is 14 days overdue. Client: Northcott Global Enterprises.",  # noqa: E501
             action_url="/finance",
             action_label="View Invoice",
             priority="urgent",
@@ -907,7 +906,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.assignment_update,
             title="Assignment Completed: Portfolio Rebalancing Advisory",
-            body="Alpine Wealth has completed the Portfolio Rebalancing Advisory for the Tanaka program. All deliverables approved.",
+            body="Alpine Wealth has completed the Portfolio Rebalancing Advisory for the Tanaka program. All deliverables approved.",  # noqa: E501
             action_url="/assignments",
             action_label="View Assignment",
             priority="normal",
@@ -919,7 +918,7 @@ async def seed_additional_notifications(db, ids):
             user_id=admin_id,
             notification_type=NotificationType.system,
             title="Weekly Report: Program Health Summary",
-            body="3 active programs, 1 on hold, 1 completed. 2 milestones at-risk. 3 pending approvals. See dashboard for details.",
+            body="3 active programs, 1 on hold, 1 completed. 2 milestones at-risk. 3 pending approvals. See dashboard for details.",  # noqa: E501
             action_url="/analytics",
             action_label="View Analytics",
             priority="normal",
@@ -933,11 +932,11 @@ async def seed_additional_notifications(db, ids):
     print(f"  Created {len(notifications)} notifications.")
 
 
-async def seed_additional_conversations(db, ids):
+async def seed_additional_conversations(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Seed more conversation messages to make threads feel alive."""
     # Check if we have enough messages
     r = await db.execute(text("SELECT count(*) FROM communications"))
-    count = r.scalar()
+    count: int = r.scalar() or 0
     if count > 15:
         print(f"  Already {count} messages, skipping additional conversations.")
         return
@@ -968,7 +967,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=client_philippe,
                 subject=None,
-                body="Sarah, I've been thinking about the Monaco option we discussed. My wife is quite keen on the lifestyle there, and I understand the tax advantages are significant. Could you include it in the jurisdictional analysis?",
+                body="Sarah, I've been thinking about the Monaco option we discussed. My wife is quite keen on the lifestyle there, and I understand the tax advantages are significant. Could you include it in the jurisdictional analysis?",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(hours=12),
             ),
@@ -978,7 +977,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=rm_sarah,
                 subject=None,
-                body="Absolutely, Philippe. Monaco is an excellent addition to the analysis. I'll have Elena coordinate with Fortress Legal to include Monaco in the trust structure evaluation. The residency requirements are quite specific, so we'll want to factor that into the timeline. I'll have an updated brief to you by end of week.",
+                body="Absolutely, Philippe. Monaco is an excellent addition to the analysis. I'll have Elena coordinate with Fortress Legal to include Monaco in the trust structure evaluation. The residency requirements are quite specific, so we'll want to factor that into the timeline. I'll have an updated brief to you by end of week.",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(hours=11),
             ),
@@ -988,7 +987,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.delivered,
                 sender_id=client_philippe,
                 subject=None,
-                body="Perfect. Also, I wanted to mention — I'll be travelling to Dubai next month. Perhaps worth considering as well? Let's discuss at our meeting this week.",
+                body="Perfect. Also, I wanted to mention — I'll be travelling to Dubai next month. Perhaps worth considering as well? Let's discuss at our meeting this week.",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(hours=3),
             ),
@@ -1002,7 +1001,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=rm_james,
                 subject=None,
-                body="Robert, the final performance report is now available in your documents portal. We achieved a 12.3% return against the 9% benchmark. Very pleased with the results.",
+                body="Robert, the final performance report is now available in your documents portal. We achieved a 12.3% return against the 9% benchmark. Very pleased with the results.",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(days=5),
             ),
@@ -1028,7 +1027,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=rm_james,
                 subject=None,
-                body="Diana, welcome to the AMG Portal. I've set up this thread for our relocation planning discussions. Elena Vasquez will be coordinating the logistics side. First priority: we need passport copies for the EP application. I've sent a formal document request through the portal.",
+                body="Diana, welcome to the AMG Portal. I've set up this thread for our relocation planning discussions. Elena Vasquez will be coordinating the logistics side. First priority: we need passport copies for the EP application. I've sent a formal document request through the portal.",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(days=3),
             ),
@@ -1038,7 +1037,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=client_diana,
                 subject=None,
-                body="Thank you, James. I'll get the passport copies uploaded this week. Quick question — for the school enrollment, do we need to start that process now or can it wait until the EP is approved?",
+                body="Thank you, James. I'll get the passport copies uploaded this week. Quick question — for the school enrollment, do we need to start that process now or can it wait until the EP is approved?",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(days=2, hours=18),
             ),
@@ -1048,7 +1047,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.read,
                 sender_id=coord_elena,
                 subject=None,
-                body="Diana, I'd recommend we start the school applications now. The top international schools in Singapore have wait lists. I've shortlisted three schools and arranged site visits for next week. I'll send you the details shortly.",
+                body="Diana, I'd recommend we start the school applications now. The top international schools in Singapore have wait lists. I've shortlisted three schools and arranged site visits for next week. I'll send you the details shortly.",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(days=2, hours=12),
             ),
@@ -1058,7 +1057,7 @@ async def seed_additional_conversations(db, ids):
                 status=MessageStatus.delivered,
                 sender_id=client_diana,
                 subject=None,
-                body="Brilliant, thank you Elena. The site visits sound great. My husband will want to join as well. Can you send calendar invites?",
+                body="Brilliant, thank you Elena. The site visits sound great. My husband will want to join as well. Can you send calendar invites?",  # noqa: E501
                 approval_status=CommunicationApprovalStatus.sent,
                 sent_at=now - timedelta(hours=5),
             ),
@@ -1071,20 +1070,16 @@ async def seed_additional_conversations(db, ids):
         print("  No additional messages needed.")
 
 
-async def seed_decision_requests(db, ids):
+async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
     """Ensure decision requests have good variety."""
-    r = await db.execute(select(DecisionRequest).limit(1))
-    existing = r.scalar_one_or_none()
-
     # Count existing
     r = await db.execute(text("SELECT count(*) FROM decision_requests"))
-    count = r.scalar()
+    count: int = r.scalar() or 0
     if count >= 5:
         print(f"  Already {count} decision requests, skipping.")
         return
 
     rm_sarah = ids["sarah.blackwood@amg.com"]
-    rm_james = ids["james.chen@amg.com"]
     coord_elena = ids["elena.vasquez@amg.com"]
     client_philippe = ids["philippe.beaumont@amg.com"]
 
@@ -1102,15 +1097,15 @@ async def seed_decision_requests(db, ids):
             client_id=beaumont_profile,
             program_id=beaumont_prog,
             title="Trust Jurisdiction Selection",
-            prompt="Based on our jurisdictional analysis, we've narrowed the trust structure options to three jurisdictions. Each has distinct advantages regarding tax efficiency, regulatory oversight, and asset protection. Please select your preferred jurisdiction.",
+            prompt="Based on our jurisdictional analysis, we've narrowed the trust structure options to three jurisdictions. Each has distinct advantages regarding tax efficiency, regulatory oversight, and asset protection. Please select your preferred jurisdiction.",  # noqa: E501
             response_type=DecisionResponseType.choice,
             options=[
-                {"id": "ch", "label": "Switzerland (Zurich)", "description": "Strongest asset protection. Higher setup costs. Established banking relationships."},
-                {"id": "je", "label": "Jersey (Channel Islands)", "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families."},
-                {"id": "uk", "label": "United Kingdom", "description": "Familiar legal framework. Easier administration. Higher tax exposure."},
+                {"id": "ch", "label": "Switzerland (Zurich)", "description": "Strongest asset protection. Higher setup costs. Established banking relationships."},  # noqa: E501
+                {"id": "je", "label": "Jersey (Channel Islands)", "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families."},  # noqa: E501
+                {"id": "uk", "label": "United Kingdom", "description": "Familiar legal framework. Easier administration. Higher tax exposure."},  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=7),
-            consequence_text="If no selection is made, we will proceed with the recommended option (Jersey) to maintain the project timeline.",
+            consequence_text="If no selection is made, we will proceed with the recommended option (Jersey) to maintain the project timeline.",  # noqa: E501
             status=DecisionRequestStatus.pending,
             created_by=rm_sarah,
         ),
@@ -1118,12 +1113,12 @@ async def seed_decision_requests(db, ids):
             client_id=beaumont_profile,
             program_id=art_prog,
             title="Curator Appointment",
-            prompt="We've interviewed three curators for the art collection acquisition program. Please confirm your preferred curator to proceed with the engagement.",
+            prompt="We've interviewed three curators for the art collection acquisition program. Please confirm your preferred curator to proceed with the engagement.",  # noqa: E501
             response_type=DecisionResponseType.choice,
             options=[
-                {"id": "em", "label": "Dr. Elisabeth Moreau", "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris."},
-                {"id": "jw", "label": "Jonathan Wei", "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong."},
-                {"id": "ar", "label": "Anna Rossi", "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan."},
+                {"id": "em", "label": "Dr. Elisabeth Moreau", "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris."},  # noqa: E501
+                {"id": "jw", "label": "Jonathan Wei", "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong."},  # noqa: E501
+                {"id": "ar", "label": "Anna Rossi", "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan."},  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=5),
             status=DecisionRequestStatus.pending,
@@ -1133,12 +1128,12 @@ async def seed_decision_requests(db, ids):
             client_id=northcott_profile,
             program_id=northcott_prog,
             title="School Preference for Dependents",
-            prompt="We've shortlisted three international schools in Singapore for your children. Elena has arranged site visits. Based on the initial profiles, do you have an early preference?",
+            prompt="We've shortlisted three international schools in Singapore for your children. Elena has arranged site visits. Based on the initial profiles, do you have an early preference?",  # noqa: E501
             response_type=DecisionResponseType.multi_choice,
             options=[
-                {"id": "uwcsea", "label": "UWCSEA (Dover)", "description": "IB curriculum. Strong community focus. Excellent facilities."},
-                {"id": "tanglin", "label": "Tanglin Trust School", "description": "British curriculum. Strong pastoral care. Central location."},
-                {"id": "sas", "label": "Singapore American School", "description": "AP curriculum. Large campus. Strong STEM program."},
+                {"id": "uwcsea", "label": "UWCSEA (Dover)", "description": "IB curriculum. Strong community focus. Excellent facilities."},  # noqa: E501
+                {"id": "tanglin", "label": "Tanglin Trust School", "description": "British curriculum. Strong pastoral care. Central location."},  # noqa: E501
+                {"id": "sas", "label": "Singapore American School", "description": "AP curriculum. Large campus. Strong STEM program."},  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=14),
             status=DecisionRequestStatus.pending,
@@ -1149,10 +1144,10 @@ async def seed_decision_requests(db, ids):
             client_id=beaumont_profile,
             program_id=beaumont_prog,
             title="Trustee Shortlist Approval",
-            prompt="Please review and approve the shortlist of potential trustees for the Beaumont Family Trust.",
+            prompt="Please review and approve the shortlist of potential trustees for the Beaumont Family Trust.",  # noqa: E501
             response_type=DecisionResponseType.yes_no,
             status=DecisionRequestStatus.responded,
-            response={"value": "yes", "text": "Approved. Please proceed with due diligence on all three candidates."},
+            response={"value": "yes", "text": "Approved. Please proceed with due diligence on all three candidates."},  # noqa: E501
             responded_at=now - timedelta(days=5),
             responded_by=client_philippe,
             created_by=rm_sarah,

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,11 +112,11 @@ export function RequestDocumentDialog({
 }: RequestDocumentDialogProps) {
   const createRequest = useCreateDocumentRequest();
 
-  const [documentType, setDocumentType] = React.useState<DocumentRequestType>("other");
-  const [title, setTitle] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [message, setMessage] = React.useState("");
-  const [deadline, setDeadline] = React.useState("");
+  const [documentType, setDocumentType] = useState<DocumentRequestType>("other");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [message, setMessage] = useState("");
+  const [deadline, setDeadline] = useState("");
 
   function handleTypeChange(type: DocumentRequestType) {
     setDocumentType(type);

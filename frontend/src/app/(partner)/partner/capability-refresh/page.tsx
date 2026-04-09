@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -36,9 +36,9 @@ export default function CapabilityRefreshPage() {
   const { data: refreshStatus, isLoading: statusLoading } = useCapabilityRefreshStatus();
   const submitMutation = useSubmitCapabilityRefresh();
 
-  const [accreditationsConfirmed, setAccreditationsConfirmed] = React.useState(false);
-  const [insuranceConfirmed, setInsuranceConfirmed] = React.useState(false);
-  const [capacityConfirmed, setCapacityConfirmed] = React.useState(false);
+  const [accreditationsConfirmed, setAccreditationsConfirmed] = useState(false);
+  const [insuranceConfirmed, setInsuranceConfirmed] = useState(false);
+  const [capacityConfirmed, setCapacityConfirmed] = useState(false);
 
   const confirmationCount = [accreditationsConfirmed, insuranceConfirmed, capacityConfirmed].filter(
     Boolean

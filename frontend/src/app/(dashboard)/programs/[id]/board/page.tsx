@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProgram } from "@/hooks/use-programs";
@@ -40,12 +40,12 @@ export default function ProgramBoardPage() {
   const queryClient = useQueryClient();
 
   // Dialog state
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingTask, setEditingTask] = React.useState<TaskBoard | null>(null);
-  const [defaultStatus, setDefaultStatus] = React.useState<TaskStatus>("todo");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskBoard | null>(null);
+  const [defaultStatus, setDefaultStatus] = useState<TaskStatus>("todo");
 
   // Drag state
-  const [activeTask, setActiveTask] = React.useState<TaskBoard | null>(null);
+  const [activeTask, setActiveTask] = useState<TaskBoard | null>(null);
 
   const { data: program, isLoading: programLoading } = useProgram(programId);
 
@@ -106,7 +106,7 @@ export default function ProgramBoardPage() {
   );
 
   // Group tasks by status
-  const tasksByStatus = React.useMemo(() => {
+  const tasksByStatus = useMemo(() => {
     const grouped: Record<TaskStatus, TaskBoard[]> = {
       todo: [],
       in_progress: [],
@@ -125,7 +125,7 @@ export default function ProgramBoardPage() {
   }, [tasksData]);
 
   // Collect unique milestones from tasks for the dialog
-  const milestones = React.useMemo(() => {
+  const milestones = useMemo(() => {
     const milestoneMap = new Map<string, MilestoneInfo>();
     if (tasksData?.tasks) {
       for (const task of tasksData.tasks) {

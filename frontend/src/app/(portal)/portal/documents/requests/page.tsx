@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import {
   AlertTriangle,
   CalendarClock,
@@ -59,7 +60,7 @@ const STATUS_BADGE: Record<
   overdue: { label: "Overdue", variant: "destructive" },
 };
 
-const STATUS_ICON: Record<DocumentRequestStatus, React.ReactNode> = {
+const STATUS_ICON: Record<DocumentRequestStatus, ReactNode> = {
   pending: <Clock className="h-4 w-4 text-yellow-500" />,
   in_progress: <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />,
   received: <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />,
@@ -118,12 +119,12 @@ function UploadDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const fulfill = useFulfillDocumentRequest();
-  const [file, setFile] = React.useState<File | null>(null);
-  const [category, setCategory] = React.useState("general");
-  const [description, setDescription] = React.useState(request.title);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState("general");
+  const [description, setDescription] = useState(request.title);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (f) setFile(f);
   }
@@ -267,9 +268,9 @@ function NoteDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const addNote = useAddNoteToDocumentRequest();
-  const [note, setNote] = React.useState(request.client_notes ?? "");
+  const [note, setNote] = useState(request.client_notes ?? "");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) setNote(request.client_notes ?? "");
   }, [open, request.client_notes]);
 
@@ -318,10 +319,10 @@ function NoteDialog({
 // ── Request Card ──────────────────────────────────────────────────────────────
 
 function RequestCard({ request }: { request: DocumentRequestItem }) {
-  const [uploadOpen, setUploadOpen] = React.useState(false);
-  const [cancelOpen, setCancelOpen] = React.useState(false);
-  const [noteOpen, setNoteOpen] = React.useState(false);
-  const [expanded, setExpanded] = React.useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const status = request.status as DocumentRequestStatus;
   const badge = STATUS_BADGE[status] ?? STATUS_BADGE.pending;
@@ -491,11 +492,11 @@ const FILTER_TABS = [
 
 export default function DocumentRequestsPage() {
   const { data, isLoading } = useMyDocumentRequests();
-  const [filter, setFilter] = React.useState<string>("all");
+  const [filter, setFilter] = useState<string>("all");
 
-  const requests = React.useMemo(() => data?.requests ?? [], [data?.requests]);
+  const requests = useMemo(() => data?.requests ?? [], [data?.requests]);
 
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     if (filter === "all") return requests;
     return requests.filter((r) => r.status === filter);
   }, [requests, filter]);

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { Fragment } from "react";
 import { Download, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,7 @@ function InlineDiff({ hunks }: InlineDiffProps) {
         </thead>
         <tbody>
           {hunks.map((hunk, hi) => (
-            <React.Fragment key={hi}>
+            <Fragment key={hi}>
               <HunkHeader hunk={hunk} />
               {hunk.lines.map((line, li) => (
                 <tr key={li} className={lineRowClass(line.change_type)}>
@@ -96,7 +96,7 @@ function InlineDiff({ hunks }: InlineDiffProps) {
                   </td>
                 </tr>
               ))}
-            </React.Fragment>
+            </Fragment>
           ))}
         </tbody>
       </table>

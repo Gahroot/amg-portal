@@ -11,7 +11,6 @@ from fastapi.responses import Response
 from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.schemas.import_schemas import (
-    ColumnMapping,
     ImportConfirmRequest,
     ImportConfirmResponse,
     ImportEntityType,
@@ -141,7 +140,7 @@ async def map_import_columns(
 
     Maps source columns to target fields. After mapping, call /validate to check the data.
     """
-    mappings = [ColumnMapping(**m) for m in request.mappings]
+    mappings = list(request.mappings)
     return await import_service.map_columns(
         request.import_id,
         mappings,

@@ -25,7 +25,7 @@ SYSTEM_TEMPLATES = [
         "name": "Partner SLA Breach",
         "category": "partner_sla_breach",
         "severity": "milestone",
-        "description_template": "Partner {partner_name} has breached the agreed SLA for {service_type}. The deadline was {deadline} and the current status is {current_status}.",
+        "description_template": "Partner {partner_name} has breached the agreed SLA for {service_type}. The deadline was {deadline} and the current status is {current_status}.",  # noqa: E501
         "suggested_actions": [
             "Contact partner immediately to understand the cause of the breach",
             "Document the breach with timestamps and evidence",
@@ -34,13 +34,13 @@ SYSTEM_TEMPLATES = [
             "Schedule a corrective action review meeting",
             "Update SLA tracker with breach details",
         ],
-        "notification_template": "SLA Breach Alert: Partner {partner_name} has missed the agreed deadline for {service_type}. Immediate action required.",
+        "notification_template": "SLA Breach Alert: Partner {partner_name} has missed the agreed deadline for {service_type}. Immediate action required.",  # noqa: E501
     },
     {
         "name": "Client Dissatisfaction",
         "category": "client_dissatisfaction",
         "severity": "program",
-        "description_template": "Client {client_name} has expressed dissatisfaction regarding {issue_area}. Feedback received: {feedback_summary}.",
+        "description_template": "Client {client_name} has expressed dissatisfaction regarding {issue_area}. Feedback received: {feedback_summary}.",  # noqa: E501
         "suggested_actions": [
             "Schedule an urgent call with the client within 24 hours",
             "Review all recent interactions and touchpoints",
@@ -49,13 +49,13 @@ SYSTEM_TEMPLATES = [
             "Escalate to Managing Director if required",
             "Document all actions taken for quality review",
         ],
-        "notification_template": "Client Dissatisfaction: {client_name} has raised concerns about {issue_area}. Please review and respond urgently.",
+        "notification_template": "Client Dissatisfaction: {client_name} has raised concerns about {issue_area}. Please review and respond urgently.",  # noqa: E501
     },
     {
         "name": "Resource Unavailable",
         "category": "resource_unavailable",
         "severity": "task",
-        "description_template": "Critical resource {resource_name} is unavailable for {program_name}. Expected availability: {expected_date}. Impact: {impact_description}.",
+        "description_template": "Critical resource {resource_name} is unavailable for {program_name}. Expected availability: {expected_date}. Impact: {impact_description}.",  # noqa: E501
         "suggested_actions": [
             "Identify alternative resources or substitutes",
             "Assess impact on program timeline and deliverables",
@@ -64,13 +64,13 @@ SYSTEM_TEMPLATES = [
             "Document contingency plan",
             "Review resource allocation across all active programs",
         ],
-        "notification_template": "Resource Unavailability: {resource_name} is unavailable for {program_name}. Timeline review required.",
+        "notification_template": "Resource Unavailability: {resource_name} is unavailable for {program_name}. Timeline review required.",  # noqa: E501
     },
     {
         "name": "Budget Overrun",
         "category": "budget_overrun",
         "severity": "program",
-        "description_template": "Program {program_name} has exceeded its approved budget by {overrun_amount} ({overrun_percentage}%). Current spend: {current_spend}. Approved budget: {approved_budget}.",
+        "description_template": "Program {program_name} has exceeded its approved budget by {overrun_amount} ({overrun_percentage}%). Current spend: {current_spend}. Approved budget: {approved_budget}.",  # noqa: E501
         "suggested_actions": [
             "Prepare a detailed cost breakdown report",
             "Identify the cause of the budget overrun",
@@ -79,13 +79,13 @@ SYSTEM_TEMPLATES = [
             "Notify the finance compliance team",
             "Schedule a budget review meeting with client if applicable",
         ],
-        "notification_template": "Budget Overrun Alert: {program_name} has exceeded its approved budget. Finance review required immediately.",
+        "notification_template": "Budget Overrun Alert: {program_name} has exceeded its approved budget. Finance review required immediately.",  # noqa: E501
     },
     {
         "name": "Timeline Delay",
         "category": "timeline_delay",
         "severity": "milestone",
-        "description_template": "Program {program_name} is behind schedule. Milestone '{milestone_name}' was due {original_date} and is now expected to complete {revised_date}. Reason: {delay_reason}.",
+        "description_template": "Program {program_name} is behind schedule. Milestone '{milestone_name}' was due {original_date} and is now expected to complete {revised_date}. Reason: {delay_reason}.",  # noqa: E501
         "suggested_actions": [
             "Identify all affected downstream milestones and tasks",
             "Prepare a revised project timeline",
@@ -94,13 +94,13 @@ SYSTEM_TEMPLATES = [
             "Document root cause for lessons learned",
             "Establish daily check-ins until schedule is recovered",
         ],
-        "notification_template": "Timeline Delay: {program_name} is behind schedule. Milestone '{milestone_name}' requires immediate attention.",
+        "notification_template": "Timeline Delay: {program_name} is behind schedule. Milestone '{milestone_name}' requires immediate attention.",  # noqa: E501
     },
     {
         "name": "Quality Issue",
         "category": "quality_issue",
         "severity": "task",
-        "description_template": "Quality issue identified in {deliverable_name} for {program_name}. Issue: {quality_issue_description}. Severity: {severity_level}.",
+        "description_template": "Quality issue identified in {deliverable_name} for {program_name}. Issue: {quality_issue_description}. Severity: {severity_level}.",  # noqa: E501
         "suggested_actions": [
             "Halt delivery until quality issue is resolved",
             "Conduct a root cause analysis",
@@ -109,7 +109,7 @@ SYSTEM_TEMPLATES = [
             "Document the issue and corrective actions",
             "Review quality control processes to prevent recurrence",
         ],
-        "notification_template": "Quality Issue: A quality concern has been identified in {deliverable_name}. Review and corrective action required.",
+        "notification_template": "Quality Issue: A quality concern has been identified in {deliverable_name}. Review and corrective action required.",  # noqa: E501
     },
 ]
 

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { useUpdateProfile } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
@@ -24,12 +25,12 @@ export function ProfileForm() {
   const { user } = useAuth();
   const updateProfile = useUpdateProfile();
 
-  const [fullName, setFullName] = React.useState("");
-  const [phoneNumber, setPhoneNumber] = React.useState("");
-  const [hasChanges, setHasChanges] = React.useState(false);
-  const [isFormValid, setIsFormValid] = React.useState(false);
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setFullName(user.full_name);
       setPhoneNumber(user.phone_number ?? "");
@@ -46,7 +47,7 @@ export function ProfileForm() {
     // Phone is optional, so we don't block form submission
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
     

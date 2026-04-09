@@ -49,7 +49,7 @@ async def deliver_document(
         "timestamp": now.isoformat(),
         "details": f"Delivered via {method} to {len(recipient_ids)} recipient(s)",
     })
-    doc.chain_of_custody = custody  # type: ignore[assignment]
+    doc.chain_of_custody = custody
 
     await db.commit()
     for d in deliveries:
@@ -95,7 +95,7 @@ async def generate_secure_link(
             f" expires {expires_at.isoformat()}"
         ),
     })
-    doc.chain_of_custody = custody  # type: ignore[assignment]
+    doc.chain_of_custody = custody
 
     await db.commit()
     await db.refresh(delivery)
@@ -119,10 +119,10 @@ async def seal_document(
 
     now = datetime.now(UTC)
     doc.vault_status = "sealed"  # type: ignore[assignment]
-    doc.sealed_at = now  # type: ignore[assignment]
-    doc.sealed_by = user_id  # type: ignore[assignment]
+    doc.sealed_at = now
+    doc.sealed_by = user_id
     if retention_policy:
-        doc.retention_policy = retention_policy  # type: ignore[assignment]
+        doc.retention_policy = retention_policy
 
     # Update chain of custody
     custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
@@ -132,7 +132,7 @@ async def seal_document(
         "timestamp": now.isoformat(),
         "details": f"Document sealed for compliance. Retention: {retention_policy or 'not set'}",
     })
-    doc.chain_of_custody = custody  # type: ignore[assignment]
+    doc.chain_of_custody = custody
 
     await db.commit()
     await db.refresh(doc)
@@ -329,7 +329,7 @@ async def resolve_secure_link(
 
     # Mark as viewed
     if not delivery.viewed_at:
-        delivery.viewed_at = now  # type: ignore[assignment]
+        delivery.viewed_at = now
         # Update custody chain
         custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
         custody.append({
@@ -338,7 +338,7 @@ async def resolve_secure_link(
             "timestamp": now.isoformat(),
             "details": "Document viewed via secure link",
         })
-        doc.chain_of_custody = custody  # type: ignore[assignment]
+        doc.chain_of_custody = custody
         await db.commit()
         await db.refresh(delivery)
         await db.refresh(doc)

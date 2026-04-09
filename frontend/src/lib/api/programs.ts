@@ -127,3 +127,8 @@ export async function emergencyActivateProgram(
   );
   return response.data;
 }
+
+export async function shareProgramBrief(id: string): Promise<Program> {
+  const response = await api.post<Program>(`/api/v1/programs/${id}/brief/share`);
+  return response.data;
+}

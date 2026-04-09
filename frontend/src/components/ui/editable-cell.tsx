@@ -1,7 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { Loader2, Check, X, Pencil, AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { Loader2, Pencil, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -306,19 +307,19 @@ function TextEditableCell({
   min,
   max,
 }: TextEditableCellProps) {
-  const [editValue, setEditValue] = React.useState(String(value ?? ""));
-  const [localError, setLocalError] = React.useState<string | null>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [editValue, setEditValue] = useState(String(value ?? ""));
+  const [localError, setLocalError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync edit value when value prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isEditing) {
       setEditValue(String(value ?? ""));
     }
   }, [value, isEditing]);
 
   // Focus input when editing starts
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
@@ -354,7 +355,7 @@ function TextEditableCell({
     onCancelEdit?.();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleSave();
@@ -461,23 +462,23 @@ function SelectEditableCell({
   validationRules,
   placeholder = "Select...",
   className,
-  showEditIcon = true,
+  _showEditIcon = true,
   formatDisplay,
-  type,
+  _type,
   options,
   selectPlaceholder = "Select an option",
 }: SelectEditableCellProps) {
-  const [editValue, setEditValue] = React.useState(String(value ?? ""));
-  const [localError, setLocalError] = React.useState<string | null>(null);
-  const [open, setOpen] = React.useState(false);
+  const [_editValue, setEditValue] = useState(String(value ?? ""));
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   // Sync edit value when value prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     setEditValue(String(value ?? ""));
   }, [value]);
 
   // Open select when editing starts
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEditing) {
       setOpen(true);
     }
@@ -581,24 +582,24 @@ function DateEditableCell({
   validationRules,
   placeholder = "Select date",
   className,
-  showEditIcon = true,
+  _showEditIcon = true,
   formatDisplay,
-  type,
+  _type,
   dateFormat = "PPP",
 }: DateEditableCellProps) {
-  const [editValue, setEditValue] = React.useState<Date | undefined>(
+  const [editValue, setEditValue] = useState<Date | undefined>(
     value instanceof Date ? value : undefined
   );
-  const [localError, setLocalError] = React.useState<string | null>(null);
-  const [open, setOpen] = React.useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   // Sync edit value when value prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     setEditValue(value instanceof Date ? value : undefined);
   }, [value]);
 
   // Open popover when editing starts
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEditing) {
       setOpen(true);
     }
@@ -702,7 +703,7 @@ function ToggleEditableCell({
   className,
   toggleLabel = "Toggle",
 }: ToggleEditableCellProps) {
-  const [localError, setLocalError] = React.useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const boolValue = Boolean(value);
 
   const handleToggle = async () => {
@@ -764,7 +765,7 @@ function CheckboxEditableCell({
   className,
   checkboxLabel = "Checkbox",
 }: CheckboxEditableCellProps) {
-  const [localError, setLocalError] = React.useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const boolValue = Boolean(value);
 
   const handleCheck = async (checked: boolean | "indeterminate") => {
@@ -836,14 +837,14 @@ export function EditableCell(props: EditableCellProps) {
 /**
  * Higher-order component to create an editable cell column definition
  */
-export function createEditableColumn<TData>(
+export function createEditableColumn(
   columnId: string,
   config: Omit<EditableCellProps, "value" | "rowId" | "columnId" | "isEditing" | "onStartEdit" | "onCancelEdit" | "onSave">
 ) {
   return {
     id: columnId,
     accessorKey: columnId,
-    cell: ({ row, getValue, table }: { row: { id: string }; getValue: () => unknown; table: unknown }) => {
+    cell: ({ row, getValue, _table }: { row: { id: string }; getValue: () => unknown; table: unknown }) => {
       // These props should be provided by the EditableTable wrapper
       const cellProps = {
         ...config,

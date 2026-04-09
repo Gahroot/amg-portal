@@ -12,6 +12,7 @@ from app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
+from app.models.enums import ProgramStatus
 from app.models.partner import PartnerProfile
 from app.models.partner_assignment import PartnerAssignment
 from app.models.partner_rating import PartnerRating
@@ -228,7 +229,7 @@ async def complete_closure(
     result = await db.execute(select(Program).where(Program.id == program_id))
     program = result.scalar_one_or_none()
     if program:
-        program.status = "closed"
+        program.status = ProgramStatus.closed
 
     await db.commit()
     await db.refresh(closure)

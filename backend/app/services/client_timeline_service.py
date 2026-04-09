@@ -165,10 +165,10 @@ class ClientTimelineService:
                 actor_name = doc.uploader.full_name
             events.append(
                 TimelineEventResponse(
-                    id=doc.id,  # type: ignore[arg-type]
+                    id=doc.id,
                     event_type=TimelineEventType.document,
                     title=f"Document uploaded: {doc.file_name}",
-                    description=doc.description,  # type: ignore[arg-type]
+                    description=doc.description,
                     occurred_at=doc.created_at,
                     metadata={
                         "file_name": doc.file_name,
@@ -178,10 +178,10 @@ class ClientTimelineService:
                         "version": doc.version,
                         "vault_status": doc.vault_status.value if doc.vault_status else None,
                     },
-                    entity_id=doc.id,  # type: ignore[arg-type]
+                    entity_id=doc.id,
                     entity_type="document",
                     actor_name=actor_name,
-                    actor_id=doc.uploaded_by,  # type: ignore[arg-type]
+                    actor_id=doc.uploaded_by,
                 )
             )
         return events

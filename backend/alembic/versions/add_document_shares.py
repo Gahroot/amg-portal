@@ -62,7 +62,11 @@ def upgrade() -> None:
     )
     op.create_index("ix_document_shares_document_id", "document_shares", ["document_id"])
     op.create_index("ix_document_shares_share_token", "document_shares", ["share_token"])
-    op.create_index("ix_document_shares_shared_with_email", "document_shares", ["shared_with_email"])
+    op.create_index(
+        "ix_document_shares_shared_with_email",
+        "document_shares",
+        ["shared_with_email"],
+    )
 
 
 def downgrade() -> None:

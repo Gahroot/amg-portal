@@ -2,13 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useCompletionReport, useExportCompletion, useDownloadCompletionPDF } from "@/hooks/use-reports";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ReportContainer, ReportMetric, ReportStatusBadge, ReportCard } from "@/components/reports/report-container";
+import { ReportContainer, ReportStatusBadge, ReportCard } from "@/components/reports/report-container";
 
 export default function CompletionReportPage() {
   const params = useParams();

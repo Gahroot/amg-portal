@@ -32,7 +32,8 @@ class TravelBooking(Base, TimestampMixin):
     passengers: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="confirmed")
-    source: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")  # manual, api, webhook
+    # Source: manual, api, or webhook
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
     raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True

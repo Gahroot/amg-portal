@@ -90,7 +90,7 @@ async def get_client_id_from_user(db: DB, current_user: CurrentUser) -> uuid.UUI
 async def get_portfolio_report(
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """
     Get portfolio overview report showing all client programs.
 
@@ -108,7 +108,7 @@ async def get_portfolio_report(
 async def export_portfolio_report_csv(
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Export portfolio overview as CSV."""
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
@@ -193,7 +193,7 @@ async def get_program_status_report_endpoint(
     db: DB,
     current_user: CurrentUser,
     program_id: uuid.UUID = Query(..., description="Program ID"),
-):
+) -> Any:
     """
     Get program status report showing active milestones,
     completed deliverables, and pending decisions.
@@ -224,7 +224,7 @@ async def export_program_status_report_csv(
     db: DB,
     current_user: CurrentUser,
     program_id: uuid.UUID = Query(..., description="Program ID"),
-):
+) -> Any:
     """Export program status report as CSV."""
     client_id = await get_client_id_from_user(db, current_user)
 
@@ -316,7 +316,7 @@ async def get_completion_report_endpoint(
     program_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """
     Get program completion report showing outcomes,
     timeline adherence, and deliverables summary.
@@ -346,7 +346,7 @@ async def export_completion_report_csv(
     program_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Export completion report as CSV."""
     client_id = await get_client_id_from_user(db, current_user)
 
@@ -437,7 +437,7 @@ async def get_annual_review_endpoint(
     year: int,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """
     Get annual relationship review across all programs.
 
@@ -456,7 +456,7 @@ async def export_annual_review_csv(
     year: int,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Export annual review as CSV."""
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)

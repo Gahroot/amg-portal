@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -148,9 +148,9 @@ interface RejectDialogProps {
 }
 
 function RejectDialog({ request, onConfirm, isPending }: RejectDialogProps) {
-  const [open, setOpen] = React.useState(false);
-  const [reason, setReason] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = () => {
     if (reason.trim().length < 5) {

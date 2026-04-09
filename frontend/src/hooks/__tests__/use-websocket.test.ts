@@ -1,6 +1,7 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as React from "react";
+import { createElement } from "react";
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useWebSocket } from "../use-websocket";
 import { toast } from "sonner";
@@ -59,8 +60,8 @@ function createWrapper() {
       queries: { retry: false, staleTime: 0, gcTime: 0 },
     },
   });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(
       QueryClientProvider,
       { client: queryClient },
       children
@@ -186,8 +187,8 @@ describe("useWebSocket", () => {
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
 
       renderHook(() => useWebSocket({ onNotification }), { wrapper });
       simulateOpen();
@@ -250,8 +251,8 @@ describe("useWebSocket", () => {
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
 
       renderHook(() => useWebSocket({ onNewMessage }), { wrapper });
       simulateOpen();
@@ -316,8 +317,8 @@ describe("useWebSocket", () => {
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
 
       renderHook(() => useWebSocket(), { wrapper });
       simulateOpen();
@@ -358,8 +359,8 @@ describe("useWebSocket", () => {
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children);
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
 
       renderHook(() => useWebSocket(), { wrapper });
       simulateOpen();

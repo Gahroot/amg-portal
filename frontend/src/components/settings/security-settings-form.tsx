@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { disableMFA } from "@/lib/api/auth";
 import { useChangePassword } from "@/hooks/use-settings";
@@ -24,27 +25,27 @@ export function SecuritySettingsForm() {
   const changePassword = useChangePassword();
 
   // MFA state
-  const [pageState, setPageState] = React.useState<PageState>("idle");
-  const [mfaEnabled, setMfaEnabled] = React.useState(false);
-  const [disableCode, setDisableCode] = React.useState("");
-  const [disableError, setDisableError] = React.useState<string | null>(null);
-  const [isDisabling, setIsDisabling] = React.useState(false);
-  const [successMsg, setSuccessMsg] = React.useState<string | null>(null);
+  const [pageState, setPageState] = useState<PageState>("idle");
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [disableCode, setDisableCode] = useState("");
+  const [disableError, setDisableError] = useState<string | null>(null);
+  const [isDisabling, setIsDisabling] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Password change state
-  const [currentPassword, setCurrentPassword] = React.useState("");
-  const [newPassword, setNewPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Initialize MFA state from user
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setMfaEnabled(user.mfa_enabled);
     }
   }, [user]);
 
-  const handleDisableMFA = async (e: React.FormEvent) => {
+  const handleDisableMFA = async (e: FormEvent) => {
     e.preventDefault();
     setDisableError(null);
     setIsDisabling(true);
@@ -62,7 +63,7 @@ export function SecuritySettingsForm() {
     }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = (e: FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
 

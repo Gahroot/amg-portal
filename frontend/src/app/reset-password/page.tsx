@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,8 +39,8 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [error, setError] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -51,7 +50,7 @@ function ResetPasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!token) {
       setError("Invalid or missing reset token. Please request a new reset link.");
     }

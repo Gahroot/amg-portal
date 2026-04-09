@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { usePartnerAssignments, useDownloadDocument } from "@/hooks/use-partner-portal";
@@ -36,9 +36,9 @@ function getFileIcon(contentType: string) {
 }
 
 export default function PartnerDocumentsPage() {
-  const [search, setSearch] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [assignmentFilter, setAssignmentFilter] = React.useState("all");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
 
   const { data: assignmentsData, isLoading: assignmentsLoading } = usePartnerAssignments();
   const downloadMutation = useDownloadDocument();
@@ -67,11 +67,11 @@ export default function PartnerDocumentsPage() {
   });
 
   const isLoading = assignmentsLoading || docsLoading;
-  const docs = allDocuments ?? [];
+  const docs = useMemo(() => allDocuments ?? [], [allDocuments]);
 
-  const categories = React.useMemo(() => Array.from(new Set(docs.map((d: DocumentEntry) => d.doc.category))), [docs]);
+  const categories = useMemo(() => Array.from(new Set(docs.map((d: DocumentEntry) => d.doc.category))), [docs]);
 
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     let result = docs;
     if (search) {
       const searchLower = search.toLowerCase();

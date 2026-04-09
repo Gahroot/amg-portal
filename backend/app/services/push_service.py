@@ -153,7 +153,7 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
         else:
             return quiet_hours_start <= now <= quiet_hours_end
 
-    async def send_push_notification(
+    async def send_push_notification(  # noqa: PLR0911
         self,
         db: AsyncSession,
         user_id: uuid.UUID,
@@ -282,7 +282,7 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
             .values(is_active=False)
         )
         await db.commit()
-        return result.rowcount
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
 
 push_service = PushService(PushToken)

@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { Plus, Pencil, Upload, AlertTriangle, Check, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, Pencil, Upload, AlertTriangle, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,18 +70,18 @@ export function CertificationList({
   canEdit = false,
   canVerify = false,
 }: CertificationListProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCertification, setEditingCertification] =
-    React.useState<PartnerCertification | null>(null);
+    useState<PartnerCertification | null>(null);
   const [verifyingCertification, setVerifyingCertification] =
-    React.useState<PartnerCertification | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [uploadingId, setUploadingId] = React.useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [uploadTargetId, setUploadTargetId] = React.useState<string | null>(null);
+    useState<PartnerCertification | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   // Form state
-  const [formState, setFormState] = React.useState({
+  const [formState, setFormState] = useState({
     name: "",
     issuing_body: "",
     certificate_number: "",
@@ -91,7 +91,7 @@ export function CertificationList({
   });
 
   // Verify dialog state
-  const [verifyState, setVerifyState] = React.useState({
+  const [verifyState, setVerifyState] = useState({
     status: "verified" as CertificationStatus,
     notes: "",
   });

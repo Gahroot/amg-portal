@@ -20,7 +20,7 @@ async def _get_partner_comparison_item(
     partner: PartnerProfile,
 ) -> PartnerComparisonItem:
     """Aggregate all comparison metrics for a single partner."""
-    partner_id: uuid.UUID = partner.id  # type: ignore[assignment]
+    partner_id: uuid.UUID = partner.id
 
     # ── Rating scores ─────────────────────────────────────────────────────────
     rating_result = await db.execute(
@@ -45,7 +45,7 @@ async def _get_partner_comparison_item(
     total_sla_tracked = 0
     total_sla_breached = 0
 
-    user_id: uuid.UUID | None = partner.user_id  # type: ignore[assignment]
+    user_id: uuid.UUID | None = partner.user_id
     if user_id:
         sla_result = await db.execute(
             select(
@@ -90,7 +90,7 @@ async def _get_partner_comparison_item(
     active_assignments: int = arow.active or 0
 
     # Capacity utilisation (active / max_concurrent)
-    max_concurrent: int = partner.max_concurrent_assignments or 5  # type: ignore[assignment]
+    max_concurrent: int = partner.max_concurrent_assignments or 5
     capacity_utilisation = round(active_assignments / max_concurrent * 100, 1)
     remaining_capacity = max(0, max_concurrent - active_assignments)
 

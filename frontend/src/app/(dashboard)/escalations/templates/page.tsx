@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -130,11 +131,11 @@ export default function EscalationTemplatesPage() {
   const queryClient = useQueryClient();
   const isAdmin = user?.role && ALLOWED_ROLES.includes(user.role);
 
-  const [formOpen, setFormOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState<EscalationTemplate | null>(null);
-  const [form, setForm] = React.useState<TemplateFormState>(DEFAULT_FORM);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<EscalationTemplate | null>(null);
+  const [form, setForm] = useState<TemplateFormState>(DEFAULT_FORM);
   const [deleteTarget, setDeleteTarget] =
-    React.useState<EscalationTemplate | null>(null);
+    useState<EscalationTemplate | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["escalation-templates"],
@@ -185,7 +186,7 @@ export default function EscalationTemplatesPage() {
     setFormOpen(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) {
       toast.error("Template name is required");

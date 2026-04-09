@@ -13,6 +13,7 @@ import {
   Briefcase,
   Building,
 } from "lucide-react";
+import { InboxFilterBar, type InboxFilter, type InboxTypeFilter } from "./inbox-filter-bar";
 
 interface ConversationListProps {
   selectedId?: string;
@@ -20,18 +21,33 @@ interface ConversationListProps {
   /** Supply external data to bypass the default useConversations hook */
   conversations?: ConversationListResponse;
   isLoading?: boolean;
+  activeFilter?: InboxFilter;
+  activeTypeFilter?: InboxTypeFilter;
+  onFilterChange?: (f: InboxFilter) => void;
+  onTypeFilterChange?: (t: InboxTypeFilter) => void;
+  showFilterBar?: boolean;
 }
 
-export function ConversationList({ selectedId, onSelect, conversations: externalData, isLoading: externalLoading }: ConversationListProps) {
+export function ConversationList({ selectedId, onSelect, conversations: externalData, isLoading: externalLoading, activeFilter, activeTypeFilter, onFilterChange, onTypeFilterChange, showFilterBar }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const internal = useConversations(externalData ? undefined : { limit: 50 });
   const data = externalData ?? internal.data;
   const isLoading = externalLoading ?? internal.isLoading;
 
-  const filteredConversations = data?.conversations.filter((conv) =>
+  const searchFiltered = data?.conversations.filter((conv) =>
     conv.title?.toLowerCase().includes(search.toLowerCase()) ||
     conv.participants.some((p) => p.full_name.toLowerCase().includes(search.toLowerCase()))
   ) ?? [];
+
+  const unreadFiltered = activeFilter === "unread"
+    ? searchFiltered.filter((conv) => conv.unread_count > 0)
+    : searchFiltered;
+
+  const filteredConversations = activeTypeFilter && activeTypeFilter !== "all"
+    ? unreadFiltered.filter((conv) => conv.conversation_type === activeTypeFilter)
+    : unreadFiltered;
+
+  const totalUnread = data?.conversations.reduce((acc, c) => acc + (c.unread_count > 0 ? 1 : 0), 0) ?? 0;
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -75,6 +91,15 @@ export function ConversationList({ selectedId, onSelect, conversations: external
             className="pl-9"
           />
         </div>
+        {showFilterBar && onFilterChange && onTypeFilterChange && (
+          <InboxFilterBar
+            activeFilter={activeFilter ?? "all"}
+            activeTypeFilter={(activeTypeFilter ?? "all") as InboxTypeFilter}
+            unreadCount={totalUnread}
+            onFilterChange={onFilterChange}
+            onTypeFilterChange={onTypeFilterChange}
+          />
+        )}
       </div>
 
       {/* Conversation List */}

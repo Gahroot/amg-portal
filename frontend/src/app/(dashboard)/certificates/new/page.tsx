@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -38,13 +39,13 @@ export default function NewCertificatePage() {
   const { user } = useAuth();
 
   // Form state
-  const [selectedTemplate, setSelectedTemplate] = React.useState<string>("");
-  const [selectedClient, setSelectedClient] = React.useState<string>("");
-  const [selectedProgram, setSelectedProgram] = React.useState<string>("");
-  const [certificateType, setCertificateType] = React.useState<string>("general");
-  const [title, setTitle] = React.useState("");
-  const [content, setContent] = React.useState("");
-  const [previewContent, setPreviewContent] = React.useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedProgram, setSelectedProgram] = useState<string>("");
+  const [certificateType, setCertificateType] = useState<string>("general");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [previewContent, setPreviewContent] = useState("");
 
   // Data hooks
   const { data: templatesData } = useCertificateTemplates({ is_active: true });
@@ -84,7 +85,7 @@ export default function NewCertificatePage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedClient || !title) return;
 

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, FileText, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,9 +19,9 @@ function DocuSignSigning({
   doc: { id: string; file_name: string; envelope_id: string; docusign_status: string | null };
 }) {
   const router = useRouter();
-  const [signingUrl, setSigningUrl] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [signingUrl, setSigningUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleLaunchSigning() {
     setLoading(true);
@@ -144,11 +145,11 @@ export default function DocumentSigningPage() {
   const { data: doc, isLoading, isError } = usePortalDocument(documentId);
   const acknowledgeMutation = useAcknowledgeDocument();
 
-  const [agreed, setAgreed] = React.useState(false);
-  const [signerName, setSignerName] = React.useState("");
-  const [submitted, setSubmitted] = React.useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [signerName, setSignerName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!agreed || !signerName.trim()) return;
 

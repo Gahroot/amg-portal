@@ -56,11 +56,14 @@ DEFAULT_TEMPLATE = """
 <p><strong>End Date:</strong> {{ program_end_date }}</p>
 {% endif %}
 <p><strong>Milestone Completion:</strong> {{ completed_milestones }} / {{ total_milestones }}</p>
-<p><strong>Deliverables Approved:</strong> {{ approved_deliverables }} / {{ total_deliverables }}</p>
+<p><strong>Deliverables Approved:</strong>
+{{ approved_deliverables }} / {{ total_deliverables }}</p>
 {% endif %}
 
 <h2>Declaration</h2>
-<p>This certificate confirms that the above-named client{% if program_title %} and program{% endif %} have been reviewed and cleared for compliance purposes as of the issue date.</p>
+<p>This certificate confirms that the above-named client
+{% if program_title %} and program{% endif %} have been reviewed
+and cleared for compliance purposes as of the issue date.</p>
 
 <p><em>This certificate is issued by Anchor Mill Group and is confidential.</em></p>
 
@@ -91,9 +94,11 @@ COMPLIANCE_CLEARANCE_TEMPLATE = """
 {% endif %}
 
 <h2>Clearance Declaration</h2>
-<p>This certificate confirms that the above-named client has been reviewed and <strong>cleared</strong> for compliance purposes as of the issue date.</p>
+<p>This certificate confirms that the above-named client has been reviewed
+and <strong>cleared</strong> for compliance purposes as of the issue date.</p>
 
-<p>All Know Your Customer (KYC) and Anti-Money Laundering (AML) documentation has been verified and approved.</p>
+<p>All Know Your Customer (KYC) and Anti-Money Laundering (AML) documentation
+has been verified and approved.</p>
 
 <h2>Review Details</h2>
 <p><strong>Reviewed By:</strong> {{ reviewed_by_name }}</p>
@@ -161,7 +166,7 @@ class CertificateService:
         assigned_partners = [
             {
                 "firm_name": a.partner.firm_name if a.partner else "Unknown",
-                "service_type": a.service_type,
+                "service_type": getattr(a, "service_type", ""),
                 "status": a.status,
             }
             for a in assignments
@@ -223,7 +228,7 @@ class CertificateService:
         # Get client profile
         from app.models.client_profile import ClientProfile
         profile_result = await db.execute(
-            select(ClientProfile).where(ClientProfile.client_id == client_id)
+            select(ClientProfile).where(ClientProfile.client_id == client_id)  # type: ignore[attr-defined]
         )
         profile = profile_result.scalar_one_or_none()
 
@@ -325,18 +330,32 @@ class CertificateService:
     <style>
         @page {{ size: A4; margin: 2cm; }}
         body {{ font-family: 'Georgia', serif; color: #2c2c2c; line-height: 1.6; font-size: 11pt; }}
-        h1 {{ color: #8B4513; font-size: 22pt; border-bottom: 2px solid #D2691E; padding-bottom: 8px; }}
+        h1 {{
+            color: #8B4513; font-size: 22pt;
+            border-bottom: 2px solid #D2691E; padding-bottom: 8px;
+        }}
         h2 {{ color: #A0522D; font-size: 16pt; margin-top: 20px; }}
         h3 {{ color: #8B4513; font-size: 13pt; }}
         table {{ width: 100%; border-collapse: collapse; margin: 12px 0; }}
-        th {{ background-color: #8B4513; color: white; padding: 8px 10px; text-align: left; font-size: 10pt; }}
+        th {{
+            background-color: #8B4513; color: white;
+            padding: 8px 10px; text-align: left; font-size: 10pt;
+        }}
         td {{ padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }}
         tr:nth-child(even) td {{ background-color: #faf5f0; }}
         .header {{ text-align: center; margin-bottom: 30px; }}
-        .header .logo {{ font-size: 28pt; color: #8B4513; font-weight: bold; letter-spacing: 2px; }}
+        .header .logo {{
+            font-size: 28pt; color: #8B4513;
+            font-weight: bold; letter-spacing: 2px;
+        }}
         .header .subtitle {{ color: #666; font-size: 10pt; }}
-        .footer {{ text-align: center; color: #999; font-size: 8pt; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; }}
-        .certificate-border {{ border: 3px double #8B4513; padding: 30px; margin: 20px 0; }}
+        .footer {{
+            text-align: center; color: #999; font-size: 8pt;
+            margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px;
+        }}
+        .certificate-border {{
+            border: 3px double #8B4513; padding: 30px; margin: 20px 0;
+        }}
     </style>
 </head>
 <body>
@@ -585,7 +604,10 @@ class CertificateService:
             "entity_type": profile_data.get("entity_type"),
             "jurisdiction": profile_data.get("jurisdiction"),
             "reviewed_by_name": profile_data.get("reviewed_by_name", reviewer.full_name),
-            "reviewed_at": profile_data.get("reviewed_at", datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")),
+            "reviewed_at": profile_data.get(
+                "reviewed_at",
+                datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
+            ),
             "review_notes": profile_data.get("review_notes"),
             "issue_date": issue_date,
             "issued_by": reviewer.full_name,

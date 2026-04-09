@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -77,7 +76,7 @@ function ProgramsPageContent() {
 
   // Navigation state for scroll and filter preservation
   const {
-    isRestored,
+    _isRestored,
     restoreScrollPosition,
     markForRestore,
     resetFilters,
@@ -96,7 +95,7 @@ function ProgramsPageContent() {
   useScrollRestore(pathname, !isInternal === false && hasPendingRestore);
 
   // Read initial values from URL (or restored state)
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -106,7 +105,7 @@ function ProgramsPageContent() {
   // Check if any filters are active
   const hasActiveFilters = statusParam !== "all" || searchInput !== "";
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -120,12 +119,12 @@ function ProgramsPageContent() {
   );
 
   // Sync debounced search to URL
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 
   // Restore scroll after data loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isInternal && hasPendingRestore) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
@@ -138,8 +137,8 @@ function ProgramsPageContent() {
   const { data: savedFiltersData } = useSavedFilters("programs");
 
   // Auto-apply default saved filter when no URL params present
-  const hasAppliedDefault = React.useRef(false);
-  React.useEffect(() => {
+  const hasAppliedDefault = useRef(false);
+  useEffect(() => {
     if (hasAppliedDefault.current) return;
     if (!savedFiltersData?.items) return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -169,14 +168,14 @@ function ProgramsPageContent() {
   });
 
   const { data: bookmarksData } = useBookmarks("program");
-  const bookmarkedIds = React.useMemo(
+  const bookmarkedIds = useMemo(
     () => new Set(bookmarksData?.items.map((b) => b.entity_id) ?? []),
     [bookmarksData]
   );
 
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const toggleSelection = React.useCallback((id: string) => {
+  const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -188,22 +187,22 @@ function ProgramsPageContent() {
     });
   }, []);
 
-  const handleCompare = React.useCallback(() => {
+  const handleCompare = useCallback(() => {
     const ids = Array.from(selectedIds).join(",");
     router.push(`/programs/compare?ids=${ids}`);
   }, [selectedIds, router]);
 
-  const sortedPrograms = React.useMemo(() => {
+  const sortedPrograms = useMemo(() => {
     if (!data?.programs) return [];
     return [...data.programs].sort((a, b) => {
       const aPin = bookmarkedIds.has(a.id) ? 0 : 1;
       const bPin = bookmarkedIds.has(b.id) ? 0 : 1;
       return aPin - bPin;
     });
-  }, [data?.programs, bookmarkedIds]);
+  }, [data, bookmarkedIds]);
 
   // Handle navigation to detail page - mark for restoration
-  const handleNavigateToDetail = React.useCallback(
+  const handleNavigateToDetail = useCallback(
     (programId: string) => {
       markForRestore();
       router.push(`/programs/${programId}`);
@@ -212,7 +211,7 @@ function ProgramsPageContent() {
   );
 
   // Handle reset filters
-  const handleResetFilters = React.useCallback(() => {
+  const handleResetFilters = useCallback(() => {
     setSearchInput("");
     router.replace(pathname);
     resetFilters();

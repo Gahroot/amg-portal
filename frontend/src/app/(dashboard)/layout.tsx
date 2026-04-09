@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { ErrorBoundary } from "@/components/error/error-boundary";
 import {
@@ -48,7 +48,7 @@ function DashboardKeyboardShortcuts() {
   const { toggleSidebar } = useSidebar();
   const { open: openShortcutsDialog } = useKeyboardShortcutsDialog();
   const { toggleFocusMode } = useFocusMode();
-  const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useKeyboardShortcuts({
     onShowShortcuts: openShortcutsDialog,
@@ -74,9 +74,9 @@ function DashboardKeyboardShortcuts() {
   );
 }
 
-function DashboardContent({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: ReactNode }) {
   useWebSocket();
-  const [helpPanelOpen, setHelpPanelOpen] = React.useState(false);
+  const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const { isFocusMode } = useFocusMode();
   const { isSplitView } = useSplitView();
 
@@ -197,7 +197,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <ErrorBoundary>

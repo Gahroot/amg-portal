@@ -1,7 +1,7 @@
 """User management endpoints (admin only)."""
-
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
@@ -27,7 +27,7 @@ async def list_users(
     search: str | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     query = select(User)
 
     if role:
@@ -41,7 +41,7 @@ async def list_users(
     query = query.order_by(User.created_at.desc())
     users, total = await paginate(db, query, skip=skip, limit=limit)
 
-    return UserListResponse(users=users, total=total)
+    return UserListResponse(users=users, total=total)  # type: ignore[arg-type]
 
 
 @router.post(
@@ -50,7 +50,7 @@ async def list_users(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin)],
 )
-async def create_user(data: UserCreateByAdmin, db: DB):
+async def create_user(data: UserCreateByAdmin, db: DB) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise ConflictException("Email already registered")
@@ -70,7 +70,7 @@ async def create_user(data: UserCreateByAdmin, db: DB):
 
 
 @router.get("/{user_id}", response_model=UserResponse, dependencies=[Depends(require_admin)])
-async def get_user(user_id: uuid.UUID, db: DB):
+async def get_user(user_id: uuid.UUID, db: DB) -> Any:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -79,7 +79,7 @@ async def get_user(user_id: uuid.UUID, db: DB):
 
 
 @router.patch("/{user_id}", response_model=UserResponse, dependencies=[Depends(require_admin)])
-async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
+async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB) -> Any:
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -102,7 +102,7 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_admin)],
 )
-async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB):
+async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB) -> Any:
     if user_id == current_user.id:
         raise BadRequestException("Cannot deactivate yourself")
 

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -12,7 +12,6 @@ import {
 import type { CapabilityReviewListParams } from "@/types/capability-review";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -61,10 +60,10 @@ export default function CapabilityReviewsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = React.useState<CapabilityReviewListParams>({});
-  const [page, setPage] = React.useState(0);
-  const [showGenerateDialog, setShowGenerateDialog] = React.useState(false);
-  const [generateYear, setGenerateYear] = React.useState(
+  const [filters, setFilters] = useState<CapabilityReviewListParams>({});
+  const [page, setPage] = useState(0);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [generateYear, setGenerateYear] = useState(
     new Date().getFullYear()
   );
 

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -13,7 +13,6 @@ import type { UpdateCapabilityReviewRequest, CompleteCapabilityReviewRequest } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -54,10 +53,10 @@ export default function CapabilityReviewDetailPage() {
   const queryClient = useQueryClient();
   const reviewId = params.id as string;
 
-  const [editMode, setEditMode] = React.useState(false);
-  const [notes, setNotes] = React.useState("");
-  const [recommendations, setRecommendations] = React.useState("");
-  const [status, setStatus] = React.useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [recommendations, setRecommendations] = useState("");
+  const [status, setStatus] = useState("");
 
   const { data: review, isLoading } = useQuery({
     queryKey: ["capability-review", reviewId],
@@ -65,7 +64,7 @@ export default function CapabilityReviewDetailPage() {
     enabled: !!user && ALLOWED_ROLES.includes(user.role),
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (review) {
       setNotes(review.notes || "");
       setRecommendations(review.recommendations || "");

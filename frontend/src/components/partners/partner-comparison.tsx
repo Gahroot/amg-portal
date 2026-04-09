@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +65,7 @@ const AVAIL_VARIANT: Record<
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 interface CellProps {
-  children: React.ReactNode;
+  children: ReactNode;
   highlight?: boolean;
   className?: string;
 }

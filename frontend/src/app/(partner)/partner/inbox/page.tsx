@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePartnerAssignments } from "@/hooks/use-partner-portal";
@@ -122,9 +122,9 @@ function AssignmentTable({ items, onAccept, isAccepting }: { items: Assignment[]
 
 export default function PartnerInboxPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [error, setError] = React.useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = usePartnerAssignments(statusFilter !== "all" ? { status: statusFilter } : undefined);
 

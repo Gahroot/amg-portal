@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { ElementType, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -131,7 +131,7 @@ interface MetricCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  icon: React.ElementType;
+  icon: ElementType;
   score: number | null;       // 0–100 for the progress bar
   avgScore: number | null;
   iconColor?: string;
@@ -355,7 +355,7 @@ function ScorecardSkeleton() {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export function ScorecardDashboard() {
-  const [period, setPeriod] = React.useState<ScorecardPeriod>("90d");
+  const [period, setPeriod] = useState<ScorecardPeriod>("90d");
   const { data, isLoading, isError } = useMyScorecard(period);
 
   return (

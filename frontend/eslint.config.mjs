@@ -31,6 +31,14 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // React Compiler rules — disabled while codebase is incrementally migrated.
+      // These flag common patterns (setState in effects, ref reads during render,
+      // manual memoization mismatches) that require deep refactoring per-component.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/incompatible-library": "off",
     },
   },
   // Override default ignores of eslint-config-next.

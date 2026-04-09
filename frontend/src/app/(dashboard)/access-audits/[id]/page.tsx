@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -22,7 +22,6 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -105,17 +104,17 @@ export default function AccessAuditDetailPage() {
   const queryClient = useQueryClient();
   const auditId = params.id as string;
 
-  const [showFindingDialog, setShowFindingDialog] = React.useState(false);
-  const [showWaiveDialog, setShowWaiveDialog] = React.useState(false);
-  const [selectedFindingId, setSelectedFindingId] = React.useState<string | null>(null);
-  const [waiveReason, setWaiveReason] = React.useState("");
-  const [newFinding, setNewFinding] = React.useState<CreateAccessAuditFindingRequest>({
+  const [showFindingDialog, setShowFindingDialog] = useState(false);
+  const [showWaiveDialog, setShowWaiveDialog] = useState(false);
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  const [waiveReason, setWaiveReason] = useState("");
+  const [newFinding, setNewFinding] = useState<CreateAccessAuditFindingRequest>({
     finding_type: "other",
     severity: "medium",
     description: "",
   });
-  const [summary, setSummary] = React.useState("");
-  const [recommendations, setRecommendations] = React.useState("");
+  const [summary, setSummary] = useState("");
+  const [recommendations, setRecommendations] = useState("");
 
   const { data: audit, isLoading } = useQuery({
     queryKey: ["access-audit", auditId],
@@ -123,7 +122,7 @@ export default function AccessAuditDetailPage() {
     enabled: !!user && ALLOWED_ROLES.includes(user.role),
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (audit) {
       setSummary(audit.summary || "");
       setRecommendations(audit.recommendations || "");

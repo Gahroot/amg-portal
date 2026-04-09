@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Check, AlertCircle, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AutoSaveStatus } from "@/hooks/use-auto-save";
@@ -67,10 +67,10 @@ export function AutoSaveIndicator({
   size = "default",
   pulseOnSaving = true,
 }: AutoSaveIndicatorProps) {
-  const [relativeTime, setRelativeTime] = React.useState<string | null>(null);
+  const [relativeTime, setRelativeTime] = useState<string | null>(null);
 
   // Update relative time every minute
-  React.useEffect(() => {
+  useEffect(() => {
     if (!lastSaved || !showTimestamp) {
       setRelativeTime(null);
       return;

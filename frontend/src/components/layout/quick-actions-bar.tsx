@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { ElementType, useCallback, useMemo, useState } from "react";
 import {
   Zap,
   Pin,
@@ -64,7 +64,7 @@ interface QuickActionsBarProps {
 const COMMON_ACTIONS: Array<{
   id: string;
   label: string;
-  icon: React.ElementType;
+  icon: ElementType;
   shortcut?: string;
   action: string;
 }> = [
@@ -119,11 +119,11 @@ export function QuickActionsBar({
     isPinned,
   } = useQuickActions();
 
-  const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
-  const [visibleCount, setVisibleCount] = React.useState(maxActions);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [visibleCount, setVisibleCount] = useState(maxActions);
 
   // Combine pinned actions with context actions
-  const allActions = React.useMemo(() => {
+  const allActions = useMemo(() => {
     // Start with pinned actions
     const pinned = pinnedActions.slice(0, 3);
     
@@ -136,12 +136,12 @@ export function QuickActionsBar({
   }, [pinnedActions, contextActions]);
 
   // Actions to display
-  const displayedActions = React.useMemo(() => {
+  const displayedActions = useMemo(() => {
     return allActions.slice(0, visibleCount);
   }, [allActions, visibleCount]);
 
   // Handle action activation
-  const handleActivateAction = React.useCallback(
+  const handleActivateAction = useCallback(
     (index: number) => {
       const action = displayedActions[index];
       if (action) {
@@ -169,7 +169,7 @@ export function QuickActionsBar({
   });
 
   // Handle common action click
-  const handleCommonAction = React.useCallback(
+  const handleCommonAction = useCallback(
     (actionId: string) => {
       switch (actionId) {
         case "search":
@@ -187,17 +187,17 @@ export function QuickActionsBar({
   );
 
   // Show more actions
-  const showMore = React.useCallback(() => {
+  const showMore = useCallback(() => {
     setVisibleCount((prev) => Math.min(prev + maxActions, allActions.length));
   }, [maxActions, allActions.length]);
 
   // Show fewer actions
-  const showFewer = React.useCallback(() => {
+  const showFewer = useCallback(() => {
     setVisibleCount(maxActions);
   }, [maxActions]);
 
   // Toggle collapsed state
-  const toggleCollapsed = React.useCallback(() => {
+  const toggleCollapsed = useCallback(() => {
     setIsCollapsed((prev) => !prev);
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -77,9 +77,9 @@ function DeliverableTable({
 }: {
   deliverables: DeliverableItem[];
   onRowClick: (id: string) => void;
-  actions?: (d: DeliverableItem) => React.ReactNode;
+  actions?: (d: DeliverableItem) => ReactNode;
 }) {
-  const handleDownload = (e: React.MouseEvent, deliverable: DeliverableItem) => {
+  const handleDownload = (e: MouseEvent, deliverable: DeliverableItem) => {
     e.stopPropagation();
     if (deliverable.download_url) {
       window.open(deliverable.download_url, "_blank");
@@ -174,14 +174,14 @@ function DeliverablesPageContent() {
   const isInternal = user?.role !== "client" && user?.role !== "partner";
 
   // Read initial values from URL
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const statusParam = searchParams.get("status") ?? "all";
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -195,13 +195,13 @@ function DeliverablesPageContent() {
   );
 
   // Sync debounced search to URL
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 
   const [reviewDialog, setReviewDialog] =
-    React.useState<ReviewDialogState | null>(null);
-  const [reviewComments, setReviewComments] = React.useState("");
+    useState<ReviewDialogState | null>(null);
+  const [reviewComments, setReviewComments] = useState("");
 
   // All deliverables (filtered tab)
   const { data: allData, isLoading: allLoading } = useQuery({

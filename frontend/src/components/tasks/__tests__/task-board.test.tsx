@@ -1,4 +1,4 @@
-import * as React from "react";
+import type { ReactNode } from "react";
 import { screen } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { renderWithProviders } from "@/test/mocks/wrapper";
@@ -96,7 +96,7 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/core")>();
   return {
     ...actual,
-    DndContext: ({ children }: { children: React.ReactNode }) => (
+    DndContext: ({ children }: { children: ReactNode }) => (
       <div>{children}</div>
     ),
     DragOverlay: () => null,
@@ -121,7 +121,7 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
       transition: undefined,
       isDragging: false,
     }),
-    SortableContext: ({ children }: { children: React.ReactNode }) => (
+    SortableContext: ({ children }: { children: ReactNode }) => (
       <div>{children}</div>
     ),
   };

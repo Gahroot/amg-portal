@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { comparePartners, listPartners } from "@/lib/api/partners";
@@ -77,16 +76,16 @@ function ComparePageContent() {
   const searchParams = useSearchParams();
 
   // IDs from URL query param ?ids=id1,id2,...
-  const [selectedIds, setSelectedIds] = React.useState<string[]>(() => {
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => {
     const raw = searchParams.get("ids");
     return raw ? raw.split(",").filter(Boolean) : [];
   });
 
-  const [selectorOpen, setSelectorOpen] = React.useState(false);
-  const [selectorSearch, setSelectorSearch] = React.useState("");
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [selectorSearch, setSelectorSearch] = useState("");
 
   // Keep URL in sync with selectedIds
-  React.useEffect(() => {
+  useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (selectedIds.length > 0) {
       params.set("ids", selectedIds.join(","));
@@ -103,10 +102,10 @@ function ComparePageContent() {
     enabled: !!user && INTERNAL_ROLES.includes(user.role),
   });
 
-  const allPartners = allPartnersData?.profiles ?? [];
+  const allPartners = useMemo(() => allPartnersData?.profiles ?? [], [allPartnersData]);
 
   // Map for quick lookup
-  const partnerMap = React.useMemo(() => {
+  const partnerMap = useMemo(() => {
     const m = new Map<string, PartnerProfile>();
     allPartners.forEach((p) => m.set(p.id, p));
     return m;

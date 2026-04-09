@@ -41,7 +41,8 @@ async def create_invoice(
             raise NotFoundException("Program not found")
 
     if data.status not in VALID_STATUSES:
-        raise BadRequestException(f"Invalid status. Must be one of: {', '.join(sorted(VALID_STATUSES))}")
+        valid = ", ".join(sorted(VALID_STATUSES))
+        raise BadRequestException(f"Invalid status. Must be one of: {valid}")
 
     invoice = Invoice(
         client_id=data.client_id,
@@ -117,7 +118,8 @@ async def update_invoice(
     update_data = data.model_dump(exclude_unset=True)
 
     if "status" in update_data and update_data["status"] not in VALID_STATUSES:
-        raise BadRequestException(f"Invalid status. Must be one of: {', '.join(sorted(VALID_STATUSES))}")
+        valid = ", ".join(sorted(VALID_STATUSES))
+        raise BadRequestException(f"Invalid status. Must be one of: {valid}")
 
     if "program_id" in update_data and update_data["program_id"] is not None:
         program_result = await db.execute(

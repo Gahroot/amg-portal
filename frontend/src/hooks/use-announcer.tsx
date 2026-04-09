@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 export type Politeness = "polite" | "assertive" | "off";
 
 interface AnnouncerOptions {
@@ -41,15 +41,15 @@ export function useAnnouncer(options: AnnouncerOptions = {}) {
   const { defaultPoliteness = "polite", clearDelay = CLEAR_DELAY_DEFAULT } =
     options;
 
-  const [state, setState] = React.useState<AnnouncerState>({
+  const [state, setState] = useState<AnnouncerState>({
     message: "",
     politeness: defaultPoliteness,
   });
 
-  const clearTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clear any pending timeout
-  const clearPendingTimeout = React.useCallback(() => {
+  const clearPendingTimeout = useCallback(() => {
     if (clearTimeoutRef.current) {
       clearTimeout(clearTimeoutRef.current);
       clearTimeoutRef.current = null;
@@ -57,7 +57,7 @@ export function useAnnouncer(options: AnnouncerOptions = {}) {
   }, []);
 
   // Announce a message with specified politeness
-  const announce = React.useCallback(
+  const announce = useCallback(
     (message: string, politeness: Politeness = defaultPoliteness) => {
       clearPendingTimeout();
 
@@ -78,24 +78,24 @@ export function useAnnouncer(options: AnnouncerOptions = {}) {
   );
 
   // Convenience methods
-  const polite = React.useCallback(
+  const polite = useCallback(
     (message: string) => announce(message, "polite"),
     [announce]
   );
 
-  const assertive = React.useCallback(
+  const assertive = useCallback(
     (message: string) => announce(message, "assertive"),
     [announce]
   );
 
   // Clear current announcement
-  const clear = React.useCallback(() => {
+  const clear = useCallback(() => {
     clearPendingTimeout();
     setState((prev) => ({ ...prev, message: "" }));
   }, [clearPendingTimeout]);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => clearPendingTimeout();
   }, [clearPendingTimeout]);
 
@@ -175,12 +175,12 @@ interface AnnouncerContextValue {
   clear: () => void;
 }
 
-const AnnouncerContext = React.createContext<AnnouncerContextValue | null>(
+const AnnouncerContext = createContext<AnnouncerContextValue | null>(
   null
 );
 
 export function useGlobalAnnouncer() {
-  const context = React.useContext(AnnouncerContext);
+  const context = useContext(AnnouncerContext);
   if (!context) {
     throw new Error(
       "useGlobalAnnouncer must be used within an AnnouncerProvider"
@@ -194,13 +194,13 @@ export function AnnouncerProvider({
   defaultPoliteness = "polite",
   clearDelay = 500,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   defaultPoliteness?: Politeness;
   clearDelay?: number;
 }) {
   const announcer = useAnnouncer({ defaultPoliteness, clearDelay });
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       announce: announcer.announce,
       polite: announcer.polite,

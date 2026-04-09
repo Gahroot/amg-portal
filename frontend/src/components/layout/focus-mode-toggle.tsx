@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,7 @@ export function FocusModeToggle({
 }: FocusModeToggleProps) {
   const { isFocusMode, toggleFocusMode } = useFocusMode();
 
-  const shortcutHint = React.useMemo(() => {
+  const shortcutHint = useMemo(() => {
     const isMac =
       typeof window !== "undefined" &&
       navigator.platform.toLowerCase().includes("mac");

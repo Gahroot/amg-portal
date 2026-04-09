@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import bcrypt
 from fastapi import APIRouter
@@ -62,7 +63,7 @@ async def get_shared_report_meta(token: str, db: DB) -> SharedReportMeta:
         creator_name=_creator_display_name(share),
         is_password_protected=share.password_hash is not None,
         allow_download=share.allow_download,
-        expires_at=share.expires_at,  # type: ignore[arg-type]
+        expires_at=share.expires_at,
     )
 
 
@@ -98,7 +99,7 @@ async def access_shared_report(
     )
 
 
-async def _fetch_report_data(share: SharedReport, db: DB) -> dict | None:
+async def _fetch_report_data(share: SharedReport, db: DB) -> dict[str, Any] | None:  # noqa: PLR0911
     """Dispatch to the appropriate report service method.
 
     Only report types that are scoped to a specific entity (client, program, or the

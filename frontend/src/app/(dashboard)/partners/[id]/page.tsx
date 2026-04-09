@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -37,8 +38,6 @@ import {
   verifyPartnerCertification,
   submitQualification,
   approveQualification,
-  getPartnerOnboarding,
-  completeOnboardingStage,
   listServiceCategories,
 } from "@/lib/api/partner-capabilities";
 import { Button } from "@/components/ui/button";
@@ -112,12 +111,12 @@ export default function PartnerDetailPage() {
   const { user } = useAuth();
   const isMD = user?.role === "managing_director";
 
-  const [editing, setEditing] = React.useState(false);
-  const [editData, setEditData] = React.useState<PartnerUpdateData>({});
-  const [provisionOpen, setProvisionOpen] = React.useState(false);
-  const [provisionPassword, setProvisionPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
-  const [noticeDialogOpen, setNoticeDialogOpen] = React.useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<PartnerUpdateData>({});
+  const [provisionOpen, setProvisionOpen] = useState(false);
+  const [provisionPassword, setProvisionPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [noticeDialogOpen, setNoticeDialogOpen] = useState(false);
 
   const { data: partner, isLoading } = useQuery({
     queryKey: ["partners", partnerId],
@@ -174,7 +173,7 @@ export default function PartnerDetailPage() {
     },
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       uploadMutation.mutate(file);
@@ -1009,7 +1008,7 @@ function GovernanceTabContent({
   partnerName: string;
   isMD: boolean;
 }) {
-  const [govDialogOpen, setGovDialogOpen] = React.useState(false);
+  const [govDialogOpen, setGovDialogOpen] = useState(false);
 
   const { data: compositeScore, isLoading: scoreLoading } = useQuery({
     queryKey: ["composite-score", partnerId],
@@ -1238,7 +1237,7 @@ function PerformanceNoticesTabContent({
 // ─── Trends Tab ────────────────────────────────────────────────────────────────
 
 function TrendsTabContent({ partnerId }: { partnerId: string }) {
-  const [dateRange, setDateRange] = React.useState<30 | 90 | 365>(90);
+  const [dateRange, setDateRange] = useState<30 | 90 | 365>(90);
 
   const { data: trends, isLoading } = useQuery({
     queryKey: ["partner-trends", partnerId, dateRange],

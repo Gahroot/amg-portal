@@ -1,8 +1,8 @@
 """Task board API for drag-and-drop task management."""
-
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import and_, func, select
@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_coordinator_or_above, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.models.enums import TaskStatus
 from app.models.milestone import Milestone
 from app.models.program import Program
 from app.models.task import Task
@@ -40,7 +41,7 @@ def build_task_response(
     program: Program | None = None,
     milestone: Milestone | None = None,
     blocked_by: list[uuid.UUID] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Build a task response with related entity info."""
     response = {
         "id": task.id,
@@ -123,7 +124,7 @@ async def list_tasks(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     _: None = Depends(require_internal),
-):
+) -> Any:
     """List all tasks with filtering for the task board."""
     # Build query with joins
     query = (
@@ -195,7 +196,7 @@ async def create_task(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Create a new task."""
     # Verify milestone exists
     result = await db.execute(
@@ -248,10 +249,13 @@ async def create_task(
         )
         .where(Task.id == task.id)
     )
-    task = result.scalar_one()
+    loaded_task = cast(Task, result.scalar_one())
 
     return TaskBoardResponse(
-        **build_task_response(task, task.assignee, task.milestone.program, task.milestone)
+        **build_task_response(
+            loaded_task, loaded_task.assignee,
+            loaded_task.milestone.program, loaded_task.milestone,
+        )
     )
 
 
@@ -261,7 +265,7 @@ async def get_task(
     db: DB,
     _rls: RLSContext,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get a single task by ID."""
     result = await db.execute(
         select(Task)
@@ -292,7 +296,7 @@ async def update_task(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Update a task (title, description, status, priority, due_date, assigned_to)."""
     result = await db.execute(
         select(Task)
@@ -355,7 +359,7 @@ async def reorder_tasks(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Reorder tasks after drag-and-drop. Updates status and position."""
     result = await db.execute(select(Task).where(Task.id == data.task_id))
     task = result.scalar_one_or_none()
@@ -377,7 +381,7 @@ async def reorder_tasks(
     old_task_status = task.status
 
     # Update the task's status
-    task.status = data.new_status
+    task.status = TaskStatus(data.new_status)
 
     # Insert at the correct position
     if data.after_task_id is None:
@@ -418,7 +422,7 @@ async def batch_reorder_tasks(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Batch reorder multiple tasks at once."""
     # Track tasks whose status actually changed so we can cascade after commit
     status_changed_tasks: list[tuple[uuid.UUID, str]] = []
@@ -444,7 +448,7 @@ async def batch_reorder_tasks(
         old_status = task.status
 
         # Update the task's status
-        task.status = update.new_status
+        task.status = TaskStatus(update.new_status)
 
         # Insert at the correct position
         if update.after_task_id is None:
@@ -486,7 +490,7 @@ async def bulk_update_tasks(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Bulk update or delete multiple tasks.
 
     Supports status/priority/due-date/assignee changes and bulk delete.
@@ -509,7 +513,7 @@ async def delete_task(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Delete a task."""
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
@@ -527,7 +531,7 @@ async def update_task_dependencies(
     db: DB,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Set the full list of dependencies for a task. Validates for circular deps."""
     result = await db.execute(
         select(Task)
@@ -590,7 +594,7 @@ async def list_programs_for_filter(
     db: DB,
     _rls: RLSContext,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """List all programs for the filter dropdown."""
     result = await db.execute(
         select(Program)
@@ -609,7 +613,7 @@ async def list_assignees_for_filter(
     db: DB,
     _rls: RLSContext,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """List all internal users for the assignee filter dropdown."""
     from app.models.enums import INTERNAL_ROLES
 

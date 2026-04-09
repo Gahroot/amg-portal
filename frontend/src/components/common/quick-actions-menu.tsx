@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { Plus, Pin, PinOff, X, Zap } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Plus, Pin, PinOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -89,11 +89,11 @@ export function QuickActionsMenu({
     isPinned,
   } = useQuickActions();
 
-  const [customizeMode, setCustomizeMode] = React.useState(false);
-  const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
+  const [_customizeMode, _setCustomizeMode] = useState(false);
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null);
 
   // Keyboard shortcut: press "a" outside of inputs to toggle quick actions
-  React.useEffect(() => {
+  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== "a" && e.key !== "A") return;
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
@@ -107,7 +107,7 @@ export function QuickActionsMenu({
   }, [toggleMenu]);
 
   // Handle action shortcuts
-  React.useEffect(() => {
+  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       // Check each action for a matching shortcut
       for (const action of actions) {
@@ -131,7 +131,7 @@ export function QuickActionsMenu({
   }, [actions, executeAction]);
 
   // Group actions by category
-  const groupedActions = React.useMemo(
+  const groupedActions = useMemo(
     () => groupActionsByCategory(actions),
     [actions]
   );
@@ -216,13 +216,13 @@ export function QuickActionsMenu({
         if (unpinnedActions.length === 0) return null;
 
         return (
-          <React.Fragment key={category}>
+          <Fragment key={category}>
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               {QUICK_ACTION_CATEGORIES[category]?.label || category}
             </DropdownMenuLabel>
             {unpinnedActions.map(renderActionItem)}
             <DropdownMenuSeparator />
-          </React.Fragment>
+          </Fragment>
         );
       })}
 

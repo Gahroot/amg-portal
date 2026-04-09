@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,9 @@ const DIGEST_FREQUENCIES: { value: DigestFrequency; label: string }[] = [
 
 export function MessageDigestPreferences() {
   const queryClient = useQueryClient();
-  const [frequency, setFrequency] = React.useState<DigestFrequency>("daily");
-  const [hasChanges, setHasChanges] = React.useState(false);
-  const [preview, setPreview] = React.useState<DigestPreviewResponse | null>(
+  const [frequency, setFrequency] = useState<DigestFrequency>("daily");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [preview, setPreview] = useState<DigestPreviewResponse | null>(
     null
   );
 
@@ -77,7 +77,7 @@ export function MessageDigestPreferences() {
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (preferences) {
       setFrequency(preferences.digest_frequency as DigestFrequency);
       setHasChanges(false);

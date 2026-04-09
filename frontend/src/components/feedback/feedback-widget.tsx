@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ interface FeedbackWidgetProps {
 }
 
 export function FeedbackWidget({ className }: FeedbackWidgetProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>

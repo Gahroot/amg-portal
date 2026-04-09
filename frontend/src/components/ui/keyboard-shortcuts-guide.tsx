@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { Kbd } from "./kbd";
 
@@ -111,14 +111,14 @@ export function KeyboardShortcutsGuide({
                 </dt>
                 <dd className="flex items-center gap-1" aria-label={shortcut.keys.join(" plus ")}>
                   {shortcut.keys.map((key, keyIndex) => (
-                    <React.Fragment key={key}>
+                    <Fragment key={key}>
                       <Kbd>{key}</Kbd>
                       {keyIndex < shortcut.keys.length - 1 && (
                         <span className="text-muted-foreground" aria-hidden="true">
                           +
                         </span>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   ))}
                 </dd>
               </div>

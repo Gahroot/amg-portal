@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -34,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { BarChart2, Clock, LayoutTemplate, Plus, Search } from "lucide-react";
+import { BarChart2, LayoutTemplate, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { EscalationRuleList } from "@/components/escalations/escalation-rule-list";
 import { EscalationRuleForm } from "@/components/escalations/escalation-rule-form";
@@ -88,19 +87,19 @@ function EscalationsPageContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [searchInput, setSearchInput] = React.useState(
+  const [searchInput, setSearchInput] = useState(
     searchParams.get("search") ?? ""
   );
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const levelParam = searchParams.get("level") ?? "all";
   const statusParam = searchParams.get("status") ?? "all";
-  const [page, setPage] = React.useState(0);
-  const [ruleFormOpen, setRuleFormOpen] = React.useState(false);
-  const [editingRule, setEditingRule] = React.useState<EscalationRule | null>(null);
-  const [createOpen, setCreateOpen] = React.useState(false);
+  const [page, setPage] = useState(0);
+  const [ruleFormOpen, setRuleFormOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<EscalationRule | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const updateParam = React.useCallback(
+  const updateParam = useCallback(
     (key: string, value: string | undefined) => {
       const params = new URLSearchParams(searchParams.toString());
       if (value && value !== "all") {
@@ -111,10 +110,10 @@ function EscalationsPageContent() {
       router.replace(`${pathname}?${params.toString()}`);
       setPage(0);
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams, setPage]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     updateParam("search", debouncedSearch || undefined);
   }, [debouncedSearch, updateParam]);
 

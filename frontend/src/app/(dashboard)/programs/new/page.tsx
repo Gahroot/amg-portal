@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,8 +32,8 @@ const STEP_LABELS = ["Details", "Milestones", "Review & Budget"];
 export default function NewProgramPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [step, setStep] = React.useState(0);
-  const [error, setError] = React.useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const isInternal = user?.role !== "client" && user?.role !== "partner";
 

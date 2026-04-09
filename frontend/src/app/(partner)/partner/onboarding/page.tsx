@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronRight, Clock, User, FileText, Award, Shield } from "lucide-react";
@@ -19,7 +20,7 @@ import {
 import { getPartnerOnboarding, completeOnboardingStage } from "@/lib/api/partner-capabilities";
 
 // Stage icons
-const STAGE_ICONS: Record<OnboardingStage, React.ReactNode> = {
+const STAGE_ICONS: Record<OnboardingStage, ReactNode> = {
   profile_setup: <User className="h-5 w-5" />,
   capability_matrix: <Award className="h-5 w-5" />,
   compliance_docs: <Shield className="h-5 w-5" />,
@@ -30,15 +31,11 @@ const STAGE_ICONS: Record<OnboardingStage, React.ReactNode> = {
 
 export default function PartnerOnboardingPage() {
   const router = useRouter();
-  const [onboarding, setOnboarding] = React.useState<PartnerOnboarding | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [onboarding, setOnboarding] = useState<PartnerOnboarding | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  React.useEffect(() => {
-    loadOnboarding();
-  }, []);
-
-  const loadOnboarding = async () => {
+  const loadOnboarding = useCallback(async () => {
     try {
       // Get partner ID from the current user's profile
       const profileResponse = await fetch("/api/v1/partner-portal/profile");
@@ -55,7 +52,11 @@ export default function PartnerOnboardingPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadOnboarding();
+  }, [loadOnboarding]);
 
   const handleChecklistItemToggle = async (stage: OnboardingStage, item: string, checked: boolean) => {
     if (!onboarding || !profile) return;
@@ -99,9 +100,9 @@ export default function PartnerOnboardingPage() {
     }
   };
 
-  const [profile, setProfile] = React.useState<{ id: string } | null>(null);
+  const [profile, setProfile] = useState<{ id: string } | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetch("/api/v1/partner-portal/profile")
       .then((res) => res.json())
       .then(setProfile)
@@ -176,10 +177,10 @@ export default function PartnerOnboardingPage() {
         {ONBOARDING_STAGES.map((stage, index) => {
           const isCompleted = onboarding.completed_stages.includes(stage.id);
           const isCurrent = stage.id === onboarding.current_stage;
-          const isUpcoming = index > currentStageIndex;
+          const _isUpcoming = index > currentStageIndex;
 
           return (
-            <React.Fragment key={stage.id}>
+            <Fragment key={stage.id}>
               <div className="flex flex-col items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -207,7 +208,7 @@ export default function PartnerOnboardingPage() {
               {index < ONBOARDING_STAGES.length - 1 && (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               )}
-            </React.Fragment>
+            </Fragment>
           );
         })}
       </div>

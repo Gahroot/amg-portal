@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -90,9 +90,9 @@ export default function ReportSchedulesPage() {
   });
 
   // ── Dialog state ───────────────────────────────────────────────────────────
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] =
-    React.useState<ReportSchedule | null>(null);
+    useState<ReportSchedule | null>(null);
 
   function openCreate() {
     setEditingSchedule(null);

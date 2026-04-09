@@ -1,6 +1,7 @@
 """Shared report model for token-based public access to reports."""
 
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -17,7 +18,7 @@ class SharedReport(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     report_type: Mapped[str] = mapped_column(
         String(50), nullable=False
-    )  # portfolio, program_status, completion, annual_review, rm_portfolio, escalation_log, compliance
+    )  # portfolio, program_status, completion, annual_review, rm_portfolio, etc.
     entity_id: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )  # program_id or year depending on report type
@@ -27,7 +28,7 @@ class SharedReport(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    expires_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

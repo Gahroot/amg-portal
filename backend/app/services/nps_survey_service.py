@@ -488,7 +488,7 @@ class NPSFollowUpService(CRUDBase[NPSFollowUp, NPSFollowUpCreate, NPSFollowUpUpd
         resolution_notes: str | None = None,
     ) -> NPSFollowUp:
         """Update follow-up status."""
-        follow_up.status = status.value
+        follow_up.status = status
         if status == NPSFollowUpStatus.completed:
             follow_up.completed_at = datetime.now(UTC)
             if resolution_notes:

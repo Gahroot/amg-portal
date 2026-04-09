@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   Plus,
@@ -12,7 +12,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ExternalLink,
   Clock,
   MoreHorizontal,
 } from "lucide-react";
@@ -23,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -96,34 +94,34 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function PartnerWebhooksPage() {
-  const [webhooks, setWebhooks] = React.useState<Webhook[]>([]);
-  const [eventTypes, setEventTypes] = React.useState<WebhookEventType[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [showInactive, setShowInactive] = React.useState(false);
+  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [eventTypes, setEventTypes] = useState<WebhookEventType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Dialog states
-  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [showEditDialog, setShowEditDialog] = React.useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [showTestDialog, setShowTestDialog] = React.useState(false);
-  const [showDeliveriesSheet, setShowDeliveriesSheet] = React.useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTestDialog, setShowTestDialog] = useState(false);
+  const [showDeliveriesSheet, setShowDeliveriesSheet] = useState(false);
 
   // Selected webhook for operations
-  const [selectedWebhook, setSelectedWebhook] = React.useState<Webhook | null>(null);
-  const [deliveries, setDeliveries] = React.useState<WebhookDelivery[]>([]);
-  const [testResult, setTestResult] = React.useState<WebhookTestResponse | null>(null);
-  const [testEventType, setTestEventType] = React.useState<string>("");
+  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
+  const [testResult, setTestResult] = useState<WebhookTestResponse | null>(null);
+  const [testEventType, setTestEventType] = useState<string>("");
 
   // Form state
-  const [formData, setFormData] = React.useState<WebhookCreateRequest>({
+  const [formData, setFormData] = useState<WebhookCreateRequest>({
     url: "",
     secret: "",
     events: [],
     description: "",
   });
-  const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const loadWebhooks = React.useCallback(async () => {
+  const loadWebhooks = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await getWebhooks({ include_inactive: showInactive });
@@ -136,7 +134,7 @@ export default function PartnerWebhooksPage() {
     }
   }, [showInactive]);
 
-  const loadEventTypes = React.useCallback(async () => {
+  const loadEventTypes = useCallback(async () => {
     try {
       const response = await getWebhookEventTypes();
       setEventTypes(response.event_types);
@@ -145,7 +143,7 @@ export default function PartnerWebhooksPage() {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadWebhooks();
     loadEventTypes();
   }, [loadWebhooks, loadEventTypes]);

@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -8,13 +9,11 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import {
-  ChevronDown,
   Download,
   FileText,
   GripVertical,
   Plus,
   Save,
-  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -57,7 +56,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -111,36 +109,36 @@ export function ReportBuilder({ initialReport, onSave }: ReportBuilderProps) {
   const queryClient = useQueryClient();
 
   // Report definition state
-  const [name, setName] = React.useState(initialReport?.name ?? "");
-  const [description, setDescription] = React.useState(
+  const [name, setName] = useState(initialReport?.name ?? "");
+  const [description, setDescription] = useState(
     initialReport?.description ?? "",
   );
-  const [dataSource, setDataSource] = React.useState<DataSource | "">(
+  const [dataSource, setDataSource] = useState<DataSource | "">(
     (initialReport?.data_source as DataSource) ?? "",
   );
-  const [fields, setFields] = React.useState<ReportField[]>(
+  const [fields, setFields] = useState<ReportField[]>(
     initialReport?.fields ?? [],
   );
-  const [filters, setFilters] = React.useState<ReportFilter[]>(
+  const [filters, setFilters] = useState<ReportFilter[]>(
     initialReport?.filters ?? [],
   );
-  const [sorting, setSorting] = React.useState<ReportSort[]>(
+  const [sorting, setSorting] = useState<ReportSort[]>(
     initialReport?.sorting ?? [],
   );
-  const [grouping, setGrouping] = React.useState<string[]>(
+  const [grouping, setGrouping] = useState<string[]>(
     initialReport?.grouping ?? [],
   );
-  const [isTemplate, setIsTemplate] = React.useState(
+  const [isTemplate, _setIsTemplate] = useState(
     initialReport?.is_template ?? false,
   );
 
   // Preview pagination
-  const [page, setPage] = React.useState(1);
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
 
   // UI state
-  const [activeTab, setActiveTab] = React.useState("fields");
-  const [exportFormat, setExportFormat] = React.useState<ExportFormat>("csv");
+  const [activeTab, setActiveTab] = useState("fields");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
 
   // ─── Data fetching ───────────────────────────────────────────────────
 
@@ -158,7 +156,7 @@ export function ReportBuilder({ initialReport, onSave }: ReportBuilderProps) {
   const {
     data: preview,
     isFetching: isPreviewing,
-    refetch: runPreview,
+    refetch: _runPreview,
   } = useQuery({
     queryKey: ["custom-report-preview", dataSource, fields, filters, sorting, grouping, page],
     queryFn: () =>
@@ -822,7 +820,7 @@ export function ReportBuilder({ initialReport, onSave }: ReportBuilderProps) {
 
 // ─── Cell renderer ───────────────────────────────────────────────────────────
 
-function renderCellValue(value: unknown, type: string): React.ReactNode {
+function renderCellValue(value: unknown, type: string): ReactNode {
   if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
 
   const str = String(value);

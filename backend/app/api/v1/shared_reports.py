@@ -51,7 +51,7 @@ def _build_response(share: SharedReport, share_url: str) -> SharedReportResponse
         entity_id=share.entity_id,
         share_token=share.share_token,
         created_by=share.created_by,
-        expires_at=share.expires_at,  # type: ignore[arg-type]
+        expires_at=share.expires_at,
         access_count=share.access_count,
         is_active=share.is_active,
         allow_download=share.allow_download,

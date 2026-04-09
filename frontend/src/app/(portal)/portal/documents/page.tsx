@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, FileText, File, FileImage, FileSpreadsheet, FileArchive, PenLine, Search, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -145,13 +145,13 @@ function DocumentTable({ documents, onShare }: DocumentTableProps) {
 
 export default function PortalDocumentsPage() {
   const { data, isLoading } = usePortalDocuments();
-  const [search, setSearch] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [shareDoc, setShareDoc] = React.useState<DocumentItem | null>(null);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [shareDoc, setShareDoc] = useState<DocumentItem | null>(null);
 
-  const documents = data?.documents ?? [];
+  const documents = useMemo(() => data?.documents ?? [], [data]);
 
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     let result = documents;
     if (search) {
       const q = search.toLowerCase();
@@ -167,13 +167,13 @@ export default function PortalDocumentsPage() {
     return result;
   }, [documents, search, categoryFilter]);
 
-  const categories = React.useMemo(
+  const categories = useMemo(
     () => Array.from(new Set(documents.map((d) => d.category))),
     [documents],
   );
 
   // Group filtered documents by logical group
-  const groups = React.useMemo(() => {
+  const groups = useMemo(() => {
     const map = new Map<string, DocumentItem[]>();
     for (const doc of filtered) {
       const group = CATEGORY_GROUP[doc.category] ?? "Program Documents";

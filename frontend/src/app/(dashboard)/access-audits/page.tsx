@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-provider";
@@ -13,7 +13,6 @@ import {
 import type { AccessAuditListParams, CreateAccessAuditRequest } from "@/types/access-audit";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -54,11 +53,11 @@ export default function AccessAuditsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = React.useState<AccessAuditListParams>({});
-  const [page, setPage] = React.useState(0);
-  const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [newQuarter, setNewQuarter] = React.useState(1);
-  const [newYear, setNewYear] = React.useState(new Date().getFullYear());
+  const [filters, setFilters] = useState<AccessAuditListParams>({});
+  const [page, setPage] = useState(0);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newQuarter, setNewQuarter] = useState(1);
+  const [newYear, setNewYear] = useState(new Date().getFullYear());
 
   const queryParams = { ...filters, skip: page * PAGE_SIZE, limit: PAGE_SIZE };
 
@@ -91,7 +90,7 @@ export default function AccessAuditsPage() {
   });
 
   // Auto-determine current quarter
-  React.useEffect(() => {
+  useEffect(() => {
     const now = new Date();
     const quarter = Math.floor(now.getMonth() / 3) + 1;
     setNewQuarter(quarter);

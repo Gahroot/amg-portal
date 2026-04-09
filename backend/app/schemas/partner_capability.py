@@ -3,6 +3,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -80,7 +81,7 @@ class CapabilityResponse(BaseModel):
     capability_name: str
     proficiency_level: str
     years_experience: Decimal | None = None
-    verified: bool
+    verified: bool = False
     verified_by: UUID | None = None
     verified_at: datetime | None = None
     notes: str | None = None
@@ -167,7 +168,7 @@ class QualificationResponse(BaseModel):
     category_id: UUID
     category_name: str | None = None
     qualification_level: str
-    approval_status: str
+    approval_status: str = "pending"
     approved_by: UUID | None = None
     approved_at: datetime | None = None
     notes: str | None = None
@@ -227,7 +228,7 @@ class CertificationResponse(BaseModel):
     issue_date: date | None = None
     expiry_date: date | None = None
     document_url: str | None = None
-    verification_status: str
+    verification_status: str = "pending"
     verified_by: UUID | None = None
     verified_at: datetime | None = None
     notes: str | None = None
@@ -274,12 +275,12 @@ class OnboardingResponse(BaseModel):
 
     id: UUID
     partner_id: UUID
-    current_stage: str
-    checklist_items: dict[str, dict[str, bool]] = {}
+    current_stage: str = "initial"
+    checklist_items: dict[str, dict[str, bool]] | dict[str, Any] = {}
     completed_stages: list[str] = []
     assigned_coordinator: UUID | None = None
     coordinator_name: str | None = None
-    started_at: datetime
+    started_at: datetime | None = None
     completed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

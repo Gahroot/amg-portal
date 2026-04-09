@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCalendarFeedStatus,
@@ -56,8 +56,8 @@ import { toast } from "sonner";
 
 export function CalendarFeed() {
   const queryClient = useQueryClient();
-  const [newTokenData, setNewTokenData] = React.useState<CalendarFeedTokenCreated | null>(null);
-  const [showUrl, setShowUrl] = React.useState(false);
+  const [newTokenData, setNewTokenData] = useState<CalendarFeedTokenCreated | null>(null);
+  const [showUrl, setShowUrl] = useState(false);
 
   // Fetch calendar feed status
   const { data: statusData, isLoading } = useQuery({
@@ -119,13 +119,13 @@ export function CalendarFeed() {
     });
   };
 
-  const getGoogleCalendarUrl = (feedUrl: string) => {
+  const _getGoogleCalendarUrl = (feedUrl: string) => {
     // Google Calendar requires the URL to be publicly accessible
     // Format: https://calendar.google.com/calendar/r?cid=ENCODED_URL
     return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl)}`;
   };
 
-  const getOutlookUrl = (feedUrl: string) => {
+  const _getOutlookUrl = (_feedUrl: string) => {
     // Outlook.com: Add calendar from internet
     // Users need to manually add the URL in Outlook
     return "https://outlook.live.com/calendar/0/view/month";

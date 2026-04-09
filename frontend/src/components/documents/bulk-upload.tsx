@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,10 +77,10 @@ export interface BulkUploadProps {
 }
 
 export function BulkUpload({ entityType, entityId, onComplete }: BulkUploadProps) {
-  const [uploadState, setUploadState] = React.useState<UploadState>("idle");
-  const [items, setItems] = React.useState<FileUploadItem[]>([]);
-  const [globalCategory, setGlobalCategory] = React.useState<DocumentCategory>("general");
-  const [autoCategorizeEnabled, setAutoCategorizeEnabled] = React.useState(true);
+  const [uploadState, setUploadState] = useState<UploadState>("idle");
+  const [items, setItems] = useState<FileUploadItem[]>([]);
+  const [globalCategory, setGlobalCategory] = useState<DocumentCategory>("general");
+  const [autoCategorizeEnabled, setAutoCategorizeEnabled] = useState(true);
 
   // ── File selection ──────────────────────────────────────────────────────────
 

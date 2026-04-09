@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   getCurrentUser,
@@ -39,7 +40,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = React.createContext<
+const AuthContext = createContext<
   AuthContextType | undefined
 >(undefined);
 
@@ -53,16 +54,16 @@ const PUBLIC_PATHS = [
 export function AuthProvider({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const [user, setUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   const isAuthenticated = user !== null;
 
-  const fetchUser = React.useCallback(async () => {
+  const fetchUser = useCallback(async () => {
     const token = getAccessToken();
     if (!token) {
       setIsLoading(false);
@@ -80,13 +81,13 @@ export function AuthProvider({
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   // Listen for session-invalidation events dispatched by the axios
   // interceptor so that React state stays in sync without hard reloads.
-  React.useEffect(() => {
+  useEffect(() => {
     const handleLogout = () => {
       removeTokens();
       setUser(null);
@@ -95,7 +96,7 @@ export function AuthProvider({
     return () => window.removeEventListener("auth:logout", handleLogout);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoading) return;
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
@@ -119,7 +120,7 @@ export function AuthProvider({
     }
   }, [isAuthenticated, isLoading, pathname, router, user]);
 
-  const login = React.useCallback(
+  const login = useCallback(
     async (credentials: LoginCredentials) => {
       const response = await loginApi(credentials);
 
@@ -160,7 +161,7 @@ export function AuthProvider({
     [router]
   );
 
-  const logout = React.useCallback(() => {
+  const logout = useCallback(() => {
     // Clear httpOnly cookies on the server
     api.post("/api/v1/auth/logout").catch(() => {});
     removeTokens();
@@ -168,7 +169,7 @@ export function AuthProvider({
     router.replace("/login");
   }, [router]);
 
-  const refreshUser = React.useCallback(async () => {
+  const refreshUser = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
     try {
@@ -180,7 +181,7 @@ export function AuthProvider({
     }
   }, []);
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       user,
       isLoading,
@@ -221,7 +222,7 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error(
       "useAuth must be used within an AuthProvider"

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type { MouseEventHandler, Ref, ThHTMLAttributes } from "react";
 import {
   DndContext,
   closestCenter,
@@ -292,9 +292,9 @@ export interface ColumnResizerProps {
   /** Whether the column is currently being resized */
   isResizing: boolean;
   /** Resize handler from TanStack Table */
-  onMouseDown: React.MouseEventHandler;
+  onMouseDown: MouseEventHandler;
   /** Double-click handler to auto-fit/reset */
-  onDoubleClick?: React.MouseEventHandler;
+  onDoubleClick?: MouseEventHandler;
 }
 
 /**
@@ -341,15 +341,15 @@ export function ColumnResizer({
  * Props for ResizableTableHead component
  */
 export interface ResizableTableHeadProps
-  extends React.ThHTMLAttributes<HTMLTableCellElement> {
+  extends ThHTMLAttributes<HTMLTableCellElement> {
   /** Column width from TanStack Table */
   width?: number;
   /** Whether the column is being resized */
   isResizing?: boolean;
   /** Resize handler */
-  onResizeMouseDown?: React.MouseEventHandler;
+  onResizeMouseDown?: MouseEventHandler;
   /** Double-click handler to reset size */
-  onResizeDoubleClick?: React.MouseEventHandler;
+  onResizeDoubleClick?: MouseEventHandler;
   /** Whether resizing is enabled */
   enableResizing?: boolean;
 }
@@ -381,7 +381,7 @@ export function ResizableTableHead({
   children,
   style,
   ...props
-}: ResizableTableHeadProps & { ref?: React.Ref<HTMLTableCellElement> }) {
+}: ResizableTableHeadProps & { ref?: Ref<HTMLTableCellElement> }) {
   return (
     <th
       ref={ref}

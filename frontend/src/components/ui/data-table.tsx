@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo } from "react";
 import {
   type ColumnDef,
   type ColumnOrderState,
@@ -151,7 +151,7 @@ export function DataTable<TData, TValue>({
   const selectedCount = Object.keys(selectedRows).length;
 
   // Calculate column sizes for CSS variables (performance optimization)
-  const columnSizeVars = React.useMemo(() => {
+  const columnSizeVars = useMemo(() => {
     if (!enableColumnResizing) return {};
 
     const headers = table.getFlatHeaders();

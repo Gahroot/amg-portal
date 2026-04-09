@@ -1,6 +1,6 @@
 """Family member management endpoints."""
-
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
@@ -31,7 +31,7 @@ async def list_family_members(
     db: DB,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     """List all family members for a client profile."""
     # Verify client profile exists
     result = await db.execute(
@@ -57,7 +57,7 @@ async def list_family_members(
     )
     total = len(count_result.scalars().all())
 
-    return FamilyMemberListResponse(family_members=family_members, total=total)
+    return FamilyMemberListResponse(family_members=family_members, total=total)  # type: ignore[arg-type]
 
 
 @router.post(
@@ -70,7 +70,7 @@ async def create_family_member(
     profile_id: uuid.UUID,
     data: FamilyMemberCreate,
     db: DB,
-):
+) -> Any:
     """Create a new family member for a client profile."""
     # Verify client profile exists
     result = await db.execute(
@@ -98,7 +98,7 @@ async def update_family_member(
     member_id: uuid.UUID,
     data: FamilyMemberUpdate,
     db: DB,
-):
+) -> Any:
     """Update a family member."""
     result = await db.execute(
         select(FamilyMember).where(FamilyMember.id == member_id)
@@ -124,7 +124,7 @@ async def update_family_member(
 async def delete_family_member(
     member_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Delete a family member."""
     result = await db.execute(
         select(FamilyMember).where(FamilyMember.id == member_id)
@@ -147,7 +147,7 @@ async def create_relationship(
     from_member_id: uuid.UUID,
     data: FamilyRelationshipCreate,
     db: DB,
-):
+) -> Any:
     """Create a relationship between two family members."""
     # Verify from_member exists
     result = await db.execute(
@@ -198,7 +198,7 @@ async def create_relationship(
 async def delete_relationship(
     relationship_id: uuid.UUID,
     db: DB,
-):
+) -> Any:
     """Delete a relationship between family members."""
     result = await db.execute(
         select(FamilyRelationship).where(FamilyRelationship.id == relationship_id)

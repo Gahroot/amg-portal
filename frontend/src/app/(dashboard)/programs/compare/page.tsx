@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useProgramComparison } from "@/hooks/use-comparison";
@@ -13,14 +12,14 @@ import { TableSkeleton } from "@/components/ui/loading-skeletons";
 function ProgramCompareContent() {
   const searchParams = useSearchParams();
   const idsParam = searchParams.get("ids") ?? "";
-  const ids = React.useMemo(
+  const ids = useMemo(
     () => idsParam.split(",").filter(Boolean),
     [idsParam]
   );
 
   const { data: programs, isLoading, error } = useProgramComparison(ids);
 
-  const handlePrint = React.useCallback(() => {
+  const handlePrint = useCallback(() => {
     window.print();
   }, []);
 

@@ -76,7 +76,7 @@ async def _client_for(*users: User) -> AsyncGenerator[tuple[AsyncClient, ...], N
         for _ in users
     ]
     try:
-        for cm, user in zip(cms, users):
+        for cm, user in zip(cms, users, strict=True):
             await cm.__aenter__()
             cm.headers.update(_auth_headers(user))
             clients.append(cm)

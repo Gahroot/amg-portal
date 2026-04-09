@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Shield, FileText, Clock, AlertTriangle, CheckCircle2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,16 +23,16 @@ type PageState = "loading" | "ready" | "verifying" | "granted" | "error" | "expi
 export default function SharedDocumentPage({ params }: PageProps) {
   const { token } = use(params);
 
-  const [state, setState] = React.useState<PageState>("loading");
-  const [info, setInfo] = React.useState<DocumentShareInfo | null>(null);
-  const [access, setAccess] = React.useState<DocumentShareAccessResponse | null>(null);
-  const [code, setCode] = React.useState("");
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [isRequestingCode, setIsRequestingCode] = React.useState(false);
-  const [isVerifying, setIsVerifying] = React.useState(false);
-  const [codeSentMessage, setCodeSentMessage] = React.useState<string | null>(null);
+  const [state, setState] = useState<PageState>("loading");
+  const [info, setInfo] = useState<DocumentShareInfo | null>(null);
+  const [access, setAccess] = useState<DocumentShareAccessResponse | null>(null);
+  const [code, setCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isRequestingCode, setIsRequestingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [codeSentMessage, setCodeSentMessage] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     getSharedDocumentInfo(token)
       .then((data) => {
         setInfo(data);
@@ -74,7 +74,7 @@ export default function SharedDocumentPage({ params }: PageProps) {
     }
   }
 
-  async function handleVerify(e: React.FormEvent) {
+  async function handleVerify(e: FormEvent) {
     e.preventDefault();
     if (!code.trim()) return;
     setErrorMessage(null);

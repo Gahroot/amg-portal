@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useUpdateClientDates } from "@/hooks/use-clients";
 import type { ClientProfile, ImportantDate } from "@/types/client";
@@ -30,13 +30,13 @@ function emptyDate(): ImportantDate {
 export function ImportantDatesForm({ clientId, profile }: ImportantDatesFormProps) {
   const mutation = useUpdateClientDates(clientId);
 
-  const [birthDate, setBirthDate] = React.useState<string>(
+  const [birthDate, setBirthDate] = useState<string>(
     profile.birth_date ?? ""
   );
-  const [remindersEnabled, setRemindersEnabled] = React.useState<boolean>(
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(
     profile.birthday_reminders_enabled ?? true
   );
-  const [importantDates, setImportantDates] = React.useState<ImportantDate[]>(
+  const [importantDates, setImportantDates] = useState<ImportantDate[]>(
     profile.important_dates ?? []
   );
 

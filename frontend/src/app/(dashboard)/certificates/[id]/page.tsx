@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -43,8 +43,8 @@ export default function CertificateDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const [revokeReason, setRevokeReason] = React.useState("");
-  const [issueNotes, setIssueNotes] = React.useState("");
+  const [revokeReason, setRevokeReason] = useState("");
+  const [issueNotes, setIssueNotes] = useState("");
 
   const certificateId = params.id as string;
 

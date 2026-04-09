@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,12 @@ function VerificationActions({
   doc: KYCDocumentItem;
   clientId: string;
 }) {
-  const [verifyStatus, setVerifyStatus] = React.useState<
+  const [verifyStatus, setVerifyStatus] = useState<
     "verified" | "rejected"
   >("verified");
-  const [rejectionReason, setRejectionReason] = React.useState("");
-  const [notes, setNotes] = React.useState("");
-  const [submitted, setSubmitted] = React.useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const verifyMutation = useVerifyKYCDocument(clientId);
 

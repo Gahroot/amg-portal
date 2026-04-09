@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,13 @@ import Link from "next/link";
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
-  const [error, setError] = React.useState<string | null>(null);
-  const [mfaRequired, setMfaRequired] = React.useState(false);
-  const [mfaCode, setMfaCode] = React.useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
   const [isMfaSubmitting, setIsMfaSubmitting] =
-    React.useState(false);
+    useState(false);
   const [savedCredentials, setSavedCredentials] =
-    React.useState<LoginFormData | null>(null);
+    useState<LoginFormData | null>(null);
 
   const {
     register,
@@ -59,7 +60,7 @@ export function LoginForm() {
     }
   };
 
-  const handleMfaSubmit = async (e: React.FormEvent) => {
+  const handleMfaSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!savedCredentials) return;
     setError(null);

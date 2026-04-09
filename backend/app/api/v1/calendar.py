@@ -11,6 +11,7 @@ import logging
 import urllib.parse
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, status
@@ -63,7 +64,7 @@ async def get_ical_feed(user_id: uuid.UUID, db: DB) -> PlainTextResponse:
 
 
 @router.get("/status")
-async def get_calendar_status(current_user: CurrentUser) -> dict:
+async def get_calendar_status(current_user: CurrentUser) -> dict[str, Any]:
     """Get calendar integration status for the current user."""
     return {
         "google_connected": current_user.google_calendar_token is not None,
@@ -78,7 +79,7 @@ async def get_calendar_status(current_user: CurrentUser) -> dict:
 
 
 @router.get("/connect/google")
-async def connect_google_calendar(current_user: CurrentUser) -> dict:
+async def connect_google_calendar(current_user: CurrentUser) -> dict[str, Any]:
     """Get Google Calendar OAuth authorization URL.
 
     The frontend should redirect the user to this URL to start the OAuth flow.
@@ -89,7 +90,10 @@ async def connect_google_calendar(current_user: CurrentUser) -> dict:
             detail="Google Calendar integration is not configured",
         )
 
-    redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URI or f"{settings.FRONTEND_URL}/settings/calendar/callback/google"
+    redirect_uri = (
+        settings.GOOGLE_CALENDAR_REDIRECT_URI
+        or f"{settings.FRONTEND_URL}/settings/calendar/callback/google"
+    )
     state = f"user:{current_user.id}"
 
     params = {
@@ -108,10 +112,10 @@ async def connect_google_calendar(current_user: CurrentUser) -> dict:
 
 @router.post("/connect/google/callback")
 async def google_calendar_callback(
-    data: dict,
+    data: dict[str, Any],
     current_user: CurrentUser,
     db: DB,
-) -> dict:
+) -> dict[str, Any]:
     """Handle Google Calendar OAuth callback.
 
     Exchanges the authorization code for tokens and stores them.
@@ -126,7 +130,10 @@ async def google_calendar_callback(
             detail="Google Calendar integration is not configured",
         )
 
-    redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URI or f"{settings.FRONTEND_URL}/settings/calendar/callback/google"
+    redirect_uri = (
+        settings.GOOGLE_CALENDAR_REDIRECT_URI
+        or f"{settings.FRONTEND_URL}/settings/calendar/callback/google"
+    )
 
     async with httpx.AsyncClient() as client:
         # Exchange code for tokens
@@ -164,10 +171,10 @@ async def google_calendar_callback(
 
 @router.post("/connect/outlook/callback")
 async def outlook_calendar_callback(
-    data: dict,
+    data: dict[str, Any],
     current_user: CurrentUser,
     db: DB,
-) -> dict:
+) -> dict[str, Any]:
     """Handle Microsoft/Outlook OAuth callback.
 
     Exchanges the authorization code for tokens and stores them.
@@ -182,7 +189,10 @@ async def outlook_calendar_callback(
             detail="Outlook Calendar integration is not configured",
         )
 
-    redirect_uri = settings.MICROSOFT_CALENDAR_REDIRECT_URI or f"{settings.FRONTEND_URL}/settings/calendar/callback/outlook"
+    redirect_uri = (
+        settings.MICROSOFT_CALENDAR_REDIRECT_URI
+        or f"{settings.FRONTEND_URL}/settings/calendar/callback/outlook"
+    )
     token_url = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/oauth2/v2.0/token"
 
     async with httpx.AsyncClient() as client:
@@ -224,7 +234,7 @@ async def outlook_calendar_callback(
 
 
 @router.get("/connect/outlook")
-async def connect_outlook_calendar(current_user: CurrentUser) -> dict:
+async def connect_outlook_calendar(current_user: CurrentUser) -> dict[str, Any]:
     """Get Microsoft/Outlook OAuth authorization URL.
 
     The frontend should redirect the user to this URL to start the OAuth flow.
@@ -235,7 +245,10 @@ async def connect_outlook_calendar(current_user: CurrentUser) -> dict:
             detail="Outlook Calendar integration is not configured",
         )
 
-    redirect_uri = settings.MICROSOFT_CALENDAR_REDIRECT_URI or f"{settings.FRONTEND_URL}/settings/calendar/callback/outlook"
+    redirect_uri = (
+        settings.MICROSOFT_CALENDAR_REDIRECT_URI
+        or f"{settings.FRONTEND_URL}/settings/calendar/callback/outlook"
+    )
     state = f"user:{current_user.id}"
 
     auth_url = (
@@ -259,7 +272,7 @@ async def sync_calendar(
     current_user: CurrentUser,
     db: DB,
     provider: str = "all",
-) -> dict:
+) -> dict[str, Any]:
     """Manually sync all upcoming milestones to connected calendars.
 
     Args:
@@ -289,7 +302,7 @@ async def disconnect_calendar(
     provider: str,
     current_user: CurrentUser,
     db: DB,
-) -> dict:
+) -> dict[str, Any]:
     """Disconnect a calendar integration.
 
     Args:

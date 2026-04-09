@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import { useProvisionClient } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,10 @@ export function ClientProvisionDialog({
   open,
   onOpenChange,
 }: ClientProvisionDialogProps) {
-  const [sendWelcomeEmail, setSendWelcomeEmail] = React.useState(true);
-  const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState(false);
+  const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const provisionMutation = useProvisionClient(profileId);
 
   const handleSubmit = async () => {

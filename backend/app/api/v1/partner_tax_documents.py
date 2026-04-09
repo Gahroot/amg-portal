@@ -15,6 +15,7 @@ from app.api.deps import (
     require_internal,
 )
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.models.enums import TaxDocumentStatus
 from app.models.partner import PartnerProfile
 from app.models.tax_document import TaxDocument, TaxDocumentAccessLog
 from app.services.storage import storage_service
@@ -224,7 +225,7 @@ async def update_tax_document_status(
     if payload.status == "published" and not doc.file_path:
         raise BadRequestException("Cannot publish a tax document without an uploaded file")
 
-    doc.status = payload.status
+    doc.status = TaxDocumentStatus(payload.status)
     if payload.notes is not None:
         doc.notes = payload.notes
     await db.commit()

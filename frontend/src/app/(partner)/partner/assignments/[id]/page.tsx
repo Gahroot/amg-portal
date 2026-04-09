@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyAssignment } from "@/lib/api/partner-portal";
@@ -42,8 +43,8 @@ export default function PartnerAssignmentDetailPage() {
   const params = useParams();
   const assignmentId = params.id as string;
   const queryClient = useQueryClient();
-  const [error, setError] = React.useState<string | null>(null);
-  const [uploadingId, setUploadingId] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: ["partner-portal", "assignments", assignmentId],
@@ -73,7 +74,7 @@ export default function PartnerAssignmentDetailPage() {
 
   const handleFileUpload = (
     deliverableId: string,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
     if (file) {

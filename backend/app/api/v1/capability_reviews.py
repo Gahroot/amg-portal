@@ -1,6 +1,7 @@
 """Capability review endpoints for annual partner capability refresh."""
 
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
@@ -26,7 +27,7 @@ from app.services.crud_base import paginate
 router = APIRouter()
 
 
-def _enrich_review(review: CapabilityReview) -> dict:
+def _enrich_review(review: CapabilityReview) -> dict[str, Any]:
     """Add computed fields to review response."""
     data = {
         "id": review.id,
@@ -190,9 +191,9 @@ async def create_capability_review(
     if existing.scalar_one_or_none():
         raise ConflictException("Review already exists for this partner and year")
 
-    review = await capability_review_service.create(db, data)
-    review = await capability_review_service.get_review_with_details(db, review.id)
-    return CapabilityReviewResponse(**_enrich_review(review))
+    created_review = await capability_review_service.create(db, obj_in=data)
+    review = await capability_review_service.get_review_with_details(db, created_review.id)
+    return CapabilityReviewResponse(**_enrich_review(review))  # type: ignore[arg-type]
 
 
 @router.put("/{review_id}", response_model=CapabilityReviewResponse)
@@ -203,11 +204,12 @@ async def update_capability_review(
     current_user: User = Depends(require_internal),
 ) -> CapabilityReviewResponse:
     """Update a capability review."""
-    review = await capability_review_service.update(db, review_id, data)
-    if not review:
+    existing = await capability_review_service.get(db, review_id)
+    if not existing:
         raise NotFoundException("Capability review not found")
-    review = await capability_review_service.get_review_with_details(db, review.id)
-    return CapabilityReviewResponse(**_enrich_review(review))
+    updated = await capability_review_service.update(db, db_obj=existing, obj_in=data)
+    review = await capability_review_service.get_review_with_details(db, updated.id)
+    return CapabilityReviewResponse(**_enrich_review(review))  # type: ignore[arg-type]
 
 
 @router.post("/{review_id}/complete", response_model=CapabilityReviewResponse)
@@ -227,5 +229,5 @@ async def complete_capability_review(
     )
     if not review:
         raise NotFoundException("Capability review not found")
-    review = await capability_review_service.get_review_with_details(db, review.id)
-    return CapabilityReviewResponse(**_enrich_review(review))
+    detailed = await capability_review_service.get_review_with_details(db, review.id)
+    return CapabilityReviewResponse(**_enrich_review(detailed))  # type: ignore[arg-type]

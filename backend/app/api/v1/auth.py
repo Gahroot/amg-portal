@@ -3,7 +3,7 @@
 import contextlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy import asc, select, update
@@ -107,7 +107,7 @@ def _set_auth_cookies(
     cross_origin = _is_cross_origin()
     # Cross-origin deployments (separate frontend/backend domains) require
     # SameSite=none + Secure so the browser sends cookies on XHR requests.
-    samesite: str = "none" if cross_origin else "lax"
+    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
     secure = True if cross_origin else not settings.DEBUG
     response.set_cookie(
         key="access_token",
@@ -141,7 +141,7 @@ def _clear_auth_cookies(response: Response) -> None:
 def _set_mfa_setup_cookie(response: Response, token: str) -> None:
     """Set a short-lived httpOnly cookie for the MFA setup token."""
     cross_origin = _is_cross_origin()
-    samesite: str = "none" if cross_origin else "lax"
+    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
     secure = True if cross_origin else not settings.DEBUG
     response.set_cookie(
         key="mfa_setup_token",
@@ -190,7 +190,7 @@ async def _issue_refresh_token(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(rate_limit_register)],
 )
-async def register(data: UserCreate, db: DB):
+async def register(data: UserCreate, db: DB) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise ConflictException("Email already registered")
@@ -213,7 +213,7 @@ async def register(data: UserCreate, db: DB):
 
 
 @router.post("/login", response_model=Token, dependencies=[Depends(rate_limit_login)])
-async def login(data: LoginRequest, db: DB, response: Response):
+async def login(data: LoginRequest, db: DB, response: Response) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
@@ -312,7 +312,7 @@ async def refresh(
     response: Response,
     db: DB,
     data: RefreshTokenRequest | None = None,
-):
+) -> Any:
     # Accept refresh token from request body (legacy) or httpOnly cookie
     raw_token = (
         data.refresh_token if data and data.refresh_token else request.cookies.get("refresh_token")
@@ -381,7 +381,7 @@ async def refresh(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(request: Request, response: Response, db: DB):
+async def logout(request: Request, response: Response, db: DB) -> Any:
     """Clear auth cookies and revoke the current refresh token."""
     raw_token = request.cookies.get("refresh_token")
     if raw_token:
@@ -398,7 +398,7 @@ async def logout(request: Request, response: Response, db: DB):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: CurrentUser):
+async def get_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
@@ -407,7 +407,7 @@ async def change_password(
     data: ChangePasswordRequest,
     current_user: CurrentUser,
     db: DB,
-):
+) -> Any:
     if not verify_password(data.current_password, current_user.hashed_password):
         raise BadRequestException("Current password is incorrect")
 
@@ -516,7 +516,7 @@ async def reset_password(data: ResetPasswordRequest, db: DB) -> None:
 
 
 @router.post("/mfa/setup", response_model=MFASetupResponse)
-async def mfa_setup(current_user: MFASetupUser, db: DB):
+async def mfa_setup(current_user: MFASetupUser, db: DB) -> Any:
     """Generate MFA secret, QR code, and backup codes.
 
     Accepts both a regular access token (authenticated users enabling MFA
@@ -546,7 +546,7 @@ async def mfa_verify_setup(
     current_user: MFASetupUser,
     db: DB,
     response: Response,
-):
+) -> Any:
     """Verify a TOTP code to confirm MFA setup.
 
     On success, enables MFA for the user and returns a full Token so that
@@ -575,7 +575,7 @@ async def mfa_verify_setup(
 
 
 @router.post("/mfa/disable", dependencies=[Depends(rate_limit_mfa_disable)])
-async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB):
+async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB) -> Any:
     """Disable MFA after verifying a TOTP code."""
     if not current_user.mfa_enabled or not current_user.mfa_secret:
         raise BadRequestException("MFA is not enabled")
@@ -599,7 +599,7 @@ async def update_profile(
     data: ProfileUpdateRequest,
     current_user: CurrentUser,
     db: DB,
-):
+) -> Any:
     """Update current user's profile."""
     update_data = data.model_dump(exclude_unset=True)
 
@@ -893,7 +893,7 @@ async def complete_tour(
 
     await db.commit()
     await db.refresh(current_user)
-    return current_user
+    return current_user  # type: ignore[return-value]
 
 
 @router.delete("/me/tours/{tour_key}/complete", status_code=status.HTTP_204_NO_CONTENT)

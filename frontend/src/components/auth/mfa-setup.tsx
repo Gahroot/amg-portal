@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,14 +19,14 @@ export function MFASetup({
   onComplete?: () => void;
 }) {
   const { refreshUser } = useAuth();
-  const [step, setStep] = React.useState<SetupStep>("loading");
+  const [step, setStep] = useState<SetupStep>("loading");
   const [setupData, setSetupData] =
-    React.useState<MFASetupResponse | null>(null);
-  const [code, setCode] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+    useState<MFASetupResponse | null>(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
 
     async function initSetup() {
@@ -49,7 +50,7 @@ export function MFASetup({
     };
   }, []);
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);

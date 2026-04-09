@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useRef, useState } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { Upload } from "lucide-react";
 
 interface FileUploadZoneProps {
@@ -16,10 +17,10 @@ export function FileUploadZone({
   maxSizeMB = 50,
   isUploading = false,
 }: FileUploadZoneProps) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function handleFile(file: File) {
     setError(null);
@@ -31,24 +32,24 @@ export function FileUploadZone({
     onFileSelect(file);
   }
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragOver(e: DragEvent) {
     e.preventDefault();
     setIsDragging(true);
   }
 
-  function handleDragLeave(e: React.DragEvent) {
+  function handleDragLeave(e: DragEvent) {
     e.preventDefault();
     setIsDragging(false);
   }
 
-  function handleDrop(e: React.DragEvent) {
+  function handleDrop(e: DragEvent) {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
   }

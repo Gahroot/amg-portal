@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import EventStatus
 from app.models.scheduled_event import ScheduledEvent
 from app.models.user import User
 from app.schemas.notification import CreateNotificationRequest
@@ -155,7 +156,7 @@ async def update_event_status(
         return None
 
     old_status = event.status
-    event.status = new_status
+    event.status = EventStatus(new_status)
     event.updated_at = datetime.now(UTC)
 
     # Notify all participants of the status change

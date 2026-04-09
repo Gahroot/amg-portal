@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Receipt } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
@@ -155,12 +155,12 @@ function buildColumns(clientMap: ClientMap): ColumnDef<Invoice>[] {
 
 export default function FinancePage() {
   const { user } = useAuth();
-  const [clientFilter, setClientFilter] = React.useState<string>("all");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: clientData } = useClientProfiles({ limit: 200 });
 
-  const clientMap = React.useMemo<ClientMap>(() => {
+  const clientMap = useMemo<ClientMap>(() => {
     const map: ClientMap = {};
     for (const profile of clientData?.profiles ?? []) {
       map[profile.id] = profile.display_name ?? profile.legal_name;
@@ -176,7 +176,7 @@ export default function FinancePage() {
 
   const { data, isLoading } = useInvoices(queryParams);
 
-  const columns = React.useMemo(() => buildColumns(clientMap), [clientMap]);
+  const columns = useMemo(() => buildColumns(clientMap), [clientMap]);
 
   if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return (

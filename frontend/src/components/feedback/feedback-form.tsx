@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -33,8 +34,8 @@ export function FeedbackForm({
   onCancel,
   initialType,
 }: FeedbackFormProps) {
-  const [feedbackType, setFeedbackType] = React.useState(initialType || "");
-  const [description, setDescription] = React.useState("");
+  const [feedbackType, setFeedbackType] = useState(initialType || "");
+  const [description, setDescription] = useState("");
 
   // Fetch available feedback types
   const { data: typesData } = useQuery({
@@ -62,7 +63,7 @@ export function FeedbackForm({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
     if (!feedbackType) {

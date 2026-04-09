@@ -1,6 +1,6 @@
 """Partner capability matrix, qualifications, certifications, and onboarding endpoints."""
-
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
@@ -16,6 +16,7 @@ from app.api.deps import (
     require_rm_or_above,
 )
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.models.enums import PartnerStatus
 from app.models.partner import PartnerProfile
 from app.models.partner_capability import (
     PartnerCapability,
@@ -71,7 +72,7 @@ async def list_service_categories(
     current_user: CurrentUser,
     _: None = Depends(require_internal),
     active_only: bool = Query(True),
-):
+) -> Any:
     """List all service categories."""
     query = select(ServiceCategory)
     if active_only:
@@ -83,7 +84,7 @@ async def list_service_categories(
     total_result = await db.execute(select(func.count()).select_from(ServiceCategory))
     total = total_result.scalar()
 
-    return ServiceCategoryListResponse(categories=categories, total=total)
+    return ServiceCategoryListResponse(categories=categories, total=total)  # type: ignore[arg-type]
 
 
 @router.post("/service-categories", response_model=ServiceCategoryResponse, status_code=201)
@@ -92,7 +93,7 @@ async def create_service_category(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_admin),
-):
+) -> Any:
     """Create a new service category (admin only)."""
     # Check if name already exists
     existing = await db.execute(
@@ -119,7 +120,7 @@ async def update_service_category(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_admin),
-):
+) -> Any:
     """Update a service category (admin only)."""
     result = await db.execute(
         select(ServiceCategory).where(ServiceCategory.id == category_id)
@@ -148,7 +149,7 @@ async def get_partner_capabilities(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get all capabilities for a partner."""
     result = await db.execute(
         select(PartnerCapability)
@@ -158,19 +159,23 @@ async def get_partner_capabilities(
     capabilities = result.scalars().all()
 
     return CapabilityListResponse(
-        capabilities=capabilities,
+        capabilities=capabilities,  # type: ignore[arg-type]
         total=len(capabilities),
     )
 
 
-@router.post("/partners/{partner_id}/capabilities", response_model=CapabilityResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/capabilities",
+    response_model=CapabilityResponse,
+    status_code=201,
+)
 async def add_partner_capability(
     partner_id: UUID,
     data: CapabilityCreate,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Add a capability to a partner."""
     # Verify partner exists
     partner_result = await db.execute(
@@ -202,7 +207,10 @@ async def add_partner_capability(
     return capability
 
 
-@router.patch("/partners/{partner_id}/capabilities/{capability_id}", response_model=CapabilityResponse)
+@router.patch(
+    "/partners/{partner_id}/capabilities/{capability_id}",
+    response_model=CapabilityResponse,
+)
 async def update_partner_capability(
     partner_id: UUID,
     capability_id: UUID,
@@ -210,7 +218,7 @@ async def update_partner_capability(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Update a partner capability."""
     result = await db.execute(
         select(PartnerCapability).where(
@@ -238,7 +246,7 @@ async def delete_partner_capability(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Delete a partner capability."""
     result = await db.execute(
         select(PartnerCapability).where(
@@ -254,14 +262,17 @@ async def delete_partner_capability(
     await db.commit()
 
 
-@router.post("/partners/{partner_id}/capabilities/{capability_id}/verify", response_model=CapabilityResponse)
+@router.post(
+    "/partners/{partner_id}/capabilities/{capability_id}/verify",
+    response_model=CapabilityResponse,
+)
 async def verify_partner_capability(
     partner_id: UUID,
     capability_id: UUID,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     """Verify a partner capability (RM or above only)."""
     result = await db.execute(
         select(PartnerCapability).where(
@@ -293,7 +304,7 @@ async def get_partner_qualifications(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get all qualifications for a partner."""
     result = await db.execute(
         select(PartnerQualification)
@@ -312,7 +323,7 @@ async def get_partner_qualifications(
                 category_id=q.category_id,
                 category_name=q.category.name if q.category else None,
                 qualification_level=q.qualification_level,
-                approval_status=q.approval_status,
+                approval_status=q.approval_status,  # type: ignore[arg-type]
                 approved_by=q.approved_by,
                 approved_at=q.approved_at,
                 notes=q.notes,
@@ -324,14 +335,18 @@ async def get_partner_qualifications(
     return QualificationListResponse(qualifications=qual_responses, total=len(qual_responses))
 
 
-@router.post("/partners/{partner_id}/qualifications", response_model=QualificationResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/qualifications",
+    response_model=QualificationResponse,
+    status_code=201,
+)
 async def submit_qualification(
     partner_id: UUID,
     data: QualificationCreate,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Submit a qualification request for a partner."""
     # Verify partner and category exist
     partner_result = await db.execute(
@@ -374,7 +389,7 @@ async def submit_qualification(
         category_id=qualification.category_id,
         category_name=qualification.category.name,
         qualification_level=qualification.qualification_level,
-        approval_status=qualification.approval_status,
+        approval_status=qualification.approval_status,  # type: ignore[arg-type]
         approved_by=qualification.approved_by,
         approved_at=qualification.approved_at,
         notes=qualification.notes,
@@ -383,7 +398,10 @@ async def submit_qualification(
     )
 
 
-@router.patch("/partners/{partner_id}/qualifications/{qualification_id}", response_model=QualificationResponse)
+@router.patch(
+    "/partners/{partner_id}/qualifications/{qualification_id}",
+    response_model=QualificationResponse,
+)
 async def approve_qualification(
     partner_id: UUID,
     qualification_id: UUID,
@@ -391,7 +409,7 @@ async def approve_qualification(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     """Approve or reject a qualification (RM or above only)."""
     result = await db.execute(
         select(PartnerQualification)
@@ -441,7 +459,7 @@ async def get_partner_certifications(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get all certifications for a partner."""
     result = await db.execute(
         select(PartnerCertification)
@@ -471,7 +489,7 @@ async def get_partner_certifications(
                 issue_date=c.issue_date,
                 expiry_date=c.expiry_date,
                 document_url=c.document_url,
-                verification_status=c.verification_status,
+                verification_status=c.verification_status,  # type: ignore[arg-type]
                 verified_by=c.verified_by,
                 verified_at=c.verified_at,
                 notes=c.notes,
@@ -485,14 +503,18 @@ async def get_partner_certifications(
     return CertificationListResponse(certifications=cert_responses, total=len(cert_responses))
 
 
-@router.post("/partners/{partner_id}/certifications", response_model=CertificationResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/certifications",
+    response_model=CertificationResponse,
+    status_code=201,
+)
 async def add_partner_certification(
     partner_id: UUID,
     data: CertificationCreate,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Add a certification for a partner."""
     # Verify partner exists
     partner_result = await db.execute(
@@ -531,7 +553,7 @@ async def add_partner_certification(
         issue_date=certification.issue_date,
         expiry_date=certification.expiry_date,
         document_url=certification.document_url,
-        verification_status=certification.verification_status,
+        verification_status=certification.verification_status,  # type: ignore[arg-type]
         verified_by=certification.verified_by,
         verified_at=certification.verified_at,
         notes=certification.notes,
@@ -542,7 +564,10 @@ async def add_partner_certification(
     )
 
 
-@router.post("/partners/{partner_id}/certifications/{certification_id}/document", response_model=CertificationResponse)
+@router.post(
+    "/partners/{partner_id}/certifications/{certification_id}/document",
+    response_model=CertificationResponse,
+)
 async def upload_certification_document(
     partner_id: UUID,
     certification_id: UUID,
@@ -550,7 +575,7 @@ async def upload_certification_document(
     current_user: CurrentUser,
     file: UploadFile = File(...),
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Upload a document for a certification."""
     result = await db.execute(
         select(PartnerCertification).where(
@@ -562,7 +587,7 @@ async def upload_certification_document(
     if not certification:
         raise NotFoundException("Certification not found")
 
-    object_path, _ = await storage_service.upload_file(
+    object_path, _size = await storage_service.upload_file(
         file, f"partners/{partner_id}/certifications/{certification_id}"
     )
     certification.document_url = object_path
@@ -585,7 +610,7 @@ async def upload_certification_document(
         issue_date=certification.issue_date,
         expiry_date=certification.expiry_date,
         document_url=certification.document_url,
-        verification_status=certification.verification_status,
+        verification_status=certification.verification_status,  # type: ignore[arg-type]
         verified_by=certification.verified_by,
         verified_at=certification.verified_at,
         notes=certification.notes,
@@ -596,7 +621,10 @@ async def upload_certification_document(
     )
 
 
-@router.post("/partners/{partner_id}/certifications/{certification_id}/verify", response_model=CertificationResponse)
+@router.post(
+    "/partners/{partner_id}/certifications/{certification_id}/verify",
+    response_model=CertificationResponse,
+)
 async def verify_partner_certification(
     partner_id: UUID,
     certification_id: UUID,
@@ -604,7 +632,7 @@ async def verify_partner_certification(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_rm_or_above),
-):
+) -> Any:
     """Verify a partner certification (RM or above only)."""
     result = await db.execute(
         select(PartnerCertification).where(
@@ -663,7 +691,7 @@ async def get_partner_onboarding(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get onboarding status for a partner."""
     result = await db.execute(
         select(PartnerOnboarding)
@@ -681,7 +709,7 @@ async def get_partner_onboarding(
     return OnboardingResponse(
         id=onboarding.id,
         partner_id=onboarding.partner_id,
-        current_stage=onboarding.current_stage,
+        current_stage=onboarding.current_stage,  # type: ignore[arg-type]
         checklist_items=onboarding.checklist_items or {},
         completed_stages=onboarding.completed_stages or [],
         assigned_coordinator=onboarding.assigned_coordinator,
@@ -696,14 +724,18 @@ async def get_partner_onboarding(
     )
 
 
-@router.post("/partners/{partner_id}/onboarding", response_model=OnboardingResponse, status_code=201)
+@router.post(
+    "/partners/{partner_id}/onboarding",
+    response_model=OnboardingResponse,
+    status_code=201,
+)
 async def start_onboarding(
     partner_id: UUID,
     data: OnboardingCreate,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Start the onboarding process for a partner."""
     # Verify partner exists
     partner_result = await db.execute(
@@ -755,7 +787,7 @@ async def start_onboarding(
     db.add(onboarding)
 
     # Update partner status to indicate onboarding
-    partner.status = "onboarding"
+    partner.status = PartnerStatus.pending
 
     await db.commit()
     await db.refresh(onboarding)
@@ -766,9 +798,9 @@ async def start_onboarding(
     return OnboardingResponse(
         id=onboarding.id,
         partner_id=onboarding.partner_id,
-        current_stage=onboarding.current_stage,
-        checklist_items=onboarding.checklist_items,
-        completed_stages=onboarding.completed_stages,
+        current_stage=onboarding.current_stage,  # type: ignore[arg-type]
+        checklist_items=onboarding.checklist_items,  # type: ignore[arg-type]
+        completed_stages=onboarding.completed_stages,  # type: ignore[arg-type]
         assigned_coordinator=onboarding.assigned_coordinator,
         coordinator_name=None,
         started_at=onboarding.started_at,
@@ -786,7 +818,7 @@ async def complete_onboarding_stage(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Complete an onboarding stage and advance to the next."""
     result = await db.execute(
         select(PartnerOnboarding).where(PartnerOnboarding.partner_id == partner_id)
@@ -832,7 +864,7 @@ async def complete_onboarding_stage(
             )
             partner = partner_result.scalar_one_or_none()
             if partner:
-                partner.status = "active"
+                partner.status = PartnerStatus.active
 
     await db.commit()
     await db.refresh(onboarding)
@@ -851,7 +883,7 @@ async def complete_onboarding_stage(
     return OnboardingResponse(
         id=onboarding.id,
         partner_id=onboarding.partner_id,
-        current_stage=onboarding.current_stage,
+        current_stage=onboarding.current_stage,  # type: ignore[arg-type]
         checklist_items=onboarding.checklist_items or {},
         completed_stages=onboarding.completed_stages or [],
         assigned_coordinator=onboarding.assigned_coordinator,
@@ -873,7 +905,7 @@ async def update_onboarding(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-):
+) -> Any:
     """Update onboarding progress."""
     result = await db.execute(
         select(PartnerOnboarding).where(PartnerOnboarding.partner_id == partner_id)
@@ -907,7 +939,7 @@ async def update_onboarding(
     return OnboardingResponse(
         id=onboarding.id,
         partner_id=onboarding.partner_id,
-        current_stage=onboarding.current_stage,
+        current_stage=onboarding.current_stage,  # type: ignore[arg-type]
         checklist_items=onboarding.checklist_items or {},
         completed_stages=onboarding.completed_stages or [],
         assigned_coordinator=onboarding.assigned_coordinator,
@@ -933,7 +965,7 @@ async def get_capability_matrix(
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_internal),
-):
+) -> Any:
     """Get the full capability matrix for a partner."""
     # Get partner
     partner_result = await db.execute(
@@ -977,15 +1009,15 @@ async def get_capability_matrix(
     onboarding = onboard_result.scalar_one_or_none()
 
     # Build summaries
-    capability_summary = {}
+    capability_summary: dict[str, int] = {}
     for cap in capabilities:
         level = cap.proficiency_level
         capability_summary[level] = capability_summary.get(level, 0) + 1
 
-    qualification_summary = {}
+    qualification_summary: dict[str, int] = {}
     for qual in qualifications:
-        status = qual.approval_status
-        qualification_summary[status] = qualification_summary.get(status, 0) + 1
+        q_status = qual.approval_status or "unknown"
+        qualification_summary[q_status] = qualification_summary.get(q_status, 0) + 1
 
     # Build responses
     cap_responses = [
@@ -994,8 +1026,8 @@ async def get_capability_matrix(
             partner_id=c.partner_id,
             capability_name=c.capability_name,
             proficiency_level=c.proficiency_level,
-            years_experience=c.years_experience,
-            verified=c.verified,
+            years_experience=c.years_experience,  # type: ignore[arg-type]
+            verified=c.verified,  # type: ignore[arg-type]
             verified_by=c.verified_by,
             verified_at=c.verified_at,
             notes=c.notes,
@@ -1012,7 +1044,7 @@ async def get_capability_matrix(
             category_id=q.category_id,
             category_name=q.category.name if q.category else None,
             qualification_level=q.qualification_level,
-            approval_status=q.approval_status,
+            approval_status=q.approval_status,  # type: ignore[arg-type]
             approved_by=q.approved_by,
             approved_at=q.approved_at,
             notes=q.notes,
@@ -1040,7 +1072,7 @@ async def get_capability_matrix(
                 issue_date=c.issue_date,
                 expiry_date=c.expiry_date,
                 document_url=c.document_url,
-                verification_status=c.verification_status,
+                verification_status=c.verification_status,  # type: ignore[arg-type]
                 verified_by=c.verified_by,
                 verified_at=c.verified_at,
                 notes=c.notes,
@@ -1060,7 +1092,7 @@ async def get_capability_matrix(
         onboarding_response = OnboardingResponse(
             id=onboarding.id,
             partner_id=onboarding.partner_id,
-            current_stage=onboarding.current_stage,
+            current_stage=onboarding.current_stage,  # type: ignore[arg-type]
             checklist_items=onboarding.checklist_items or {},
             completed_stages=onboarding.completed_stages or [],
             assigned_coordinator=onboarding.assigned_coordinator,

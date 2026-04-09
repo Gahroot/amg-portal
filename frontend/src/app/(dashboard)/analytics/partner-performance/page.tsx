@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { usePartnerRankings, usePartnerScorecard } from "@/hooks/use-dashboard";
@@ -25,7 +25,7 @@ const ALLOWED_ROLES = [
 
 export default function PartnerPerformancePage() {
   const { user } = useAuth();
-  const [selectedPartnerId, setSelectedPartnerId] = React.useState<
+  const [selectedPartnerId, setSelectedPartnerId] = useState<
     string | null
   >(null);
   const { data: rankings, isLoading } = usePartnerRankings();

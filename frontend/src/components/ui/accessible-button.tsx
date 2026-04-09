@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export interface AccessibleButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Accessible label for screen readers (required if only icon is visible) */
   "aria-label"?: string;
   /** Described by this element ID */
@@ -93,7 +93,7 @@ export function AccessibleButton({
   ...props
 }: AccessibleButtonProps &
   VariantProps<typeof accessibleButtonVariants> & {
-    ref?: React.Ref<HTMLButtonElement>;
+    ref?: Ref<HTMLButtonElement>;
   }) {
   // Ensure icon-only buttons have accessible labels
   if (iconOnly && !ariaLabel) {
@@ -130,7 +130,7 @@ export function AccessibleButton({
 export interface IconButtonProps
   extends Omit<AccessibleButtonProps, "iconOnly"> {
   /** Icon element */
-  icon: React.ReactNode;
+  icon: ReactNode;
   /** Accessible label (required) */
   label: string;
   /** Show tooltip on hover */
@@ -150,7 +150,7 @@ export function IconButton({
   label,
   className,
   ...props
-}: IconButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+}: IconButtonProps & { ref?: Ref<HTMLButtonElement> }) {
   return (
     <AccessibleButton
       ref={ref}
@@ -201,9 +201,9 @@ export function ToggleButton({
   ...props
 }: ToggleButtonProps &
   VariantProps<typeof accessibleButtonVariants> & {
-    ref?: React.Ref<HTMLButtonElement>;
+    ref?: Ref<HTMLButtonElement>;
   }) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     onPressedChange(!pressed);
     onClick?.(e);
   };

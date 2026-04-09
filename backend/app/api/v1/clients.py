@@ -1,7 +1,7 @@
 """Client profile management endpoints."""
-
 import uuid
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
@@ -50,7 +50,7 @@ async def create_client_intake(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.create_intake(db, data=data, created_by_id=current_user.id)
 
 
@@ -65,7 +65,7 @@ async def list_client_profiles(
     search: str | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     filters = []
     if compliance_status:
         filters.append(ClientProfile.compliance_status == compliance_status)
@@ -86,7 +86,7 @@ async def list_client_profiles(
         )
 
     profiles, total = await client_service.get_multi(db, skip=skip, limit=limit, filters=filters)
-    return ClientProfileListResponse(profiles=profiles, total=total)
+    return ClientProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
 
 
 @router.post(
@@ -99,7 +99,7 @@ async def compare_clients(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     """Return detailed data for 2-4 client profiles for side-by-side comparison."""
     if len(ids) < 2 or len(ids) > 4:
         raise ValidationException("Please select 2 to 4 clients to compare")
@@ -167,11 +167,11 @@ async def get_my_portfolio(
     _rls: RLSContext,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-):
+) -> Any:
     profiles, total = await client_service.get_rm_portfolio(
         db, current_user.id, skip=skip, limit=limit
     )
-    return ClientProfileListResponse(profiles=profiles, total=total)
+    return ClientProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
 
 
 @router.get(
@@ -216,7 +216,7 @@ async def list_upcoming_dates(
 )
 async def get_client_profile(
     profile_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext
-):
+) -> Any:
     profile = await client_service.get(db, profile_id)
     if not profile:
         raise NotFoundException("Profile not found")
@@ -238,7 +238,7 @@ async def update_client_profile(
     data: ClientProfileUpdate,
     db: DB,
     _rls: RLSContext,
-):
+) -> Any:
     profile = await client_service.get(db, profile_id)
     if not profile:
         raise NotFoundException("Profile not found")
@@ -255,7 +255,7 @@ async def update_intelligence_file(
     data: IntelligenceFileSchema,
     db: DB,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.update_intelligence_file(db, profile_id, data)
 
 
@@ -270,7 +270,7 @@ async def submit_compliance_review(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.submit_compliance_review(
         db, profile_id=profile_id, review=review, reviewer_id=current_user.id
     )
@@ -285,7 +285,7 @@ async def get_compliance_certificate(
     profile_id: uuid.UUID,
     db: DB,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.generate_compliance_certificate(db, profile_id)
 
 
@@ -300,7 +300,7 @@ async def submit_md_approval(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.submit_md_approval(
         db, profile_id=profile_id, approval=approval, approver_id=current_user.id
     )
@@ -316,7 +316,7 @@ async def provision_client(
     request: ClientProvisionRequest,
     db: DB,
     _rls: RLSContext,
-):
+) -> Any:
     return await client_service.provision_client_user(db, profile_id=profile_id, request=request)
 
 

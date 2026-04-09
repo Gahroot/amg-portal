@@ -1,4 +1,5 @@
 """Push token management endpoints."""
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -19,7 +20,7 @@ async def register_push_token(
     data: PushTokenRegisterRequest,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Register a push notification token for the current user."""
     push_token = await push_service.register_token(
         db,
@@ -35,10 +36,10 @@ async def register_push_token(
 async def list_push_tokens(
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """List all push tokens for the current user."""
     tokens = await push_service.get_tokens_for_user(db, current_user.id)
-    return PushTokenListResponse(tokens=tokens, total=len(tokens))
+    return PushTokenListResponse(tokens=tokens, total=len(tokens))  # type: ignore[arg-type]
 
 
 @router.delete("/{token}", status_code=204)
@@ -46,7 +47,7 @@ async def unregister_push_token(
     token: str,
     db: DB,
     current_user: CurrentUser,
-):
+) -> Any:
     """Unregister a push notification token."""
     deleted = await push_service.unregister_token(db, current_user.id, token)
     if not deleted:

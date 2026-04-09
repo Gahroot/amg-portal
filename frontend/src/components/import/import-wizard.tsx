@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { useState, useEffect } from "react";
+import { Fragment, useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -117,7 +117,7 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
     setError(null);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -242,7 +242,7 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
             const labels = ["Select", "Upload", "Map", "Validate", "Preview"];
 
             return (
-              <React.Fragment key={step}>
+              <Fragment key={step}>
                 <div className="flex flex-col items-center">
                   <div
                     className={cn(
@@ -275,7 +275,7 @@ export function ImportWizard({ initialEntityType, onComplete }: ImportWizardProp
                     )}
                   />
                 )}
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </div>
