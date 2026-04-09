@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { updateProgram, shareProgramBrief } from "@/lib/api/programs";
-import type { ProgramUpdate } from "@/lib/api/programs";
+import { updateProgramBrief, shareProgramBrief } from "@/lib/api/programs";
 
 interface ProgramBriefCardProps {
   programId: string;
@@ -33,7 +32,7 @@ export function ProgramBriefCard({
 
   const saveMutation = useMutation({
     mutationFn: (content: string) =>
-      updateProgram(programId, { brief_content: content } as ProgramUpdate),
+      updateProgramBrief(programId, { brief_content: content }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs", programId] });
       setEditing(false);
@@ -53,7 +52,7 @@ export function ProgramBriefCard({
 
   const revokeMutation = useMutation({
     mutationFn: () =>
-      updateProgram(programId, { brief_visible_to_client: false } as ProgramUpdate),
+      updateProgramBrief(programId, { brief_visible_to_client: false }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs", programId] });
       toast.success("Brief visibility revoked");

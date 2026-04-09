@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import type { ComponentType } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -337,7 +337,7 @@ export default function PortalNotificationsPage() {
     });
   };
 
-  const quietHoursEnabled = form.watch("quiet_hours_enabled");
+  const quietHoursEnabled = useWatch({ control: form.control, name: "quiet_hours_enabled" });
 
   return (
     <div className="space-y-6">

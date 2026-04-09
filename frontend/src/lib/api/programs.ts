@@ -132,3 +132,13 @@ export async function shareProgramBrief(id: string): Promise<Program> {
   const response = await api.post<Program>(`/api/v1/programs/${id}/brief/share`);
   return response.data;
 }
+
+// brief_content / brief_visible_to_client were added to the backend ProgramUpdate schema
+// but generated.ts hasn't been regenerated yet — this wrapper keeps the cast in the API layer.
+export async function updateProgramBrief(
+  id: string,
+  data: { brief_content?: string | null; brief_visible_to_client?: boolean }
+): Promise<Program> {
+  const response = await api.patch<Program>(`/api/v1/programs/${id}/`, data);
+  return response.data;
+}

@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import type { ConversationType } from "@/types/communication";
 
 export type InboxFilter = "all" | "unread";
-export type InboxTypeFilter = "all" | "rm_client" | "coordinator_partner" | "internal";
+export type InboxTypeFilter = "all" | ConversationType;
 
 interface InboxFilterBarProps {
   activeFilter: InboxFilter;

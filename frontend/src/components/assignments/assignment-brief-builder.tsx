@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileText, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,17 +80,14 @@ export function AssignmentBriefBuilder({
     });
   }, [program?.id, program?.scope, program?.start_date, program?.end_date, program?.budget_envelope]);
 
-  // Sync compiled value upward
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  const syncUp = useCallback(() => {
-    onChangeRef.current(compileBrief(sections));
-  }, [sections]);
-
+  // Sync compiled value upward (skip initial mount to avoid triggering validation on empty form)
+  const isMounted = useRef(false);
   useEffect(() => {
-    syncUp();
-  }, [syncUp]);
+    if (!isMounted.current) { isMounted.current = true; return; }
+    onChange(compileBrief(sections));
+  // onChange is stable (setValue wrapper from RHF) — omitting it avoids a dep-array treadmill
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections]);
 
   const updateSection = (key: keyof BriefSections, value: string) => {
     setSections((prev) => ({ ...prev, [key]: value }));
@@ -99,8 +96,6 @@ export function AssignmentBriefBuilder({
   const clearSection = (key: keyof BriefSections) => {
     setSections((prev) => ({ ...prev, [key]: "" }));
   };
-
-  const compiled = compileBrief(sections);
 
   return (
     <div className="space-y-3">
@@ -135,13 +130,13 @@ export function AssignmentBriefBuilder({
         </Card>
       ))}
 
-      {compiled && (
+      {compileBrief(sections) && (
         <>
           <Separator />
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">Preview</p>
             <pre className="rounded-md border bg-muted/50 p-3 text-xs whitespace-pre-wrap">
-              {compiled}
+              {compileBrief(sections)}
             </pre>
           </div>
         </>
