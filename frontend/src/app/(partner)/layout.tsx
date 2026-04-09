@@ -24,7 +24,6 @@ import { partnerNavConfig } from "@/config/partner-nav";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { usePartnerOnboarding } from "@/hooks/use-partner-portal";
 import { QuickActionsProvider } from "@/providers/quick-actions-provider";
-import { QuickActionsMenu } from "@/components/common/quick-actions-menu";
 import { HelpPanel, HelpButton } from "@/components/help/help-panel";
 import type { PortalNavConfig } from "@/types/navigation";
 
@@ -82,7 +81,6 @@ function PartnerContent({ children }: { children: React.ReactNode }) {
             <main className="flex-1 p-6">{children}</main>
           </SidebarInset>
           <PartnerKeyboardShortcuts />
-          <QuickActionsMenu />
           <HelpPanel open={helpPanelOpen} onOpenChange={setHelpPanelOpen} />
         </SidebarProvider>
       </KeyboardShortcutsDialogProvider>

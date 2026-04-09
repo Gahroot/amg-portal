@@ -27,7 +27,6 @@ import { PulseSurveyContainer } from "@/components/portal/pulse-survey-popup";
 import { SkipLinks } from "@/components/layout/skip-link";
 import { AnnouncerProvider } from "@/hooks/use-announcer";
 import { QuickActionsProvider } from "@/providers/quick-actions-provider";
-import { QuickActionsMenu } from "@/components/common/quick-actions-menu";
 import { HelpPanel, HelpButton } from "@/components/help/help-panel";
 
 function PortalKeyboardShortcuts() {
@@ -95,7 +94,6 @@ function PortalContent({ children }: { children: ReactNode }) {
 
             <PortalKeyboardShortcuts />
             <PulseSurveyContainer />
-            <QuickActionsMenu />
             <HelpPanel open={helpPanelOpen} onOpenChange={setHelpPanelOpen} />
           </SidebarProvider>
         </AnnouncerProvider>

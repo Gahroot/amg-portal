@@ -22,12 +22,9 @@ import {
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { dashboardNavConfig } from "@/config/dashboard-nav";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { QuickTaskButton } from "@/components/tasks/quick-task-button";
 import { SkipLinks } from "@/components/layout/skip-link";
 import { AnnouncerProvider } from "@/hooks/use-announcer";
 import { QuickActionsProvider } from "@/providers/quick-actions-provider";
-import { QuickActionsMenu } from "@/components/common/quick-actions-menu";
-import { QuickActionsBar } from "@/components/layout/quick-actions-bar";
 import { HelpPanel, HelpButton } from "@/components/help/help-panel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TourManager } from "@/components/tours";
@@ -164,26 +161,6 @@ function DashboardContent({ children }: { children: ReactNode }) {
               </SidebarInset>
 
               <DashboardKeyboardShortcuts />
-              
-              {/* Floating elements - hidden in focus mode */}
-              {!isFocusMode && (
-                <>
-                  <span data-tour="quick-task-button">
-                    <QuickTaskButton />
-                  </span>
-                  <span data-tour="quick-actions">
-                    <QuickActionsMenu />
-                  </span>
-                  {/* Quick Actions Bar - Keyboard accessible action bar */}
-                  <QuickActionsBar
-                    position="bottom-center"
-                    mode="auto"
-                    maxActions={6}
-                    showLabels={true}
-                    allowCustomization={true}
-                  />
-                </>
-              )}
               <HelpPanel open={helpPanelOpen} onOpenChange={setHelpPanelOpen} />
               {!isFocusMode && <FeedbackWidget />}
             </SidebarProvider>
