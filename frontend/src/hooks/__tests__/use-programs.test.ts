@@ -43,7 +43,7 @@ const sampleProgram: Program = {
   title: "Digital Transformation",
   objectives: "Modernize infrastructure",
   scope: "Cloud migration",
-  budget_envelope: 100000,
+  budget_envelope: "100000",
   start_date: "2025-01-01",
   end_date: "2025-12-31",
   status: "active",
@@ -180,6 +180,7 @@ describe("useCreateProgram", () => {
     const newProgramData = {
       client_id: "client-1",
       title: "New Program",
+      milestones: [],
     };
     const createdProgram = { ...sampleProgram, ...newProgramData };
     mockCreateProgram.mockResolvedValue(createdProgram);
@@ -204,7 +205,7 @@ describe("useCreateProgram", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ client_id: "client-1", title: "Test" });
+    result.current.mutate({ client_id: "client-1", title: "Test", milestones: [] });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -219,7 +220,7 @@ describe("useCreateProgram", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ client_id: "client-1", title: "Test" });
+    result.current.mutate({ client_id: "client-1", title: "Test", milestones: [] });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 

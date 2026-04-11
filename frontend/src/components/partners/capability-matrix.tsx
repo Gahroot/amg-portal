@@ -153,7 +153,7 @@ export function CapabilityMatrix({
     setEditingCapability(capability);
     setFormState({
       capability_name: capability.capability_name,
-      proficiency_level: capability.proficiency_level,
+      proficiency_level: capability.proficiency_level as ProficiencyLevel,
       years_experience: capability.years_experience?.toString() || "",
       notes: capability.notes || "",
     });
@@ -221,10 +221,10 @@ export function CapabilityMatrix({
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <Badge className={PROFICIENCY_COLORS[capability.proficiency_level]}>
-                        <ProficiencyIndicator level={capability.proficiency_level} />
+                      <Badge className={PROFICIENCY_COLORS[capability.proficiency_level as ProficiencyLevel]}>
+                        <ProficiencyIndicator level={capability.proficiency_level as ProficiencyLevel} />
                         <span className="ml-2 text-xs">
-                          {PROFICIENCY_LABELS[capability.proficiency_level]}
+                          {PROFICIENCY_LABELS[capability.proficiency_level as ProficiencyLevel]}
                         </span>
                       </Badge>
                       {capability.years_experience !== null && (

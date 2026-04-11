@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Balancer } from "react-wrap-balancer";
 
 const STATUS_VARIANT: Record<
   string,
@@ -61,7 +62,7 @@ export default function PartnerAssignmentsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <h1 className="font-serif text-3xl font-bold tracking-tight">
-        My Assignments
+        <Balancer>My Assignments</Balancer>
       </h1>
 
       {error && (

@@ -126,7 +126,7 @@ export const usePreferencesStore = create<PreferencesStore>()(
 
       setPreferencesFromServer: (response) => {
         set({
-          preferences: response.ui_preferences,
+          preferences: response.ui_preferences as UIPreferences,
           serverVersion: response.version,
           syncEnabled: response.sync_enabled,
           syncState: {

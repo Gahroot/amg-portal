@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { taskFormSchema, type TaskFormData } from "@/lib/validations/task";
-import type { AssigneeInfo, MilestoneInfo, TaskBoard, TaskStatus } from "@/types/task";
+import type { AssigneeInfo, MilestoneInfo, TaskBoard, TaskStatus, TaskPriority } from "@/types/task";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/types/task";
 import { TaskDependencyField } from "./task-dependency-field";
 
@@ -77,8 +77,8 @@ export function TaskDialog({
         title: task.title,
         description: task.description || "",
         milestone_id: task.milestone_id,
-        status: task.status,
-        priority: task.priority,
+        status: task.status as TaskStatus,
+        priority: task.priority as TaskPriority,
         due_date: task.due_date || "",
         assigned_to: task.assigned_to,
       });

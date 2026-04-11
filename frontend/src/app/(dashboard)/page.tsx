@@ -23,6 +23,7 @@ import { ExportDashboardButton } from "@/components/dashboard/export-dashboard-b
 import { UpcomingDatesWidget } from "@/components/dashboard/upcoming-dates-widget";
 import { ExpiringDocumentsWidget } from "@/components/documents/expiring-documents-widget";
 import { FavoriteReportsWidget } from "@/components/reports/report-favorites";
+import { Balancer } from "react-wrap-balancer";
 import { FadeIn } from "@/components/ui/fade-in";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -260,7 +261,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-serif text-3xl font-bold tracking-tight">
-              Welcome back, {user?.full_name?.split(" ")[0]}
+              <Balancer>Welcome back, {user?.full_name?.split(" ")[0]}</Balancer>
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {ROLE_LABELS[role] ?? role} · {user?.email}

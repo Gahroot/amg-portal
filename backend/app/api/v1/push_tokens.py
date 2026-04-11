@@ -42,12 +42,12 @@ async def list_push_tokens(
     return PushTokenListResponse(tokens=tokens, total=len(tokens))  # type: ignore[arg-type]
 
 
-@router.delete("/{token}", status_code=204)
+@router.delete("/{token}", status_code=204, response_model=None)
 async def unregister_push_token(
     token: str,
     db: DB,
     current_user: CurrentUser,
-) -> Any:
+) -> None:
     """Unregister a push notification token."""
     deleted = await push_service.unregister_token(db, current_user.id, token)
     if not deleted:

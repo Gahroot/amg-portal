@@ -380,8 +380,8 @@ async def refresh(
     )
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(request: Request, response: Response, db: DB) -> Any:
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def logout(request: Request, response: Response, db: DB) -> None:
     """Clear auth cookies and revoke the current refresh token."""
     raw_token = request.cookies.get("refresh_token")
     if raw_token:
@@ -402,12 +402,12 @@ async def get_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
-@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def change_password(
     data: ChangePasswordRequest,
     current_user: CurrentUser,
     db: DB,
-) -> Any:
+) -> None:
     if not verify_password(data.current_password, current_user.hashed_password):
         raise BadRequestException("Current password is incorrect")
 

@@ -32,19 +32,20 @@ export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps)
           occupation: m.occupation || undefined,
           notes: m.notes || undefined,
           is_primary_contact: m.is_primary_contact,
-        }))
+        })) as IntakeFormData["family_members"]
       );
     }
   }, [initialMembers, familyMembers.length, setValue]);
 
   const handleAddMember = (data: FamilyMemberCreate) => {
+    const member = data as unknown as (typeof familyMembers)[number];
     if (editingIndex !== null) {
       const updated = [...familyMembers];
-      updated[editingIndex] = data;
+      updated[editingIndex] = member;
       setValue("family_members", updated);
       setEditingIndex(null);
     } else {
-      setValue("family_members", [...familyMembers, data]);
+      setValue("family_members", [...familyMembers, member]);
     }
     setDialogOpen(false);
   };
@@ -97,7 +98,7 @@ export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps)
         </div>
       ) : (
         <FamilyMemberList
-          members={familyMembers}
+          members={familyMembers as unknown as FamilyMemberCreate[]}
           onEdit={handleEditMember}
           onDelete={handleDeleteMember}
         />
@@ -110,7 +111,7 @@ export function IntakeStepFamily({ initialMembers = [] }: IntakeStepFamilyProps)
           if (!open) setEditingIndex(null);
         }}
         onSubmit={handleAddMember}
-        initialData={editingMember}
+        initialData={editingMember as unknown as FamilyMemberCreate | undefined}
         isEditing={editingIndex !== null}
       />
     </div>

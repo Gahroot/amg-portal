@@ -117,13 +117,13 @@ export function ReportBuilder({ initialReport, onSave }: ReportBuilderProps) {
     (initialReport?.data_source as DataSource) ?? "",
   );
   const [fields, setFields] = useState<ReportField[]>(
-    initialReport?.fields ?? [],
+    (initialReport?.fields ?? []) as unknown as ReportField[],
   );
   const [filters, setFilters] = useState<ReportFilter[]>(
-    initialReport?.filters ?? [],
+    (initialReport?.filters ?? []) as unknown as ReportFilter[],
   );
   const [sorting, setSorting] = useState<ReportSort[]>(
-    initialReport?.sorting ?? [],
+    (initialReport?.sorting ?? []) as unknown as ReportSort[],
   );
   const [grouping, setGrouping] = useState<string[]>(
     initialReport?.grouping ?? [],

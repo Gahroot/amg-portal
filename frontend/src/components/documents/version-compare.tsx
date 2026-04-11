@@ -125,11 +125,12 @@ function SideBySideDiff({ hunks }: SideBySideDiffProps) {
     // Interleave context before/after changes
     let di = 0;
     let ai = 0;
-    for (const line of hunk.lines) {
+    for (const rawLine of hunk.lines) {
+      const line = rawLine as DiffLine;
       if (line.change_type === "context") {
         rows.push({ type: "row", left: line, right: line });
       } else if (line.change_type === "deleted") {
-        const rightLine = added[ai] ?? null;
+        const rightLine = (added[ai] as DiffLine | undefined) ?? null;
         if (rightLine) ai++;
         rows.push({ type: "row", left: line, right: rightLine });
         di++;
@@ -212,7 +213,7 @@ export interface VersionCompareProps {
 export function VersionCompare({ versionAId, versionBId, open, onClose }: VersionCompareProps) {
   const { data, isLoading } = useDocumentCompare(versionAId, versionBId, open);
 
-  function handleDownload(id: string, downloadUrl: string | null) {
+  function handleDownload(id: string, downloadUrl: string | null | undefined) {
     if (downloadUrl) {
       window.open(downloadUrl, "_blank");
     } else {

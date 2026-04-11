@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Balancer } from "react-wrap-balancer";
 import {
   AlertTriangle,
   Briefcase,
@@ -402,7 +403,7 @@ export default function PortfolioPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <h1 className="font-serif text-3xl font-bold tracking-tight">
-          My Portfolio
+          <Balancer>My Portfolio</Balancer>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           An overview of your assigned clients, programs, and outstanding

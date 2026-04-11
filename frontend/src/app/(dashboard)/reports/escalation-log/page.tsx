@@ -205,7 +205,7 @@ export default function EscalationLogReportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {report?.escalations.map((esc) => (
+                {report?.escalations?.map((esc) => (
                   <TableRow key={esc.id}>
                     <TableCell>
                       <Badge variant={LEVEL_BADGE[esc.level] ?? "outline"} className="capitalize text-xs">
@@ -244,7 +244,7 @@ export default function EscalationLogReportPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {report?.escalations.length === 0 && (
+                {report?.escalations?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
                       No escalations match the current filters.
@@ -258,7 +258,7 @@ export default function EscalationLogReportPage() {
 
         {report && (
           <p className="text-xs text-muted-foreground">
-            Generated {new Date(report.generated_at).toLocaleString()} ·{" "}
+            Generated {new Date(report.generated_at!).toLocaleString()} ·{" "}
             {report.total_escalations} escalation{report.total_escalations !== 1 ? "s" : ""}
           </p>
         )}

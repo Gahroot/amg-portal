@@ -217,6 +217,7 @@ function ComposeBox({
       content: content.trim(),
       is_internal: isInternal,
       parent_id: replyTo?.parentId ?? null,
+      mentioned_user_ids: [],
     });
   };
 

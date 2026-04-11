@@ -440,14 +440,14 @@ export default function PulseSurveyAdminPage() {
                           {survey.title}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {RESPONSE_TYPE_LABELS[survey.response_type]}
+                          {RESPONSE_TYPE_LABELS[survey.response_type as PulseSurveyResponseType]}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {TRIGGER_LABELS[survey.trigger_type]}
+                          {TRIGGER_LABELS[survey.trigger_type as PulseSurveyTrigger]}
                         </TableCell>
                         <TableCell>{survey.response_count}</TableCell>
                         <TableCell>
-                          <Badge variant={STATUS_VARIANT[survey.status]} className="capitalize">
+                          <Badge variant={STATUS_VARIANT[survey.status as PulseSurveyStatus]} className="capitalize">
                             {survey.status}
                           </Badge>
                         </TableCell>
@@ -508,14 +508,14 @@ export default function PulseSurveyAdminPage() {
                   {selected.question}
                 </CardDescription>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <Badge variant={STATUS_VARIANT[selected.status]} className="capitalize">
+                  <Badge variant={STATUS_VARIANT[selected.status as PulseSurveyStatus]} className="capitalize">
                     {selected.status}
                   </Badge>
                   <Badge variant="outline">
-                    {RESPONSE_TYPE_LABELS[selected.response_type]}
+                    {RESPONSE_TYPE_LABELS[selected.response_type as PulseSurveyResponseType]}
                   </Badge>
                   <Badge variant="outline">
-                    {TRIGGER_LABELS[selected.trigger_type]}
+                    {TRIGGER_LABELS[selected.trigger_type as PulseSurveyTrigger]}
                   </Badge>
                 </div>
                 {(selected.active_from || selected.active_to) && (

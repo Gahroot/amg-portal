@@ -6,16 +6,28 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import UserRole
 
+# Password complexity rules — single source of truth.
+#
+# IMPORTANT: keep these rules in sync with the frontend Zod schema at
+# `frontend/src/lib/validations/auth.ts`. The backend is canonical; if you
+# change anything here, mirror it there (and update the tests on both sides).
+PASSWORD_MIN_LENGTH = 8
+# Character class listing every accepted special character.
+# Note: `~` and backtick are intentionally NOT accepted.
+PASSWORD_SPECIAL_PATTERN = r'[!@#$%^&*()_+\-=\[\]{};\'\\:"|<>,./?]'
+
 _RE_UPPER = re.compile(r"[A-Z]")
 _RE_LOWER = re.compile(r"[a-z]")
 _RE_DIGIT = re.compile(r"\d")
-_RE_SPECIAL = re.compile(r'[!@#$%^&*()_+\-=\[\]{};\'\\:"|<>,./?]')
+_RE_SPECIAL = re.compile(PASSWORD_SPECIAL_PATTERN)
 
 
 def _validate_password_strength(v: str) -> str:
     """Validate password meets complexity requirements."""
-    if len(v) < 8:
-        raise ValueError("Password must be at least 8 characters long")
+    if len(v) < PASSWORD_MIN_LENGTH:
+        raise ValueError(
+            f"Password must be at least {PASSWORD_MIN_LENGTH} characters long"
+        )
     if not _RE_UPPER.search(v):
         raise ValueError("Password must contain at least one uppercase letter")
     if not _RE_LOWER.search(v):

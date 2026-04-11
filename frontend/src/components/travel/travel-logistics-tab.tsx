@@ -94,8 +94,8 @@ function BookingCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const config = BOOKING_TYPE_CONFIG[booking.type];
-  const statusConfig = STATUS_CONFIG[booking.status];
+  const config = BOOKING_TYPE_CONFIG[booking.type as TravelBookingType];
+  const statusConfig = STATUS_CONFIG[booking.status as TravelBookingStatus];
   const Icon = config.icon;
 
   return (
@@ -339,7 +339,7 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
                   <Label>Departure / Start</Label>
                   <Input
                     type="datetime-local"
-                    value={formData.departure_at}
+                    value={formData.departure_at ?? ""}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, departure_at: e.target.value }))
                     }
@@ -349,7 +349,7 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
                   <Label>Arrival / End</Label>
                   <Input
                     type="datetime-local"
-                    value={formData.arrival_at}
+                    value={formData.arrival_at ?? ""}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, arrival_at: e.target.value }))
                     }

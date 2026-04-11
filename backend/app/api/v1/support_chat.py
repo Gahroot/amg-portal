@@ -254,13 +254,13 @@ async def send_conversation_message(
     return response
 
 
-@router.post("/conversations/{conversation_id}/read", status_code=204)
+@router.post("/conversations/{conversation_id}/read", status_code=204, response_model=None)
 async def mark_conversation_read(
     conversation_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> JSONResponse:
+) -> None:
     """Mark all messages in a conversation as read."""
     # Verify access
     conversation = await support_chat_service.get_conversation(
@@ -270,16 +270,15 @@ async def mark_conversation_read(
         raise NotFoundException("Conversation not found")
 
     await support_chat_service.mark_messages_read(db, conversation_id, "user")
-    return JSONResponse(status_code=204, content={})
 
 
-@router.post("/conversations/{conversation_id}/close", status_code=204)
+@router.post("/conversations/{conversation_id}/close", status_code=204, response_model=None)
 async def close_user_conversation(
     conversation_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> JSONResponse:
+) -> None:
     """Close a support conversation (user-initiated)."""
     # Verify access
     conversation = await support_chat_service.get_conversation(
@@ -289,16 +288,15 @@ async def close_user_conversation(
         raise NotFoundException("Conversation not found")
 
     await support_chat_service.close_conversation(db, conversation_id, current_user.id)
-    return JSONResponse(status_code=204, content={})
 
 
-@router.post("/satisfaction", status_code=204)
+@router.post("/satisfaction", status_code=204, response_model=None)
 async def submit_satisfaction_survey(
     data: SatisfactionSurveySubmit,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> JSONResponse:
+) -> None:
     """Submit satisfaction survey for a closed conversation."""
     # Verify access
     conversation = await support_chat_service.get_conversation(
@@ -310,7 +308,6 @@ async def submit_satisfaction_survey(
     await support_chat_service.submit_satisfaction(
         db, data.conversation_id, data.rating, data.comment
     )
-    return JSONResponse(status_code=204, content={})
 
 
 @router.post("/offline", response_model=OfflineMessageResponse, status_code=201)
@@ -473,6 +470,7 @@ async def get_agent_conversation_messages(
 @router.post(
     "/agent/conversations/{conversation_id}/close",
     status_code=204,
+    response_model=None,
     dependencies=[Depends(require_internal)],
 )
 async def close_agent_conversation(
@@ -480,14 +478,13 @@ async def close_agent_conversation(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> JSONResponse:
+) -> None:
     """Close a support conversation (agent-initiated)."""
     conversation = await support_chat_service.get_conversation(db, conversation_id)
     if not conversation:
         raise NotFoundException("Conversation not found")
 
     await support_chat_service.close_conversation(db, conversation_id, current_user.id)
-    return JSONResponse(status_code=204, content={})
 
 
 @router.get(

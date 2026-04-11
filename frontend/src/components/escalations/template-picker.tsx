@@ -6,6 +6,7 @@ import { listEscalationTemplates } from "@/lib/api/escalation-templates";
 import type {
   EscalationTemplate,
   EscalationTemplateCategory,
+  EscalationTemplateSeverity,
 } from "@/types/escalation-template";
 import { CATEGORY_LABELS, SEVERITY_LABELS } from "@/types/escalation-template";
 import {
@@ -182,7 +183,7 @@ function TemplateCard({ template, isSelected, onSelect }: TemplateCardProps) {
           </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs text-muted-foreground">
-              {CATEGORY_LABELS[template.category]}
+              {CATEGORY_LABELS[template.category as EscalationTemplateCategory]}
             </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span
@@ -192,7 +193,7 @@ function TemplateCard({ template, isSelected, onSelect }: TemplateCardProps) {
                   "bg-muted text-foreground/80",
               )}
             >
-              {SEVERITY_LABELS[template.severity]}
+              {SEVERITY_LABELS[template.severity as EscalationTemplateSeverity]}
             </span>
           </div>
           {template.description_template && (

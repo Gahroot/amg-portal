@@ -392,7 +392,7 @@ export default function PartnerDetailPage() {
                   <div className="space-y-2">
                     <Label>Availability</Label>
                     <Select
-                      value={editData.availability_status}
+                      value={editData.availability_status ?? undefined}
                       onValueChange={(value) =>
                         setEditData((d) => ({
                           ...d,
@@ -415,7 +415,7 @@ export default function PartnerDetailPage() {
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select
-                      value={editData.status}
+                      value={editData.status ?? undefined}
                       onValueChange={(value) =>
                         setEditData((d) => ({ ...d, status: value }))
                       }

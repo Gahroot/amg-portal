@@ -217,13 +217,13 @@ async def get_messages(
     return MessageListResponse(communications=message_responses, total=total)
 
 
-@router.post("/{conversation_id}/mark-read", status_code=204)
+@router.post("/{conversation_id}/mark-read", status_code=204, response_model=None)
 async def mark_conversation_read(
     conversation_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> Any:
+) -> None:
     """Mark all messages in a conversation as read for the current user."""
     conversation = await conversation_service.get(db, conversation_id)
     if not conversation:

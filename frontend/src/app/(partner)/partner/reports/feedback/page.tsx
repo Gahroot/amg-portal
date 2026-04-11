@@ -49,9 +49,9 @@ export default function DeliverableFeedbackPage() {
     selectedAssignment !== "all" ? selectedAssignment : undefined
   );
 
-  const approvedCount = report?.deliverables.filter((d) => d.status === "approved").length ?? 0;
+  const approvedCount = report?.deliverables?.filter((d) => d.status === "approved").length ?? 0;
   const reviewedCount =
-    report?.deliverables.filter((d) => d.reviewed_at !== null).length ?? 0;
+    report?.deliverables?.filter((d) => d.reviewed_at !== null).length ?? 0;
 
   if (isLoading) {
     return (
@@ -72,7 +72,7 @@ export default function DeliverableFeedbackPage() {
   return (
     <ReportContainer
       title="Deliverable Feedback Report"
-      subtitle={`Generated ${new Date(report.generated_at).toLocaleDateString()} · ${report.firm_name}`}
+      subtitle={`Generated ${new Date(report.generated_at!).toLocaleDateString()} · ${report.firm_name}`}
     >
       <Button variant="ghost" size="sm" className="gap-1 -mt-2 self-start" asChild>
         <Link href="/partner/reports">
@@ -107,7 +107,7 @@ export default function DeliverableFeedbackPage() {
 
       {/* Deliverables table */}
       <ReportCard title={`Deliverables (${report.total_deliverables})`}>
-        {report.deliverables.length === 0 ? (
+        {(report.deliverables?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No deliverables found for the selected filter.
           </p>
@@ -126,7 +126,7 @@ export default function DeliverableFeedbackPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {report.deliverables.map((item) => (
+                {report.deliverables?.map((item) => (
                   <TableRow key={item.deliverable_id}>
                     <TableCell>
                       <div className="space-y-0.5">

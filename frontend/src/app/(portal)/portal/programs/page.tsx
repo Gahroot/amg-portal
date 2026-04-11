@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { LayoutList } from "lucide-react";
+import { Balancer } from "react-wrap-balancer";
 
 const STATUS_LABELS: Record<string, string> = {
   intake: "Intake",
@@ -59,7 +60,7 @@ export default function PortalProgramsPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
-        <h1 className="font-serif text-3xl font-bold tracking-tight">My Programs</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight"><Balancer>My Programs</Balancer></h1>
         <p className="text-muted-foreground text-sm">Loading...</p>
       </div>
     );
@@ -68,7 +69,7 @@ export default function PortalProgramsPage() {
   if (!programs || programs.length === 0) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
-        <h1 className="font-serif text-3xl font-bold tracking-tight">My Programs</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight"><Balancer>My Programs</Balancer></h1>
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <LayoutList className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="text-muted-foreground">No programs found.</p>
@@ -82,7 +83,7 @@ export default function PortalProgramsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="font-serif text-3xl font-bold tracking-tight">My Programs</h1>
+      <h1 className="font-serif text-3xl font-bold tracking-tight"><Balancer>My Programs</Balancer></h1>
       <p className="text-muted-foreground">
         {programs.length} program{programs.length !== 1 ? "s" : ""} assigned to you
       </p>

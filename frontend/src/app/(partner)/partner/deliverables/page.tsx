@@ -27,7 +27,7 @@ const STATUS_ICONS: Record<string, ReactNode> = {
   returned: <XCircle className="h-4 w-4" />, rejected: <XCircle className="h-4 w-4" />,
 };
 
-function getDueDateDisplay(dateStr: string | null) {
+function getDueDateDisplay(dateStr: string | null | undefined) {
   if (!dateStr) return { text: "-", color: "text-muted-foreground" };
   const date = new Date(dateStr);
   const now = new Date();

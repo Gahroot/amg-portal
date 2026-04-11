@@ -736,9 +736,10 @@ async def update_milestone(
 @router.delete(
     "/milestones/{milestone_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     dependencies=[Depends(require_rm_or_above)],
 )
-async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext) -> Any:
+async def delete_milestone(milestone_id: uuid.UUID, db: DB, _rls: RLSContext) -> None:
     result = await db.execute(select(Milestone).where(Milestone.id == milestone_id))
     milestone = result.scalar_one_or_none()
     if not milestone:
@@ -831,9 +832,10 @@ async def update_task(task_id: uuid.UUID, data: TaskUpdate, db: DB, _rls: RLSCon
 @router.delete(
     "/tasks/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def delete_task(task_id: uuid.UUID, db: DB, _rls: RLSContext) -> Any:
+async def delete_task(task_id: uuid.UUID, db: DB, _rls: RLSContext) -> None:
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:

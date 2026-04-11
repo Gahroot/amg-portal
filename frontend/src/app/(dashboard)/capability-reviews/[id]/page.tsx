@@ -9,7 +9,7 @@ import {
   updateCapabilityReview,
   completeCapabilityReview,
 } from "@/lib/api/capability-reviews";
-import type { UpdateCapabilityReviewRequest, CompleteCapabilityReviewRequest } from "@/types/capability-review";
+import type { UpdateCapabilityReviewRequest, CompleteCapabilityReviewRequest, CapabilityReviewFinding } from "@/types/capability-review";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -310,7 +310,9 @@ export default function CapabilityReviewDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {review.findings.map((finding, idx) => (
+                {review.findings.map((rawFinding, idx) => {
+                  const finding = rawFinding as unknown as CapabilityReviewFinding;
+                  return (
                   <div
                     key={idx}
                     className="border rounded-lg p-4 space-y-2"
@@ -336,7 +338,7 @@ export default function CapabilityReviewDetailPage() {
                       </p>
                     )}
                   </div>
-                ))}
+                  ); })}
               </div>
             </CardContent>
           </Card>

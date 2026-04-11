@@ -55,7 +55,7 @@ export default function NewUserPage() {
 
   const onSubmit = async (data: CreateUserFormData) => {
     try {
-      await createUser(data);
+      await createUser(data as Parameters<typeof createUser>[0]);
       toast.success("User created successfully");
       router.push("/users");
     } catch (err) {

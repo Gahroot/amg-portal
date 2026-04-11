@@ -132,7 +132,7 @@ function ApprovalChainStep({
       }`}
     >
       <div className="mt-0.5 shrink-0">
-        <StepStatusIcon status={step.status} />
+        <StepStatusIcon status={step.status as BudgetApprovalStepStatus} />
       </div>
 
       <div className="flex-1 space-y-1">
@@ -153,7 +153,7 @@ function ApprovalChainStep({
             }
             className="text-xs"
           >
-            {formatStatus(step.status)}
+            {formatStatus(step.status as BudgetApprovalStepStatus)}
           </Badge>
         </div>
 
@@ -326,11 +326,11 @@ export default function BudgetApprovalDetailPage() {
               {request.title}
             </h1>
             <div className="flex items-center gap-2">
-              <Badge variant={getStatusVariant(request.status)}>
-                {formatStatus(request.status)}
+              <Badge variant={getStatusVariant(request.status as BudgetApprovalStatus)}>
+                {formatStatus(request.status as BudgetApprovalStatus)}
               </Badge>
               <Badge variant="secondary">
-                {formatRequestType(request.request_type)}
+                {formatRequestType(request.request_type as BudgetRequestType)}
               </Badge>
             </div>
           </div>
@@ -439,7 +439,7 @@ export default function BudgetApprovalDetailPage() {
                   Current Budget
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
-                  {formatCurrency(request.current_budget)}
+                  {formatCurrency(Number(request.current_budget))}
                 </p>
               </div>
               <div>
@@ -447,7 +447,7 @@ export default function BudgetApprovalDetailPage() {
                   Requested Amount
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
-                  {formatCurrency(request.requested_amount)}
+                  {formatCurrency(Number(request.requested_amount))}
                 </p>
               </div>
               <div>
@@ -456,13 +456,13 @@ export default function BudgetApprovalDetailPage() {
                 </p>
                 <p
                   className={`text-lg font-semibold tabular-nums ${
-                    request.budget_impact > 0
+                    Number(request.budget_impact) > 0
                       ? "text-amber-600 dark:text-amber-400"
                       : "text-green-600 dark:text-green-400"
                   }`}
                 >
-                  {request.budget_impact > 0 ? "+" : ""}
-                  {formatCurrency(request.budget_impact)}
+                  {Number(request.budget_impact) > 0 ? "+" : ""}
+                  {formatCurrency(Number(request.budget_impact))}
                 </p>
               </div>
               <div>
@@ -470,7 +470,7 @@ export default function BudgetApprovalDetailPage() {
                   Projected Budget
                 </p>
                 <p className="text-lg font-semibold tabular-nums">
-                  {formatCurrency(request.projected_budget)}
+                  {formatCurrency(Number(request.projected_budget))}
                 </p>
               </div>
             </div>
