@@ -11,9 +11,16 @@ import type { components } from "./generated";
 
 export type DocumentDeliveryRecord = components["schemas"]["DocumentDeliveryResponse"];
 export type DocumentDeliveryListResponse = components["schemas"]["DocumentDeliveryListResponse"];
+export type SecureLinkRequest = components["schemas"]["SecureLinkRequest"];
+export type SecureLinkResponse = components["schemas"]["SecureLinkResponse"];
+export type SealDocumentRequest = components["schemas"]["SealDocumentRequest"];
+export type CustodyEntry = components["schemas"]["CustodyEntry"];
+export type CustodyChainResponse = components["schemas"]["CustodyChainResponse"];
+export type VaultDocument = components["schemas"]["VaultDocumentResponse"];
+export type VaultDocumentListResponse = components["schemas"]["VaultDocumentListResponse"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — request shapes, display helpers
+// Frontend-only types — enums, request shapes
 // ---------------------------------------------------------------------------
 
 export type VaultStatus = "active" | "archived" | "sealed";
@@ -23,60 +30,4 @@ export interface DeliverDocumentRequest {
   recipient_ids: string[];
   delivery_method: DeliveryMethod;
   notes?: string;
-}
-
-export interface SecureLinkRequest {
-  recipient_id: string;
-  expires_hours?: number;
-}
-
-export interface SecureLinkResponse {
-  token: string;
-  download_url: string;
-  expires_at: string;
-}
-
-export interface SealDocumentRequest {
-  retention_policy?: string;
-}
-
-export interface CustodyEntry {
-  action: string;
-  user_id: string;
-  timestamp: string;
-  details: string | null;
-}
-
-export interface CustodyChainResponse {
-  document_id: string;
-  file_name: string;
-  vault_status: VaultStatus;
-  entries: CustodyEntry[];
-  total: number;
-}
-
-export interface VaultDocument {
-  id: string;
-  file_path: string;
-  file_name: string;
-  file_size: number;
-  content_type: string | null;
-  entity_type: string;
-  entity_id: string;
-  category: string;
-  description: string | null;
-  version: number;
-  uploaded_by: string;
-  vault_status: VaultStatus;
-  sealed_at: string | null;
-  sealed_by: string | null;
-  retention_policy: string | null;
-  created_at: string;
-  updated_at: string;
-  download_url: string | null;
-}
-
-export interface VaultDocumentListResponse {
-  documents: VaultDocument[];
-  total: number;
 }

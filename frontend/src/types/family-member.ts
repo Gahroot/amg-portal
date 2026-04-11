@@ -12,9 +12,12 @@ import type { components } from "./generated";
 export type FamilyMember = components["schemas"]["FamilyMemberResponse"];
 export type FamilyMemberListResponse = components["schemas"]["FamilyMemberListResponse"];
 export type FamilyMemberCreate = components["schemas"]["FamilyMemberCreate"];
+export type FamilyMemberUpdate = components["schemas"]["FamilyMemberUpdate"];
+export type FamilyRelationship = components["schemas"]["FamilyRelationshipResponse"];
+export type FamilyRelationshipCreate = components["schemas"]["FamilyRelationshipCreate"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — enums, update shapes
+// Frontend-only types — enums
 // ---------------------------------------------------------------------------
 
 export type FamilyRelationshipType =
@@ -29,18 +32,3 @@ export type FamilyRelationshipType =
   | "cousin"
   | "in_law"
   | "other";
-
-export type FamilyMemberUpdate = Partial<FamilyMemberCreate>;
-
-export interface FamilyRelationship {
-  id: string;
-  from_member_id: string;
-  to_member_id: string;
-  relationship_type: string;
-  created_at: string;
-}
-
-export interface FamilyRelationshipCreate {
-  to_member_id: string;
-  relationship_type: string;
-}
