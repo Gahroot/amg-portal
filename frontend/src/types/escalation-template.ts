@@ -11,9 +11,11 @@ import type { components } from "./generated";
 
 export type EscalationTemplate = components["schemas"]["EscalationTemplateResponse"];
 export type EscalationTemplateListResponse = components["schemas"]["EscalationTemplateListResponse"];
+export type EscalationTemplateCreate = components["schemas"]["EscalationTemplateCreate"];
+export type EscalationTemplateUpdate = components["schemas"]["EscalationTemplateUpdate"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — enums, request shapes, constants
+// Frontend-only types — enums, query params, constants
 // ---------------------------------------------------------------------------
 
 export type EscalationTemplateCategory =
@@ -29,26 +31,6 @@ export type EscalationTemplateSeverity =
   | "milestone"
   | "program"
   | "client_impact";
-
-export interface EscalationTemplateCreate {
-  name: string;
-  category: EscalationTemplateCategory;
-  severity: EscalationTemplateSeverity;
-  description_template?: string;
-  suggested_actions?: string[];
-  notification_template?: string;
-  is_active?: boolean;
-}
-
-export interface EscalationTemplateUpdate {
-  name?: string;
-  category?: EscalationTemplateCategory;
-  severity?: EscalationTemplateSeverity;
-  description_template?: string;
-  suggested_actions?: string[];
-  notification_template?: string;
-  is_active?: boolean;
-}
 
 export interface EscalationTemplateListParams {
   skip?: number;

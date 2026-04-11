@@ -18,6 +18,8 @@ export type Escalation = components["schemas"]["EscalationResponse"];
 export type EscalationListResponse = components["schemas"]["EscalationListResponse"];
 export type EscalationCreate = components["schemas"]["EscalationCreate"];
 export type EscalationMetrics = components["schemas"]["EscalationMetricsResponse"];
+export type EscalationUpdate = components["schemas"]["EscalationUpdate"];
+export type EscalationTriggerRequest = components["schemas"]["EscalationTriggerRequest"];
 
 // ---------------------------------------------------------------------------
 // Frontend-only types — enums, query params, display helpers
@@ -25,18 +27,6 @@ export type EscalationMetrics = components["schemas"]["EscalationMetricsResponse
 
 export type EscalationLevel = "task" | "milestone" | "program" | "client_impact";
 export type EscalationStatus = "open" | "acknowledged" | "investigating" | "resolved" | "closed";
-
-export interface EscalationUpdate {
-  status?: EscalationStatus;
-  resolution_notes?: string;
-}
-
-export interface EscalationTriggerRequest {
-  entity_type: string;
-  entity_id: string;
-  level: EscalationLevel;
-  reason: string;
-}
 
 export interface EscalationListParams {
   skip?: number;
