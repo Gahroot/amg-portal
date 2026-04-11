@@ -2,11 +2,13 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
+import { API_V1_URL } from '@/lib/config';
+
 const TOKEN_KEY = 'amg_auth_token';
 const REFRESH_TOKEN_KEY = 'amg_refresh_token';
 
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: API_V1_URL,
   timeout: 30_000,
   headers: {
     'Content-Type': 'application/json',
@@ -80,7 +82,7 @@ api.interceptors.response.use(
       try {
         // Use a fresh axios instance for refresh to avoid interceptor recursion
         const response = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'}/auth/refresh`,
+          `${API_V1_URL}/auth/refresh`,
           { refresh_token: refreshTokenValue },
         );
 

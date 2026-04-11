@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { WS_BASE_URL } from "@/lib/config";
 import { queryKeys } from "@/lib/query-keys";
 import type {
   WSMessage,
@@ -47,8 +48,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws";
+      const wsUrl = `${WS_BASE_URL}/ws`;
 
       const ws = new WebSocket(wsUrl);
       let authenticated = false;

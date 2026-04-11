@@ -32,7 +32,12 @@ export type UserListResponse = components["schemas"]["UserListResponse"];
 // Frontend-only types — constants, query params, UI helpers
 // ---------------------------------------------------------------------------
 
-/** Internal (AMG staff) roles */
+/**
+ * Internal (AMG staff) roles.
+ *
+ * Keep in sync with `mobile/types/user.ts` (`INTERNAL_ROLES`) and the
+ * backend source of truth at `backend/app/models/enums.py`.
+ */
 export const INTERNAL_ROLES: UserRole[] = [
   "managing_director",
   "relationship_manager",

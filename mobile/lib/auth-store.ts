@@ -1,18 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
-import { type UserRole } from '@/types/user';
-
-/**
- * Internal (AMG staff) roles.
- * Source of truth: backend/app/models/enums.py — INTERNAL_ROLES
- */
-const INTERNAL_ROLES: UserRole[] = [
-  'managing_director',
-  'relationship_manager',
-  'coordinator',
-  'finance_compliance',
-];
+import { INTERNAL_ROLES, type UserRole } from '@/types/user';
 
 export interface AuthUser {
   id: string;

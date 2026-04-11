@@ -1,14 +1,13 @@
 import axios from "axios";
 
+import { API_BASE_URL } from "@/lib/config";
 import {
   setTokens,
   removeTokens,
 } from "@/lib/token-storage";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
