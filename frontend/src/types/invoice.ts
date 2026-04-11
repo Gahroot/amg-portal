@@ -11,9 +11,11 @@ import type { components } from "./generated";
 
 export type Invoice = components["schemas"]["InvoiceResponse"];
 export type InvoiceListResponse = components["schemas"]["InvoiceListResponse"];
+export type InvoiceCreate = components["schemas"]["InvoiceCreate"];
+export type InvoiceUpdate = components["schemas"]["InvoiceUpdate"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — enums, query params
+// Frontend-only types — display enums, query params
 // ---------------------------------------------------------------------------
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
