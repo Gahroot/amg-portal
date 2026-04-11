@@ -15,9 +15,15 @@ export type AccessAuditFinding = components["schemas"]["AccessAuditFindingRespon
 export type AccessAuditFindingListResponse = components["schemas"]["AccessAuditFindingListResponse"];
 export type AccessAuditStatistics = components["schemas"]["AccessAuditStatistics"];
 export type AcknowledgeFindingRequest = components["schemas"]["AcknowledgeFindingRequest"];
+export type CreateAccessAuditRequest = components["schemas"]["CreateAccessAuditRequest"];
+export type UpdateAccessAuditRequest = components["schemas"]["UpdateAccessAuditRequest"];
+export type CreateAccessAuditFindingRequest = components["schemas"]["CreateAccessAuditFindingRequest"];
+export type UpdateAccessAuditFindingRequest = components["schemas"]["UpdateAccessAuditFindingRequest"];
+export type RemediateFindingRequest = components["schemas"]["RemediateFindingRequest"];
+export type WaiveFindingRequest = components["schemas"]["WaiveFindingRequest"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — enums, query params, request shapes
+// Frontend-only types — enums, query params
 // ---------------------------------------------------------------------------
 
 export type FindingType =
@@ -39,48 +45,6 @@ export type FindingStatus =
   | "remediated"
   | "waived"
   | "closed";
-
-export interface CreateAccessAuditRequest {
-  quarter: number;
-  year: number;
-  auditor_id?: string;
-  summary?: string;
-}
-
-export interface UpdateAccessAuditRequest {
-  status?: string;
-  auditor_id?: string;
-  users_reviewed?: number;
-  permissions_verified?: number;
-  anomalies_found?: number;
-  summary?: string;
-  recommendations?: string;
-}
-
-export interface CreateAccessAuditFindingRequest {
-  user_id?: string;
-  finding_type: FindingType;
-  severity?: FindingSeverity;
-  description: string;
-  recommendation?: string;
-}
-
-export interface UpdateAccessAuditFindingRequest {
-  finding_type?: FindingType;
-  severity?: FindingSeverity;
-  description?: string;
-  recommendation?: string;
-  status?: FindingStatus;
-  remediation_notes?: string;
-}
-
-export interface RemediateFindingRequest {
-  remediation_notes?: string;
-}
-
-export interface WaiveFindingRequest {
-  waived_reason: string;
-}
 
 export interface AccessAuditListParams {
   skip?: number;

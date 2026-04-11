@@ -13,19 +13,12 @@ export type APIKey = components["schemas"]["APIKeyResponse"];
 export type APIKeyCreated = components["schemas"]["APIKeyCreatedResponse"];
 export type APIKeyListResponse = components["schemas"]["APIKeyListResponse"];
 export type APIKeyCreateRequest = components["schemas"]["APIKeyCreate"];
+export type ScopeInfo = components["schemas"]["ScopeInfo"];
+export type ScopesResponse = components["schemas"]["ScopesResponse"];
 
 // ---------------------------------------------------------------------------
 // Frontend-only types — UI display helpers
 // ---------------------------------------------------------------------------
-
-export interface ScopeInfo {
-  name: string;
-  description: string;
-}
-
-export interface ScopesResponse {
-  scopes: ScopeInfo[];
-}
 
 // Available scopes with descriptions (mirrors backend)
 export const API_KEY_SCOPES: Record<string, string> = {
