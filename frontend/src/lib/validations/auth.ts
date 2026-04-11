@@ -1,12 +1,23 @@
 import { z } from "zod/v4";
 
+// Password complexity rules — must match backend/app/schemas/auth.py
+// (PASSWORD_* constants). Backend is canonical: do NOT loosen these rules
+// here without first changing the backend, otherwise the API will reject
+// passwords the form accepts.
+//
+// Allowed special characters: ! @ # $ % ^ & * ( ) _ + - = [ ] { } ; ' \ : " | < > , . / ?
+// Note: `~` and backtick are intentionally NOT accepted.
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_SPECIAL_PATTERN =
+  /[!@#$%^&*()_+\-=\[\]{};'\\:"|<>,./?]/;
+
 export const passwordSchema = z
   .string()
-  .min(8, "Password must be at least 8 characters")
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   .regex(/[A-Z]/, "Password must contain an uppercase letter")
   .regex(/[a-z]/, "Password must contain a lowercase letter")
   .regex(/[0-9]/, "Password must contain a number")
-  .regex(/[^A-Za-z0-9]/, "Password must contain a special character");
+  .regex(PASSWORD_SPECIAL_PATTERN, "Password must contain a special character");
 
 export const mfaCodeField = z
   .string()
