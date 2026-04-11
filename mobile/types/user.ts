@@ -14,6 +14,19 @@ export type UserRole =
   | 'client'
   | 'partner';
 
+/**
+ * Internal (AMG staff) roles.
+ *
+ * Keep in sync with `frontend/src/types/user.ts` (`INTERNAL_ROLES`) and the
+ * backend source of truth at `backend/app/models/enums.py`.
+ */
+export const INTERNAL_ROLES: UserRole[] = [
+  'managing_director',
+  'relationship_manager',
+  'coordinator',
+  'finance_compliance',
+];
+
 export interface User {
   id: string;
   email: string;

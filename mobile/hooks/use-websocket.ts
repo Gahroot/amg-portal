@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useAuthStore } from '@/lib/auth-store';
+import { WS_BASE_URL } from '@/lib/config';
 import { useNotificationStore } from '@/lib/notification-store';
 
 const WS_RECONNECT_DELAY_BASE = 1000;
@@ -17,8 +18,7 @@ export function useWebSocket() {
   const reconnectDelayRef = useRef(WS_RECONNECT_DELAY_BASE);
 
   const getWsUrl = useCallback(() => {
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
-    return apiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws?token=' + token;
+    return `${WS_BASE_URL}/ws?token=${token}`;
   }, [token]);
 
   const disconnect = useCallback(() => {

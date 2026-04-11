@@ -1,6 +1,10 @@
-/** Backend API base URL — used for authenticated server-side exports. */
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+/**
+ * Backend API base URL — used for authenticated server-side exports.
+ *
+ * Re-exported from `@/lib/config` so existing call sites that import from
+ * `@/lib/constants` keep working while the fallback default lives in one place.
+ */
+export { API_BASE_URL } from "@/lib/config";
 
 /**
  * Role display labels mapping role keys to human-readable names.
