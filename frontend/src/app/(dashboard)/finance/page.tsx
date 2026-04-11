@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Invoice, InvoiceStatus } from "@/types/invoice";
+import { Balancer } from "react-wrap-balancer";
 
 const ALLOWED_ROLES = ["finance_compliance", "managing_director"];
 
@@ -198,7 +199,7 @@ export default function FinancePage() {
         <div className="flex items-center gap-3">
           <Receipt className="h-7 w-7 text-muted-foreground" />
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Finance
+            <Balancer>Finance</Balancer>
           </h1>
         </div>
         <p className="text-muted-foreground">

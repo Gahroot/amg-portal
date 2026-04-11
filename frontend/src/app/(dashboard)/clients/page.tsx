@@ -11,6 +11,7 @@ import {
   useScrollTracker,
   useScrollRestore,
 } from "@/hooks/use-navigation-state";
+import { Balancer } from "react-wrap-balancer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -280,7 +281,7 @@ function ClientsPageContent() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Client Profiles
+            <Balancer>Client Profiles</Balancer>
           </h1>
           <div className="flex items-center gap-2">
             <DataTableExport

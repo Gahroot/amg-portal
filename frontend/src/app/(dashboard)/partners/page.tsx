@@ -12,6 +12,7 @@ import {
   useScrollTracker,
   useScrollRestore,
 } from "@/hooks/use-navigation-state";
+import { Balancer } from "react-wrap-balancer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -254,7 +255,7 @@ function PartnersPageContent() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="font-serif text-3xl font-bold tracking-tight">
-              Partner Directory
+              <Balancer>Partner Directory</Balancer>
             </h1>
             {overdueCount > 0 && (
               <Badge variant="destructive" className="text-sm">

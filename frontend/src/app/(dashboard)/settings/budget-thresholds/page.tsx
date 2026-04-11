@@ -525,7 +525,7 @@ function AddStepDialog({
     e.preventDefault();
     const data: ApprovalChainStepCreate = {
       step_number: stepNumber,
-      required_role: requiredRole,
+      required_role: requiredRole as ApprovalChainStepCreate["required_role"],
       is_parallel: isParallel,
       timeout_hours: timeoutHours !== "" ? parseInt(timeoutHours) : null,
       auto_approve_on_timeout: autoApprove,
@@ -990,10 +990,10 @@ export default function BudgetThresholdsPage() {
                           <Badge variant={tierVariant(t.name)}>{t.name}</Badge>
                         </TableCell>
                         <TableCell className="tabular-nums text-sm">
-                          {formatCurrency(t.min_amount)}
+                          {formatCurrency(Number(t.min_amount))}
                           {" — "}
                           {t.max_amount != null
-                            ? formatCurrency(t.max_amount)
+                            ? formatCurrency(Number(t.max_amount))
                             : "∞"}
                         </TableCell>
                         <TableCell className="text-sm">

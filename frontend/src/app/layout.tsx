@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
+import { ViewTransitions } from "next-view-transitions";
 import { ThemeProvider } from "next-themes";
 import { Providers } from "@/providers/providers";
 import { ErrorBoundary } from "@/components/error/error-boundary";
@@ -43,26 +44,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Skip to main content link for screen readers */}
-        <link rel="help" href="/accessibility" title="Accessibility Statement" />
-      </head>
-      <body
-        className={`${plusJakarta.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
-      >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
-          <Toaster />
-          <ErrorBoundary>
-            <ErrorLoggerProvider>
-              <Providers>
-                <CommandPalette />
-                {children}
-              </Providers>
-            </ErrorLoggerProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          {/* Skip to main content link for screen readers */}
+          <link rel="help" href="/accessibility" title="Accessibility Statement" />
+        </head>
+        <body
+          className={`${plusJakarta.variable} ${ibmPlexMono.variable} ${playfairDisplay.variable} antialiased`}
+        >
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+            <Toaster />
+            <ErrorBoundary>
+              <ErrorLoggerProvider>
+                <Providers>
+                  <CommandPalette />
+                  {children}
+                </Providers>
+              </ErrorLoggerProvider>
+            </ErrorBoundary>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }

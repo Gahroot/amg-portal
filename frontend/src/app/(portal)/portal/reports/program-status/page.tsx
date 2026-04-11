@@ -55,18 +55,18 @@ export default function ProgramStatusPage() {
   oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
 
   const completedThisWeek = report
-    ? report.completed_deliverables.filter(
+    ? (report.completed_deliverables ?? []).filter(
         (d) => d.submitted_at && new Date(d.submitted_at) >= oneWeekAgo
       )
     : [];
 
   const upcomingMilestones = report
-    ? report.active_milestones.filter(
+    ? (report.active_milestones ?? []).filter(
         (m) => m.due_date && new Date(m.due_date) <= oneWeekFromNow
       )
     : [];
 
-  const hasPendingDecisions = (report?.pending_decisions.length ?? 0) > 0;
+  const hasPendingDecisions = (report?.pending_decisions?.length ?? 0) > 0;
 
   return (
     <ReportContainer
@@ -121,7 +121,7 @@ export default function ProgramStatusPage() {
           {/* Last Updated */}
           <p className="text-xs text-muted-foreground text-right">
             Last updated:{" "}
-            {new Date(report.generated_at).toLocaleString(undefined, {
+            {new Date(report.generated_at!).toLocaleString(undefined, {
               dateStyle: "medium",
               timeStyle: "short",
             })}
@@ -132,8 +132,8 @@ export default function ProgramStatusPage() {
             <Alert variant="destructive" className="border-amber-400 dark:border-amber-600 bg-amber-50 text-amber-900 dark:text-amber-300 dark:bg-amber-950/30">
               <AlertTriangle className="h-4 w-4 !text-amber-600 dark:text-amber-400 dark:!text-amber-400" />
               <AlertTitle className="font-semibold">
-                {report.pending_decisions.length} Decision
-                {report.pending_decisions.length > 1 ? "s" : ""} Awaiting Your Response
+                {(report.pending_decisions ?? []).length} Decision
+                {(report.pending_decisions ?? []).length > 1 ? "s" : ""} Awaiting Your Response
               </AlertTitle>
               <AlertDescription className="flex items-center justify-between gap-4 mt-1">
                 <span>
@@ -152,11 +152,11 @@ export default function ProgramStatusPage() {
             <ReportMetric label="RAG Status" value={report.rag_status.toUpperCase()} />
             <ReportMetric
               label="Active Milestones"
-              value={report.active_milestones.length}
+              value={(report.active_milestones ?? []).length}
             />
             <ReportMetric
               label="Pending Decisions"
-              value={report.pending_decisions.length}
+              value={(report.pending_decisions ?? []).length}
             />
           </div>
 
@@ -233,13 +233,13 @@ export default function ProgramStatusPage() {
 
           {/* Active Milestones */}
           <ReportCard
-            title={`Active Milestones (${report.active_milestones.length})`}
+            title={`Active Milestones (${(report.active_milestones ?? []).length})`}
           >
-            {report.active_milestones.length === 0 ? (
+            {(report.active_milestones ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">No active milestones</p>
             ) : (
               <div className="space-y-3">
-                {report.active_milestones.map((milestone) => (
+                {(report.active_milestones ?? []).map((milestone) => (
                   <div
                     key={milestone.id}
                     className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -307,9 +307,9 @@ export default function ProgramStatusPage() {
 
           {/* Completed Deliverables */}
           <ReportCard
-            title={`All Completed Deliverables (${report.completed_deliverables.length})`}
+            title={`All Completed Deliverables (${(report.completed_deliverables ?? []).length})`}
           >
-            {report.completed_deliverables.length === 0 ? (
+            {(report.completed_deliverables ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">No completed deliverables yet</p>
             ) : (
               <div className="overflow-x-auto">
@@ -324,7 +324,7 @@ export default function ProgramStatusPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {report.completed_deliverables.map((deliverable) => (
+                    {(report.completed_deliverables ?? []).map((deliverable) => (
                       <tr key={deliverable.id} className="border-b hover:bg-muted/50">
                         <td className="py-3 px-4 font-medium">{deliverable.title}</td>
                         <td className="py-3 px-4 capitalize">{deliverable.deliverable_type.replace(/_/g, " ")}</td>
@@ -351,13 +351,13 @@ export default function ProgramStatusPage() {
 
           {/* Pending Decisions */}
           <ReportCard
-            title={`Pending Decisions (${report.pending_decisions.length})`}
+            title={`Pending Decisions (${(report.pending_decisions ?? []).length})`}
           >
-            {report.pending_decisions.length === 0 ? (
+            {(report.pending_decisions ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending decisions</p>
             ) : (
               <div className="space-y-3">
-                {report.pending_decisions.map((decision) => (
+                {(report.pending_decisions ?? []).map((decision) => (
                   <div
                     key={decision.id}
                     className="flex items-start justify-between p-4 border rounded-lg border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
@@ -385,12 +385,12 @@ export default function ProgramStatusPage() {
           </ReportCard>
 
           {/* Assigned Partners */}
-          {report.assigned_partners.length > 0 && (
+          {(report.assigned_partners ?? []).length > 0 && (
             <ReportCard
-              title={`Assigned Partners (${report.assigned_partners.length})`}
+              title={`Assigned Partners (${(report.assigned_partners ?? []).length})`}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {report.assigned_partners.map((partner) => (
+                {(report.assigned_partners ?? []).map((partner) => (
                   <div
                     key={partner.id}
                     className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"

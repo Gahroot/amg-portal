@@ -15,6 +15,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { EscalationStatusBadge } from "@/components/escalations/status-badge";
 import { EscalationLevelBadge } from "@/components/escalations/level-badge";
 import { EscalationCreateDialog } from "@/components/escalations/escalation-create-dialog";
+import { Balancer } from "react-wrap-balancer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -196,7 +197,7 @@ function EscalationsPageContent() {
 
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Escalations
+            <Balancer>Escalations</Balancer>
           </h1>
           <div className="flex items-center gap-2">
             <Link href="/escalations/metrics">

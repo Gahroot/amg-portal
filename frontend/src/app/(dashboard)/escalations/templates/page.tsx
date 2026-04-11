@@ -117,8 +117,8 @@ function formToPayload(form: TemplateFormState): EscalationTemplateCreate {
 function templateToForm(tpl: EscalationTemplate): TemplateFormState {
   return {
     name: tpl.name,
-    category: tpl.category,
-    severity: tpl.severity,
+    category: tpl.category as EscalationTemplateCategory,
+    severity: tpl.severity as EscalationTemplateSeverity,
     description_template: tpl.description_template ?? "",
     suggested_actions_text: (tpl.suggested_actions ?? []).join("\n"),
     notification_template: tpl.notification_template ?? "",
@@ -516,7 +516,7 @@ function TemplateTable({
                 </div>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {CATEGORY_LABELS[tpl.category]}
+                {CATEGORY_LABELS[tpl.category as EscalationTemplateCategory]}
               </TableCell>
               <TableCell>
                 <span
@@ -524,7 +524,7 @@ function TemplateTable({
                     SEVERITY_COLORS[tpl.severity] ?? "bg-muted text-foreground/80"
                   }`}
                 >
-                  {SEVERITY_LABELS[tpl.severity]}
+                  {SEVERITY_LABELS[tpl.severity as EscalationTemplateSeverity]}
                 </span>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">

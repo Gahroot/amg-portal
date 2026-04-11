@@ -94,13 +94,13 @@ async def get_unread_count(
     return UnreadCountResponse(**counts)
 
 
-@router.post("/mark-read", status_code=204)
+@router.post("/mark-read", status_code=204, response_model=None)
 async def mark_message_read(
     data: CommunicationMarkReadRequest,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-) -> Any:
+) -> None:
     """Mark a specific message as read."""
     await communication_service.mark_read(db, data.communication_id, current_user.id)
 

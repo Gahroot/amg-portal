@@ -42,7 +42,7 @@ const APPROVAL_STATUS_VARIANT: Record<
   draft: "outline",
 };
 
-function formatDate(dateStr: string | null): string {
+function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -51,7 +51,7 @@ function formatDate(dateStr: string | null): string {
   });
 }
 
-function formatLabel(value: string | null): string {
+function formatLabel(value: string | null | undefined): string {
   if (!value) return "—";
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

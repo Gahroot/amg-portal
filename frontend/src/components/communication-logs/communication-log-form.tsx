@@ -55,10 +55,10 @@ export function CommunicationLogForm({
   initialData,
 }: CommunicationLogFormProps) {
   const [channel, setChannel] = useState<CommunicationLogChannel>(
-    initialData?.channel ?? "email"
+    (initialData?.channel as CommunicationLogChannel) ?? "email"
   );
   const [direction, setDirection] = useState<CommunicationLogDirection>(
-    initialData?.direction ?? "outbound"
+    (initialData?.direction as CommunicationLogDirection) ?? "outbound"
   );
   const [subject, setSubject] = useState(initialData?.subject ?? "");
   const [summary, setSummary] = useState(initialData?.summary ?? "");
@@ -77,8 +77,8 @@ export function CommunicationLogForm({
 
   useEffect(() => {
     if (open) {
-      setChannel(initialData?.channel ?? "email");
-      setDirection(initialData?.direction ?? "outbound");
+      setChannel((initialData?.channel as CommunicationLogChannel) ?? "email");
+      setDirection((initialData?.direction as CommunicationLogDirection) ?? "outbound");
       setSubject(initialData?.subject ?? "");
       setSummary(initialData?.summary ?? "");
       setContactName(initialData?.contact_name ?? "");

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { useExpiringKYCDocuments } from "@/hooks/use-kyc-documents";
 import type { KYCDocumentStatus } from "@/types/document";
+import { Balancer } from "react-wrap-balancer";
 
 const STATUS_VARIANT: Record<
   KYCDocumentStatus,
@@ -48,7 +49,7 @@ export default function KYCDashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-serif text-3xl font-bold tracking-tight">
-              KYC Verification
+              <Balancer>KYC Verification</Balancer>
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Know Your Customer document management and compliance tracking

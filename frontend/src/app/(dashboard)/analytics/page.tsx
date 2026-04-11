@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Balancer } from "react-wrap-balancer";
 import { useAuth } from "@/providers/auth-provider";
 import { useProgramHealth, usePortfolioSummary } from "@/hooks/use-dashboard";
 import { ProgramHealthTable } from "@/components/dashboard/program-health-table";
@@ -61,7 +62,7 @@ export default function AnalyticsPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Analytics Dashboard
+            <Balancer>Analytics Dashboard</Balancer>
           </h1>
           <Link href="/analytics/partner-performance">
             <Button variant="outline">Partner Performance</Button>

@@ -154,7 +154,7 @@ export default function PartnerDocumentsPage() {
                 <TableRow key={item.doc.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {getFileIcon(item.doc.content_type)}
+                      {getFileIcon(item.doc.content_type ?? "")}
                       <div>
                         <p className="font-medium">{item.doc.file_name}</p>
                         {item.doc.description && <p className="text-xs text-muted-foreground line-clamp-1">{item.doc.description}</p>}

@@ -352,14 +352,14 @@ async def update_task(
     )
 
 
-@router.post("/reorder", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/reorder", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def reorder_tasks(
     data: TaskReorder,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-) -> Any:
+) -> None:
     """Reorder tasks after drag-and-drop. Updates status and position."""
     result = await db.execute(select(Task).where(Task.id == data.task_id))
     task = result.scalar_one_or_none()
@@ -415,14 +415,14 @@ async def reorder_tasks(
             )
 
 
-@router.post("/batch-reorder", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/batch-reorder", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def batch_reorder_tasks(
     updates: list[TaskReorder],
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-) -> Any:
+) -> None:
     """Batch reorder multiple tasks at once."""
     # Track tasks whose status actually changed so we can cascade after commit
     status_changed_tasks: list[tuple[uuid.UUID, str]] = []
@@ -506,14 +506,14 @@ async def bulk_update_tasks(
     )
 
 
-@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_task(
     task_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_coordinator_or_above),
-) -> Any:
+) -> None:
     """Delete a task."""
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()

@@ -127,7 +127,7 @@ export function CapacityHeatmap({
 
   function getDayEntry(date: Date): CapacityDayEntry | null {
     if (!heatmap) return null;
-    return heatmap.days[format(date, "yyyy-MM-dd")] ?? null;
+    return (heatmap.days[format(date, "yyyy-MM-dd")] as CapacityDayEntry | undefined) ?? null;
   }
 
   function getBlockedDateId(dateStr: string): string | null {
@@ -318,9 +318,9 @@ export function CapacityHeatmap({
           <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
-              className={cn("text-xs", getStatusColor(selectedEntry.status, selectedEntry.utilisation))}
+              className={cn("text-xs", getStatusColor(selectedEntry.status as CapacityStatus, selectedEntry.utilisation))}
             >
-              {getStatusLabel(selectedEntry.status)}
+              {getStatusLabel(selectedEntry.status as CapacityStatus)}
             </Badge>
             {selectedEntry.status !== "blocked" && (
               <span className="text-xs text-muted-foreground">

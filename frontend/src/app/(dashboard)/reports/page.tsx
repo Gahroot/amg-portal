@@ -18,6 +18,7 @@ import {
   ReportFavoritesSection,
 } from "@/components/reports/report-favorites";
 import type { DashboardReportType } from "@/components/reports/report-favorites";
+import { Balancer } from "react-wrap-balancer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -115,14 +116,14 @@ const RAG_VARIANT: Record<string, "default" | "secondary" | "destructive" | "out
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function fmt(n: number | null, prefix = ""): string {
-  if (n === null) return "—";
+function fmt(n: number | string | null | undefined, prefix = ""): string {
+  if (n === null || n === undefined) return "—";
   return (
     prefix +
     new Intl.NumberFormat("en-US", {
       notation: "compact",
       maximumFractionDigits: 1,
-    }).format(n)
+    }).format(Number(n))
   );
 }
 
@@ -270,7 +271,7 @@ function RMPortfolioPreview({ data }: { data: Awaited<ReturnType<typeof getRMPor
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Generated {new Date(data.generated_at).toLocaleString()}
+        Generated {new Date(data.generated_at!).toLocaleString()}
       </p>
     </div>
   );
@@ -323,7 +324,7 @@ function EscalationLogPreview({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.escalations.map((e) => (
+            {data.escalations?.map((e) => (
               <TableRow key={e.id}>
                 <TableCell>
                   <Badge variant="outline" className="text-xs capitalize">
@@ -348,7 +349,7 @@ function EscalationLogPreview({
                 </TableCell>
               </TableRow>
             ))}
-            {data.escalations.length === 0 && (
+            {(data.escalations?.length ?? 0) === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No escalations found.
@@ -360,7 +361,7 @@ function EscalationLogPreview({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Generated {new Date(data.generated_at).toLocaleString()}
+        Generated {new Date(data.generated_at!).toLocaleString()}
       </p>
     </div>
   );
@@ -474,7 +475,7 @@ function CompliancePreview({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Generated {new Date(data.generated_at).toLocaleString()}
+        Generated {new Date(data.generated_at!).toLocaleString()}
       </p>
     </div>
   );
@@ -515,7 +516,7 @@ function AnnualReviewPreview({
       </div>
 
       {/* Partner performance */}
-      {data.partner_performance.length > 0 && (
+      {(data.partner_performance?.length ?? 0) > 0 && (
         <div>
           <h3 className="mb-2 text-sm font-semibold">Partner Performance</h3>
           <div className="rounded-md border bg-card">
@@ -529,7 +530,7 @@ function AnnualReviewPreview({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.partner_performance.map((p) => (
+                {data.partner_performance?.map((p) => (
                   <TableRow key={p.partner_id}>
                     <TableCell className="font-medium">{p.firm_name}</TableCell>
                     <TableCell>{p.total_assignments}</TableCell>
@@ -561,7 +562,7 @@ function AnnualReviewPreview({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.programs.map((p) => (
+              {data.programs?.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.title}</TableCell>
                   <TableCell>
@@ -580,7 +581,7 @@ function AnnualReviewPreview({
                   <TableCell className="text-sm">{fmt(p.budget_envelope, "$")}</TableCell>
                 </TableRow>
               ))}
-              {data.programs.length === 0 && (
+              {(data.programs?.length ?? 0) === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
                     No programs for this year.
@@ -593,7 +594,7 @@ function AnnualReviewPreview({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Generated {new Date(data.generated_at).toLocaleString()}
+        Generated {new Date(data.generated_at!).toLocaleString()}
       </p>
     </div>
   );
@@ -678,7 +679,7 @@ export default function ReportsPage() {
       const d = escalationQuery.data;
       const rows: string[][] = [
         ["Level", "Title", "Owner", "Status", "Age (days)", "Resolution Time (days)"],
-        ...d.escalations.map((e) => [
+        ...(d.escalations ?? []).map((e) => [
           e.level,
           e.title,
           e.owner_name ?? "",
@@ -693,7 +694,7 @@ export default function ReportsPage() {
       const d = annualQuery.data;
       const rows: string[][] = [
         ["Title", "Status", "RAG Status", "Budget"],
-        ...d.programs.map((p) => [
+        ...(d.programs ?? []).map((p) => [
           p.title,
           p.status,
           p.rag_status,
@@ -738,7 +739,7 @@ export default function ReportsPage() {
       <div className="mx-auto max-w-7xl space-y-8">
         {/* ── Page header ─────────────────────────────────── */}
         <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight">Report Builder</h1>
+          <h1 className="font-serif text-3xl font-bold tracking-tight"><Balancer>Report Builder</Balancer></h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Select a report type, optionally filter by date range, then generate and export.
           </p>

@@ -239,14 +239,14 @@ async def update_partner_capability(
     return capability
 
 
-@router.delete("/partners/{partner_id}/capabilities/{capability_id}", status_code=204)
+@router.delete("/partners/{partner_id}/capabilities/{capability_id}", status_code=204, response_model=None)
 async def delete_partner_capability(
     partner_id: UUID,
     capability_id: UUID,
     db: DB,
     current_user: CurrentUser,
     _: None = Depends(require_coordinator_or_above),
-) -> Any:
+) -> None:
     """Delete a partner capability."""
     result = await db.execute(
         select(PartnerCapability).where(

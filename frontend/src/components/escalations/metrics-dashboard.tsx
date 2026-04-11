@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import NumberFlow from "@number-flow/react";
 import { format, parseISO, subDays } from "date-fns";
 import {
   AlertTriangle,

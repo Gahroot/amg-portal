@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Balancer } from "react-wrap-balancer";
 import { useAuth } from "@/providers/auth-provider";
 import { useClientProfiles } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function ApprovalsQueuePage() {
     <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <h1 className="font-serif text-3xl font-bold tracking-tight">
-          MD Approvals
+          <Balancer>MD Approvals</Balancer>
         </h1>
 
         {isLoading ? (

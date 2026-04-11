@@ -106,7 +106,7 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
       {!isOwn && (
         <Avatar className="h-8 w-8">
           <AvatarFallback className="text-xs bg-muted">
-            {getInitials(message.sender_name)}
+            {getInitials(message.sender_name ?? undefined)}
           </AvatarFallback>
         </Avatar>
       )}

@@ -106,13 +106,13 @@ export default function AnnualReviewPage() {
       {/* Programs by Status */}
       <ReportCard title="Programs by Status">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {Object.entries(report.programs_by_status).map(([status, count]) => (
+          {Object.entries(report.programs_by_status ?? {}).map(([status, count]) => (
             <div key={status} className="flex items-center justify-between p-3 border rounded-lg">
               <ReportStatusBadge status={status} />
               <span className="font-semibold">{count}</span>
             </div>
           ))}
-          {Object.keys(report.programs_by_status).length === 0 && (
+          {Object.keys(report.programs_by_status ?? {}).length === 0 && (
             <p className="text-sm text-muted-foreground col-span-full">No programs this year</p>
           )}
         </div>
@@ -120,7 +120,7 @@ export default function AnnualReviewPage() {
 
       {/* Monthly Breakdown */}
       <ReportCard title="Monthly Activity">
-        {report.programs_by_month.filter((m) => m.new_programs > 0 || m.completed_programs > 0)
+        {(report.programs_by_month ?? []).filter((m) => m.new_programs > 0 || m.completed_programs > 0)
           .length === 0 ? (
           <p className="text-sm text-muted-foreground">No activity recorded</p>
         ) : (
@@ -135,7 +135,7 @@ export default function AnnualReviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {report.programs_by_month.map((month) => {
+                {(report.programs_by_month ?? []).map((month) => {
                   const total = month.new_programs + month.completed_programs;
                   if (total === 0) return null;
                   return (
@@ -154,7 +154,7 @@ export default function AnnualReviewPage() {
       </ReportCard>
 
       {/* Partner Performance */}
-      {report.partner_performance.length > 0 && (
+      {(report.partner_performance?.length ?? 0) > 0 && (
         <ReportCard title="Partner Performance">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -167,7 +167,7 @@ export default function AnnualReviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {report.partner_performance.map((partner) => (
+                {(report.partner_performance ?? []).map((partner) => (
                   <tr key={partner.partner_id} className="border-b hover:bg-muted/50">
                     <td className="py-3 px-4 font-medium">{partner.firm_name}</td>
                     <td className="py-3 px-4">{partner.total_assignments}</td>
@@ -191,8 +191,8 @@ export default function AnnualReviewPage() {
       )}
 
       {/* All Programs */}
-      <ReportCard title={`All Programs (${report.programs.length})`}>
-        {report.programs.length === 0 ? (
+      <ReportCard title={`All Programs (${report.programs?.length ?? 0})`}>
+        {(report.programs?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">No programs this year</p>
         ) : (
           <div className="overflow-x-auto">
@@ -207,7 +207,7 @@ export default function AnnualReviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {report.programs.map((program) => (
+                {(report.programs ?? []).map((program) => (
                   <tr key={program.id} className="border-b hover:bg-muted/50">
                     <td className="py-3 px-4 font-medium">{program.title}</td>
                     <td className="py-3 px-4">
