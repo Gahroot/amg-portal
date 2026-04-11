@@ -18,6 +18,22 @@ import type { components } from "./generated";
 
 export type Communication = components["schemas"]["CommunicationResponse"];
 export type CommunicationListResponse = components["schemas"]["CommunicationListResponse"];
+export type ParticipantInfo = components["schemas"]["ParticipantInfo"];
+export type Recipient = components["schemas"]["Recipient"];
+export type SendMessageData = components["schemas"]["SendMessageRequest"];
+export type UnreadCountResponse = components["schemas"]["UnreadCountResponse"];
+export type SnoozeRequestData = components["schemas"]["SnoozeRequest"];
+export type VariableDefinition = components["schemas"]["VariableDefinition"];
+export type TemplateStatusActionData = components["schemas"]["TemplateStatusAction"];
+export type TemplateRenderRequest = components["schemas"]["TemplateRenderRequest"];
+export type TemplateRenderResponse = components["schemas"]["TemplateRenderResponse"];
+export type TemplatePreviewRequest = components["schemas"]["TemplatePreviewRequest"];
+export type TemplatePreviewResponse = components["schemas"]["TemplatePreviewResponse"];
+export type SendFromTemplateRequest = components["schemas"]["SendFromTemplateRequest"];
+export type MessageDigestPreference = components["schemas"]["MessageDigestPreferenceResponse"];
+export type MessageDigestPreferenceUpdate = components["schemas"]["MessageDigestPreferenceUpdate"];
+export type DigestMessageSummary = components["schemas"]["DigestMessageSummary"];
+export type DigestPreviewResponse = components["schemas"]["DigestPreviewResponse"];
 
 // ---------------------------------------------------------------------------
 // Frontend-only types — enums, display types, WebSocket messages
@@ -36,12 +52,6 @@ export type TemplateStatus = "draft" | "pending" | "approved" | "rejected";
 export type DecisionResponseType = "choice" | "text" | "yes_no" | "multi_choice";
 
 // Conversation types
-export interface ParticipantInfo {
-  id: string;
-  full_name: string;
-  role: string;
-}
-
 export interface Conversation {
   id: string;
   conversation_type: ConversationType;
@@ -74,25 +84,6 @@ export interface ConversationUpdateData {
   participant_ids?: string[];
 }
 
-// Communication send types
-export interface Recipient {
-  user_id: string;
-  role: string;
-  email?: string;
-  name?: string;
-}
-
-export interface SendMessageData {
-  conversation_id?: string;
-  body: string;
-  attachment_ids?: string[];
-}
-
-export interface UnreadCountResponse {
-  total: number;
-  by_conversation: Record<string, number>;
-}
-
 // Notification types
 export interface Notification {
   id: string;
@@ -115,11 +106,6 @@ export interface Notification {
 }
 
 export type SnoozeDurationPreset = 60 | 240 | 1440 | 1441 | 10080;
-
-export interface SnoozeRequestData {
-  snooze_duration_minutes?: SnoozeDurationPreset;
-  snooze_until?: string;
-}
 
 export const SNOOZE_PRESETS: { value: SnoozeDurationPreset; label: string }[] = [
   { value: 60, label: "1 hour" },
@@ -247,13 +233,6 @@ export interface DecisionResponseData {
 }
 
 // Template types
-export interface VariableDefinition {
-  type: string;
-  description: string;
-  default?: string;
-  required: boolean;
-}
-
 export interface CommunicationTemplate {
   id: string;
   name: string;
@@ -272,16 +251,6 @@ export interface CommunicationTemplate {
   updated_at: string;
 }
 
-export interface TemplateStatusActionData {
-  action: "submit" | "approve" | "reject";
-  reason?: string;
-}
-
-export interface TemplateListResponse {
-  templates: CommunicationTemplate[];
-  total: number;
-}
-
 export interface TemplateCreateData {
   name: string;
   template_type: TemplateType;
@@ -290,33 +259,9 @@ export interface TemplateCreateData {
   variable_definitions?: Record<string, VariableDefinition>;
 }
 
-export interface TemplateRenderRequest {
-  template_id: string;
-  variables: Record<string, unknown>;
-}
-
-export interface TemplateRenderResponse {
-  subject?: string;
-  body: string;
-}
-
-export interface TemplatePreviewRequest {
-  template_id: string;
-  variables: Record<string, string>;
-}
-
-export interface TemplatePreviewResponse {
-  subject?: string;
-  body: string;
-}
-
-export interface SendFromTemplateRequest {
-  template_id: string;
-  recipient_user_ids: string[];
-  variables: Record<string, string>;
-  client_id?: string;
-  program_id?: string;
-  partner_id?: string;
+export interface TemplateListResponse {
+  templates: CommunicationTemplate[];
+  total: number;
 }
 
 // Approval workflow types
@@ -328,36 +273,6 @@ export interface ReviewAction {
 export interface PendingReviewsResponse {
   communications: Communication[];
   total: number;
-}
-
-// Message Digest types
-export interface MessageDigestPreference {
-  user_id: string;
-  digest_frequency: DigestFrequency;
-  last_digest_sent_at?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MessageDigestPreferenceUpdate {
-  digest_frequency: DigestFrequency;
-}
-
-export interface DigestMessageSummary {
-  message_id: string;
-  conversation_id: string;
-  conversation_title?: string;
-  sender_name?: string;
-  body_preview: string;
-  sent_at: string;
-}
-
-export interface DigestPreviewResponse {
-  user_id: string;
-  unread_count: number;
-  messages: DigestMessageSummary[];
-  period_start?: string;
-  period_end: string;
 }
 
 // WebSocket message types (frontend-only)
