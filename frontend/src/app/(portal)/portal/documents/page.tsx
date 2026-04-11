@@ -44,7 +44,7 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-function getFileIcon(contentType: string | null) {
+function getFileIcon(contentType: string | null | undefined) {
   if (!contentType) return <File className="h-5 w-5 text-muted-foreground" />;
   if (contentType.startsWith("image/")) return <FileImage className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
   if (contentType.includes("spreadsheet") || contentType.includes("excel"))

@@ -116,8 +116,8 @@ export default function ProgramBoardPage() {
     };
     if (tasksData?.tasks) {
       for (const task of tasksData.tasks) {
-        if (grouped[task.status]) {
-          grouped[task.status].push(task);
+        if (grouped[task.status as TaskStatus]) {
+          grouped[task.status as TaskStatus].push(task);
         }
       }
     }
@@ -182,7 +182,7 @@ export default function ProgramBoardPage() {
 
   const handleEditTask = (task: TaskBoard) => {
     setEditingTask(task);
-    setDefaultStatus(task.status);
+    setDefaultStatus(task.status as TaskStatus);
     setDialogOpen(true);
   };
 

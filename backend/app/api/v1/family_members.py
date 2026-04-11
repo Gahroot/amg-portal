@@ -119,12 +119,13 @@ async def update_family_member(
 @router.delete(
     "/family-members/{member_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     dependencies=[Depends(require_rm_or_above)],
 )
 async def delete_family_member(
     member_id: uuid.UUID,
     db: DB,
-) -> Any:
+) -> None:
     """Delete a family member."""
     result = await db.execute(
         select(FamilyMember).where(FamilyMember.id == member_id)
@@ -193,12 +194,13 @@ async def create_relationship(
 @router.delete(
     "/family-members/relationships/{relationship_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     dependencies=[Depends(require_rm_or_above)],
 )
 async def delete_relationship(
     relationship_id: uuid.UUID,
     db: DB,
-) -> Any:
+) -> None:
     """Delete a relationship between family members."""
     result = await db.execute(
         select(FamilyRelationship).where(FamilyRelationship.id == relationship_id)

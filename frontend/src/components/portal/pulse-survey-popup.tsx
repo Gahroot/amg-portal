@@ -223,7 +223,7 @@ function PulseSurveyPopup({ survey, onDismiss }: PulseSurveyPopupProps) {
                 {survey.question}
               </p>
               <ResponseSelector
-                responseType={survey.response_type}
+                responseType={survey.response_type as PulseSurveyResponseType}
                 selected={selected}
                 onSelect={setSelected}
               />

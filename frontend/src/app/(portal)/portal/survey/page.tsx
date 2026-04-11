@@ -361,7 +361,7 @@ export default function PortalSurveyPage() {
                 surveyId={survey.id}
                 surveyName={survey.name}
                 quarter={survey.quarter}
-                year={survey.year}
+                year={String(survey.year)}
                 question={surveyQuestion}
                 onSuccess={(response) => setSubmittedResponse(response)}
                 onAlreadyResponded={() => setAlreadyResponded(true)}

@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 
-function scoreColor(score: number | null): string {
-  if (score === null) return "text-muted-foreground";
+function scoreColor(score: number | null | undefined): string {
+  if (score == null) return "text-muted-foreground";
   if (score >= 70) return "text-green-700 dark:text-green-300";
   if (score >= 40) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
@@ -82,7 +82,7 @@ export function PartnerGovernanceDashboard() {
                 <span
                   className={`font-semibold ${scoreColor(entry.composite_score)}`}
                 >
-                  {entry.composite_score !== null
+                  {entry.composite_score != null
                     ? entry.composite_score.toFixed(1)
                     : "–"}
                 </span>
@@ -111,7 +111,7 @@ export function PartnerGovernanceDashboard() {
                 </span>
               </TableCell>
               <TableCell>
-                {entry.avg_rating !== null
+                {entry.avg_rating != null
                   ? entry.avg_rating.toFixed(2)
                   : "–"}
               </TableCell>

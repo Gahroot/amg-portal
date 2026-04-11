@@ -178,7 +178,7 @@ export function APIKeysManager() {
     toast.success("Copied to clipboard");
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",

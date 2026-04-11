@@ -297,23 +297,12 @@ async def list_checks(
     limit: int = Query(50, ge=1, le=100),
 ) -> KYCCheckListResponse:
     """List checks for a verification."""
-    count_query = (
-        select(func.count())
-        .select_from(KYCCheck)
-        .where(KYCCheck.verification_id == verification_id)
-    )
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
     query = (
         select(KYCCheck)
         .where(KYCCheck.verification_id == verification_id)
-        .offset(skip)
-        .limit(limit)
         .order_by(KYCCheck.created_at)
     )
-    result = await db.execute(query)
-    checks = result.scalars().all()
+    checks, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCCheckListResponse(
         checks=[KYCCheckResponse.model_validate(c) for c in checks],

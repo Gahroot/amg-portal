@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useState } from "react";
 import Link from "next/link";
+import { Balancer } from "react-wrap-balancer";
 import {
   differenceInHours,
   differenceInDays,
@@ -376,7 +377,7 @@ export default function PartnerDashboardPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Welcome, {profile?.firm_name ?? "Partner"}
+            <Balancer>Welcome, {profile?.firm_name ?? "Partner"}</Balancer>
           </h1>
           <p className="text-muted-foreground mt-1">
             Manage your assignments, deliverables, and communications

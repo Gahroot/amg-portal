@@ -194,13 +194,13 @@ export function QualificationCard({
                       <p className="font-medium truncate">
                         {qualification.category_name || "Unknown Category"}
                       </p>
-                      <Badge className={APPROVAL_STATUS_COLORS[qualification.approval_status]}>
-                        {APPROVAL_STATUS_LABELS[qualification.approval_status]}
+                      <Badge className={APPROVAL_STATUS_COLORS[qualification.approval_status as ApprovalStatus]}>
+                        {APPROVAL_STATUS_LABELS[qualification.approval_status as ApprovalStatus]}
                       </Badge>
                     </div>
                     <div className="mt-1">
                       <QualificationLevelBadge
-                        level={qualification.qualification_level}
+                        level={qualification.qualification_level as QualificationLevel}
                       />
                     </div>
                     {qualification.notes && (
@@ -363,7 +363,7 @@ export function QualificationCard({
                 </p>
                 <div className="mt-1">
                   <QualificationLevelBadge
-                    level={approvingQualification.qualification_level}
+                    level={approvingQualification.qualification_level as QualificationLevel}
                   />
                 </div>
               </div>

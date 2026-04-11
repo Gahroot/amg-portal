@@ -233,7 +233,7 @@ export default function PartnerOnboardingPage() {
           <CardContent>
             <div className="space-y-4">
               <h4 className="text-sm font-medium">Checklist</h4>
-              {Object.entries(DEFAULT_CHECKLIST_ITEMS[onboarding.current_stage] || {}).map(
+              {Object.entries(DEFAULT_CHECKLIST_ITEMS[onboarding.current_stage as OnboardingStage] || {}).map(
                 ([key, label]) => {
                   const isChecked =
                     onboarding.checklist_items?.[onboarding.current_stage]?.[key] === true;
@@ -247,7 +247,7 @@ export default function PartnerOnboardingPage() {
                         disabled={isDisabled || isSaving}
                         onCheckedChange={(checked) =>
                           handleChecklistItemToggle(
-                            onboarding.current_stage,
+                            onboarding.current_stage as OnboardingStage,
                             key,
                             checked as boolean
                           )
@@ -257,7 +257,7 @@ export default function PartnerOnboardingPage() {
                         htmlFor={key}
                         className={`text-sm ${isDisabled ? "text-muted-foreground" : ""}`}
                       >
-                        {label}
+                        {label as string}
                       </label>
                     </div>
                   );

@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { LayoutTemplate, X } from "lucide-react";
 import { TemplatePicker } from "./template-picker";
 import { CATEGORY_LABELS } from "@/types/escalation-template";
+import type { EscalationTemplateCategory } from "@/types/escalation-template";
 
 const ESCALATION_LEVELS: { value: EscalationLevel; label: string }[] = [
   { value: "task", label: "Task" },
@@ -132,7 +133,7 @@ export function EscalationCreateDialog({
                   {appliedTemplate.name}
                 </span>
                 <Badge variant="secondary" className="text-xs ml-auto flex-shrink-0">
-                  {CATEGORY_LABELS[appliedTemplate.category]}
+                  {CATEGORY_LABELS[appliedTemplate.category as EscalationTemplateCategory]}
                 </Badge>
                 <button
                   type="button"

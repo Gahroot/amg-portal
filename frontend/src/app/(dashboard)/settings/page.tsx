@@ -18,6 +18,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { User, Bell, Lock, Settings2, Palette, Sun, Moon, Monitor, Key, Calendar, Plug, Contrast } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useHighContrast } from "@/components/ui/theme-toggle";
+import { Balancer } from "react-wrap-balancer";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-2xl font-bold tracking-tight"><Balancer>Settings</Balancer></h1>
           <p className="text-muted-foreground">
             Manage your account settings and preferences.
           </p>

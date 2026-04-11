@@ -62,13 +62,12 @@ export function FamilyMemberDialog({
   } = useForm<FormData>({
     resolver: zodResolver(familyMemberSchema),
     defaultValues: {
-      name: "",
-      relationship_type: "",
-      date_of_birth: "",
-      occupation: "",
-      notes: "",
-      is_primary_contact: false,
-      ...initialData,
+      name: initialData?.name ?? "",
+      relationship_type: initialData?.relationship_type ?? "",
+      date_of_birth: initialData?.date_of_birth ?? undefined,
+      occupation: initialData?.occupation ?? undefined,
+      notes: initialData?.notes ?? undefined,
+      is_primary_contact: initialData?.is_primary_contact ?? false,
     },
   });
 
@@ -95,7 +94,7 @@ export function FamilyMemberDialog({
       date_of_birth: data.date_of_birth,
       occupation: data.occupation,
       notes: data.notes,
-      is_primary_contact: data.is_primary_contact,
+      is_primary_contact: data.is_primary_contact ?? false,
     });
     reset();
   };
@@ -109,7 +108,7 @@ export function FamilyMemberDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit as (data: FormData) => void)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">

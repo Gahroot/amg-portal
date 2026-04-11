@@ -102,6 +102,7 @@ export default function ProgramDashboardPage() {
     title: "",
     description: "",
     due_date: "",
+    position: 0,
   });
 
   // Gantt state
@@ -157,7 +158,7 @@ export default function ProgramDashboardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs", programId] });
       setMilestoneOpen(false);
-      setNewMilestone({ title: "", description: "", due_date: "" });
+      setNewMilestone({ title: "", description: "", due_date: "", position: 0 });
     },
   });
 
@@ -291,7 +292,7 @@ export default function ProgramDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={program.status} />
-            <RagBadge status={program.rag_status} />
+            <RagBadge status={program.rag_status as "green" | "amber" | "red"} />
             {showEmergencyButton && (
               <EmergencyActivationDialog
                 programId={programId}
@@ -335,7 +336,7 @@ export default function ProgramDashboardPage() {
                 <CardContent className="pt-4">
                   <p className="text-sm text-muted-foreground">RAG</p>
                   <div className="mt-1">
-                    <RagBadge status={program.rag_status} />
+                    <RagBadge status={program.rag_status as "green" | "amber" | "red"} />
                   </div>
                 </CardContent>
               </Card>
@@ -703,7 +704,7 @@ export default function ProgramDashboardPage() {
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        {task.assigned_to_name ?? "-"}
+                        {task.assigned_to ?? "-"}
                       </TableCell>
                     </TableRow>
                   ))}

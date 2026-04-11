@@ -37,7 +37,7 @@ export function ImportantDatesForm({ clientId, profile }: ImportantDatesFormProp
     profile.birthday_reminders_enabled ?? true
   );
   const [importantDates, setImportantDates] = useState<ImportantDate[]>(
-    profile.important_dates ?? []
+    (profile.important_dates ?? []) as ImportantDate[]
   );
 
   const handleAddDate = () => {

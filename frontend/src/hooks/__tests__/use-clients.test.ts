@@ -60,6 +60,8 @@ const sampleProfile: ClientProfile = {
   birth_date: null,
   important_dates: null,
   birthday_reminders_enabled: false,
+  do_not_contact: false,
+  opt_out_marketing: false,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
   created_by: "admin",

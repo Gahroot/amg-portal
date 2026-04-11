@@ -145,7 +145,7 @@ export function GranularNotificationPreferences() {
   // Initialise granular preferences from backend data or defaults
   useEffect(() => {
     if (preferences) {
-      setGranularPrefs(preferences.granular_preferences ?? buildDefaultGranularPreferences());
+      setGranularPrefs((preferences as Record<string, unknown>).granular_preferences as Record<string, Record<string, boolean>> ?? buildDefaultGranularPreferences());
     }
   }, [preferences]);
 
@@ -190,7 +190,7 @@ export function GranularNotificationPreferences() {
     try {
       await updatePreferences.mutateAsync({
         granular_preferences: granularPrefs,
-      });
+      } as Parameters<typeof updatePreferences.mutateAsync>[0]);
       setHasChanges(false);
       toast.success("Notification preferences saved");
     } catch {

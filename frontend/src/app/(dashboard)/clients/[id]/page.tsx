@@ -40,7 +40,7 @@ import {
   useDeleteFamilyMember,
 } from "@/hooks/use-family-members";
 import type { FamilyMemberCreate } from "@/types/family-member";
-import type { IntelligenceFile, SecurityProfileLevel } from "@/types/client";
+import type { IntelligenceFile, SecurityProfileLevel, LifestyleProfile } from "@/types/client";
 
 const COMPLIANCE_STATUS_VARIANT: Record<
   string,
@@ -267,7 +267,7 @@ export default function ClientDetailPage() {
         {activeTab === "security" && isInternalSenior && (
           <SecurityProfileTab
             id={id}
-            securityProfileLevel={profile.security_profile_level}
+            securityProfileLevel={profile.security_profile_level as SecurityProfileLevel}
             onUpdateLevel={(level) =>
               updateSecurityLevelMutation.mutate({
                 security_profile_level: level,
@@ -386,7 +386,7 @@ function IntelligenceTab({
     <div className="space-y-6">
       <IntelligenceFileManager
         profileId={id}
-        intelligenceFile={profile.intelligence_file}
+        intelligenceFile={(profile.intelligence_file ?? null) as IntelligenceFile | null}
         onUpdate={onUpdate}
         isUpdating={isUpdating}
       />
@@ -418,7 +418,7 @@ function FamilyTab({
   onDialogSubmit,
   editingMemberId,
 }: {
-  familyMembers: Array<{ id: string; name: string; relationship_type: string; date_of_birth: string | null; occupation: string | null; notes: string | null; is_primary_contact: boolean }>;
+  familyMembers: Array<{ id: string; name: string; relationship_type: string; date_of_birth?: string | null; occupation?: string | null; notes?: string | null; is_primary_contact: boolean; [key: string]: unknown }>;
   onAddMember: () => void;
   onEditMember: (memberId: string) => void;
   onDeleteMember: (memberId: string) => void;
@@ -488,7 +488,7 @@ function LifestyleTab({
 }: {
   profile: NonNullable<ReturnType<typeof useClientProfile>["data"]>;
 }) {
-  const lifestyle = profile.intelligence_file?.lifestyle_profile ?? null;
+  const lifestyle = ((profile.intelligence_file as unknown as IntelligenceFile | null)?.lifestyle_profile ?? null) as LifestyleProfile | null;
 
   const fields = [
     { label: "Travel Preferences", value: lifestyle?.travel_preferences },

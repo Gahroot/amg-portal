@@ -75,12 +75,12 @@ interface AlertRowProps {
 
 function AlertRow({ escalation }: AlertRowProps) {
   const acknowledge = useAcknowledgeEscalation();
-  const levelCfg = LEVEL_CONFIG[escalation.level] ?? {
+  const levelCfg = LEVEL_CONFIG[escalation.level as EscalationLevel] ?? {
     label: escalation.level,
     badgeClass: "bg-muted text-foreground border-border",
     dotClass: "bg-muted-foreground",
   };
-  const statusCfg = STATUS_CONFIG[escalation.status] ?? {
+  const statusCfg = STATUS_CONFIG[escalation.status as EscalationStatus] ?? {
     label: escalation.status,
     variant: "outline" as const,
   };

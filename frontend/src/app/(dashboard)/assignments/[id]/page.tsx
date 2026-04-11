@@ -463,7 +463,7 @@ export default function AssignmentDetailPage() {
                         assignment_id: assignmentId,
                         title: newDeliverable.title,
                         deliverable_type:
-                          newDeliverable.deliverable_type || undefined,
+                          newDeliverable.deliverable_type || "document",
                         description:
                           newDeliverable.description || undefined,
                         due_date: newDeliverable.due_date || undefined,

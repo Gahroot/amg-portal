@@ -241,8 +241,8 @@ export function CertificationList({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium truncate">{certification.name}</p>
-                      <Badge className={CERTIFICATION_STATUS_COLORS[certification.verification_status]}>
-                        {CERTIFICATION_STATUS_LABELS[certification.verification_status]}
+                      <Badge className={CERTIFICATION_STATUS_COLORS[certification.verification_status as CertificationStatus]}>
+                        {CERTIFICATION_STATUS_LABELS[certification.verification_status as CertificationStatus]}
                       </Badge>
                       {certification.is_expired && (
                         <Badge variant="destructive">Expired</Badge>

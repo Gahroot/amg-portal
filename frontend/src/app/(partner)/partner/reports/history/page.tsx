@@ -61,7 +61,7 @@ export default function EngagementHistoryPage() {
   return (
     <ReportContainer
       title="Engagement History"
-      subtitle={`Generated ${new Date(report.generated_at).toLocaleDateString()} · ${report.firm_name}`}
+      subtitle={`Generated ${new Date(report.generated_at!).toLocaleDateString()} · ${report.firm_name}`}
     >
       <Button variant="ghost" size="sm" className="gap-1 -mt-2 self-start" asChild>
         <Link href="/partner/reports">
@@ -101,7 +101,7 @@ export default function EngagementHistoryPage() {
 
       {/* Engagement history table */}
       <ReportCard title={`All Engagements (${report.total_engagements})`}>
-        {report.assignments.length === 0 ? (
+        {(report.assignments?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No engagement history found.
           </p>
@@ -119,7 +119,7 @@ export default function EngagementHistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {report.assignments.map((item) => (
+                {report.assignments?.map((item) => (
                   <TableRow key={item.assignment_id}>
                     <TableCell>
                       <div className="space-y-0.5">

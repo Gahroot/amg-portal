@@ -13,6 +13,7 @@ import {
   useScrollRestore,
 } from "@/hooks/use-navigation-state";
 import type { ProgramStatus } from "@/types/program";
+import { Balancer } from "react-wrap-balancer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -232,7 +233,7 @@ function ProgramsPageContent() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-3xl font-bold tracking-tight">
-            Programs
+            <Balancer>Programs</Balancer>
           </h1>
           <div className="flex items-center gap-2">
             <DataTableExport
