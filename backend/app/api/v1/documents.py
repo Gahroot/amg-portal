@@ -51,6 +51,7 @@ from app.schemas.document_share import (
     DocumentShareVerifyRequest,
 )
 from app.services import document_diff_service, document_expiry_service, document_vault_service
+from app.services.crud_base import paginate
 from app.services.email_service import send_email
 from app.services.storage import storage_service
 
@@ -231,21 +232,12 @@ async def list_documents(
         & (Document.version == latest_subq.c.max_version)
     )
 
-    # Count deduplicated rows
-    count_inner = select(Document.id).join(latest_subq, join_condition).subquery()
-    count_query = select(func.count()).select_from(count_inner)
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
     query = (
         select(Document)
         .join(latest_subq, join_condition)
-        .offset(skip)
-        .limit(limit)
         .order_by(Document.created_at.desc())
     )
-    result = await db.execute(query)
-    documents = result.scalars().all()
+    documents, total = await paginate(db, query, skip=skip, limit=limit)
 
     return DocumentListResponse(
         documents=[build_document_response(d) for d in documents],
@@ -717,19 +709,8 @@ async def list_document_shares(
             DocumentShare.shared_by == current_user.id,
         )
         .order_by(DocumentShare.created_at.desc())
-        .offset(skip)
-        .limit(limit)
     )
-    shares_result = await db.execute(query)
-    shares = list(shares_result.scalars().all())
-
-    count_result = await db.execute(
-        select(func.count()).select_from(DocumentShare).where(
-            DocumentShare.document_id == document_id,
-            DocumentShare.shared_by == current_user.id,
-        )
-    )
-    total = count_result.scalar() or 0
+    shares, total = await paginate(db, query, skip=skip, limit=limit)
 
     return DocumentShareListResponse(
         shares=[DocumentShareResponse.model_validate(s) for s in shares],
