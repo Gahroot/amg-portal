@@ -18,6 +18,8 @@ export type CapabilityListResponse = components["schemas"]["CapabilityListRespon
 // Service Category
 export type ServiceCategory = components["schemas"]["ServiceCategoryResponse"];
 export type ServiceCategoryListResponse = components["schemas"]["ServiceCategoryListResponse"];
+export type ServiceCategoryCreate = components["schemas"]["ServiceCategoryCreate"];
+export type ServiceCategoryUpdate = components["schemas"]["ServiceCategoryUpdate"];
 
 // Qualification
 export type PartnerQualification = components["schemas"]["QualificationResponse"];
@@ -50,19 +52,6 @@ export type CapabilityMatrixResponse = components["schemas"]["CapabilityMatrixRe
 
 export type ProficiencyLevel = "beginner" | "intermediate" | "expert";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
-
-export interface ServiceCategoryCreate {
-  name: string;
-  description?: string;
-  required_capabilities?: string[];
-}
-
-export interface ServiceCategoryUpdate {
-  name?: string;
-  description?: string;
-  required_capabilities?: string[];
-  active?: boolean;
-}
 
 export interface QualificationUpdate {
   qualification_level?: QualificationLevel;

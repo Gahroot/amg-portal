@@ -30,36 +30,15 @@ export type PartnerDuplicateCheckRequest = components["schemas"]["PartnerDuplica
 export type PartnerDuplicateMatch = components["schemas"]["PartnerDuplicateMatchResponse"];
 export type RefreshDuePartner = components["schemas"]["RefreshDuePartnerResponse"];
 export type RefreshDuePartnerListResponse = components["schemas"]["RefreshDuePartnerListResponse"];
+export type CapacityDayEntry = components["schemas"]["CapacityDayEntry"];
+export type CapabilityRefreshStatus = components["schemas"]["CapabilityRefreshStatusResponse"];
+export type CapabilityRefreshRequest = components["schemas"]["CapabilityRefreshRequest"];
 
 // ---------------------------------------------------------------------------
-// Frontend-only types — enums, query params, display helpers
+// Frontend-only types — display enums, query params
 // ---------------------------------------------------------------------------
 
 export type CapacityStatus = "available" | "partial" | "full" | "blocked";
-
-export interface CapacityDayEntry {
-  active_assignments: number;
-  max_concurrent: number;
-  is_blocked: boolean;
-  block_reason: string | null;
-  utilisation: number;
-  status: CapacityStatus;
-}
-
-export interface CapabilityRefreshStatus {
-  last_refreshed_at: string | null;
-  refresh_due_at: string | null;
-  is_overdue: boolean;
-  is_due_soon: boolean;
-  days_until_due: number | null;
-}
-
-export interface CapabilityRefreshRequest {
-  accreditations_confirmed: boolean;
-  insurance_confirmed: boolean;
-  capacity_confirmed: boolean;
-  notes?: string;
-}
 
 export interface PartnerListParams {
   skip?: number;
