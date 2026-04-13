@@ -1,4 +1,6 @@
 export { TaskBoard } from "./task-board";
+export { TaskBoardGraphPanel } from "./task-board-graph-panel";
+export { TaskBoardToolbar } from "./task-board-toolbar";
 export { TaskCard } from "./task-card";
 export { TaskColumn } from "./task-column";
 export { TaskDependencyField } from "./task-dependency-field";
