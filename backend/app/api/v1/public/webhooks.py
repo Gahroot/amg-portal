@@ -1,5 +1,6 @@
 """Public API webhook endpoints for external integrations."""
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -9,6 +10,7 @@ import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, Header, Query, status
@@ -49,6 +51,7 @@ WEBHOOK_TIMEOUT_SECONDS = 30
 
 
 # ============ API Key Authentication ============
+
 
 async def get_api_key_user(
     x_api_key: str = Header(..., alias="X-API-Key"),
@@ -93,6 +96,7 @@ APIUser = Depends(get_api_key_user)
 
 
 # ============ Webhook Subscription Model ============
+
 
 class PublicWebhook:
     """Simple webhook subscription storage.
@@ -155,6 +159,7 @@ class PublicWebhook:
 
 # ============ API Info ============
 
+
 @router.get("", response_model=APIInfoResponse)
 async def get_api_info() -> APIInfoResponse:
     """Get public API information and available event types."""
@@ -178,6 +183,7 @@ async def list_event_types() -> dict[str, list[dict[str, str]]]:
 
 
 # ============ Webhook Subscriptions ============
+
 
 @router.post("/webhooks", response_model=PublicWebhookResponse, status_code=status.HTTP_201_CREATED)
 async def create_webhook(
@@ -231,6 +237,7 @@ async def delete_webhook(
 
 # ============ Zapier/Make Test Endpoint ============
 
+
 @router.post("/test", response_model=ZapierTestResponse)
 async def test_connection(user: User = APIUser) -> ZapierTestResponse:
     """Test API connection and return user info.
@@ -250,6 +257,7 @@ async def test_connection(user: User = APIUser) -> ZapierTestResponse:
 
 
 # ============ Polling Endpoints for Zapier ============
+
 
 @router.get("/poll/tasks", response_model=ZapierPollResponse)
 async def poll_tasks(
@@ -276,6 +284,7 @@ async def poll_tasks(
     elif user.role == UserRole.partner:
         # Partners can see tasks from their assignments
         from app.models.partner_assignment import PartnerAssignment
+
         query = query.join(
             PartnerAssignment,
             PartnerAssignment.program_id == Program.id,
@@ -379,6 +388,7 @@ async def poll_assignments(
 
 # ============ Action Endpoints ============
 
+
 @router.post("/tasks", response_model=CreateTaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
     data: CreateTaskRequest,
@@ -403,9 +413,7 @@ async def create_task(
             raise NotFoundException("Milestone not found")
     # If program_id provided but no milestone, create/find a default milestone
     elif data.program_id:
-        program_result = await db.execute(
-            select(Program).where(Program.id == data.program_id)
-        )
+        program_result = await db.execute(select(Program).where(Program.id == data.program_id))
         program = program_result.scalar_one_or_none()
         if not program:
             raise NotFoundException("Program not found")
@@ -558,6 +566,7 @@ async def update_assignment_status(
 
 # ============ Inbound Webhook Receiver ============
 
+
 @router.post("/inbound/{webhook_token}")
 async def receive_inbound_webhook(
     webhook_token: str,
@@ -584,6 +593,7 @@ async def receive_inbound_webhook(
 
 
 # ============ Webhook Delivery ============
+
 
 async def send_webhook(
     url: str,
@@ -613,6 +623,14 @@ async def send_webhook(
         "X-AMG-Event": event_type,
         "User-Agent": "AMG-Portal-Webhook/1.0",
     }
+
+    # Re-check host at delivery time to defend against DNS rebinding between
+    # subscription creation and delivery.
+    from app.utils.url_safety import resolve_is_safe_host
+
+    host = urlparse(url).hostname or ""
+    if not await asyncio.to_thread(resolve_is_safe_host, host):
+        return False, None, "Webhook host is not publicly routable"
 
     try:
         async with httpx.AsyncClient(timeout=WEBHOOK_TIMEOUT_SECONDS) as client:
@@ -652,7 +670,9 @@ async def trigger_public_webhooks(
             "name": actor.full_name,
             "email": actor.email,
             "role": actor.role,
-        } if actor else None,
+        }
+        if actor
+        else None,
     }
 
     for webhook in webhooks:
@@ -663,11 +683,13 @@ async def trigger_public_webhooks(
                 event_type,
                 payload,
             )
-            results.append({
-                "webhook_id": str(webhook["id"]),
-                "success": success,
-                "status_code": status_code,
-                "error": error,
-            })
+            results.append(
+                {
+                    "webhook_id": str(webhook["id"]),
+                    "success": success,
+                    "status_code": status_code,
+                    "error": error,
+                }
+            )
 
     return results

@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.utils.url_safety import validate_safe_webhook_url
+
 if TYPE_CHECKING:
     from app.models.webhook import Webhook
 
@@ -40,9 +42,7 @@ class WebhookCreate(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, v: str) -> str:
-        if not v.startswith(("http://", "https://")):
-            raise ValueError("URL must start with http:// or https://")
-        return v
+        return validate_safe_webhook_url(v)
 
     @field_validator("events")
     @classmethod
@@ -65,9 +65,9 @@ class WebhookUpdate(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, v: str | None) -> str | None:
-        if v is not None and not v.startswith(("http://", "https://")):
-            raise ValueError("URL must start with http:// or https://")
-        return v
+        if v is None:
+            return v
+        return validate_safe_webhook_url(v)
 
     @field_validator("events")
     @classmethod

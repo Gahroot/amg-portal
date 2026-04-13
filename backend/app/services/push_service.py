@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, time
+from datetime import UTC, datetime, time
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -225,7 +225,7 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
                     tickets = result.get("data", [])
 
                     # Update last_used_at for successful sends
-                    now = datetime.utcnow()
+                    now = datetime.now(UTC)
                     for i, ticket in enumerate(tickets):
                         if ticket.get("status") == "ok" and i < len(tokens):
                             tokens[i].last_used_at = now
@@ -277,9 +277,7 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
     ) -> int:
         """Deactivate all push tokens for a user."""
         result = await db.execute(
-            update(PushToken)
-            .where(PushToken.user_id == user_id)
-            .values(is_active=False)
+            update(PushToken).where(PushToken.user_id == user_id).values(is_active=False)
         )
         await db.commit()
         return int(result.rowcount)  # type: ignore[attr-defined]

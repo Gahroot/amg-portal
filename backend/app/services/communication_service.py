@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.ws_connection import connection_manager
@@ -200,11 +200,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 )
             )
             assignment = assign_result.scalar_one_or_none()
-            if (
-                assignment
-                and assignment.sla_terms
-                and "priority" in assignment.sla_terms.lower()
-            ):
+            if assignment and assignment.sla_terms and "priority" in assignment.sla_terms.lower():
                 sla_hours = 1
 
         await _sla_service.start_sla_clock(
@@ -334,9 +330,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 details={},
             )
         except Exception:
-            logger.exception(
-                "Failed to log audit event for communication %s", communication_id
-            )
+            logger.exception("Failed to log audit event for communication %s", communication_id)
 
         return communication
 
@@ -351,28 +345,34 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         Only updates messages not sent by the user and not already read.
         Returns the number of messages updated.
         """
-        result = await db.execute(
-            select(Communication).where(
-                Communication.conversation_id == conversation_id,
-                Communication.sender_id != user_id,
-            )
-        )
-        communications = result.scalars().all()
-
         read_time = datetime.now(UTC).isoformat()
-        user_id_str = str(user_id)
-        updated = 0
-
-        for comm in communications:
-            if comm.read_receipts is None or user_id_str not in comm.read_receipts:
-                if comm.read_receipts is None:
-                    comm.read_receipts = {}
-                comm.read_receipts[user_id_str] = {"read_at": read_time}
-                updated += 1
-
+        stmt = text(
+            """
+            UPDATE communications
+            SET read_receipts = (
+                COALESCE(read_receipts::jsonb, '{}'::jsonb)
+                || jsonb_build_object(
+                    :uid,
+                    jsonb_build_object('read_at', :ts)
+                )
+            )::json
+            WHERE conversation_id = :cid
+              AND (sender_id IS NULL OR sender_id <> :sender_uid)
+              AND NOT (COALESCE(read_receipts::jsonb, '{}'::jsonb) ? :uid)
+            """
+        )
+        result = await db.execute(
+            stmt,
+            {
+                "uid": str(user_id),
+                "sender_uid": str(user_id),
+                "ts": read_time,
+                "cid": str(conversation_id),
+            },
+        )
+        updated = int(result.rowcount or 0)  # type: ignore[attr-defined]
         if updated:
             await db.commit()
-
         return updated
 
     async def get_unread_counts_for_conversations(
@@ -458,9 +458,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 details={"previous_status": "draft"},
             )
         except Exception:
-            logger.exception(
-                "Failed to log audit event for communication %s", communication_id
-            )
+            logger.exception("Failed to log audit event for communication %s", communication_id)
 
         # Notify internal staff about pending review
         try:
@@ -541,9 +539,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 details={"notes": notes, "outcome": communication.approval_status},
             )
         except Exception:
-            logger.exception(
-                "Failed to log audit event for communication %s", communication_id
-            )
+            logger.exception("Failed to log audit event for communication %s", communication_id)
 
         # Notify the sender about the review outcome
         try:
@@ -560,8 +556,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 body=(
                     f"Your communication"
                     f" '{communication.subject or '(no subject)'}'"
-                    f" has been {status_text}."
-                    + (f" Notes: {notes}" if notes else "")
+                    f" has been {status_text}." + (f" Notes: {notes}" if notes else "")
                 ),
                 entity_type="communication",
                 entity_id=communication.id,

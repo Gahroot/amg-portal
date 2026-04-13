@@ -8,7 +8,7 @@ import io
 import logging
 import re
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from email.utils import parseaddr
 from typing import Any
@@ -544,9 +544,7 @@ class ImportService:
         elif lower_name.endswith((".xlsx", ".xls")):
             columns, rows = await loop.run_in_executor(None, _parse_excel, content)
         else:
-            raise BadRequestException(
-                "Unsupported file format. Please upload a CSV or Excel file."
-            )
+            raise BadRequestException("Unsupported file format. Please upload a CSV or Excel file.")
 
         if not rows:
             raise BadRequestException("File contains no data rows")
@@ -569,12 +567,13 @@ class ImportService:
             "errors": [],
             "warnings": [],
             "preview_rows": [],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": datetime.now(UTC),
+            "updated_at": datetime.now(UTC),
         }
         _import_jobs[import_id] = job_data
 
         from typing import cast as _cast
+
         return ImportJobResponse(
             import_id=import_id,
             entity_type=entity_type,
@@ -607,7 +606,7 @@ class ImportService:
         ]
         job["default_values"] = default_values or {}
         job["status"] = ImportStatus.MAPPING
-        job["updated_at"] = datetime.utcnow()
+        job["updated_at"] = datetime.now(UTC)
 
         return ImportJobResponse(
             import_id=import_id,
@@ -634,7 +633,7 @@ class ImportService:
         job["status"] = ImportStatus.VALIDATING
         job["errors"] = []
         job["warnings"] = []
-        job["updated_at"] = datetime.utcnow()
+        job["updated_at"] = datetime.now(UTC)
 
         entity_type = job["entity_type"]
         field_defs = FIELD_DEFINITIONS.get(entity_type, [])
@@ -687,13 +686,15 @@ class ImportService:
             for req_field in required_fields:
                 value = mapped_data.get(req_field) or ""
                 if not value:
-                    row_errors.append({
-                        "row_number": row_num,
-                        "field": req_field,
-                        "error_type": "required",
-                        "message": f"{req_field.replace('_', ' ').title()} is required",
-                        "value": None,
-                    })
+                    row_errors.append(
+                        {
+                            "row_number": row_num,
+                            "field": req_field,
+                            "error_type": "required",
+                            "message": f"{req_field.replace('_', ' ').title()} is required",
+                            "value": None,
+                        }
+                    )
 
             # Validate field types and formats
             for field_name, value in mapped_data.items():
@@ -707,36 +708,42 @@ class ImportService:
                 # Email validation
                 if field_def.field_type == "email":
                     if not _validate_email(value):
-                        row_errors.append({
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "format",
-                            "message": f"Invalid email format: {value}",
-                            "value": value,
-                        })
+                        row_errors.append(
+                            {
+                                "row_number": row_num,
+                                "field": field_name,
+                                "error_type": "format",
+                                "message": f"Invalid email format: {value}",
+                                "value": value,
+                            }
+                        )
 
                 # Phone validation
                 elif field_def.field_type == "phone":
                     if not _validate_phone(value):
-                        row_errors.append({
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "format",
-                            "message": f"Invalid phone format: {value}",
-                            "value": value,
-                        })
+                        row_errors.append(
+                            {
+                                "row_number": row_num,
+                                "field": field_name,
+                                "error_type": "format",
+                                "message": f"Invalid phone format: {value}",
+                                "value": value,
+                            }
+                        )
 
                 # Date validation
                 elif field_def.field_type == "date":
                     valid, normalized = _validate_date(value)
                     if not valid:
-                        row_errors.append({
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "format",
-                            "message": f"Invalid date format: {value}. Use YYYY-MM-DD",
-                            "value": value,
-                        })
+                        row_errors.append(
+                            {
+                                "row_number": row_num,
+                                "field": field_name,
+                                "error_type": "format",
+                                "message": f"Invalid date format: {value}. Use YYYY-MM-DD",
+                                "value": value,
+                            }
+                        )
                     else:
                         mapped_data[field_name] = normalized
 
@@ -744,13 +751,15 @@ class ImportService:
                 elif field_def.field_type == "number":
                     valid, parsed = _validate_decimal(value)
                     if not valid:
-                        row_errors.append({
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "format",
-                            "message": f"Invalid number format: {value}",
-                            "value": value,
-                        })
+                        row_errors.append(
+                            {
+                                "row_number": row_num,
+                                "field": field_name,
+                                "error_type": "format",
+                                "message": f"Invalid number format: {value}",
+                                "value": value,
+                            }
+                        )
                     else:
                         mapped_data[field_name] = str(parsed)
 
@@ -760,16 +769,18 @@ class ImportService:
                     and field_def.enum_values
                     and value.lower() not in [v.lower() for v in field_def.enum_values]
                 ):
-                    row_errors.append({
-                        "row_number": row_num,
-                        "field": field_name,
-                        "error_type": "value",
-                        "message": (
-                            f"Invalid value: {value}. "
-                            f"Must be one of: {', '.join(field_def.enum_values)}"
-                        ),
-                        "value": value,
-                    })
+                    row_errors.append(
+                        {
+                            "row_number": row_num,
+                            "field": field_name,
+                            "error_type": "value",
+                            "message": (
+                                f"Invalid value: {value}. "
+                                f"Must be one of: {', '.join(field_def.enum_values)}"
+                            ),
+                            "value": value,
+                        }
+                    )
 
             # Reference validation (entity-specific)
             if entity_type == ImportEntityType.CLIENTS:
@@ -780,8 +791,7 @@ class ImportService:
                 has_name = not skip_duplicates and legal_name
                 if has_name or primary_email:
                     matches = [
-                        _compute_match(c, legal_name, primary_email, phone)
-                        for c in dup_candidates
+                        _compute_match(c, legal_name, primary_email, phone) for c in dup_candidates
                     ]
                     duplicates = sorted(
                         (m for m in matches if m is not None),
@@ -789,67 +799,77 @@ class ImportService:
                         reverse=True,
                     )[:10]
                     for dup in duplicates:
-                        row_warnings.append({
-                            "row_number": row_num,
-                            "field": "legal_name",
-                            "warning_type": "duplicate_match",
-                            "message": (
-                                f"Potential duplicate: {dup.legal_name} "
-                                f"({int(dup.similarity_score * 100)}% match)"
-                            ),
-                            "value": legal_name,
-                            "existing_id": dup.client_id,
-                            "existing_name": dup.legal_name,
-                        })
+                        row_warnings.append(
+                            {
+                                "row_number": row_num,
+                                "field": "legal_name",
+                                "warning_type": "duplicate_match",
+                                "message": (
+                                    f"Potential duplicate: {dup.legal_name} "
+                                    f"({int(dup.similarity_score * 100)}% match)"
+                                ),
+                                "value": legal_name,
+                                "existing_id": dup.client_id,
+                                "existing_name": dup.legal_name,
+                            }
+                        )
 
                 # Validate RM email
                 rm_email = mapped_data.get("assigned_rm_email")
                 if rm_email and rm_email not in existing_users:
-                    row_errors.append({
-                        "row_number": row_num,
-                        "field": "assigned_rm_email",
-                        "error_type": "reference",
-                        "message": f"Relationship manager not found: {rm_email}",
-                        "value": rm_email,
-                    })
+                    row_errors.append(
+                        {
+                            "row_number": row_num,
+                            "field": "assigned_rm_email",
+                            "error_type": "reference",
+                            "message": f"Relationship manager not found: {rm_email}",
+                            "value": rm_email,
+                        }
+                    )
 
             elif entity_type == ImportEntityType.PROGRAMS:
                 # Validate client exists
                 client_email = mapped_data.get("client_email")
                 if client_email and client_email not in existing_clients:
-                    row_errors.append({
-                        "row_number": row_num,
-                        "field": "client_email",
-                        "error_type": "reference",
-                        "message": f"Client not found with email: {client_email}",
-                        "value": client_email,
-                    })
+                    row_errors.append(
+                        {
+                            "row_number": row_num,
+                            "field": "client_email",
+                            "error_type": "reference",
+                            "message": f"Client not found with email: {client_email}",
+                            "value": client_email,
+                        }
+                    )
 
             elif entity_type == ImportEntityType.TASKS:
                 # Validate program exists
                 program_title = mapped_data.get("program_title")
                 if program_title and program_title not in existing_programs:
-                    row_warnings.append({
-                        "row_number": row_num,
-                        "field": "program_title",
-                        "warning_type": "reference",
-                        "message": (
-                            f"Program not found: {program_title}. "
-                            "Task will be created without program association."
-                        ),
-                        "value": program_title,
-                    })
+                    row_warnings.append(
+                        {
+                            "row_number": row_num,
+                            "field": "program_title",
+                            "warning_type": "reference",
+                            "message": (
+                                f"Program not found: {program_title}. "
+                                "Task will be created without program association."
+                            ),
+                            "value": program_title,
+                        }
+                    )
 
                 # Validate assignee
                 assignee_email = mapped_data.get("assigned_to_email")
                 if assignee_email and assignee_email not in existing_users:
-                    row_errors.append({
-                        "row_number": row_num,
-                        "field": "assigned_to_email",
-                        "error_type": "reference",
-                        "message": f"User not found: {assignee_email}",
-                        "value": assignee_email,
-                    })
+                    row_errors.append(
+                        {
+                            "row_number": row_num,
+                            "field": "assigned_to_email",
+                            "error_type": "reference",
+                            "message": f"User not found: {assignee_email}",
+                            "value": assignee_email,
+                        }
+                    )
 
             # Track row status
             is_valid = len(row_errors) == 0
@@ -865,21 +885,23 @@ class ImportService:
 
             # Add to preview (limit to first 100 rows)
             if len(preview_rows) < 100:
-                preview_rows.append({
-                    "row_number": row_num,
-                    "data": raw_row,
-                    "mapped_data": mapped_data,
-                    "is_valid": is_valid,
-                    "errors": row_errors,
-                    "warnings": row_warnings,
-                })
+                preview_rows.append(
+                    {
+                        "row_number": row_num,
+                        "data": raw_row,
+                        "mapped_data": mapped_data,
+                        "is_valid": is_valid,
+                        "errors": row_errors,
+                        "warnings": row_warnings,
+                    }
+                )
 
         job["preview_rows"] = preview_rows
         job["status"] = ImportStatus.PREVIEW
         job["valid_rows"] = valid_count
         job["invalid_rows"] = invalid_count
         job["rows_with_warnings"] = warning_count
-        job["updated_at"] = datetime.utcnow()
+        job["updated_at"] = datetime.now(UTC)
 
         return {
             "import_id": import_id,
@@ -910,7 +932,7 @@ class ImportService:
             raise BadRequestException("Import must be validated before confirmation")
 
         job["status"] = ImportStatus.IMPORTING
-        job["updated_at"] = datetime.utcnow()
+        job["updated_at"] = datetime.now(UTC)
 
         entity_type = job["entity_type"]
         created_ids: list[uuid.UUID] = []
@@ -982,13 +1004,15 @@ class ImportService:
 
             except Exception as e:
                 logger.error(f"Import failed for row {row_num}: {e}")
-                import_errors.append({
-                    "row_number": row_num,
-                    "error_type": "import",
-                    "message": str(e),
-                    "field": None,
-                    "value": None,
-                })
+                import_errors.append(
+                    {
+                        "row_number": row_num,
+                        "error_type": "import",
+                        "message": str(e),
+                        "field": None,
+                        "value": None,
+                    }
+                )
                 failed_count += 1
 
         # Single commit covers the entire import as one atomic transaction
@@ -1000,7 +1024,7 @@ class ImportService:
         job["failed_rows"] = failed_count
         job["created_ids"] = [str(id) for id in created_ids]
         job["errors"].extend(import_errors)
-        job["updated_at"] = datetime.utcnow()
+        job["updated_at"] = datetime.now(UTC)
 
         return {
             "import_id": import_id,
@@ -1027,27 +1051,31 @@ class ImportService:
 
         # Write errors
         for err in job.get("errors", []):
-            writer.writerow([
-                err.get("row_number", ""),
-                err.get("column", ""),
-                err.get("field", ""),
-                err.get("error_type", ""),
-                err.get("message", ""),
-                err.get("value", ""),
-            ])
+            writer.writerow(
+                [
+                    err.get("row_number", ""),
+                    err.get("column", ""),
+                    err.get("field", ""),
+                    err.get("error_type", ""),
+                    err.get("message", ""),
+                    err.get("value", ""),
+                ]
+            )
 
         # Write warnings
         writer.writerow([])  # Blank row
         writer.writerow(["Warnings:"])
         for warn in job.get("warnings", []):
-            writer.writerow([
-                warn.get("row_number", ""),
-                warn.get("column", ""),
-                warn.get("field", ""),
-                warn.get("warning_type", ""),
-                warn.get("message", ""),
-                warn.get("value", ""),
-            ])
+            writer.writerow(
+                [
+                    warn.get("row_number", ""),
+                    warn.get("column", ""),
+                    warn.get("field", ""),
+                    warn.get("warning_type", ""),
+                    warn.get("message", ""),
+                    warn.get("value", ""),
+                ]
+            )
 
         content = output.getvalue()
         encoded = base64.b64encode(content.encode()).decode()

@@ -4,7 +4,9 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.utils.url_safety import validate_safe_webhook_url
 
 # ============ Event Types ============
 
@@ -41,6 +43,7 @@ PUBLIC_API_EVENT_DESCRIPTIONS = {
 
 # ============ Webhook Subscription ============
 
+
 class PublicWebhookCreate(BaseModel):
     """Request to create a public webhook subscription."""
 
@@ -48,13 +51,18 @@ class PublicWebhookCreate(BaseModel):
     events: list[str] = Field(..., min_length=1, description="Event types to subscribe to")
     description: str | None = Field(None, max_length=255, description="Optional description")
 
+    @field_validator("url")
     @classmethod
-    def validate_events(cls, events: list[str]) -> list[str]:
-        """Validate event types."""
-        invalid = [e for e in events if e not in PUBLIC_API_EVENT_TYPES]
+    def _validate_url(cls, v: str) -> str:
+        return validate_safe_webhook_url(v)
+
+    @field_validator("events")
+    @classmethod
+    def _validate_events(cls, v: list[str]) -> list[str]:
+        invalid = [e for e in v if e not in PUBLIC_API_EVENT_TYPES]
         if invalid:
             raise ValueError(f"Invalid event types: {invalid}")
-        return events
+        return v
 
 
 class PublicWebhookResponse(BaseModel):
@@ -80,6 +88,7 @@ class PublicWebhookListResponse(BaseModel):
 
 
 # ============ Event Data Payloads ============
+
 
 class EventActor(BaseModel):
     """Actor information in events."""
@@ -173,6 +182,7 @@ class PublicEventPayload(BaseModel):
 
 # ============ Zapier/Make Specific Schemas ============
 
+
 class ZapierPollResponse(BaseModel):
     """Response for Zapier polling triggers."""
 
@@ -196,6 +206,7 @@ class ZapierTestResponse(BaseModel):
 
 
 # ============ Action Schemas ============
+
 
 class CreateTaskRequest(BaseModel):
     """Request to create a task via public API."""
@@ -256,6 +267,7 @@ class UpdateStatusResponse(BaseModel):
 
 
 # ============ API Info ============
+
 
 class APIInfoResponse(BaseModel):
     """Response for API info endpoint."""
