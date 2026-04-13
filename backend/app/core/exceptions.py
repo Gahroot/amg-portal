@@ -131,6 +131,14 @@ async def validation_exception_handler(
         # Remove file paths from error messages
         if "msg" in sanitized_error:
             sanitized_error["msg"] = _sanitize_error_message(str(sanitized_error["msg"]))
+        # Pydantic 2 puts the raw exception (e.g. ValueError from a model_validator)
+        # in ctx.error, which is not JSON-serializable — stringify any such values.
+        ctx = sanitized_error.get("ctx")
+        if isinstance(ctx, dict):
+            sanitized_error["ctx"] = {
+                k: v if isinstance(v, (str, int, float, bool, type(None))) else str(v)
+                for k, v in ctx.items()
+            }
         sanitized_errors.append(sanitized_error)
 
     return JSONResponse(
