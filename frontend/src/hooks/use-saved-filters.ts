@@ -1,5 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   getSavedFilters,
   createSavedFilter,
@@ -10,52 +9,40 @@ import type {
   SavedFilterCreateData,
   SavedFilterUpdateData,
 } from "@/lib/api/saved-filters";
-
-const QUERY_KEY = ["saved-filters"];
+import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 
 export function useSavedFilters(entityType: string) {
   return useQuery({
-    queryKey: [...QUERY_KEY, entityType],
+    queryKey: queryKeys.savedFilters.byEntity(entityType),
     queryFn: () => getSavedFilters(entityType),
   });
 }
 
 export function useCreateSavedFilter() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: SavedFilterCreateData) => createSavedFilter(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      toast.success("Filter preset saved");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to save filter preset"),
+    invalidateKeys: [queryKeys.savedFilters.all],
+    successMessage: "Filter preset saved",
+    errorMessage: "Failed to save filter preset",
   });
 }
 
 export function useUpdateSavedFilter() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: ({ id, data }: { id: string; data: SavedFilterUpdateData }) =>
       updateSavedFilter(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      toast.success("Filter preset updated");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to update filter preset"),
+    invalidateKeys: [queryKeys.savedFilters.all],
+    successMessage: "Filter preset updated",
+    errorMessage: "Failed to update filter preset",
   });
 }
 
 export function useDeleteSavedFilter() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (id: string) => deleteSavedFilter(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      toast.success("Filter preset deleted");
-    },
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to delete filter preset"),
+    invalidateKeys: [queryKeys.savedFilters.all],
+    successMessage: "Filter preset deleted",
+    errorMessage: "Failed to delete filter preset",
   });
 }

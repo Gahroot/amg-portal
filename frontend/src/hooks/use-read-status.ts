@@ -193,7 +193,7 @@ export function useReadStatusTracker<T extends { id: string }>(
   // Fetch all read statuses individually
   // Note: For large lists, consider a bulk endpoint
   const { isLoading } = useQuery({
-    queryKey: [`${entityType}-read-statuses`, itemIds],
+    queryKey: readStatusKeys.tracker(entityType, itemIds),
     queryFn: async () => {
       const results: Record<string, boolean> = {};
       await Promise.all(

@@ -13,12 +13,19 @@
  *   detail(id)→ one record
  */
 
+/**
+ * Params accepted by query key factory functions.
+ * Using `object` (not `Record<string, unknown>`) so typed param interfaces
+ * (e.g. ClientListParams) satisfy this without needing an index signature.
+ */
+export type ListParams = object;
+
 // Helper to build a consistent entity key set
 function createEntityKeys<T extends string>(entity: T) {
   return {
     all: [entity] as const,
     lists: () => [entity, "list"] as const,
-    list: (params?: unknown) => [entity, "list", params] as const,
+    list: (params?: ListParams) => [entity, "list", params] as const,
     details: () => [entity, "detail"] as const,
     detail: (id: string) => [entity, "detail", id] as const,
   };
@@ -28,14 +35,14 @@ export const queryKeys = {
   // ── Clients ────────────────────────────────────────────────────────────────
   clients: {
     ...createEntityKeys("clients"),
-    profiles: (params?: unknown) => ["clients", "profiles", params] as const,
+    profiles: (params?: ListParams) => ["clients", "profiles", params] as const,
     profile: (id: string) => ["clients", "profile", id] as const,
-    portfolio: (params?: unknown) => ["clients", "portfolio", params] as const,
+    portfolio: (params?: ListParams) => ["clients", "portfolio", params] as const,
     certificate: (id: string) => ["clients", "detail", id, "certificate"] as const,
     securityBrief: (id: string) => ["clients", "detail", id, "security-brief"] as const,
     upcomingDates: (daysAhead?: number) => ["clients", "upcoming-dates", daysAhead] as const,
     compare: (ids: string[]) => ["clients", "compare", ids] as const,
-    timeline: (profileId: string | undefined, filters?: unknown) =>
+    timeline: (profileId: string | undefined, filters?: ListParams) =>
       ["clients", "timeline", profileId, filters] as const,
   },
 
@@ -72,7 +79,7 @@ export const queryKeys = {
     vault: (vaultStatus?: string) => ["documents", "vault", vaultStatus] as const,
     custodyChain: (documentId: string) => ["documents", "custody-chain", documentId] as const,
     deliveries: (documentId: string) => ["documents", "deliveries", documentId] as const,
-    expiring: (params?: unknown) => ["documents", "expiring", params] as const,
+    expiring: (params?: ListParams) => ["documents", "expiring", params] as const,
     compare: (versionAId: string | null, versionBId: string | null) =>
       ["documents", "compare", versionAId, versionBId] as const,
   },
@@ -87,10 +94,10 @@ export const queryKeys = {
   // ── Notifications ──────────────────────────────────────────────────────────
   notifications: {
     all: ["notifications"] as const,
-    list: (params?: unknown) => ["notifications", "list", params] as const,
-    grouped: (params?: unknown) => ["notifications", "grouped", params] as const,
+    list: (params?: ListParams) => ["notifications", "list", params] as const,
+    grouped: (params?: ListParams) => ["notifications", "grouped", params] as const,
     unreadCount: () => ["notifications", "unread-count"] as const,
-    snoozed: (params?: unknown) => ["notifications", "snoozed", params] as const,
+    snoozed: (params?: ListParams) => ["notifications", "snoozed", params] as const,
     preferences: () => ["notifications", "preferences"] as const,
   },
 
@@ -106,7 +113,7 @@ export const queryKeys = {
     entity: (entityType: string, entityId: string) =>
       ["escalations", "entity", entityType, entityId] as const,
     simpleMetrics: () => ["escalations", "simple-metrics"] as const,
-    overdue: (params?: unknown) => ["escalations", "overdue", params] as const,
+    overdue: (params?: ListParams) => ["escalations", "overdue", params] as const,
   },
 
   // ── Deliverables ───────────────────────────────────────────────────────────
@@ -115,9 +122,9 @@ export const queryKeys = {
   // ── Conversations & Messages ───────────────────────────────────────────────
   conversations: {
     all: ["conversations"] as const,
-    list: (params?: unknown) => ["conversations", "list", params] as const,
+    list: (params?: ListParams) => ["conversations", "list", params] as const,
     detail: (id: string) => ["conversations", "detail", id] as const,
-    messages: (conversationId: string, params?: unknown) =>
+    messages: (conversationId: string, params?: ListParams) =>
       ["conversations", "messages", conversationId, params] as const,
     messagesAll: (conversationId: string) =>
       ["conversations", "messages", conversationId] as const,
@@ -127,19 +134,19 @@ export const queryKeys = {
   // ── Decisions ──────────────────────────────────────────────────────────────
   decisions: {
     all: ["decisions"] as const,
-    list: (params?: unknown) => ["decisions", "list", params] as const,
+    list: (params?: ListParams) => ["decisions", "list", params] as const,
     detail: (id: string) => ["decisions", "detail", id] as const,
-    pending: (params?: unknown) => ["decisions", "pending", params] as const,
+    pending: (params?: ListParams) => ["decisions", "pending", params] as const,
   },
 
   // ── Certificates ───────────────────────────────────────────────────────────
   certificates: {
     all: ["certificates"] as const,
-    list: (params?: unknown) => ["certificates", "list", params] as const,
+    list: (params?: ListParams) => ["certificates", "list", params] as const,
     detail: (id: string) => ["certificates", "detail", id] as const,
     templates: {
       all: ["certificates", "templates"] as const,
-      list: (params?: unknown) => ["certificates", "templates", "list", params] as const,
+      list: (params?: ListParams) => ["certificates", "templates", "list", params] as const,
       detail: (id: string) => ["certificates", "templates", "detail", id] as const,
     },
   },
@@ -155,37 +162,37 @@ export const queryKeys = {
   // ── Invoices ───────────────────────────────────────────────────────────────
   invoices: {
     all: ["invoices"] as const,
-    list: (params?: unknown) => ["invoices", "list", params] as const,
+    list: (params?: ListParams) => ["invoices", "list", params] as const,
   },
 
   // ── SLA ────────────────────────────────────────────────────────────────────
   sla: {
     all: ["sla"] as const,
-    list: (params?: unknown) => ["sla", "list", params] as const,
+    list: (params?: ListParams) => ["sla", "list", params] as const,
     breaches: (includeApproaching?: boolean) =>
       ["sla", "breaches", includeApproaching] as const,
-    entity: (entityType: string, entityId: string, params?: unknown) =>
+    entity: (entityType: string, entityId: string, params?: ListParams) =>
       ["sla", "entity", entityType, entityId, params] as const,
   },
 
   // ── NPS Surveys ────────────────────────────────────────────────────────────
   npsSurveys: {
     all: ["nps-surveys"] as const,
-    list: (params?: unknown) => ["nps-surveys", "list", params] as const,
+    list: (params?: ListParams) => ["nps-surveys", "list", params] as const,
     detail: (id: string) => ["nps-surveys", "detail", id] as const,
     active: () => ["nps-surveys", "active"] as const,
     stats: (id: string) => ["nps-surveys", "detail", id, "stats"] as const,
-    trends: (params?: unknown) => ["nps-surveys", "trends", params] as const,
-    responses: (surveyId: string, params?: unknown) =>
+    trends: (params?: ListParams) => ["nps-surveys", "trends", params] as const,
+    responses: (surveyId: string, params?: ListParams) =>
       ["nps-surveys", "detail", surveyId, "responses", params] as const,
     response: (surveyId: string, responseId: string) =>
       ["nps-surveys", "detail", surveyId, "responses", responseId] as const,
     responsesAll: (surveyId: string) =>
       ["nps-surveys", "detail", surveyId, "responses"] as const,
     followUps: {
-      bySurvey: (surveyId: string, params?: unknown) =>
+      bySurvey: (surveyId: string, params?: ListParams) =>
         ["nps-surveys", "detail", surveyId, "follow-ups", params] as const,
-      my: (params?: unknown) => ["nps-surveys", "follow-ups", "my", params] as const,
+      my: (params?: ListParams) => ["nps-surveys", "follow-ups", "my", params] as const,
       detail: (followUpId: string) =>
         ["nps-surveys", "follow-ups", followUpId] as const,
     },
@@ -197,23 +204,31 @@ export const queryKeys = {
     profile: () => ["partner-portal", "profile"] as const,
     assignments: {
       all: ["partner-portal", "assignments"] as const,
-      list: (params?: unknown) => ["partner-portal", "assignments", "list", params] as const,
+      list: (params?: ListParams) => ["partner-portal", "assignments", "list", params] as const,
       detail: (id: string) => ["partner-portal", "assignments", "detail", id] as const,
       documents: (assignmentId: string) =>
         ["partner-portal", "assignments", "detail", assignmentId, "documents"] as const,
     },
     deliverables: {
       all: ["partner-portal", "deliverables"] as const,
-      list: (params?: unknown) => ["partner-portal", "deliverables", "list", params] as const,
+      list: (params?: ListParams) => ["partner-portal", "deliverables", "list", params] as const,
       detail: (id: string) => ["partner-portal", "deliverables", "detail", id] as const,
     },
     conversations: {
       all: ["partner-portal", "conversations"] as const,
-      list: (params?: unknown) => ["partner-portal", "conversations", "list", params] as const,
+      list: (params?: ListParams) =>
+        ["partner-portal", "conversations", "list", params] as const,
       detail: (conversationId: string) =>
         ["partner-portal", "conversations", "detail", conversationId] as const,
-      messages: (conversationId: string, params?: unknown) =>
-        ["partner-portal", "conversations", "detail", conversationId, "messages", params] as const,
+      messages: (conversationId: string, params?: ListParams) =>
+        [
+          "partner-portal",
+          "conversations",
+          "detail",
+          conversationId,
+          "messages",
+          params,
+        ] as const,
       messagesAll: (conversationId: string) =>
         ["partner-portal", "conversations", "detail", conversationId, "messages"] as const,
     },
@@ -233,7 +248,7 @@ export const queryKeys = {
     performanceStatus: () => ["partner-portal", "performance-status"] as const,
     payments: {
       all: ["partner-portal", "payments"] as const,
-      list: (params?: unknown) => ["partner-portal", "payments", "list", params] as const,
+      list: (params?: ListParams) => ["partner-portal", "payments", "list", params] as const,
       summary: () => ["partner-portal", "payments", "summary"] as const,
     },
   },
@@ -243,7 +258,8 @@ export const queryKeys = {
     all: ["budget-approvals"] as const,
     requests: {
       all: ["budget-approvals", "requests"] as const,
-      list: (params?: unknown) => ["budget-approvals", "requests", "list", params] as const,
+      list: (params?: ListParams) =>
+        ["budget-approvals", "requests", "list", params] as const,
       detail: (id: string) => ["budget-approvals", "requests", "detail", id] as const,
     },
     pending: () => ["budget-approvals", "pending"] as const,
@@ -264,35 +280,35 @@ export const queryKeys = {
   // ── Capability Reviews ─────────────────────────────────────────────────────
   capabilityReviews: {
     all: ["capability-reviews"] as const,
-    list: (params?: unknown) => ["capability-reviews", "list", params] as const,
+    list: (params?: ListParams) => ["capability-reviews", "list", params] as const,
     detail: (id: string) => ["capability-reviews", "detail", id] as const,
     statistics: () => ["capability-reviews", "statistics"] as const,
-    pending: (params?: unknown) => ["capability-reviews", "pending", params] as const,
+    pending: (params?: ListParams) => ["capability-reviews", "pending", params] as const,
     overdue: () => ["capability-reviews", "overdue"] as const,
   },
 
   // ── Communication Logs ─────────────────────────────────────────────────────
   communicationLogs: {
     all: ["communication-logs"] as const,
-    list: (params?: unknown) => ["communication-logs", "list", params] as const,
+    list: (params?: ListParams) => ["communication-logs", "list", params] as const,
     detail: (id: string) => ["communication-logs", "detail", id] as const,
   },
 
   // ── Communication Approvals ────────────────────────────────────────────────
   communications: {
     all: ["communications"] as const,
-    pendingReviews: (params?: unknown) =>
+    pendingReviews: (params?: ListParams) =>
       ["communications", "pending-reviews", params] as const,
-    byStatus: (status: string, params?: unknown) =>
+    byStatus: (status: string, params?: ListParams) =>
       ["communications", "by-status", status, params] as const,
   },
 
   // ── Communication Audit ────────────────────────────────────────────────────
   communicationAudit: {
     all: ["communication-audit"] as const,
-    trail: (communicationId: string, params?: unknown) =>
+    trail: (communicationId: string, params?: ListParams) =>
       ["communication-audit", communicationId, params] as const,
-    search: (params?: unknown) => ["communication-audit", "search", params] as const,
+    search: (params?: ListParams) => ["communication-audit", "search", params] as const,
     clientPreferences: (clientId: string) =>
       ["communication-audit", "client-preferences", clientId] as const,
     channelCheck: (clientId: string, channel: string) =>
@@ -316,36 +332,37 @@ export const queryKeys = {
   // ── Deletion Requests ──────────────────────────────────────────────────────
   deletionRequests: {
     all: ["deletion-requests"] as const,
-    list: (params?: unknown) => ["deletion-requests", "list", params] as const,
+    list: (params?: ListParams) => ["deletion-requests", "list", params] as const,
     detail: (id: string) => ["deletion-requests", "detail", id] as const,
   },
 
   // ── Access Audits ──────────────────────────────────────────────────────────
   accessAudits: {
     all: ["access-audits"] as const,
-    list: (params?: unknown) => ["access-audits", "list", params] as const,
+    list: (params?: ListParams) => ["access-audits", "list", params] as const,
     detail: (id: string) => ["access-audits", "detail", id] as const,
     statistics: () => ["access-audits", "statistics"] as const,
     current: () => ["access-audits", "current"] as const,
-    findings: (params?: unknown) => ["access-audits", "findings", params] as const,
+    findings: (params?: ListParams) => ["access-audits", "findings", params] as const,
   },
 
   // ── Pulse Surveys ──────────────────────────────────────────────────────────
   pulseSurveys: {
     all: ["pulse-surveys"] as const,
-    list: (params?: unknown) => ["pulse-surveys", "list", params] as const,
+    list: (params?: ListParams) => ["pulse-surveys", "list", params] as const,
     detail: (id: string) => ["pulse-surveys", "detail", id] as const,
     stats: (id: string) => ["pulse-surveys", "detail", id, "stats"] as const,
-    responses: (id: string, params?: unknown) =>
+    responses: (id: string, params?: ListParams) =>
       ["pulse-surveys", "detail", id, "responses", params] as const,
     activeForMe: () => ["pulse-surveys", "active-for-me"] as const,
-    myStatus: (surveyId: string) => ["pulse-surveys", "detail", surveyId, "my-status"] as const,
+    myStatus: (surveyId: string) =>
+      ["pulse-surveys", "detail", surveyId, "my-status"] as const,
   },
 
   // ── Scheduling ─────────────────────────────────────────────────────────────
   scheduling: {
     all: ["scheduled-events"] as const,
-    list: (params?: unknown) => ["scheduled-events", "list", params] as const,
+    list: (params?: ListParams) => ["scheduled-events", "list", params] as const,
     detail: (id: string) => ["scheduled-events", "detail", id] as const,
     mySchedule: (start: string, end: string) =>
       ["scheduled-events", "my-schedule", start, end] as const,
@@ -357,9 +374,9 @@ export const queryKeys = {
   meetings: {
     all: ["meetings"] as const,
     types: () => ["meetings", "types"] as const,
-    myList: (params?: unknown) => ["meetings", "my", params] as const,
-    rmList: (params?: unknown) => ["meetings", "rm", params] as const,
-    slots: (params: unknown) => ["meetings", "slots", params] as const,
+    myList: (params?: ListParams) => ["meetings", "my", params] as const,
+    rmList: (params?: ListParams) => ["meetings", "rm", params] as const,
+    slots: (params: ListParams) => ["meetings", "slots", params] as const,
   },
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -400,14 +417,14 @@ export const queryKeys = {
     },
     programStatuses: () => ["portal", "program-statuses"] as const,
     programStatus: (programId: string) => ["portal", "program-status", programId] as const,
-    milestones: (params?: unknown) => ["portal", "milestones", params] as const,
+    milestones: (params?: ListParams) => ["portal", "milestones", params] as const,
     documents: {
       all: ["portal", "documents"] as const,
       detail: (id: string) => ["portal", "documents", id] as const,
     },
     documentRequests: (status?: string) => ["portal", "document-requests", status] as const,
     decisions: {
-      history: (params?: unknown) => ["portal", "decisions", "history", params] as const,
+      history: (params?: ListParams) => ["portal", "decisions", "history", params] as const,
     },
   },
 
@@ -439,8 +456,7 @@ export const queryKeys = {
   // ── Recent Items ───────────────────────────────────────────────────────────
   recentItems: {
     all: ["recent-items"] as const,
-    list: (limit: number, itemType?: string) =>
-      ["recent-items", limit, itemType] as const,
+    list: (limit: number, itemType?: string) => ["recent-items", limit, itemType] as const,
   },
 
   // ── Read Status ────────────────────────────────────────────────────────────
@@ -453,6 +469,12 @@ export const queryKeys = {
       ["read-status", "tracker", entityType, itemIds] as const,
   },
 
+  // ── Saved Filters ──────────────────────────────────────────────────────────
+  savedFilters: {
+    all: ["saved-filters"] as const,
+    byEntity: (entityType: string) => ["saved-filters", entityType] as const,
+  },
+
   // ── Global Search ──────────────────────────────────────────────────────────
   searchSuggestions: (query: string) => ["search-suggestions", query] as const,
 
@@ -460,18 +482,18 @@ export const queryKeys = {
   crm: {
     leads: {
       all: ["crm", "leads"] as const,
-      list: (params?: unknown) => ["crm", "leads", "list", params] as const,
+      list: (params?: ListParams) => ["crm", "leads", "list", params] as const,
       detail: (id: string) => ["crm", "leads", "detail", id] as const,
     },
     opportunities: {
       all: ["crm", "opportunities"] as const,
-      list: (params?: unknown) => ["crm", "opportunities", "list", params] as const,
+      list: (params?: ListParams) => ["crm", "opportunities", "list", params] as const,
       detail: (id: string) => ["crm", "opportunities", "detail", id] as const,
       pipelineSummary: () => ["crm", "opportunities", "pipeline-summary"] as const,
     },
     activities: {
       all: ["crm", "activities"] as const,
-      list: (params?: unknown) => ["crm", "activities", "list", params] as const,
+      list: (params?: ListParams) => ["crm", "activities", "list", params] as const,
     },
   },
 } as const;
