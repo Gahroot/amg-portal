@@ -1,145 +1,34 @@
 "use client";
 
-import { useRef, useState } from "react";
-import type { ChangeEvent, DragEvent } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Upload,
-  X,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  CloudUpload,
-  FileText,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Upload, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
 import { usePartnerAssignments } from "@/hooks/use-partner-portal";
 import {
   bulkSubmitDeliverables,
   type BulkSubmitFileResult,
 } from "@/lib/api/partner-portal";
+import { DeliverableDropZone } from "./deliverable-drop-zone";
+import { DeliverableFileList } from "./deliverable-file-list";
+import { DeliverableUploadProgress } from "./deliverable-upload-progress";
+import {
+  validateFile,
+  autoMatchAssignment,
+  type FileQueueItem,
+} from "./deliverable-upload-types";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const MAX_FILE_SIZE_MB = 50;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".ppt",
-  ".pptx",
-  ".txt",
-  ".csv",
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".gif",
-  ".webp",
-];
-
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "text/plain",
-  "text/csv",
-]);
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type FileStatus = "pending" | "uploading" | "success" | "error" | "invalid";
-
-interface FileQueueItem {
-  id: string;
-  file: File;
-  assignmentId: string;
-  title: string;
-  notes: string;
-  status: FileStatus;
-  error: string | null;
-  deliverableId: string | null;
-  /** Whether the per-file detail panel is open */
-  expanded: boolean;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-function validateFile(file: File): string | null {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return `File exceeds the ${MAX_FILE_SIZE_MB} MB size limit`;
-  }
-  if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
-    return `File type "${file.type}" is not allowed`;
-  }
-  return null;
-}
-
-/**
- * Attempt to auto-match a filename to an assignment by looking for words from
- * the assignment title inside the filename (case-insensitive).
- */
-function autoMatchAssignment(
-  filename: string,
-  assignments: { id: string; title: string; status: string }[]
-): string {
-  const nameLower = filename.toLowerCase().replace(/[^a-z0-9]/g, " ");
-  const accepted = assignments.filter((a) => a.status === "accepted");
-
-  let bestId = "";
-  let bestScore = 0;
-
-  for (const a of accepted) {
-    const words = a.title
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter((w) => w.length > 3);
-    const score = words.filter((w) => nameLower.includes(w)).length;
-    if (score > bestScore) {
-      bestScore = score;
-      bestId = a.id;
-    }
-  }
-
-  return bestScore > 0 ? bestId : (accepted[0]?.id ?? "");
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 export interface BulkDeliverableUploadProps {
   /** Called after successful submission so the parent can navigate away */
   onComplete?: (result: { succeeded: number; failed: number }) => void;
 }
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps) {
   const queryClient = useQueryClient();
@@ -149,24 +38,21 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
   );
 
   const [queue, setQueue] = useState<FileQueueItem[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [summary, setSummary] = useState<{ succeeded: number; failed: number } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── File queue management ─────────────────────────────────────────────────
+  // ── Queue management ───────────────────────────────────────────────────────
 
-  function addFiles(files: FileList | File[]) {
-    const arr = Array.from(files);
-    const newItems: FileQueueItem[] = arr.map((file) => {
+  function addFiles(files: File[]) {
+    const newItems: FileQueueItem[] = files.map((file) => {
       const validationError = validateFile(file);
       const matchedId = autoMatchAssignment(file.name, acceptedAssignments);
       return {
         id: `${file.name}-${file.lastModified}-${Math.random()}`,
         file,
         assignmentId: matchedId,
-        title: file.name.replace(/\.[^.]+$/, ""), // strip extension as default title
+        title: file.name.replace(/\.[^.]+$/, ""),
         notes: "",
         status: validationError ? "invalid" : "pending",
         error: validationError,
@@ -191,41 +77,10 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
     );
   }
 
-  // ── Drag and drop ─────────────────────────────────────────────────────────
-
-  function handleDragOver(e: DragEvent) {
-    e.preventDefault();
-    setIsDragging(true);
-  }
-
-  function handleDragLeave(e: DragEvent) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsDragging(false);
-    }
-  }
-
-  function handleDrop(e: DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) {
-      addFiles(e.dataTransfer.files);
-    }
-  }
-
-  function handleInputChange(e: ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files.length > 0) {
-      addFiles(e.target.files);
-      // Reset so the same file can be re-selected
-      e.target.value = "";
-    }
-  }
-
-  // ── Upload ────────────────────────────────────────────────────────────────
+  // ── Upload ─────────────────────────────────────────────────────────────────
 
   async function handleUpload() {
-    const uploadable = queue.filter(
-      (item) => item.status === "pending" && item.assignmentId
-    );
+    const uploadable = queue.filter((item) => item.status === "pending" && item.assignmentId);
 
     if (uploadable.length === 0) {
       toast.error("No valid files ready to upload. Assign each file to an accepted assignment.");
@@ -239,11 +94,8 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
     let succeeded = 0;
     let failed = 0;
 
-    // Upload sequentially — gives real per-file progress feedback
     for (let i = 0; i < uploadable.length; i++) {
       const item = uploadable[i];
-
-      // Mark as uploading
       updateItem(item.id, { status: "uploading" });
 
       try {
@@ -257,24 +109,14 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
 
         const result: BulkSubmitFileResult = response.results[0];
         if (result.success) {
-          updateItem(item.id, {
-            status: "success",
-            deliverableId: result.deliverable_id,
-            error: null,
-          });
+          updateItem(item.id, { status: "success", deliverableId: result.deliverable_id, error: null });
           succeeded++;
         } else {
-          updateItem(item.id, {
-            status: "error",
-            error: result.error ?? "Upload failed",
-          });
+          updateItem(item.id, { status: "error", error: result.error ?? "Upload failed" });
           failed++;
         }
       } catch {
-        updateItem(item.id, {
-          status: "error",
-          error: "Network error — please try again",
-        });
+        updateItem(item.id, { status: "error", error: "Network error — please try again" });
         failed++;
       }
 
@@ -282,141 +124,53 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
     }
 
     setIsUploading(false);
-
     const result = { succeeded, failed };
     setSummary(result);
 
-    // Invalidate deliverables cache so the list page refreshes
     await queryClient.invalidateQueries({ queryKey: ["partner-portal", "deliverables"] });
 
-    if (succeeded > 0) {
-      toast.success(
-        `${succeeded} file${succeeded !== 1 ? "s" : ""} submitted successfully`
-      );
-    }
-    if (failed > 0) {
-      toast.error(`${failed} file${failed !== 1 ? "s" : ""} failed to upload`);
-    }
+    if (succeeded > 0) toast.success(`${succeeded} file${succeeded !== 1 ? "s" : ""} submitted successfully`);
+    if (failed > 0) toast.error(`${failed} file${failed !== 1 ? "s" : ""} failed to upload`);
 
     onComplete?.(result);
   }
 
-  // ── Derived state ─────────────────────────────────────────────────────────
+  // ── Derived state (single pass) ───────────────────────────────────────────
 
-  const readyCount = queue.filter((i) => i.status === "pending" && i.assignmentId).length;
-  const invalidCount = queue.filter((i) => i.status === "invalid").length;
-  const unassignedCount = queue.filter(
-    (i) => i.status === "pending" && !i.assignmentId
-  ).length;
-  const hasUploadable = readyCount > 0;
-  const allDone =
-    queue.length > 0 &&
-    queue.every((i) => ["success", "error", "invalid"].includes(i.status));
+  let readyCount = 0;
+  let allDone = queue.length > 0;
+  for (const i of queue) {
+    if (i.status === "pending" && i.assignmentId) readyCount++;
+    if (!["success", "error", "invalid"].includes(i.status)) allDone = false;
+  }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      {/* Drop zone */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => !isUploading && fileInputRef.current?.click()}
-        className={[
-          "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors cursor-pointer",
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-          isUploading ? "pointer-events-none opacity-60" : "",
-        ].join(" ")}
-      >
-        <CloudUpload className="mb-4 h-12 w-12 text-muted-foreground" />
-        <p className="text-base font-medium">
-          {isDragging ? "Drop files here" : "Drag & drop files here"}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          or click to select multiple files
-        </p>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {ALLOWED_EXTENSIONS.join(", ")} · Max {MAX_FILE_SIZE_MB} MB per file
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="sr-only"
-          accept={ALLOWED_EXTENSIONS.join(",")}
-          onChange={handleInputChange}
-          disabled={isUploading}
-        />
-      </div>
+      <DeliverableDropZone onFilesSelected={addFiles} disabled={isUploading} />
 
-      {/* File queue */}
       {queue.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted-foreground">
-              {queue.length} file{queue.length !== 1 ? "s" : ""} queued
-              {readyCount > 0 && (
-                <span className="ml-2 text-foreground">
-                  · {readyCount} ready
-                </span>
-              )}
-              {invalidCount > 0 && (
-                <span className="ml-2 text-destructive">
-                  · {invalidCount} invalid
-                </span>
-              )}
-              {unassignedCount > 0 && (
-                <span className="ml-2 text-orange-600 dark:text-orange-400">
-                  · {unassignedCount} unassigned
-                </span>
-              )}
-            </p>
-            {!isUploading && !allDone && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setQueue([])}
-                className="text-muted-foreground"
-              >
-                Clear all
-              </Button>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            {queue.map((item) => (
-              <FileRow
-                key={item.id}
-                item={item}
-                assignments={acceptedAssignments}
-                disabled={isUploading}
-                onRemove={() => removeItem(item.id)}
-                onUpdate={(patch) => updateItem(item.id, patch)}
-                onToggleExpand={() => toggleExpanded(item.id)}
-              />
-            ))}
-          </div>
-        </div>
+        <DeliverableFileList
+          files={queue}
+          assignments={acceptedAssignments}
+          disabled={isUploading}
+          onRemove={removeItem}
+          onUpdate={updateItem}
+          onToggleExpand={toggleExpanded}
+          onClearAll={() => setQueue([])}
+        />
       )}
 
-      {/* Upload progress bar */}
-      {isUploading && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Uploading files…</span>
-            <span className="font-medium">{uploadProgress}%</span>
-          </div>
-          <Progress value={uploadProgress} className="h-2" />
-        </div>
-      )}
+      {isUploading && <DeliverableUploadProgress progress={uploadProgress} />}
 
-      {/* Completion summary */}
       {summary && allDone && (
         <Card
-          className={summary.failed === 0 ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30" : "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30"}
+          className={
+            summary.failed === 0
+              ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
+              : "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30"
+          }
         >
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="text-base">Upload Complete</CardTitle>
@@ -445,7 +199,6 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
         </Card>
       )}
 
-      {/* No accepted assignments warning */}
       {acceptedAssignments.length === 0 && queue.length > 0 && (
         <Alert variant="destructive">
           <AlertDescription>
@@ -455,18 +208,14 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
         </Alert>
       )}
 
-      {/* Action row */}
       {queue.length > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {hasUploadable
+            {readyCount > 0
               ? `${readyCount} file${readyCount !== 1 ? "s" : ""} will be submitted`
               : "No files are ready — assign each file to an accepted assignment"}
           </p>
-          <Button
-            onClick={handleUpload}
-            disabled={!hasUploadable || isUploading}
-          >
+          <Button onClick={handleUpload} disabled={readyCount === 0 || isUploading}>
             {isUploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -479,187 +228,6 @@ export function BulkDeliverableUpload({ onComplete }: BulkDeliverableUploadProps
               </>
             )}
           </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── FileRow sub-component ─────────────────────────────────────────────────────
-
-interface FileRowProps {
-  item: FileQueueItem;
-  assignments: { id: string; title: string; status: string; program_title?: string | null }[];
-  disabled: boolean;
-  onRemove: () => void;
-  onUpdate: (patch: Partial<FileQueueItem>) => void;
-  onToggleExpand: () => void;
-}
-
-function FileRow({ item, assignments, disabled, onRemove, onUpdate, onToggleExpand }: FileRowProps) {
-  const statusIcon = {
-    pending: null,
-    uploading: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
-    success: <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />,
-    error: <XCircle className="h-4 w-4 text-destructive" />,
-    invalid: <XCircle className="h-4 w-4 text-destructive" />,
-  }[item.status];
-
-  const rowBg = {
-    pending: "",
-    uploading: "bg-primary/5",
-    success: "bg-green-50 dark:bg-green-950/30",
-    error: "bg-red-50 dark:bg-red-950/30",
-    invalid: "bg-red-50 dark:bg-red-950/30",
-  }[item.status];
-
-  const isDone = item.status === "success" || item.status === "error" || item.status === "invalid";
-  const canExpand = !isDone || item.status === "error";
-
-  return (
-    <div className={`rounded-lg border ${rowBg} transition-colors`}>
-      {/* Row header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-
-        {/* Filename + size */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{item.file.name}</p>
-          <p className="text-xs text-muted-foreground">{formatBytes(item.file.size)}</p>
-        </div>
-
-        {/* Assignment selector (collapsed view) */}
-        {!item.expanded && item.status === "pending" && (
-          <div className="shrink-0 w-52">
-            <Select
-              value={item.assignmentId}
-              onValueChange={(v) => onUpdate({ assignmentId: v })}
-              disabled={disabled}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select assignment…" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignments.map((a) => (
-                  <SelectItem key={a.id} value={a.id} className="text-xs">
-                    {a.title}
-                    {a.program_title && (
-                      <span className="ml-1 text-muted-foreground">· {a.program_title}</span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Status badge */}
-        {item.status !== "pending" && (
-          <Badge
-            variant={
-              item.status === "success"
-                ? "default"
-                : item.status === "uploading"
-                  ? "secondary"
-                  : "destructive"
-            }
-            className="shrink-0 text-xs"
-          >
-            {item.status === "uploading" ? "Uploading…" : item.status}
-          </Badge>
-        )}
-
-        {/* Status icon */}
-        {statusIcon && <div className="shrink-0">{statusIcon}</div>}
-
-        {/* Expand toggle */}
-        {canExpand && item.status !== "uploading" && (
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
-          >
-            {item.expanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
-        )}
-
-        {/* Remove button */}
-        {!disabled && !["uploading", "success"].includes(item.status) && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="shrink-0 text-muted-foreground hover:text-destructive"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Expanded details panel */}
-      {item.expanded && (
-        <div className="border-t px-4 pb-4 pt-3 space-y-3">
-          {/* Error message */}
-          {item.error && (
-            <Alert variant="destructive" className="py-2">
-              <AlertDescription className="text-xs">{item.error}</AlertDescription>
-            </Alert>
-          )}
-
-          {item.status === "pending" && (
-            <>
-              {/* Assignment selector (expanded) */}
-              <div className="space-y-1">
-                <Label className="text-xs">Assignment *</Label>
-                <Select
-                  value={item.assignmentId}
-                  onValueChange={(v) => onUpdate({ assignmentId: v })}
-                  disabled={disabled}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select an accepted assignment…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {assignments.map((a) => (
-                      <SelectItem key={a.id} value={a.id} className="text-xs">
-                        {a.title}
-                        {a.program_title && (
-                          <span className="ml-1 text-muted-foreground">· {a.program_title}</span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Title */}
-              <div className="space-y-1">
-                <Label className="text-xs">Title</Label>
-                <Input
-                  className="h-8 text-xs"
-                  value={item.title}
-                  onChange={(e) => onUpdate({ title: e.target.value })}
-                  placeholder={item.file.name}
-                  disabled={disabled}
-                />
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <Label className="text-xs">Notes (optional)</Label>
-                <Textarea
-                  className="min-h-[60px] resize-none text-xs"
-                  value={item.notes}
-                  onChange={(e) => onUpdate({ notes: e.target.value })}
-                  placeholder="Add any notes for the coordinator…"
-                  disabled={disabled}
-                />
-              </div>
-            </>
-          )}
         </div>
       )}
     </div>
