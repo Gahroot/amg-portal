@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
-from app.api.deps import DB, require_internal
+from app.api.deps import DB, Pagination, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.dashboard import (
     PartnerPerformanceEntry,
@@ -28,11 +28,12 @@ router = APIRouter()
 )
 async def partner_rankings(
     db: DB,
-    skip: int = 0,
-    limit: int = 50,
+    pagination: Pagination,
 ) -> PartnerRankingsResponse:
     """Get all partners ranked by overall score."""
-    rankings, total = await get_all_partner_rankings(db, skip=skip, limit=limit)
+    rankings, total = await get_all_partner_rankings(
+        db, skip=pagination.skip, limit=pagination.limit
+    )
     return PartnerRankingsResponse(
         rankings=[PartnerRanking(**r) for r in rankings],
         total=total,

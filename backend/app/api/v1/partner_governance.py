@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import DB, CurrentUser, require_admin, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_admin, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.partner_governance import (
     CompositeScoreResponse,
@@ -31,11 +31,12 @@ router = APIRouter()
 )
 async def governance_dashboard(
     db: DB,
-    skip: int = 0,
-    limit: int = 50,
+    pagination: Pagination,
 ) -> GovernanceDashboardResponse:
     """Get governance dashboard with all partners, scores, and status."""
-    entries, total = await get_governance_dashboard(db, skip=skip, limit=limit)
+    entries, total = await get_governance_dashboard(
+        db, skip=pagination.skip, limit=pagination.limit
+    )
     return GovernanceDashboardResponse(
         entries=[GovernanceDashboardEntry(**e) for e in entries],
         total=total,

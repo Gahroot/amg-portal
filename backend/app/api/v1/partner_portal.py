@@ -152,9 +152,7 @@ async def accept_my_assignment(
 
         await on_assignment_accepted(db, assignment)
     except Exception:
-        logger.exception(
-            "Failed to send assignment_accepted notification for %s", assignment.id
-        )
+        logger.exception("Failed to send assignment_accepted notification for %s", assignment.id)
 
     try:
         from app.services.webhook_service import trigger_partner_webhooks
@@ -170,9 +168,7 @@ async def accept_my_assignment(
             },
         )
     except Exception:
-        logger.exception(
-            "Failed to trigger webhook for assignment_accepted %s", assignment.id
-        )
+        logger.exception("Failed to trigger webhook for assignment_accepted %s", assignment.id)
 
     result = await db.execute(
         select(PartnerAssignment)
@@ -230,9 +226,7 @@ async def decline_my_assignment(
 
         await on_assignment_declined(db, assignment)
     except Exception:
-        logger.exception(
-            "Failed to send assignment_declined notification for %s", assignment.id
-        )
+        logger.exception("Failed to send assignment_declined notification for %s", assignment.id)
 
     try:
         from app.services.webhook_service import trigger_partner_webhooks
@@ -249,9 +243,7 @@ async def decline_my_assignment(
             },
         )
     except Exception:
-        logger.exception(
-            "Failed to trigger webhook for assignment_declined %s", assignment.id
-        )
+        logger.exception("Failed to trigger webhook for assignment_declined %s", assignment.id)
 
     result = await db.execute(
         select(PartnerAssignment)
@@ -386,8 +378,7 @@ async def bulk_submit_deliverables(
 
     # Fetch accepted assignments that belong to this partner
     assignments_result = await db.execute(
-        select(PartnerAssignment)
-        .where(
+        select(PartnerAssignment).where(
             PartnerAssignment.partner_id == partner.id,
             PartnerAssignment.status == "accepted",
         )
@@ -528,9 +519,7 @@ async def get_my_calendar_events(
         query = query.where(PartnerAssignment.program_id == program_id)
 
     if not include_completed:
-        query = query.where(
-            PartnerAssignment.status.notin_(["completed", "cancelled"])
-        )
+        query = query.where(PartnerAssignment.status.notin_(["completed", "cancelled"]))
 
     result = await db.execute(query)
     assignments = result.scalars().all()
@@ -857,7 +846,8 @@ async def get_my_performance_status(
 
 
 async def _resolve_partner_participants(
-    db: DB, conversations: list[Conversation],
+    db: DB,
+    conversations: list[Conversation],
 ) -> dict[str, list[ParticipantInfo]]:
     """Resolve participant_ids to ParticipantInfo for a batch of conversations."""
     all_ids: set[UUID] = set()
@@ -872,14 +862,14 @@ async def _resolve_partner_participants(
     user_map: dict[UUID, ParticipantInfo] = {}
     for row in result.all():
         user_map[row.id] = ParticipantInfo(
-            id=row.id, full_name=row.full_name, role=row.role,
+            id=row.id,
+            full_name=row.full_name,
+            role=row.role,
         )
 
     out: dict[str, list[ParticipantInfo]] = {}
     for conv in conversations:
-        out[str(conv.id)] = [
-            user_map[pid] for pid in conv.participant_ids if pid in user_map
-        ]
+        out[str(conv.id)] = [user_map[pid] for pid in conv.participant_ids if pid in user_map]
     return out
 
 
@@ -907,7 +897,9 @@ async def get_partner_conversations(
 
     conv_ids = [c.id for c in conversations]
     unread_counts = await communication_service.get_unread_counts_for_conversations(
-        db, conv_ids, current_user.id,
+        db,
+        conv_ids,
+        current_user.id,
     )
 
     conv_responses: list[ConversationResponse] = []
@@ -943,7 +935,9 @@ async def get_partner_conversation(
     resp = ConversationResponse.model_validate(conversation)
     resp.participants = participants_map.get(str(conversation.id), [])
     unread_counts = await communication_service.get_unread_counts_for_conversations(
-        db, [conversation.id], current_user.id,
+        db,
+        [conversation.id],
+        current_user.id,
     )
     resp.unread_count = unread_counts.get(str(conversation.id), 0)
     return resp
@@ -971,7 +965,11 @@ async def get_partner_conversation_messages(
         raise ForbiddenException("Not a participant in this conversation")
 
     messages, total = await communication_service.get_messages_for_conversation(
-        db, conversation_id, current_user.id, skip=skip, limit=limit,
+        db,
+        conversation_id,
+        current_user.id,
+        skip=skip,
+        limit=limit,
     )
     return MessageListResponse(
         communications=[CommunicationResponse.model_validate(m) for m in messages],
@@ -998,14 +996,18 @@ async def send_partner_message(
 
     try:
         await conversation_service.validate_message_scope(
-            db, conversation_id, current_user.id,
+            db,
+            conversation_id,
+            current_user.id,
         )
     except MessageScopeError as exc:
         raise ForbiddenException(exc.detail) from exc
 
     data.conversation_id = conversation_id
     message = await communication_service.send_message(
-        db, sender_id=current_user.id, data=data,
+        db,
+        sender_id=current_user.id,
+        data=data,
     )
     return CommunicationResponse.model_validate(message)
 
