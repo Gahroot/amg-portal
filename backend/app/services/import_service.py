@@ -1,4 +1,8 @@
-"""Service for importing data from CSV/Excel files."""
+"""Service for importing data from CSV/Excel files.
+
+Handles job lifecycle, DB write operations, and reference/duplicate validation.
+Pure parsing logic lives in import_parsers.py.
+"""
 
 import asyncio
 import base64
@@ -6,14 +10,11 @@ import contextlib
 import csv
 import io
 import logging
-import re
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
-from email.utils import parseaddr
-from typing import Any
+from typing import Any, cast
 
-from openpyxl import load_workbook
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +28,6 @@ from app.schemas.import_schemas import (
     ColumnMapping,
     ImportEntityType,
     ImportError,
-    ImportFieldDefinition,
     ImportJobResponse,
     ImportStatus,
     ImportTemplateResponse,
@@ -41,474 +41,18 @@ from app.services.duplicate_detection_service import (
     _normalize_name,
     _normalize_phone,
 )
+from app.services.import_parsers import (
+    FIELD_DEFINITIONS,
+    auto_detect_mappings,
+    parse_csv,
+    parse_excel,
+    validate_row,
+)
 
 logger = logging.getLogger(__name__)
 
 # In-memory storage for import jobs (in production, use Redis or database)
 _import_jobs: dict[str, dict[str, Any]] = {}
-
-
-# Field definitions for each entity type
-CLIENT_FIELDS: list[ImportFieldDefinition] = [
-    ImportFieldDefinition(
-        name="legal_name",
-        display_name="Legal Name",
-        description="Client's legal name",
-        required=True,
-        field_type="string",
-        example_values=["John Smith", "Acme Corporation"],
-    ),
-    ImportFieldDefinition(
-        name="display_name",
-        display_name="Display Name",
-        description="Preferred name or nickname",
-        required=False,
-        field_type="string",
-        example_values=["John", "Acme Corp"],
-    ),
-    ImportFieldDefinition(
-        name="entity_type",
-        display_name="Entity Type",
-        description="Type of entity",
-        required=False,
-        field_type="enum",
-        enum_values=["individual", "family_office", "trust", "corporation"],
-        example_values=["individual", "corporation"],
-    ),
-    ImportFieldDefinition(
-        name="jurisdiction",
-        display_name="Jurisdiction",
-        description="Primary jurisdiction",
-        required=False,
-        field_type="string",
-        example_values=["United States", "United Kingdom", "Singapore"],
-    ),
-    ImportFieldDefinition(
-        name="tax_id",
-        display_name="Tax ID",
-        description="Tax identification number",
-        required=False,
-        field_type="string",
-        example_values=["123-45-6789"],
-    ),
-    ImportFieldDefinition(
-        name="primary_email",
-        display_name="Primary Email",
-        description="Primary contact email",
-        required=True,
-        field_type="email",
-        example_values=["john@example.com"],
-    ),
-    ImportFieldDefinition(
-        name="secondary_email",
-        display_name="Secondary Email",
-        description="Secondary contact email",
-        required=False,
-        field_type="email",
-        example_values=["john.d@example.com"],
-    ),
-    ImportFieldDefinition(
-        name="phone",
-        display_name="Phone",
-        description="Contact phone number",
-        required=False,
-        field_type="phone",
-        example_values=["+1 (555) 123-4567"],
-    ),
-    ImportFieldDefinition(
-        name="address",
-        display_name="Address",
-        description="Physical address",
-        required=False,
-        field_type="string",
-        example_values=["123 Main St, New York, NY 10001"],
-    ),
-    ImportFieldDefinition(
-        name="communication_preference",
-        display_name="Communication Preference",
-        description="Preferred communication channel",
-        required=False,
-        field_type="enum",
-        enum_values=["email", "phone", "sms", "whatsapp"],
-        example_values=["email"],
-    ),
-    ImportFieldDefinition(
-        name="sensitivities",
-        display_name="Sensitivities",
-        description="Any sensitivities to be aware of",
-        required=False,
-        field_type="string",
-        example_values=["Prefers evening calls"],
-    ),
-    ImportFieldDefinition(
-        name="special_instructions",
-        display_name="Special Instructions",
-        description="Special handling instructions",
-        required=False,
-        field_type="string",
-        example_values=["Contact assistant first"],
-    ),
-    ImportFieldDefinition(
-        name="birth_date",
-        display_name="Birth Date",
-        description="Date of birth (YYYY-MM-DD)",
-        required=False,
-        field_type="date",
-        example_values=["1980-01-15"],
-    ),
-    ImportFieldDefinition(
-        name="assigned_rm_email",
-        display_name="Assigned RM Email",
-        description="Email of the relationship manager to assign",
-        required=False,
-        field_type="email",
-        example_values=["rm@example.com"],
-    ),
-]
-
-PARTNER_FIELDS: list[ImportFieldDefinition] = [
-    ImportFieldDefinition(
-        name="firm_name",
-        display_name="Firm Name",
-        description="Name of the partner firm",
-        required=True,
-        field_type="string",
-        example_values=["Global Advisory Partners"],
-    ),
-    ImportFieldDefinition(
-        name="contact_name",
-        display_name="Contact Name",
-        description="Primary contact person's name",
-        required=True,
-        field_type="string",
-        example_values=["Jane Doe"],
-    ),
-    ImportFieldDefinition(
-        name="contact_email",
-        display_name="Contact Email",
-        description="Primary contact email",
-        required=True,
-        field_type="email",
-        example_values=["jane@globaladvisory.com"],
-    ),
-    ImportFieldDefinition(
-        name="contact_phone",
-        display_name="Contact Phone",
-        description="Contact phone number",
-        required=False,
-        field_type="phone",
-        example_values=["+44 20 1234 5678"],
-    ),
-    ImportFieldDefinition(
-        name="capabilities",
-        display_name="Capabilities",
-        description="Comma-separated list of capabilities",
-        required=False,
-        field_type="string",
-        example_values=["Legal, Tax Advisory, Immigration"],
-    ),
-    ImportFieldDefinition(
-        name="geographies",
-        display_name="Geographies",
-        description="Comma-separated list of geographies served",
-        required=False,
-        field_type="string",
-        example_values=["United States, Europe, Asia"],
-    ),
-    ImportFieldDefinition(
-        name="notes",
-        display_name="Notes",
-        description="Additional notes about the partner",
-        required=False,
-        field_type="string",
-        example_values=["Preferred partner for tax matters"],
-    ),
-]
-
-PROGRAM_FIELDS: list[ImportFieldDefinition] = [
-    ImportFieldDefinition(
-        name="title",
-        display_name="Program Title",
-        description="Title of the program",
-        required=True,
-        field_type="string",
-        example_values=["Estate Planning 2024"],
-    ),
-    ImportFieldDefinition(
-        name="client_email",
-        display_name="Client Email",
-        description="Email of the client (must exist)",
-        required=True,
-        field_type="email",
-        example_values=["client@example.com"],
-    ),
-    ImportFieldDefinition(
-        name="objectives",
-        display_name="Objectives",
-        description="Program objectives",
-        required=False,
-        field_type="string",
-        example_values=["Set up trust structure"],
-    ),
-    ImportFieldDefinition(
-        name="scope",
-        display_name="Scope",
-        description="Program scope",
-        required=False,
-        field_type="string",
-        example_values=["US and UK jurisdictions"],
-    ),
-    ImportFieldDefinition(
-        name="budget_envelope",
-        display_name="Budget Envelope",
-        description="Budget amount",
-        required=False,
-        field_type="number",
-        example_values=["50000", "100000.00"],
-    ),
-    ImportFieldDefinition(
-        name="start_date",
-        display_name="Start Date",
-        description="Program start date (YYYY-MM-DD)",
-        required=False,
-        field_type="date",
-        example_values=["2024-01-01"],
-    ),
-    ImportFieldDefinition(
-        name="end_date",
-        display_name="End Date",
-        description="Program end date (YYYY-MM-DD)",
-        required=False,
-        field_type="date",
-        example_values=["2024-12-31"],
-    ),
-    ImportFieldDefinition(
-        name="status",
-        display_name="Status",
-        description="Program status",
-        required=False,
-        field_type="enum",
-        enum_values=["planning", "active", "on_hold", "completed", "cancelled"],
-        example_values=["planning", "active"],
-    ),
-]
-
-TASK_FIELDS: list[ImportFieldDefinition] = [
-    ImportFieldDefinition(
-        name="title",
-        display_name="Task Title",
-        description="Title of the task",
-        required=True,
-        field_type="string",
-        example_values=["Review legal documents"],
-    ),
-    ImportFieldDefinition(
-        name="program_title",
-        display_name="Program Title",
-        description="Title of the associated program",
-        required=False,
-        field_type="string",
-        example_values=["Estate Planning 2024"],
-    ),
-    ImportFieldDefinition(
-        name="milestone_title",
-        display_name="Milestone Title",
-        description="Title of the associated milestone",
-        required=False,
-        field_type="string",
-        example_values=["Phase 1: Research"],
-    ),
-    ImportFieldDefinition(
-        name="description",
-        display_name="Description",
-        description="Task description",
-        required=False,
-        field_type="string",
-        example_values=["Review all legal documents for compliance"],
-    ),
-    ImportFieldDefinition(
-        name="due_date",
-        display_name="Due Date",
-        description="Task due date (YYYY-MM-DD)",
-        required=False,
-        field_type="date",
-        example_values=["2024-03-15"],
-    ),
-    ImportFieldDefinition(
-        name="assigned_to_email",
-        display_name="Assigned To Email",
-        description="Email of the user to assign",
-        required=False,
-        field_type="email",
-        example_values=["coordinator@example.com"],
-    ),
-    ImportFieldDefinition(
-        name="priority",
-        display_name="Priority",
-        description="Task priority",
-        required=False,
-        field_type="enum",
-        enum_values=["low", "medium", "high", "urgent"],
-        example_values=["medium", "high"],
-    ),
-    ImportFieldDefinition(
-        name="status",
-        display_name="Status",
-        description="Task status",
-        required=False,
-        field_type="enum",
-        enum_values=["pending", "in_progress", "completed", "blocked"],
-        example_values=["pending", "in_progress"],
-    ),
-]
-
-FIELD_DEFINITIONS: dict[ImportEntityType, list[ImportFieldDefinition]] = {
-    ImportEntityType.CLIENTS: CLIENT_FIELDS,
-    ImportEntityType.PARTNERS: PARTNER_FIELDS,
-    ImportEntityType.PROGRAMS: PROGRAM_FIELDS,
-    ImportEntityType.TASKS: TASK_FIELDS,
-}
-
-
-def _normalize_column_name(name: str) -> str:
-    """Normalize column name for matching."""
-    # Lowercase, replace underscores/spaces with underscores, remove special chars
-    normalized = name.lower().strip()
-    normalized = re.sub(r"[\s\-]+", "_", normalized)
-    normalized = re.sub(r"[^a-z0-9_]", "", normalized)
-    return normalized
-
-
-def _auto_detect_mappings(columns: list[str], entity_type: ImportEntityType) -> dict[str, str]:
-    """Auto-detect column to field mappings based on column names."""
-    field_defs = FIELD_DEFINITIONS.get(entity_type, [])
-
-    # Build a lookup for field name variations
-    field_variations: dict[str, str] = {}
-    for field in field_defs:
-        # Add field name
-        field_variations[_normalize_column_name(field.name)] = field.name
-        # Add display name
-        field_variations[_normalize_column_name(field.display_name)] = field.name
-        # Add common variations
-        if field.name == "primary_email":
-            field_variations["email"] = field.name
-            field_variations["email_address"] = field.name
-        if field.name == "legal_name":
-            field_variations["name"] = field.name
-            field_variations["client_name"] = field.name
-        if field.name == "firm_name":
-            field_variations["name"] = field.name
-            field_variations["partner_name"] = field.name
-        if field.name == "contact_email":
-            field_variations["email"] = field.name
-        if field.name == "contact_name":
-            field_variations["name"] = field.name
-
-    mappings: dict[str, str] = {}
-    for col in columns:
-        normalized = _normalize_column_name(col)
-        if normalized in field_variations:
-            mappings[col] = field_variations[normalized]
-
-    return mappings
-
-
-def _parse_csv(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
-    """Parse CSV content and return headers and rows."""
-    text = content.decode("utf-8-sig")  # Handle BOM
-    reader = csv.DictReader(io.StringIO(text))
-    if reader.fieldnames is None:
-        raise BadRequestException("CSV file has no headers")
-    columns = list(reader.fieldnames)
-    rows = list(reader)
-    return columns, rows
-
-
-def _parse_excel(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
-    """Parse Excel content and return headers and rows."""
-    wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-    ws = wb.active
-    if ws is None:
-        raise BadRequestException("Excel file has no sheets")
-
-    # Get headers from first row
-    headers = []
-    for cell in next(ws.iter_rows(min_row=1, max_row=1)):
-        value = cell.value
-        if value is not None:
-            headers.append(str(value))
-        else:
-            headers.append(f"Column_{cell.column_letter}")
-
-    # Get data rows
-    rows = []
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        row_dict = {}
-        for i, header in enumerate(headers):
-            value = row[i] if i < len(row) else None
-            row_dict[header] = str(value) if value is not None else ""
-        rows.append(row_dict)
-
-    wb.close()
-    return headers, rows
-
-
-def _validate_email(value: str) -> bool:
-    """Validate email format."""
-    _, email = parseaddr(value)
-    return bool(email and "@" in email and "." in email.split("@")[1])
-
-
-def _validate_phone(value: str) -> bool:
-    """Validate phone format (basic check)."""
-    # Allow digits, spaces, dashes, parentheses, plus
-    cleaned = re.sub(r"[\d\s\-\(\)\+]", "", value)
-    return len(cleaned) == 0 and len(re.sub(r"\D", "", value)) >= 7
-
-
-def _validate_date(value: str) -> tuple[bool, str | None]:
-    """Validate and normalize date format."""
-    # Try common date formats
-    formats = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y", "%m-%d-%Y"]
-    for fmt in formats:
-        try:
-            from datetime import datetime as dt
-
-            parsed = dt.strptime(value, fmt)
-            return True, parsed.strftime("%Y-%m-%d")
-        except ValueError:
-            continue
-    return False, None
-
-
-def _validate_decimal(value: str) -> tuple[bool, Decimal | None]:
-    """Validate and parse decimal value."""
-    try:
-        # Remove currency symbols and commas
-        cleaned = re.sub(r"[$£€,]", "", value)
-        return True, Decimal(cleaned)
-    except (InvalidOperation, ValueError):
-        return False, None
-
-
-def _apply_transform(value: str, transform: str | None) -> str:
-    """Apply a transform to a value."""
-    if not transform:
-        return value
-
-    if transform == "uppercase":
-        return value.upper()
-    elif transform == "lowercase":
-        return value.lower()
-    elif transform == "trim":
-        return value.strip()
-    elif transform.startswith("date:"):
-        # Date format transform
-        _valid, normalized = _validate_date(value)
-        if normalized:
-            return normalized
-    return value
 
 
 class ImportService:
@@ -536,25 +80,22 @@ class ImportService:
         entity_type: ImportEntityType,
     ) -> ImportJobResponse:
         """Upload and parse an import file."""
-        # Detect file type and parse
         lower_name = filename.lower()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         if lower_name.endswith(".csv"):
-            columns, rows = await loop.run_in_executor(None, _parse_csv, content)
+            columns, rows = await loop.run_in_executor(None, parse_csv, content)
         elif lower_name.endswith((".xlsx", ".xls")):
-            columns, rows = await loop.run_in_executor(None, _parse_excel, content)
+            columns, rows = await loop.run_in_executor(None, parse_excel, content)
         else:
             raise BadRequestException("Unsupported file format. Please upload a CSV or Excel file.")
 
         if not rows:
             raise BadRequestException("File contains no data rows")
 
-        # Auto-detect column mappings
-        detected_mappings = _auto_detect_mappings(columns, entity_type)
+        detected_mappings = auto_detect_mappings(columns, entity_type)
 
-        # Create import job
         import_id = str(uuid.uuid4())
-        job_data = {
+        job_data: dict[str, Any] = {
             "import_id": import_id,
             "entity_type": entity_type,
             "filename": filename,
@@ -572,15 +113,13 @@ class ImportService:
         }
         _import_jobs[import_id] = job_data
 
-        from typing import cast as _cast
-
         return ImportJobResponse(
             import_id=import_id,
             entity_type=entity_type,
             filename=filename,
             status=ImportStatus.PENDING,
-            created_at=_cast(datetime, job_data["created_at"]),
-            updated_at=_cast(datetime, job_data["updated_at"]),
+            created_at=cast(datetime, job_data["created_at"]),
+            updated_at=cast(datetime, job_data["updated_at"]),
             total_rows=len(rows),
             mappings=[],
         )
@@ -637,10 +176,8 @@ class ImportService:
 
         entity_type = job["entity_type"]
         field_defs = FIELD_DEFINITIONS.get(entity_type, [])
-        required_fields = {f.name for f in field_defs if f.required}
-        field_types = {f.name: f for f in field_defs}
 
-        # Build mapping lookup
+        # Build mapping/transform lookups
         mapping_lookup: dict[str, str] = {}
         transform_lookup: dict[str, str | None] = {}
         for m in job["mappings"]:
@@ -652,10 +189,12 @@ class ImportService:
         invalid_count = 0
         warning_count = 0
 
-        # Load reference data for validation
-        existing_clients = await self._load_client_emails(db)
-        existing_programs = await self._load_program_titles(db)
-        existing_users = await self._load_user_emails(db)
+        # Load reference data concurrently
+        existing_clients, existing_programs, existing_users = await asyncio.gather(
+            self._load_client_emails(db),
+            self._load_program_titles(db),
+            self._load_user_emails(db),
+        )
 
         # Pre-load duplicate-check candidates once (avoids N+1 when entity_type==CLIENTS)
         dup_candidates: list[ClientProfile] = []
@@ -663,128 +202,18 @@ class ImportService:
             dup_candidates = await self._load_dup_candidates(db, job["raw_rows"], job["mappings"])
 
         for row_num, raw_row in enumerate(job["raw_rows"], start=1):
-            row_errors: list[dict[str, Any]] = []
-            row_warnings: list[dict[str, Any]] = []
-            mapped_data: dict[str, Any] = {}
+            mapped_data, row_errors, row_warnings = validate_row(
+                row_num=row_num,
+                raw_row=raw_row,
+                columns=job["columns"],
+                mapping_lookup=mapping_lookup,
+                transform_lookup=transform_lookup,
+                default_values=job.get("default_values", {}),
+                field_defs=field_defs,
+            )
 
-            # Apply mappings and defaults
-            for col in job["columns"]:
-                target_field = mapping_lookup.get(col)
-                if target_field:
-                    value = str(raw_row.get(col, "")).strip()
-                    if value:
-                        transform = transform_lookup.get(col)
-                        value = _apply_transform(value, transform)
-                    mapped_data[target_field] = value
-
-            # Apply defaults for missing fields
-            for field_name, default_val in job.get("default_values", {}).items():
-                if field_name not in mapped_data or not mapped_data[field_name]:
-                    mapped_data[field_name] = default_val
-
-            # Validate required fields
-            for req_field in required_fields:
-                value = mapped_data.get(req_field) or ""
-                if not value:
-                    row_errors.append(
-                        {
-                            "row_number": row_num,
-                            "field": req_field,
-                            "error_type": "required",
-                            "message": f"{req_field.replace('_', ' ').title()} is required",
-                            "value": None,
-                        }
-                    )
-
-            # Validate field types and formats
-            for field_name, value in mapped_data.items():
-                if not value:
-                    continue
-
-                field_def = field_types.get(field_name)
-                if not field_def:
-                    continue
-
-                # Email validation
-                if field_def.field_type == "email":
-                    if not _validate_email(value):
-                        row_errors.append(
-                            {
-                                "row_number": row_num,
-                                "field": field_name,
-                                "error_type": "format",
-                                "message": f"Invalid email format: {value}",
-                                "value": value,
-                            }
-                        )
-
-                # Phone validation
-                elif field_def.field_type == "phone":
-                    if not _validate_phone(value):
-                        row_errors.append(
-                            {
-                                "row_number": row_num,
-                                "field": field_name,
-                                "error_type": "format",
-                                "message": f"Invalid phone format: {value}",
-                                "value": value,
-                            }
-                        )
-
-                # Date validation
-                elif field_def.field_type == "date":
-                    valid, normalized = _validate_date(value)
-                    if not valid:
-                        row_errors.append(
-                            {
-                                "row_number": row_num,
-                                "field": field_name,
-                                "error_type": "format",
-                                "message": f"Invalid date format: {value}. Use YYYY-MM-DD",
-                                "value": value,
-                            }
-                        )
-                    else:
-                        mapped_data[field_name] = normalized
-
-                # Number validation
-                elif field_def.field_type == "number":
-                    valid, parsed = _validate_decimal(value)
-                    if not valid:
-                        row_errors.append(
-                            {
-                                "row_number": row_num,
-                                "field": field_name,
-                                "error_type": "format",
-                                "message": f"Invalid number format: {value}",
-                                "value": value,
-                            }
-                        )
-                    else:
-                        mapped_data[field_name] = str(parsed)
-
-                # Enum validation
-                elif (
-                    field_def.field_type == "enum"
-                    and field_def.enum_values
-                    and value.lower() not in [v.lower() for v in field_def.enum_values]
-                ):
-                    row_errors.append(
-                        {
-                            "row_number": row_num,
-                            "field": field_name,
-                            "error_type": "value",
-                            "message": (
-                                f"Invalid value: {value}. "
-                                f"Must be one of: {', '.join(field_def.enum_values)}"
-                            ),
-                            "value": value,
-                        }
-                    )
-
-            # Reference validation (entity-specific)
+            # Reference / duplicate checks (require DB access)
             if entity_type == ImportEntityType.CLIENTS:
-                # Check for duplicates in-memory against pre-loaded candidates
                 legal_name = mapped_data.get("legal_name")
                 primary_email = mapped_data.get("primary_email")
                 phone = mapped_data.get("phone")
@@ -814,7 +243,6 @@ class ImportService:
                             }
                         )
 
-                # Validate RM email
                 rm_email = mapped_data.get("assigned_rm_email")
                 if rm_email and rm_email not in existing_users:
                     row_errors.append(
@@ -828,7 +256,6 @@ class ImportService:
                     )
 
             elif entity_type == ImportEntityType.PROGRAMS:
-                # Validate client exists
                 client_email = mapped_data.get("client_email")
                 if client_email and client_email not in existing_clients:
                     row_errors.append(
@@ -842,7 +269,6 @@ class ImportService:
                     )
 
             elif entity_type == ImportEntityType.TASKS:
-                # Validate program exists
                 program_title = mapped_data.get("program_title")
                 if program_title and program_title not in existing_programs:
                     row_warnings.append(
@@ -858,7 +284,6 @@ class ImportService:
                         }
                     )
 
-                # Validate assignee
                 assignee_email = mapped_data.get("assigned_to_email")
                 if assignee_email and assignee_email not in existing_users:
                     row_errors.append(
@@ -871,7 +296,6 @@ class ImportService:
                         }
                     )
 
-            # Track row status
             is_valid = len(row_errors) == 0
             if is_valid:
                 valid_count += 1
@@ -883,7 +307,6 @@ class ImportService:
             job["errors"].extend(row_errors)
             job["warnings"].extend(row_warnings)
 
-            # Add to preview (limit to first 100 rows)
             if len(preview_rows) < 100:
                 preview_rows.append(
                     {
@@ -941,32 +364,26 @@ class ImportService:
         skipped_count = 0
         failed_count = 0
 
-        # Build error row lookup
-        error_rows: set[int] = set()
-        warning_rows: set[int] = set()
-        for err in job["errors"]:
-            error_rows.add(err["row_number"])
-        for warn in job["warnings"]:
-            warning_rows.add(warn["row_number"])
+        error_rows: set[int] = {err["row_number"] for err in job["errors"]}
+        warning_rows: set[int] = {warn["row_number"] for warn in job["warnings"]}
 
-        # Load reference data for lookups
-        client_email_to_id = await self._load_client_email_to_id(db)
-        user_email_to_id = await self._load_user_email_to_id(db)
+        # Load reference data concurrently
+        client_email_to_id, user_email_to_id = await asyncio.gather(
+            self._load_client_email_to_id(db),
+            self._load_user_email_to_id(db),
+        )
 
-        # Suppress per-row audit log entries during bulk import to avoid
-        # write amplification (one audit entry per inserted row).
+        # Suppress per-row audit log entries during bulk import
         db.info["skip_audit"] = True
 
         for preview_row in job["preview_rows"]:
             row_num = preview_row["row_number"]
             mapped_data = preview_row["mapped_data"]
 
-            # Skip invalid rows if requested
             if skip_invalid_rows and row_num in error_rows:
                 skipped_count += 1
                 continue
 
-            # Skip rows with warnings if requested
             if skip_warnings and row_num in warning_rows:
                 skipped_count += 1
                 continue
@@ -995,8 +412,6 @@ class ImportService:
                         imported_count += 1
 
                 elif entity_type == ImportEntityType.TASKS:
-                    # Tasks import is more complex - needs program/milestone context
-                    # For now, create as standalone tasks
                     created_id = await self._import_task(db, mapped_data, user_email_to_id)
                     if created_id:
                         created_ids.append(created_id)
@@ -1015,7 +430,6 @@ class ImportService:
                 )
                 failed_count += 1
 
-        # Single commit covers the entire import as one atomic transaction
         await db.commit()
 
         job["status"] = ImportStatus.COMPLETED if failed_count == 0 else ImportStatus.FAILED
@@ -1045,11 +459,8 @@ class ImportService:
 
         output = io.StringIO()
         writer = csv.writer(output)
-
-        # Write header
         writer.writerow(["Row", "Column", "Field", "Error Type", "Message", "Value"])
 
-        # Write errors
         for err in job.get("errors", []):
             writer.writerow(
                 [
@@ -1062,8 +473,7 @@ class ImportService:
                 ]
             )
 
-        # Write warnings
-        writer.writerow([])  # Blank row
+        writer.writerow([])
         writer.writerow(["Warnings:"])
         for warn in job.get("warnings", []):
             writer.writerow(
@@ -1133,7 +543,7 @@ class ImportService:
                 results.append(job)
         return results
 
-    # --- Helper methods ---
+    # --- DB reference loaders ---
 
     async def _load_client_emails(self, db: AsyncSession) -> set[str]:
         """Load all client emails for reference validation."""
@@ -1156,12 +566,12 @@ class ImportService:
         return {row[0].lower() for row in result.fetchall()}
 
     async def _load_client_email_to_id(self, db: AsyncSession) -> dict[str, uuid.UUID]:
-        """Load client email to ID mapping."""
+        """Load client email-to-ID mapping."""
         result = await db.execute(select(ClientProfile.id, ClientProfile.primary_email))
         return {row[1].lower(): row[0] for row in result.fetchall()}
 
     async def _load_user_email_to_id(self, db: AsyncSession) -> dict[str, uuid.UUID]:
-        """Load user email to ID mapping."""
+        """Load user email-to-ID mapping."""
         result = await db.execute(select(User.id, User.email))
         return {row[1].lower(): row[0] for row in result.fetchall()}
 
@@ -1171,13 +581,7 @@ class ImportService:
         raw_rows: list[dict[str, str]],
         mappings: list[dict[str, Any]],
     ) -> list[ClientProfile]:
-        """Batch-load client duplicate candidates for all rows in the import.
-
-        Builds a broad OR filter from every name/email/phone value across all
-        rows (mirrors the per-row filter logic in check_duplicates), issues a
-        single query capped at FUZZY_SEARCH_LIMIT, and returns the candidates
-        for in-memory scoring in the validation loop.
-        """
+        """Batch-load client duplicate candidates for all rows in the import."""
         mapping_lookup = {m["source_column"]: m["target_field"] for m in mappings}
 
         names: list[str] = []
@@ -1228,6 +632,8 @@ class ImportService:
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    # --- DB write operations ---
+
     async def _import_client(
         self,
         db: AsyncSession,
@@ -1238,7 +644,6 @@ class ImportService:
         """Import a single client."""
         from app.schemas.client_profile import ClientProfileCreate
 
-        # Map assigned RM email to ID
         assigned_rm_id = None
         rm_email = data.get("assigned_rm_email")
         if rm_email:
@@ -1265,7 +670,6 @@ class ImportService:
             created_by_id=created_by_id or uuid.UUID("00000000-0000-0000-0000-000000000000"),
         )
 
-        # Update assigned RM if provided
         if assigned_rm_id and client:
             client.assigned_rm_id = assigned_rm_id
 
@@ -1281,13 +685,12 @@ class ImportService:
         from app.models.enums import PartnerStatus
         from app.models.partner import PartnerProfile
 
-        capabilities = []
-        if data.get("capabilities"):
-            capabilities = [c.strip() for c in data["capabilities"].split(",")]
-
-        geographies = []
-        if data.get("geographies"):
-            geographies = [g.strip() for g in data["geographies"].split(",")]
+        capabilities = (
+            [c.strip() for c in data["capabilities"].split(",")] if data.get("capabilities") else []
+        )
+        geographies = (
+            [g.strip() for g in data["geographies"].split(",")] if data.get("geographies") else []
+        )
 
         partner = PartnerProfile(
             firm_name=data.get("firm_name", ""),
@@ -1356,9 +759,7 @@ class ImportService:
         data: dict[str, Any],
         user_email_to_id: dict[str, uuid.UUID],
     ) -> uuid.UUID | None:
-        """Import a single task (as a standalone task)."""
-        # Note: Full task import requires program/milestone context
-        # This creates standalone tasks which can be linked later
+        """Import a single task (standalone; can be linked to program later)."""
         from app.models.task import Task
 
         assignee_id = None
@@ -1383,8 +784,6 @@ class ImportService:
             assigned_to=assignee_id,
             priority=priority,
             status=status_val,
-            # Note: milestone_id is required but not available for standalone tasks
-            # This would need to be handled in a full implementation
         )
 
         db.add(task)
