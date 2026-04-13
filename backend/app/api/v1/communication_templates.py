@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_coordinator_or_above,
 )
@@ -31,18 +32,17 @@ router = APIRouter()
 async def list_templates(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     template_type: str | None = Query(None),
     include_inactive: bool = Query(False),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> TemplateListResponse:
     """List communication templates. Coordinators and above may request inactive templates."""
     templates, total = await template_service.get_active_templates(
         db,
         template_type=template_type,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
         include_inactive=include_inactive,
     )
     return TemplateListResponse(

@@ -2,10 +2,10 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 
-from app.api.deps import DB, require_admin, require_internal
+from app.api.deps import DB, Pagination, require_admin, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.escalation_template import EscalationTemplate
 from app.schemas.escalation_template import (
@@ -37,8 +37,7 @@ VALID_SEVERITIES = {"task", "milestone", "program", "client_impact"}
 )
 async def list_escalation_templates(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
+    pagination: Pagination,
     category: str | None = None,
     severity: str | None = None,
     is_active: bool | None = None,
@@ -56,7 +55,7 @@ async def list_escalation_templates(
         q = q.where(EscalationTemplate.is_system == is_system)
 
     q = q.order_by(EscalationTemplate.is_system.desc(), EscalationTemplate.name)
-    templates, total = await paginate(db, q, skip=skip, limit=limit)
+    templates, total = await paginate(db, q, skip=pagination.skip, limit=pagination.limit)
 
     return EscalationTemplateListResponse(
         templates=[EscalationTemplateResponse.model_validate(t) for t in templates],

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +13,7 @@ from app.api.deps import (
     DB,
     CurrentPartner,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_coordinator_or_above,
     require_internal,
@@ -102,10 +103,9 @@ async def create_deliverable(
 async def list_deliverables(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     _: None = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
     assignment_id: UUID | None = None,
     status: str | None = None,
     search: str | None = None,
@@ -120,7 +120,7 @@ async def list_deliverables(
         query = query.where(Deliverable.title.ilike(f"%{search}%"))
 
     query = query.order_by(Deliverable.created_at.desc())
-    deliverables, total = await paginate(db, query, skip=skip, limit=limit)
+    deliverables, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return DeliverableListResponse(
         deliverables=[build_deliverable_response(d) for d in deliverables],  # type: ignore[misc]

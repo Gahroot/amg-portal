@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client import Client
 from app.models.kyc_document import KYCDocument
@@ -69,13 +69,12 @@ async def create_verification(
 async def list_verifications(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     status: str | None = Query(None),
     client_id: UUID | None = Query(None),
     risk_level: str | None = Query(None),
     verification_type: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCVerificationListResponse:
     """List KYC verifications with filtering."""
     query = select(KYCVerification).options(selectinload(KYCVerification.checks))
@@ -94,7 +93,7 @@ async def list_verifications(
         query = query.where(and_(*conditions))
 
     query = query.order_by(KYCVerification.created_at.desc())
-    verifications, total = await paginate(db, query, skip=skip, limit=limit)
+    verifications, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCVerificationListResponse(
         verifications=[
@@ -292,9 +291,8 @@ async def list_checks(
     verification_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCCheckListResponse:
     """List checks for a verification."""
     query = (
@@ -302,7 +300,7 @@ async def list_checks(
         .where(KYCCheck.verification_id == verification_id)
         .order_by(KYCCheck.created_at)
     )
-    checks, total = await paginate(db, query, skip=skip, limit=limit)
+    checks, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCCheckListResponse(
         checks=[KYCCheckResponse.model_validate(c) for c in checks],
@@ -395,14 +393,13 @@ async def get_client_kyc_status(
 async def list_alerts(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     client_id: UUID | None = Query(None),
     alert_type: str | None = Query(None),
     severity: str | None = Query(None),
     is_read: bool | None = Query(None),
     is_resolved: bool | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCAlertListResponse:
     """List KYC alerts with filtering."""
     query = select(KYCAlert)
@@ -430,7 +427,7 @@ async def list_alerts(
     unread_count = (await db.execute(unread_count_q)).scalar_one()
 
     query = query.order_by(KYCAlert.created_at.desc())
-    alerts, total = await paginate(db, query, skip=skip, limit=limit)
+    alerts, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCAlertListResponse(
         alerts=[KYCAlertResponse.model_validate(a) for a in alerts],
@@ -512,12 +509,11 @@ async def resolve_alert(
 async def list_reports(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     client_id: UUID | None = Query(None),
     report_type: str | None = Query(None),
     status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCReportListResponse:
     """List KYC reports with filtering."""
     query = select(KYCReport)
@@ -534,7 +530,7 @@ async def list_reports(
         query = query.where(and_(*conditions))
 
     query = query.order_by(KYCReport.created_at.desc())
-    reports, total = await paginate(db, query, skip=skip, limit=limit)
+    reports, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCReportListResponse(
         reports=[KYCReportResponse.model_validate(r) for r in reports],

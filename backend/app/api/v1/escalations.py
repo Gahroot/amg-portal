@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_admin, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_admin, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.enums import EscalationLevel, EscalationStatus
 from app.models.escalation import Escalation
@@ -82,8 +82,7 @@ async def get_metrics(
 @router.get("/", response_model=EscalationListResponse, dependencies=[Depends(require_internal)])
 async def list_escalations(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
     level: str | None = None,
     status: str | None = None,
     program_id: UUID | None = None,
@@ -93,8 +92,8 @@ async def list_escalations(
     """List escalations with filters."""
     escalations, total = await get_escalations_with_owner_info(
         db,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
         level=level,
         status=status,
         program_id=program_id,
@@ -233,8 +232,7 @@ async def create_manual_escalation(
 )
 async def list_escalation_rules(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
     is_active: bool | None = None,
     trigger_type: str | None = None,
 ) -> EscalationRuleListResponse:
@@ -252,7 +250,7 @@ async def list_escalation_rules(
     count_result = await db.execute(select(sa_func.count()).select_from(q.subquery()))
     total = count_result.scalar_one()
 
-    q = q.order_by(EscalationRule.created_at.desc()).offset(skip).limit(limit)
+    q = q.order_by(EscalationRule.created_at.desc()).offset(pagination.skip).limit(pagination.limit)
     result = await db.execute(q)
     rules = result.scalars().all()
 
@@ -525,11 +523,12 @@ async def delete_playbook(
 )
 async def list_overdue_escalations(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
 ) -> OverdueEscalationResponse:
     """List escalations where the response deadline has passed and status is still active."""
-    escalations, total = await get_overdue_escalations(db, skip=skip, limit=limit)
+    escalations, total = await get_overdue_escalations(
+        db, skip=pagination.skip, limit=pagination.limit
+    )
     return OverdueEscalationResponse(escalations=escalations, total=total)  # type: ignore[arg-type]
 
 
@@ -781,8 +780,7 @@ async def get_entity_escalations(
     entity_type: str,
     entity_id: str,
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
 ) -> EscalationListResponse:
     """Get escalations for a specific entity."""
     from app.services.escalation_service import get_active_escalations
@@ -794,7 +792,7 @@ async def get_entity_escalations(
     filtered = [e for e in escalations if e.entity_type == entity_type and e.entity_id == entity_id]
 
     return EscalationListResponse(
-        escalations=filtered[skip : skip + limit],  # type: ignore[arg-type]
+        escalations=filtered[pagination.skip : pagination.skip + pagination.limit],  # type: ignore[arg-type]
         total=len(filtered),
     )
 

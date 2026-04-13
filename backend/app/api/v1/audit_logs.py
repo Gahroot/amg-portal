@@ -5,11 +5,11 @@ import io
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import Select, func, select
 
-from app.api.deps import DB, require_compliance
+from app.api.deps import DB, Pagination, require_compliance
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.audit_log import AuditLog
 from app.schemas.audit_log import AuditLogListResponse, AuditLogResponse
@@ -55,8 +55,7 @@ def _build_query(
 @router.get("/", response_model=AuditLogListResponse, dependencies=[Depends(require_compliance)])
 async def list_audit_logs(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
     entity_type: str | None = None,
     action: str | None = None,
     user_id: UUID | None = None,
@@ -68,7 +67,7 @@ async def list_audit_logs(
     base = _build_query(entity_type, action, user_id, entity_id, start_date, end_date, search)
     base = base.order_by(AuditLog.created_at.desc())
 
-    logs, total = await paginate(db, base, skip=skip, limit=limit)
+    logs, total = await paginate(db, base, skip=pagination.skip, limit=pagination.limit)
 
     return AuditLogListResponse(logs=logs, total=total)
 
@@ -153,8 +152,7 @@ async def get_entity_history(
     entity_type: str,
     entity_id: str,
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
 ) -> AuditLogListResponse:
     base = (
         select(AuditLog)
@@ -165,6 +163,6 @@ async def get_entity_history(
         .order_by(AuditLog.created_at.desc())
     )
 
-    logs, total = await paginate(db, base, skip=skip, limit=limit)
+    logs, total = await paginate(db, base, skip=pagination.skip, limit=pagination.limit)
 
     return AuditLogListResponse(logs=logs, total=total)

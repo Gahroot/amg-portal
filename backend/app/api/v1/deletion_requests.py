@@ -9,7 +9,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import DB, CurrentUser, require_admin, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_admin, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.deletion_request import (
     DeletionRequestCreate,
@@ -53,18 +53,17 @@ async def create_deletion_request(
 )
 async def list_deletion_requests(
     db: DB,
+    pagination: Pagination,
     status_filter: str | None = Query(None, alias="status"),
     entity_type: str | None = Query(None, description=f"One of: {SUPPORTED_ENTITY_TYPES}"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DeletionRequestListResponse:
     """List all deletion requests. Restricted to Managing Directors."""
     requests, total = await deletion_service.list_requests(
         db,
         status_filter=status_filter,
         entity_type=entity_type,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return DeletionRequestListResponse(
         requests=[DeletionRequestResponse.model_validate(r) for r in requests],

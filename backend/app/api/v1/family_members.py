@@ -2,10 +2,10 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 
-from app.api.deps import DB, require_rm_or_above
+from app.api.deps import DB, Pagination, require_rm_or_above
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.family_member import FamilyMember, FamilyRelationship
@@ -29,8 +29,7 @@ router = APIRouter()
 async def list_family_members(
     profile_id: uuid.UUID,
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
 ) -> Any:
     """List all family members for a client profile."""
     # Verify client profile exists
@@ -45,8 +44,8 @@ async def list_family_members(
         select(FamilyMember)
         .where(FamilyMember.client_profile_id == profile_id)
         .order_by(FamilyMember.created_at)
-        .offset(skip)
-        .limit(limit)
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     family_members = result.scalars().all()
 

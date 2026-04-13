@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import Response
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.notification import (
     CreateNotificationRequest,
@@ -28,9 +28,8 @@ GroupMode = Literal["type", "entity", "time"]
 async def list_notifications(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     unread_only: bool = Query(False),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
     group_mode: GroupMode | None = Query(None),
 ) -> NotificationListResponse:
     """List notifications for current user.
@@ -44,8 +43,8 @@ async def list_notifications(
         db,
         user_id=current_user.id,
         unread_only=unread_only,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
 
     response = NotificationListResponse(
@@ -62,8 +61,8 @@ async def list_notifications(
                 user_id=current_user.id,
                 group_mode=group_mode,
                 unread_only=unread_only,
-                skip=skip,
-                limit=limit,
+                skip=pagination.skip,
+                limit=pagination.limit,
             )
         )
         response.groups = groups
@@ -76,10 +75,9 @@ async def list_notifications(
 async def list_grouped_notifications(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     group_mode: GroupMode = Query("type"),
     unread_only: bool = Query(False),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> GroupedNotificationsResponse:
     """List notifications grouped by the specified mode."""
     groups, total_groups, total_notifications = (
@@ -88,8 +86,8 @@ async def list_grouped_notifications(
             user_id=current_user.id,
             group_mode=group_mode,
             unread_only=unread_only,
-            skip=skip,
-            limit=limit,
+            skip=pagination.skip,
+            limit=pagination.limit,
         )
     )
     return GroupedNotificationsResponse(
@@ -258,15 +256,14 @@ async def unsnooze_notification(
 async def list_snoozed_notifications(
     db: DB,
     current_user: CurrentUser,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
 ) -> NotificationListResponse:
     """List all currently snoozed notifications for the current user."""
     notifications, total = await notification_service.get_snoozed_notifications(
         db,
         current_user.id,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return NotificationListResponse(
         notifications=notifications,  # type: ignore[arg-type]

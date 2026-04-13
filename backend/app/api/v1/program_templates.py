@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_rm_or_above,
 )
@@ -29,10 +30,9 @@ async def list_program_templates(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     category: str | None = Query(None),
     is_system: bool | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> ProgramTemplateListResponse:
     """List program templates, optionally filtered by category or system flag."""
     query = select(ProgramTemplate).where(ProgramTemplate.is_active.is_(True))
@@ -43,7 +43,7 @@ async def list_program_templates(
         query = query.where(ProgramTemplate.is_system_template.is_(is_system))
 
     query = query.order_by(ProgramTemplate.created_at)
-    templates, total = await paginate(db, query, skip=skip, limit=limit)
+    templates, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return ProgramTemplateListResponse(
         templates=[ProgramTemplateResponse.model_validate(t) for t in templates],

@@ -1,10 +1,10 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_internal, require_rm_or_above
+from app.api.deps import DB, CurrentUser, Pagination, require_internal, require_rm_or_above
 from app.core.exceptions import NotFoundException
 from app.models.client import Client
 from app.models.enums import UserRole
@@ -37,8 +37,7 @@ async def create_client(data: ClientCreate, db: DB) -> Any:
 async def list_clients(
     db: DB,
     current_user: CurrentUser,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
     _: None = Depends(require_internal),
 ) -> Any:
     query = select(Client)
@@ -47,7 +46,7 @@ async def list_clients(
         query = query.where(Client.rm_id == current_user.id)
 
     query = query.order_by(Client.created_at.desc())
-    clients, total = await paginate(db, query, skip=skip, limit=limit)
+    clients, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
     return ClientListResponse(clients=clients, total=total)
 
 

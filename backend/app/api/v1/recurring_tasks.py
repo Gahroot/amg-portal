@@ -14,6 +14,7 @@ from sqlalchemy import select
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_internal,
 )
@@ -71,11 +72,10 @@ async def list_recurring_task_templates(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     is_active: bool | None = Query(None),
     milestone_id: UUID | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> RecurringTaskTemplateListResponse:
     """List recurring task templates. Restricted to internal staff."""
     query = select(RecurringTaskTemplate)
@@ -86,7 +86,7 @@ async def list_recurring_task_templates(
         query = query.where(RecurringTaskTemplate.milestone_id == milestone_id)
 
     query = query.order_by(RecurringTaskTemplate.name)
-    templates, total = await paginate(db, query, skip=skip, limit=limit)
+    templates, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return RecurringTaskTemplateListResponse(
         templates=[await _build_response(db, t) for t in templates],

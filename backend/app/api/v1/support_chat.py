@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext, require_internal
 from app.api.ws_connection import connection_manager
 from app.core.exceptions import NotFoundException
 from app.schemas.support_chat import (
@@ -108,13 +108,12 @@ async def list_user_conversations(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> SupportConversationListResponse:
     """List user's support conversations."""
     conversations, total = await support_chat_service.get_user_conversations(
-        db, current_user.id, status=status, skip=skip, limit=limit
+        db, current_user.id, status=status, skip=pagination.skip, limit=pagination.limit
     )
 
     conv_responses = []
@@ -159,8 +158,7 @@ async def get_conversation_messages(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
+    pagination: Pagination,
 ) -> SupportMessageListResponse:
     """Get messages for a conversation."""
     # Verify access
@@ -171,7 +169,7 @@ async def get_conversation_messages(
         raise NotFoundException("Conversation not found")
 
     messages, total = await support_chat_service.get_messages(
-        db, conversation_id, user_type="user", skip=skip, limit=limit
+        db, conversation_id, user_type="user", skip=pagination.skip, limit=pagination.limit
     )
 
     # Mark messages as read
@@ -327,13 +325,12 @@ async def list_agent_conversations(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     status: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> SupportConversationListResponse:
     """List support conversations for agent (assigned or unassigned)."""
     conversations, total = await support_chat_service.get_agent_conversations(
-        db, current_user.id, status=status, skip=skip, limit=limit
+        db, current_user.id, status=status, skip=pagination.skip, limit=pagination.limit
     )
 
     conv_responses = []
@@ -431,8 +428,7 @@ async def get_agent_conversation_messages(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
+    pagination: Pagination,
 ) -> SupportMessageListResponse:
     """Get messages for a conversation (agent view, includes internal notes)."""
     conversation = await support_chat_service.get_conversation(db, conversation_id)
@@ -440,7 +436,7 @@ async def get_agent_conversation_messages(
         raise NotFoundException("Conversation not found")
 
     messages, total = await support_chat_service.get_messages(
-        db, conversation_id, user_type="agent", skip=skip, limit=limit
+        db, conversation_id, user_type="agent", skip=pagination.skip, limit=pagination.limit
     )
 
     # Mark messages as read by agent
@@ -485,13 +481,12 @@ async def list_offline_messages(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     processed: bool | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> list[OfflineMessageResponse]:
     """List offline messages for agents to process."""
     messages, _ = await support_chat_service.get_offline_messages(
-        db, processed=processed, skip=skip, limit=limit
+        db, processed=processed, skip=pagination.skip, limit=pagination.limit
     )
     return [OfflineMessageResponse.model_validate(m) for m in messages]
 

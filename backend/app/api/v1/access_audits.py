@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, require_compliance, require_internal
+from app.api.deps import DB, Pagination, require_compliance, require_internal
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.models.access_audit import AccessAudit, AccessAuditFinding
 from app.models.user import User
@@ -86,9 +86,8 @@ def _enrich_finding(finding: AccessAuditFinding) -> dict[str, Any]:
 @router.get("/", response_model=AccessAuditListResponse)
 async def list_access_audits(
     db: DB,
+    pagination: Pagination,
     current_user: User = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
     year: int | None = Query(None),
 ) -> AccessAuditListResponse:
@@ -104,7 +103,7 @@ async def list_access_audits(
         base = base.where(AccessAudit.year == year)
 
     base = base.order_by(AccessAudit.year.desc(), AccessAudit.quarter.desc())
-    audits, total = await paginate(db, base, skip=skip, limit=limit)
+    audits, total = await paginate(db, base, skip=pagination.skip, limit=pagination.limit)
 
     return AccessAuditListResponse(
         audits=[AccessAuditResponse(**_enrich_audit(a)) for a in audits],
@@ -164,9 +163,8 @@ async def create_access_audit(
 @router.get("/findings", response_model=AccessAuditFindingListResponse)
 async def list_all_findings(
     db: DB,
+    pagination: Pagination,
     current_user: User = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
     severity: str | None = Query(None),
     finding_type: str | None = Query(None),
@@ -177,8 +175,8 @@ async def list_all_findings(
         status=status,
         severity=severity,
         finding_type=finding_type,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return AccessAuditFindingListResponse(
         findings=[AccessAuditFindingResponse(**_enrich_finding(f)) for f in findings],

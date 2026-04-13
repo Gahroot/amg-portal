@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, File, Query, UploadFile
 
-from app.api.deps import DB, CurrentUser, RLSContext
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext
 from app.core.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -65,15 +65,14 @@ async def send_communication(
 async def list_communications(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     conversation_id: uuid.UUID | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List communications, optionally filtered by conversation."""
     if conversation_id:
         messages, total = await communication_service.get_messages_for_conversation(
-            db, conversation_id, current_user.id, skip=skip, limit=limit
+            db, conversation_id, current_user.id, skip=pagination.skip, limit=pagination.limit
         )
     else:
         # If no conversation specified, return all user's communications
@@ -109,14 +108,13 @@ async def mark_message_read(
 async def get_conversation_communications(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     conversation_id: uuid.UUID = Query(...),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """Get all communications for a specific conversation."""
     messages, total = await communication_service.get_messages_for_conversation(
-        db, conversation_id, current_user.id, skip=skip, limit=limit
+        db, conversation_id, current_user.id, skip=pagination.skip, limit=pagination.limit
     )
 
     return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
@@ -226,13 +224,12 @@ async def send_from_template(
 async def get_pending_reviews(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """Get all communications pending review."""
     messages, total = await communication_service.get_pending_reviews(
-        db, skip=skip, limit=limit
+        db, skip=pagination.skip, limit=pagination.limit
     )
     return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
@@ -242,13 +239,12 @@ async def get_communications_by_status(
     approval_status: str,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """Get communications filtered by approval status."""
     messages, total = await communication_service.get_communications_by_approval_status(
-        db, approval_status, skip=skip, limit=limit
+        db, approval_status, skip=pagination.skip, limit=pagination.limit
     )
     return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 

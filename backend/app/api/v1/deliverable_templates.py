@@ -16,6 +16,7 @@ from sqlalchemy import func, or_, select
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_internal,
 )
@@ -60,12 +61,11 @@ def _build_response(t: DeliverableTemplate) -> DeliverableTemplateResponse:
 async def list_templates(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     category: str | None = Query(None),
     deliverable_type: str | None = Query(None),
     search: str | None = Query(None, max_length=200),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DeliverableTemplateListResponse:
     """List active deliverable templates."""
     query = select(DeliverableTemplate).where(DeliverableTemplate.is_active.is_(True))
@@ -84,7 +84,7 @@ async def list_templates(
         )
 
     query = query.order_by(DeliverableTemplate.category, DeliverableTemplate.name)
-    templates, total = await paginate(db, query, skip=skip, limit=limit)
+    templates, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return DeliverableTemplateListResponse(
         templates=[_build_response(t) for t in templates],

@@ -3,12 +3,19 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy import case, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, RLSContext, get_rm_client_ids, require_internal
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    Pagination,
+    RLSContext,
+    get_rm_client_ids,
+    require_internal,
+)
 from app.models.client import Client
 from app.models.decision_request import DecisionRequest
 from app.models.enums import UserRole
@@ -282,12 +289,11 @@ async def get_realtime_stats(
 )
 async def get_activity_feed_endpoint(
     db: DB,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> ActivityFeedResponse:
     """Return recent activity across all entities."""
-    items, total = await get_activity_feed(db, skip=skip, limit=limit)
+    items, total = await get_activity_feed(db, skip=pagination.skip, limit=pagination.limit)
     return ActivityFeedResponse(items=items, total=total)
 
 

@@ -3,9 +3,16 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal, require_rm_or_above
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    Pagination,
+    RLSContext,
+    require_internal,
+    require_rm_or_above,
+)
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.models.enums import LeadSource, LeadStatus, UserRole
 from app.models.lead import Lead
@@ -45,12 +52,11 @@ async def list_leads(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     status: LeadStatus | None = None,
     source: LeadSource | None = None,
     owner_id: uuid.UUID | None = None,
     search: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
 ) -> Any:
     filters: list[Any] = []
     if status:
@@ -67,7 +73,9 @@ async def list_leads(
         pattern = f"%{search}%"
         filters.append(Lead.full_name.ilike(pattern) | Lead.email.ilike(pattern))
 
-    leads, total = await lead_service.get_multi(db, skip=skip, limit=limit, filters=filters)
+    leads, total = await lead_service.get_multi(
+        db, skip=pagination.skip, limit=pagination.limit, filters=filters
+    )
     return LeadListResponse(leads=leads, total=total)  # type: ignore[arg-type]
 
 

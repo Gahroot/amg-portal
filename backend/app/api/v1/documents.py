@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_client,
     require_compliance,
@@ -198,13 +199,12 @@ async def upload_document(
 async def list_documents(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     _: None = Depends(require_internal),
     entity_type: str | None = None,
     entity_id: UUID | None = None,
     category: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DocumentListResponse:
     filters = []
     if entity_type:
@@ -237,7 +237,7 @@ async def list_documents(
         .join(latest_subq, join_condition)
         .order_by(Document.created_at.desc())
     )
-    documents, total = await paginate(db, query, skip=skip, limit=limit)
+    documents, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return DocumentListResponse(
         documents=[build_document_response(d) for d in documents],
@@ -278,12 +278,11 @@ async def list_expiring_documents(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     entity_type: str | None = None,
     entity_id: UUID | None = None,
     status: str | None = Query(None, description="Filter: expired, expiring_30, expiring_90"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> ExpiringDocumentsResponse:
     """List documents with expiry dates within the next 90 days or already expired."""
     return await document_expiry_service.list_expiring_documents(
@@ -291,8 +290,8 @@ async def list_expiring_documents(
         entity_type=entity_type,
         entity_id=entity_id,
         status_filter=status,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
 
 
@@ -303,15 +302,14 @@ async def list_expiring_documents(
 async def list_vault_documents(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     _: None = Depends(require_compliance),
     vault_status: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> VaultDocumentListResponse:
     """List documents in the evidence vault (sealed/archived)."""
     docs, total = await document_vault_service.get_vault_documents(
-        db, vault_status, skip, limit
+        db, vault_status, pagination.skip, pagination.limit
     )
     return VaultDocumentListResponse(
         documents=[_build_vault_response(d) for d in docs],
@@ -551,14 +549,13 @@ async def get_deliveries(
     document_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     _: None = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DocumentDeliveryListResponse:
     """Get delivery records for a document."""
     deliveries, total = await document_vault_service.get_document_deliveries(
-        db, document_id, skip, limit
+        db, document_id, pagination.skip, pagination.limit
     )
     return DocumentDeliveryListResponse(
         deliveries=[DocumentDeliveryResponse.model_validate(d) for d in deliveries],
@@ -692,9 +689,8 @@ async def list_document_shares(
     document_id: UUID,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_client),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DocumentShareListResponse:
     """List all active shares for a document. Client users see only shares they created."""
     result = await db.execute(select(Document).where(Document.id == document_id))
@@ -710,7 +706,7 @@ async def list_document_shares(
         )
         .order_by(DocumentShare.created_at.desc())
     )
-    shares, total = await paginate(db, query, skip=skip, limit=limit)
+    shares, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return DocumentShareListResponse(
         shares=[DocumentShareResponse.model_validate(s) for s in shares],

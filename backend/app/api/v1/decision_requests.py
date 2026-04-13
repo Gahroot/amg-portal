@@ -4,10 +4,10 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_internal
 from app.core.config import settings
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.schemas.decision_request import (
@@ -57,10 +57,9 @@ async def create_decision_request(
 async def list_decision_requests(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     client_id: uuid.UUID | None = None,
     status: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DecisionListResponse:
     """List decision requests."""
     decisions, total = await decision_service.get_decision_requests_for_user(
@@ -69,8 +68,8 @@ async def list_decision_requests(
         user_role=current_user.role,
         client_id=client_id,
         status=status,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return DecisionListResponse(
         decisions=[DecisionRequestResponse.model_validate(d) for d in decisions],
@@ -82,8 +81,7 @@ async def list_decision_requests(
 async def list_pending_decisions(
     db: DB,
     current_user: CurrentUser,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
 ) -> DecisionListResponse:
     """List pending decision requests for current user."""
     decisions, total = await decision_service.get_decision_requests_for_user(
@@ -91,8 +89,8 @@ async def list_pending_decisions(
         user_id=current_user.id,
         user_role=current_user.role,
         status="pending",
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return DecisionListResponse(
         decisions=[DecisionRequestResponse.model_validate(d) for d in decisions],

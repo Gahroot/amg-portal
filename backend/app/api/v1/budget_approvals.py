@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.api.deps import (
     BudgetApprovalServiceDep,
     CurrentUser,
+    Pagination,
     require_admin,
     require_internal,
     require_rm_or_above,
@@ -486,13 +487,12 @@ async def create_request(
 @router.get("/requests", response_model=PaginatedBudgetApprovalRequests)
 async def list_requests(
     service: BudgetApprovalServiceDep,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     status: BudgetApprovalStatus | None = Query(None),
     program_id: uuid.UUID | None = Query(None),
     request_type: BudgetRequestType | None = Query(None),
     requested_by: uuid.UUID | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> PaginatedBudgetApprovalRequests:
     """List budget approval requests with filters."""
     requests, total = await service.list_requests(
@@ -500,8 +500,8 @@ async def list_requests(
         program_id=program_id,
         request_type=request_type,
         requested_by=requested_by,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
 
     items = [
@@ -524,8 +524,8 @@ async def list_requests(
     return PaginatedBudgetApprovalRequests(
         items=items,
         total=total,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
 
 

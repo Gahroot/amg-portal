@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_internal
 from app.core.exceptions import NotFoundException
 from app.models.enums import CommunicationType
 from app.models.sla_tracker import SLATracker
@@ -30,16 +30,15 @@ router = APIRouter()
 @router.get("/", response_model=SLATrackerListResponse, dependencies=[Depends(require_internal)])
 async def list_sla_trackers(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
     breach_status: str | None = None,
     entity_type: str | None = None,
 ) -> SLATrackerListResponse:
     """List SLA trackers with filters."""
     trackers, total = await get_sla_trackers_with_assignee_info(
         db,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
         breach_status=breach_status,
         entity_type=entity_type,
     )
@@ -192,14 +191,13 @@ async def get_entity_sla_trackers(
     entity_type: str,
     entity_id: str,
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    pagination: Pagination,
 ) -> SLATrackerListResponse:
     """Get SLA trackers for a specific entity."""
     trackers, total = await get_sla_trackers_with_assignee_info(
         db,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
         entity_type=entity_type,
     )
 

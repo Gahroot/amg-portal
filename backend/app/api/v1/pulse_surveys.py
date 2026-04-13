@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     require_internal,
     require_rm_or_above,
 )
@@ -78,13 +79,12 @@ async def create_pulse_survey(
 )
 async def list_pulse_surveys(
     db: DB,
+    pagination: Pagination,
     status: str | None = Query(None, description="Filter by status"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> PulseSurveyListResponse:
     """List pulse surveys (admin)."""
     surveys, total = await pulse_survey_service.get_surveys(
-        db, status=status, skip=skip, limit=limit
+        db, status=status, skip=pagination.skip, limit=pagination.limit
     )
     items = [await _enrich(db, s) for s in surveys]
     return PulseSurveyListResponse(surveys=items, total=total)
@@ -190,15 +190,14 @@ async def get_pulse_survey_stats(
 async def list_pulse_responses(
     survey_id: uuid.UUID,
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
 ) -> PulseSurveyResponseListResponse:
     """List responses for a pulse survey (admin)."""
     survey = await pulse_survey_service.get(db, survey_id)
     if not survey:
         raise NotFoundException("Pulse survey not found")
     responses, total = await pulse_response_service.list_responses(
-        db, survey_id=survey_id, skip=skip, limit=limit
+        db, survey_id=survey_id, skip=pagination.skip, limit=pagination.limit
     )
     items = [PulseSurveyResponseDetail.model_validate(r) for r in responses]
     return PulseSurveyResponseListResponse(responses=items, total=total)

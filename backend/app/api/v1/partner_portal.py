@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentPartner, CurrentUser, RLSContext, require_partner
+from app.api.deps import DB, CurrentPartner, CurrentUser, Pagination, RLSContext, require_partner
 from app.api.v1.partner_assignments import build_assignment_response
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.conversation import Conversation
@@ -959,8 +959,7 @@ async def get_partner_conversation_messages(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
+    pagination: Pagination,
 ) -> MessageListResponse:
     """Get messages for a partner conversation."""
     conversation = await conversation_service.get(db, conversation_id)
@@ -971,7 +970,7 @@ async def get_partner_conversation_messages(
         raise ForbiddenException("Not a participant in this conversation")
 
     messages, total = await communication_service.get_messages_for_conversation(
-        db, conversation_id, current_user.id, skip=skip, limit=limit,
+        db, conversation_id, current_user.id, skip=pagination.skip, limit=pagination.limit,
     )
     return MessageListResponse(
         communications=[CommunicationResponse.model_validate(m) for m in messages],

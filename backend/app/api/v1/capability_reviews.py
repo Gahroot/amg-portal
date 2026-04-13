@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, require_internal
+from app.api.deps import DB, Pagination, require_internal
 from app.core.exceptions import ConflictException, NotFoundException
 from app.models.capability_review import CapabilityReview
 from app.models.partner import PartnerProfile
@@ -55,9 +55,8 @@ def _enrich_review(review: CapabilityReview) -> dict[str, Any]:
 @router.get("/", response_model=CapabilityReviewListResponse)
 async def list_capability_reviews(
     db: DB,
+    pagination: Pagination,
     current_user: User = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
     status: str | None = Query(None),
     partner_id: uuid.UUID | None = Query(None),
     year: int | None = Query(None),
@@ -76,7 +75,7 @@ async def list_capability_reviews(
         base = base.where(CapabilityReview.review_year == year)
 
     base = base.order_by(CapabilityReview.review_year.desc(), CapabilityReview.created_at.desc())
-    reviews, total = await paginate(db, base, skip=skip, limit=limit)
+    reviews, total = await paginate(db, base, skip=pagination.skip, limit=pagination.limit)
 
     return CapabilityReviewListResponse(
         reviews=[CapabilityReviewResponse(**_enrich_review(r)) for r in reviews],
@@ -97,12 +96,13 @@ async def get_capability_review_statistics(
 @router.get("/pending", response_model=CapabilityReviewListResponse)
 async def list_pending_reviews(
     db: DB,
+    pagination: Pagination,
     current_user: User = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
 ) -> CapabilityReviewListResponse:
     """List pending and scheduled reviews."""
-    reviews, total = await capability_review_service.get_pending_reviews(db, skip, limit)
+    reviews, total = await capability_review_service.get_pending_reviews(
+        db, pagination.skip, pagination.limit
+    )
     return CapabilityReviewListResponse(
         reviews=[CapabilityReviewResponse(**_enrich_review(r)) for r in reviews],
         total=total,

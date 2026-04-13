@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     get_rm_client_ids,
     require_admin,
@@ -217,11 +218,10 @@ async def list_programs(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     status_filter: str | None = Query(None, alias="status"),
     client_id: uuid.UUID | None = None,
     search: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
     _: None = Depends(require_internal),
 ) -> Any:
     query = select(Program).options(
@@ -247,7 +247,9 @@ async def list_programs(
         )
 
     query = query.order_by(Program.created_at.desc())
-    programs, total = await paginate(db, query, skip=skip, limit=limit, unique=True)
+    programs, total = await paginate(
+        db, query, skip=pagination.skip, limit=pagination.limit, unique=True
+    )
     return ProgramListResponse(
         programs=[build_program_response(p) for p in programs],
         total=total,

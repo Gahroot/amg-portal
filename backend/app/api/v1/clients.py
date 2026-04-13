@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     RLSContext,
     require_admin,
     require_compliance,
@@ -59,12 +60,11 @@ async def list_client_profiles(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     compliance_status: str | None = None,
     approval_status: str | None = None,
     assigned_rm_id: uuid.UUID | None = None,
     search: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     filters = []
     if compliance_status:
@@ -85,7 +85,9 @@ async def list_client_profiles(
             ClientProfile.legal_name.ilike(pattern) | ClientProfile.primary_email.ilike(pattern)
         )
 
-    profiles, total = await client_service.get_multi(db, skip=skip, limit=limit, filters=filters)
+    profiles, total = await client_service.get_multi(
+        db, skip=pagination.skip, limit=pagination.limit, filters=filters
+    )
     return ClientProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
 
 
@@ -164,12 +166,11 @@ async def check_client_duplicates(
 async def get_my_portfolio(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     profiles, total = await client_service.get_rm_portfolio(
-        db, current_user.id, skip=skip, limit=limit
+        db, current_user.id, skip=pagination.skip, limit=pagination.limit
     )
     return ClientProfileListResponse(profiles=profiles, total=total)  # type: ignore[arg-type]
 
@@ -325,12 +326,11 @@ async def get_client_timeline(
     profile_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     event_types: str | None = Query(None, description="Comma-separated event types"),
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
 ) -> TimelineListResponse:
     """Get aggregated timeline of all events for a client profile."""
     from app.schemas.client_timeline import TimelineEventType
@@ -346,6 +346,6 @@ async def get_client_timeline(
         event_types=parsed_types,
         date_from=date_from,
         date_to=date_to,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )

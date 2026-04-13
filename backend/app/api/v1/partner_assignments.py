@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     require_internal,
     require_rm_or_above,
 )
@@ -144,9 +145,8 @@ async def create_assignment(
 async def list_assignments(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
     partner_id: UUID | None = None,
     program_id: UUID | None = None,
     status: str | None = None,
@@ -167,7 +167,7 @@ async def list_assignments(
         query = query.where(PartnerAssignment.title.ilike(f"%{search}%"))
 
     query = query.order_by(PartnerAssignment.created_at.desc())
-    assignments, total = await paginate(db, query, skip=skip, limit=limit)
+    assignments, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return AssignmentListResponse(
         assignments=[build_assignment_response(a) for a in assignments],  # type: ignore[misc]

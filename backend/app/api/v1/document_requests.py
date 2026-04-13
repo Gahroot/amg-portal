@@ -3,9 +3,9 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.document_request import (
     DocumentRequestCreate,
@@ -49,15 +49,14 @@ async def create_document_request(
 async def list_document_requests(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     client_id: UUID | None = None,
     status: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> DocumentRequestListResponse:
     """List document requests, optionally filtered by client or status."""
     requests, total = await document_request_service.list_document_requests(
-        db, client_id=client_id, status=status, skip=skip, limit=limit
+        db, client_id=client_id, status=status, skip=pagination.skip, limit=pagination.limit
     )
     return DocumentRequestListResponse(
         requests=[DocumentRequestResponse.model_validate(r) for r in requests],

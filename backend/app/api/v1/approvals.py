@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DB, CurrentUser, require_internal, require_rm_or_above
+from app.api.deps import DB, CurrentUser, Pagination, require_internal, require_rm_or_above
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.approval import ProgramApproval
 from app.models.approval_comment import ApprovalComment
@@ -141,16 +141,15 @@ async def request_approval(
 @router.get("/", response_model=list[ApprovalResponse])
 async def list_pending_approvals(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
     _: None = Depends(require_internal),
 ) -> list[dict[str, Any]]:
     result = await db.execute(
         select(ProgramApproval)
         .where(ProgramApproval.status == "pending")
         .order_by(ProgramApproval.created_at.desc())
-        .offset(skip)
-        .limit(limit)
+        .offset(pagination.skip)
+        .limit(pagination.limit)
     )
     approvals = result.scalars().all()
     return [await _build_approval_response(a, db) for a in approvals]

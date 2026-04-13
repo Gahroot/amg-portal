@@ -4,11 +4,11 @@ import contextlib
 from typing import Any, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_compliance, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_compliance, require_internal
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.clearance_certificate import (
     CertificateTemplate,
@@ -70,11 +70,10 @@ async def create_template(
 async def list_templates(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     template_type: str | None = None,
     is_active: bool | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> CertificateTemplateListResponse:
     """List certificate templates."""
     query = select(CertificateTemplate)
@@ -85,7 +84,7 @@ async def list_templates(
         query = query.where(CertificateTemplate.is_active == is_active)
 
     query = query.order_by(CertificateTemplate.created_at.desc())
-    templates, total = await paginate(db, query, skip=skip, limit=limit)
+    templates, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return CertificateTemplateListResponse(
         templates=[CertificateTemplateResponse.model_validate(t) for t in templates],
@@ -318,13 +317,12 @@ async def create_certificate(
 async def list_certificates(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     client_id: UUID | None = None,
     program_id: UUID | None = None,
     status: str | None = None,
     certificate_type: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> ClearanceCertificateListResponse:
     """List clearance certificates."""
     query = (
@@ -347,7 +345,7 @@ async def list_certificates(
         query = query.where(ClearanceCertificate.certificate_type == certificate_type)
 
     query = query.order_by(ClearanceCertificate.created_at.desc())
-    certificates, total = await paginate(db, query, skip=skip, limit=limit)
+    certificates, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return ClearanceCertificateListResponse(
         certificates=[

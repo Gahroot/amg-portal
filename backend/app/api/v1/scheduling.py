@@ -6,7 +6,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import DB, CurrentUser, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, require_internal
 from app.core.exceptions import NotFoundException
 from app.schemas.scheduled_event import (
     ConflictCheckResponse,
@@ -29,14 +29,17 @@ router = APIRouter()
 )
 async def list_events(
     db: DB,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    pagination: Pagination,
     status_filter: str | None = Query(None, alias="status"),
     event_type: str | None = Query(None),
 ) -> ScheduledEventListResponse:
     """List scheduled events with optional filters."""
     events, total = await scheduling_service.list_events(
-        db, skip=skip, limit=limit, status=status_filter, event_type=event_type
+        db,
+        skip=pagination.skip,
+        limit=pagination.limit,
+        status=status_filter,
+        event_type=event_type,
     )
     return ScheduledEventListResponse(
         events=[ScheduledEventResponse.model_validate(e) for e in events],

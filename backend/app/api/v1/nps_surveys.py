@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.api.deps import (
     DB,
     CurrentUser,
+    Pagination,
     require_coordinator_or_above,
     require_internal,
     require_rm_or_above,
@@ -62,11 +63,10 @@ async def create_nps_survey(
 )
 async def list_nps_surveys(
     db: DB,
+    pagination: Pagination,
     status: str | None = Query(None, description="Filter by status"),
     year: int | None = Query(None, description="Filter by year"),
     quarter: int | None = Query(None, ge=1, le=4, description="Filter by quarter"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List NPS surveys with optional filtering."""
     surveys, total = await nps_survey_service.get_surveys(
@@ -74,8 +74,8 @@ async def list_nps_surveys(
         status=status,
         year=year,
         quarter=quarter,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return NPSSurveyListResponse(surveys=surveys, total=total)  # type: ignore[arg-type]
 
@@ -218,9 +218,8 @@ async def get_nps_trend_analysis(
 async def list_nps_responses(
     survey_id: uuid.UUID,
     db: DB,
+    pagination: Pagination,
     score_category: str | None = Query(None, description="Filter by score category"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List responses for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
@@ -231,8 +230,8 @@ async def list_nps_responses(
         db,
         survey_id=survey_id,
         score_category=score_category,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return NPSResponseListResponse(responses=responses, total=total)  # type: ignore[arg-type]
 
@@ -314,10 +313,9 @@ async def get_nps_response(
 async def list_nps_follow_ups(
     survey_id: uuid.UUID,
     db: DB,
+    pagination: Pagination,
     status: str | None = Query(None, description="Filter by status"),
     priority: str | None = Query(None, description="Filter by priority"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List follow-ups for an NPS survey."""
     survey = await nps_survey_service.get(db, survey_id)
@@ -329,8 +327,8 @@ async def list_nps_follow_ups(
         survey_id=survey_id,
         status=status,
         priority=priority,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)  # type: ignore[arg-type]
 
@@ -343,17 +341,16 @@ async def list_nps_follow_ups(
 async def list_my_nps_follow_ups(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     status: str | None = Query(None, description="Filter by status"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List follow-ups assigned to the current user."""
     follow_ups, total = await nps_follow_up_service.get_my_follow_ups(
         db,
         user_id=current_user.id,
         status=status,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return NPSFollowUpListResponse(follow_ups=follow_ups, total=total)  # type: ignore[arg-type]
 

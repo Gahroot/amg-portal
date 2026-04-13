@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_admin
+from app.api.deps import DB, CurrentUser, Pagination, require_admin
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.core.security import hash_password
 from app.models.audit_log import AuditLog
@@ -22,11 +22,10 @@ router = APIRouter()
 @router.get("/", response_model=UserListResponse, dependencies=[Depends(require_admin)])
 async def list_users(
     db: DB,
+    pagination: Pagination,
     role: UserRole | None = None,
     status_filter: str | None = Query(None, alias="status"),
     search: str | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     query = select(User)
 
@@ -39,7 +38,7 @@ async def list_users(
         query = query.where(User.email.ilike(pattern) | User.full_name.ilike(pattern))
 
     query = query.order_by(User.created_at.desc())
-    users, total = await paginate(db, query, skip=skip, limit=limit)
+    users, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return UserListResponse(users=users, total=total)
 

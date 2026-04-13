@@ -6,7 +6,14 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import DB, CurrentUser, require_client, require_internal, require_rm_or_above
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    Pagination,
+    require_client,
+    require_internal,
+    require_rm_or_above,
+)
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.schemas.meeting import (
     AvailableSlotsResponse,
@@ -297,17 +304,16 @@ async def list_my_meetings(
 async def list_rm_meetings(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     status_filter: str | None = Query(None, alias="status"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> MeetingListResponse:
     """List all meetings for the current RM."""
     meetings, total = await svc.list_meetings(
         db,
         rm_id=current_user.id,
         status=status_filter,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
     return MeetingListResponse(
         meetings=[MeetingResponse.model_validate(m) for m in meetings],

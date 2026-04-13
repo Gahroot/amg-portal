@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, require_admin
+from app.api.deps import DB, CurrentUser, Pagination, require_admin
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.portal_feedback import FeedbackStatus, FeedbackType, PortalFeedback
 from app.models.user import User
@@ -151,14 +151,13 @@ async def get_my_feedback(
 async def list_all_feedback(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _: None = Depends(require_admin),
     status: str | None = Query(None, description="Filter by status"),
     feedback_type: str | None = Query(None, description="Filter by type"),
     priority: str | None = Query(None, description="Filter by priority"),
     assigned_to: uuid.UUID | None = Query(None, description="Filter by assignee"),
     search: str | None = Query(None, description="Search in description"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> PortalFeedbackListResponse:
     """List all feedback (admin only)."""
     query = select(PortalFeedback).options(
@@ -177,7 +176,7 @@ async def list_all_feedback(
     if search:
         query = query.where(PortalFeedback.description.ilike(f"%{search}%"))
 
-    feedback_list, total = await paginate(db, query, skip=skip, limit=limit)
+    feedback_list, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return PortalFeedbackListResponse(
         feedback=[

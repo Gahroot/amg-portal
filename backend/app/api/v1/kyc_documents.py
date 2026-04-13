@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext, require_internal
 from app.api.v1.documents import build_document_response
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client import Client
@@ -117,9 +117,8 @@ async def list_kyc_documents(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     _: None = Depends(require_internal),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCDocumentListResponse:
     query = (
         select(KYCDocument)
@@ -128,7 +127,7 @@ async def list_kyc_documents(
         .order_by(KYCDocument.created_at.desc())
     )
 
-    kyc_docs, total = await paginate(db, query, skip=skip, limit=limit)
+    kyc_docs, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCDocumentListResponse(
         kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],
@@ -200,10 +199,9 @@ async def list_expiring_kyc_documents(
     db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    pagination: Pagination,
     _: None = Depends(require_internal),
     days: int = Query(30, ge=1, le=365),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> KYCDocumentListResponse:
     cutoff = datetime.now(UTC).date()
     from datetime import timedelta
@@ -221,7 +219,7 @@ async def list_expiring_kyc_documents(
         .order_by(KYCDocument.expiry_date.asc())
     )
 
-    kyc_docs, total = await paginate(db, query, skip=skip, limit=limit)
+    kyc_docs, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return KYCDocumentListResponse(
         kyc_documents=[build_kyc_response(k, include_document=True) for k in kyc_docs],

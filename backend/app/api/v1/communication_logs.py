@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import Select, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext, require_internal
 from app.core.exceptions import NotFoundException
 from app.models.communication_log import CommunicationLog
 from app.schemas.communication_log import (
@@ -101,6 +101,7 @@ async def create_communication_log(
 )
 async def list_communication_logs(
     db: DB,
+    pagination: Pagination,
     _rls: RLSContext,
     client_id: uuid.UUID | None = Query(None),
     partner_id: uuid.UUID | None = Query(None),
@@ -110,8 +111,6 @@ async def list_communication_logs(
     date_from: datetime | None = Query(None),
     date_to: datetime | None = Query(None),
     search: str | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
 ) -> CommunicationLogListResponse:
     """List communication logs with optional filters."""
     query = _base_query()
@@ -137,7 +136,7 @@ async def list_communication_logs(
         )
 
     query = query.order_by(CommunicationLog.occurred_at.desc())
-    logs, total = await paginate(db, query, skip=skip, limit=limit)
+    logs, total = await paginate(db, query, skip=pagination.skip, limit=pagination.limit)
 
     return CommunicationLogListResponse(
         logs=[_build_response(log) for log in logs],

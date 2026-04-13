@@ -2,11 +2,11 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, Pagination, RLSContext, require_internal
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.models.conversation import Conversation
 from app.models.user import User
@@ -99,17 +99,16 @@ async def create_conversation(
 async def list_conversations(
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """List conversations for current user, with per-conversation unread counts."""
     conversations, total = await conversation_service.get_conversations_for_user(
         db,
         user_id=current_user.id,
         user_role=current_user.role,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
     )
 
     # Resolve participants for all conversations in one batch
@@ -197,9 +196,8 @@ async def get_messages(
     conversation_id: uuid.UUID,
     db: DB,
     current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
 ) -> Any:
     """Get messages for a conversation, including read_receipts on each message."""
     conversation = await conversation_service.get(db, conversation_id)
@@ -210,7 +208,7 @@ async def get_messages(
         raise ForbiddenException("Not a participant in this conversation")
 
     messages, total = await communication_service.get_messages_for_conversation(
-        db, conversation_id, current_user.id, skip=skip, limit=limit
+        db, conversation_id, current_user.id, skip=pagination.skip, limit=pagination.limit
     )
 
     message_responses = [CommunicationResponse.model_validate(m) for m in messages]

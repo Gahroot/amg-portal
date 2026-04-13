@@ -3,9 +3,16 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal, require_rm_or_above
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    Pagination,
+    RLSContext,
+    require_internal,
+    require_rm_or_above,
+)
 from app.core.exceptions import NotFoundException
 from app.models.crm_activity import CrmActivity
 from app.schemas.crm_activity import (
@@ -42,12 +49,11 @@ async def create_activity(
 async def list_activities(
     db: DB,
     _current_user: CurrentUser,
+    pagination: Pagination,
     _rls: RLSContext,
     lead_id: uuid.UUID | None = None,
     opportunity_id: uuid.UUID | None = None,
     client_profile_id: uuid.UUID | None = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
 ) -> Any:
     filters: list[Any] = []
     if lead_id:
@@ -59,8 +65,8 @@ async def list_activities(
 
     activities, total = await crm_activity_service.get_multi(
         db,
-        skip=skip,
-        limit=limit,
+        skip=pagination.skip,
+        limit=pagination.limit,
         filters=filters,
         order_by=CrmActivity.occurred_at.desc(),
     )
