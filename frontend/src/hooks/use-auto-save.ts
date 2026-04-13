@@ -1,4 +1,8 @@
 import { useState, useRef, useCallback, useEffect, type BaseSyntheticEvent } from "react";
+import { useAutoSaveDebounce } from "@/hooks/use-auto-save-debounce";
+
+// Re-export sub-hooks for consumers
+export { useAutoSaveDebounce } from "@/hooks/use-auto-save-debounce";
 
 /**
  * Auto-save status states
@@ -78,6 +82,8 @@ const DEFAULT_INTERVAL = 30000; // 30 seconds
  * - LocalStorage persistence for draft recovery
  * - Status tracking (idle, saving, saved, error, unsaved)
  *
+ * Composes useAutoSaveDebounce for debounce timer logic.
+ *
  * @example
  * ```tsx
  * const { status, lastSaved, save, clearDraft, hasDraft, restoreDraft, markSubmitted } = useAutoSave({
@@ -125,7 +131,6 @@ export function useAutoSave<T extends Record<string, unknown>>(
   const currentDataRef = useRef<T | undefined>(initialData);
   const isSubmittedRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const storageKey = `amg-draft-${formId}`;
 
@@ -248,31 +253,17 @@ export function useAutoSave<T extends Record<string, unknown>>(
     updateStatus("idle");
   }, [updateStatus]);
 
-  // Cleanup timeouts on unmount
+  // Cleanup save-indicator timeout on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
     };
   }, []);
 
-  // Debounced save — delays the save call by `debounceDelay` ms, cancelling
-  // any pending invocation on each new call.
-  const debouncedSave = useCallback(
-    (data: T) => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      debounceTimeoutRef.current = setTimeout(() => {
-        void save(data);
-      }, debounceDelay);
-    },
-    [save, debounceDelay]
-  );
+  // Debounced save — delegates to the focused sub-hook
+  const { debouncedSave } = useAutoSaveDebounce<T>(save, debounceDelay);
 
   // Periodic auto-save
   useEffect(() => {
@@ -280,7 +271,7 @@ export function useAutoSave<T extends Record<string, unknown>>(
 
     const intervalId = setInterval(() => {
       if (currentDataRef.current && hasUnsavedChanges) {
-        save(currentDataRef.current);
+        void save(currentDataRef.current);
       }
     }, interval);
 
@@ -348,21 +339,15 @@ export function useAutoSaveOnBlur<T extends Record<string, unknown>>(options: {
     return unsubscribe;
   }, [watch, onUnsavedChangesChange]);
 
-  // Debounced save on change
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
-
-  const debouncedSave = useCallback(
-    (data: T) => {
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-      }
-      timeoutIdRef.current = setTimeout(() => {
-        save(data);
-        lastSavedDataRef.current = JSON.stringify(data);
-      }, debounceDelay);
+  // Debounced save on change — uses the sub-hook
+  const saveAndTrack = useCallback(
+    async (data: T) => {
+      await save(data);
+      lastSavedDataRef.current = JSON.stringify(data);
     },
-    [save, debounceDelay]
+    [save]
   );
+  const { debouncedSave } = useAutoSaveDebounce<T>(saveAndTrack, debounceDelay);
 
   // Save on window blur (leaving page)
   useEffect(() => {

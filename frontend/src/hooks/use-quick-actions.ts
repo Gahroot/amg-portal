@@ -3,344 +3,24 @@
 import { useState, useMemo, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
-import type { UserRole } from "@/types/user";
-import type { LucideIcon } from "lucide-react";
-import { FolderPlus, UserPlus, Building2, CheckSquare, Mail, AlertTriangle, FileSpreadsheet, FileText, ClipboardList, FolderOpen, Briefcase } from "lucide-react";
+import {
+  detectPageType,
+  getDefaultActionsForContext,
+  QUICK_ACTION_CATEGORIES,
+  type QuickAction,
+  type QuickActionCategory,
+  type QuickActionContext,
+  type PageType,
+} from "@/providers/quick-actions-provider";
+import { useQuickActionRegistry } from "@/hooks/use-quick-action-registry";
+import { useQuickActionKeyboard } from "@/hooks/use-quick-action-keyboard";
 
-/**
- * Quick action definition
- */
-export interface QuickAction {
-  /** Unique identifier for the action */
-  id: string;
-  /** Display label */
-  label: string;
-  /** Optional description */
-  description?: string;
-  /** Icon to display */
-  icon: LucideIcon;
-  /** Category for grouping */
-  category: QuickActionCategory;
-  /** Keyboard shortcut (e.g., "n", "e") */
-  shortcut?: string;
-  /** Whether this action requires meta key (Cmd/Ctrl) */
-  shortcutMetaKey?: boolean;
-  /** Handler when action is triggered */
-  handler: (context: QuickActionContext) => void;
-  /** Whether this action is disabled */
-  disabled?: boolean | ((context: QuickActionContext) => boolean);
-  /** Whether to show this action in the menu */
-  visible?: boolean | ((context: QuickActionContext) => boolean);
-  /** Sort order within category (lower = higher priority) */
-  order?: number;
-}
-
-/**
- * Quick action categories
- */
-export type QuickActionCategory =
-  | "create"
-  | "export"
-  | "communication"
-  | "navigation"
-  | "common";
-
-/**
- * Context passed to quick actions
- */
-export interface QuickActionContext {
-  /** Current pathname */
-  pathname: string;
-  /** Current page type */
-  pageType: PageType;
-  /** Current user role */
-  userRole: UserRole;
-  /** Selected item IDs (if any) */
-  selectedIds?: string[];
-  /** Additional context data */
-  data?: Record<string, unknown>;
-}
-
-/**
- * Page types for context detection
- */
-export type PageType =
-  | "dashboard"
-  | "programs"
-  | "program-detail"
-  | "program-new"
-  | "clients"
-  | "client-detail"
-  | "partners"
-  | "partner-detail"
-  | "approvals"
-  | "escalations"
-  | "communications"
-  | "documents"
-  | "tasks"
-  | "reports"
-  | "settings"
-  | "portal-dashboard"
-  | "portal-programs"
-  | "partner-dashboard"
-  | "partner-programs"
-  | "unknown";
-
-/**
- * Detect page type from pathname
- */
-export function detectPageType(pathname: string): PageType {
-  // Portal routes
-  if (pathname.startsWith("/portal")) {
-    if (pathname === "/portal/dashboard") return "portal-dashboard";
-    if (pathname.includes("/portal/programs")) return "portal-programs";
-    return "unknown";
-  }
-
-  // Partner routes
-  if (pathname.startsWith("/partner")) {
-    if (pathname === "/partner" || pathname === "/partner/") return "partner-dashboard";
-    if (pathname.includes("/partner/programs")) return "partner-programs";
-    return "unknown";
-  }
-
-  // Dashboard routes
-  if (pathname === "/" || pathname === "/dashboard") return "dashboard";
-  if (pathname === "/programs" || pathname.startsWith("/programs")) {
-    if (pathname === "/programs/new") return "program-new";
-    if (pathname.match(/^\/programs\/[^/]+$/)) return "program-detail";
-    return "programs";
-  }
-  if (pathname === "/clients" || pathname.startsWith("/clients")) {
-    if (pathname.match(/^\/clients\/[^/]+$/)) return "client-detail";
-    return "clients";
-  }
-  if (pathname === "/partners" || pathname.startsWith("/partners")) {
-    if (pathname.match(/^\/partners\/[^/]+$/)) return "partner-detail";
-    return "partners";
-  }
-  if (pathname.includes("/approvals")) return "approvals";
-  if (pathname.includes("/escalations")) return "escalations";
-  if (pathname.includes("/communications")) return "communications";
-  if (pathname.includes("/documents")) return "documents";
-  if (pathname.includes("/tasks")) return "tasks";
-  if (pathname.includes("/reports")) return "reports";
-  if (pathname.includes("/settings")) return "settings";
-
-  return "unknown";
-}
-
-/**
- * Get default actions for a page type and role
- */
-export function getDefaultActionsForContext(
-  pageType: PageType,
-  userRole: UserRole
-): QuickAction[] {
-  const actions: QuickAction[] = [];
-  const isInternal = [
-    "managing_director",
-    "relationship_manager",
-    "coordinator",
-    "finance_compliance",
-  ].includes(userRole);
-  const isMD = userRole === "managing_director";
-  const isRM = userRole === "relationship_manager";
-  const isCoordinator = userRole === "coordinator";
-
-  // Create actions
-  if (isInternal) {
-    // New program - available on dashboard, programs list
-    if (["dashboard", "programs"].includes(pageType) && (isMD || isRM)) {
-      actions.push({
-        id: "new-program",
-        label: "New Program",
-        description: "Create a new program",
-        icon: FolderPlus,
-        category: "create",
-        shortcut: "n",
-        shortcutMetaKey: false,
-        handler: () => {
-          window.location.href = "/programs/new";
-        },
-        order: 1,
-      });
-    }
-
-    // New client
-    if (["dashboard", "clients"].includes(pageType)) {
-      actions.push({
-        id: "new-client",
-        label: "New Client",
-        description: "Add a new client",
-        icon: UserPlus,
-        category: "create",
-        handler: () => {
-          window.location.href = "/clients/new";
-        },
-        order: 2,
-      });
-    }
-
-    // New partner
-    if (["dashboard", "partners"].includes(pageType)) {
-      actions.push({
-        id: "new-partner",
-        label: "New Partner",
-        description: "Add a new partner",
-        icon: Building2,
-        category: "create",
-        handler: () => {
-          window.location.href = "/partners/new";
-        },
-        order: 3,
-      });
-    }
-
-    // New task
-    actions.push({
-      id: "new-task",
-      label: "New Task",
-      description: "Create a quick task",
-      icon: CheckSquare,
-      category: "create",
-      shortcut: "t",
-      shortcutMetaKey: false,
-      handler: () => {
-        // Dispatch custom event that QuickTaskButton listens to
-        window.dispatchEvent(new CustomEvent("quick-actions:new-task"));
-      },
-      order: 10,
-    });
-  }
-
-  // Communication actions
-  if (isInternal && (isMD || isRM || isCoordinator)) {
-    actions.push({
-      id: "new-communication",
-      label: "New Communication",
-      description: "Log a communication",
-      icon: Mail,
-      category: "communication",
-      handler: () => {
-        window.location.href = "/communications";
-      },
-      order: 20,
-    });
-
-    actions.push({
-      id: "new-escalation",
-      label: "New Escalation",
-      description: "Create an escalation",
-      icon: AlertTriangle,
-      category: "communication",
-      handler: () => {
-        window.location.href = "/escalations";
-      },
-      order: 21,
-    });
-  }
-
-  // Export actions
-  if (["programs", "clients", "partners", "reports"].includes(pageType)) {
-    actions.push({
-      id: "export-csv",
-      label: "Export CSV",
-      description: "Export current view as CSV",
-      icon: FileSpreadsheet,
-      category: "export",
-      shortcut: "e",
-      shortcutMetaKey: false,
-      handler: () => {
-        window.dispatchEvent(new CustomEvent("quick-actions:export-csv"));
-      },
-      order: 30,
-    });
-
-    actions.push({
-      id: "export-pdf",
-      label: "Export PDF",
-      description: "Export current view as PDF",
-      icon: FileText,
-      category: "export",
-      handler: () => {
-        window.dispatchEvent(new CustomEvent("quick-actions:export-pdf"));
-      },
-      order: 31,
-    });
-  }
-
-  // Common actions
-  if (isInternal) {
-    actions.push({
-      id: "review-pending",
-      label: "Review Pending",
-      description: "View pending approvals",
-      icon: ClipboardList,
-      category: "common",
-      handler: () => {
-        window.location.href = "/approvals";
-      },
-      order: 40,
-    });
-  }
-
-  // Client portal actions
-  if (userRole === "client") {
-    actions.push({
-      id: "view-programs",
-      label: "My Programs",
-      description: "View your programs",
-      icon: FolderOpen,
-      category: "navigation",
-      handler: () => {
-        window.location.href = "/portal/programs";
-      },
-      order: 1,
-    });
-
-    actions.push({
-      id: "view-documents",
-      label: "My Documents",
-      description: "View your documents",
-      icon: FileText,
-      category: "navigation",
-      handler: () => {
-        window.location.href = "/portal/documents";
-      },
-      order: 2,
-    });
-  }
-
-  // Partner portal actions
-  if (userRole === "partner") {
-    actions.push({
-      id: "view-assignments",
-      label: "My Assignments",
-      description: "View your assignments",
-      icon: Briefcase,
-      category: "navigation",
-      handler: () => {
-        window.location.href = "/partner/assignments";
-      },
-      order: 1,
-    });
-  }
-
-  return actions;
-}
-
-/**
- * Quick actions store state
- */
-interface QuickActionsState {
-  /** Pinned action IDs */
-  pinnedActions: string[];
-  /** Custom action order within categories */
-  customOrder: Record<string, number>;
-  /** Whether the menu is open */
-  isOpen: boolean;
-}
+// Re-export types and constants for consumers that import from this module
+export type { QuickAction, QuickActionCategory, QuickActionContext, PageType };
+export { detectPageType, getDefaultActionsForContext, QUICK_ACTION_CATEGORIES };
+export { useQuickActionRegistry } from "@/hooks/use-quick-action-registry";
+export { useQuickActionKeyboard } from "@/hooks/use-quick-action-keyboard";
+export { useQuickActionSearch, useQuickActionSearch as useFilteredQuickActions } from "@/hooks/use-quick-action-search";
 
 /**
  * Hook return type
@@ -348,7 +28,7 @@ interface QuickActionsState {
 interface UseQuickActionsReturn {
   /** Current context */
   context: QuickActionContext;
-  /** All available actions for current context */
+  /** All available actions for current context (sorted) */
   actions: QuickAction[];
   /** Pinned actions */
   pinnedActions: QuickAction[];
@@ -372,160 +52,80 @@ interface UseQuickActionsReturn {
   toggleMenu: () => void;
 }
 
-const STORAGE_KEY = "amg-quick-actions";
-
 /**
- * Load state from localStorage
- */
-function loadState(): QuickActionsState {
-  if (typeof window === "undefined") {
-    return { pinnedActions: [], customOrder: {}, isOpen: false };
-  }
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        pinnedActions: parsed.pinnedActions || [],
-        customOrder: parsed.customOrder || {},
-        isOpen: false,
-      };
-    }
-  } catch {
-    // Ignore parse errors
-  }
-
-  return { pinnedActions: [], customOrder: {}, isOpen: false };
-}
-
-/**
- * Save state to localStorage
- */
-function saveState(state: QuickActionsState): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        pinnedActions: state.pinnedActions,
-        customOrder: state.customOrder,
-      })
-    );
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-/**
- * Hook for managing quick actions
+ * Standalone hook for managing quick actions.
+ *
+ * Composes useQuickActionRegistry, useQuickActionKeyboard, and
+ * useQuickActionSearch into a single interface.
+ *
+ * Note: components inside a QuickActionsProvider should use the context-based
+ * `useQuickActions` exported from `@/providers/quick-actions-provider` instead.
  */
 export function useQuickActions(): UseQuickActionsReturn {
   const pathname = usePathname();
   const { user } = useAuth();
-
-  const [state, setState] = useState<QuickActionsState>(loadState);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Build context
-  const context: QuickActionContext = useMemo(() => ({
-    pathname,
-    pageType: detectPageType(pathname),
-    userRole: user?.role || "client",
-  }), [pathname, user?.role]);
+  const context: QuickActionContext = useMemo(
+    () => ({
+      pathname,
+      pageType: detectPageType(pathname),
+      userRole: user?.role ?? "client",
+    }),
+    [pathname, user?.role]
+  );
 
-  // Get actions for current context
-  const allActions = useMemo(() => {
-    return getDefaultActionsForContext(context.pageType, context.userRole);
+  // Registry sub-hook (pin/reorder/persist)
+  const {
+    sortActions,
+    pinnedActionIds,
+    pinAction,
+    unpinAction,
+    togglePin,
+    reorderAction,
+  } = useQuickActionRegistry();
+
+  // Raw actions for context (provider version uses router; standalone uses window.location)
+  const rawActions = useMemo<QuickAction[]>(() => {
+    // Build a minimal router-like shim so getDefaultActionsForContext works
+    // without Next.js Router being available at call sites that use this hook.
+    const locationRouter = {
+      push: (href: string) => { window.location.href = href; },
+    } as Parameters<typeof getDefaultActionsForContext>[2];
+    return getDefaultActionsForContext(context.pageType, context.userRole, locationRouter);
   }, [context.pageType, context.userRole]);
 
-  // Sort actions by order and custom order
-  const actions = useMemo(() => {
-    return [...allActions].sort((a, b) => {
-      const orderA = state.customOrder[a.id] ?? a.order ?? 100;
-      const orderB = state.customOrder[b.id] ?? b.order ?? 100;
-      return orderA - orderB;
-    });
-  }, [allActions, state.customOrder]);
+  // Sort using registry custom order
+  const actions = useMemo(() => sortActions(rawActions), [sortActions, rawActions]);
 
-  // Get pinned actions
-  const pinnedActions = useMemo(() => {
-    return actions.filter((a) => state.pinnedActions.includes(a.id));
-  }, [actions, state.pinnedActions]);
+  // Pinned actions subset
+  const pinnedActions = useMemo(
+    () => actions.filter((a) => pinnedActionIds.includes(a.id)),
+    [actions, pinnedActionIds]
+  );
 
-  // Pin/unpin actions
-  const pinAction = useCallback((actionId: string) => {
-    setState((prev) => {
-      if (prev.pinnedActions.includes(actionId)) return prev;
-      const newState = {
-        ...prev,
-        pinnedActions: [...prev.pinnedActions, actionId],
-      };
-      saveState(newState);
-      return newState;
-    });
-  }, []);
+  // Menu helpers
+  const openMenu = useCallback(() => setIsOpen(true), []);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+  const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), []);
 
-  const unpinAction = useCallback((actionId: string) => {
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        pinnedActions: prev.pinnedActions.filter((id) => id !== actionId),
-      };
-      saveState(newState);
-      return newState;
-    });
-  }, []);
+  // Execute action (checks disabled flag)
+  const executeAction = useCallback(
+    (action: QuickAction) => {
+      const disabled =
+        typeof action.disabled === "function"
+          ? action.disabled(context)
+          : action.disabled;
+      if (disabled) return;
+      action.handler(context);
+      setIsOpen(false);
+    },
+    [context]
+  );
 
-  const togglePin = useCallback((actionId: string) => {
-    setState((prev) => {
-      const isPinned = prev.pinnedActions.includes(actionId);
-      const newState = {
-        ...prev,
-        pinnedActions: isPinned
-          ? prev.pinnedActions.filter((id) => id !== actionId)
-          : [...prev.pinnedActions, actionId],
-      };
-      saveState(newState);
-      return newState;
-    });
-  }, []);
-
-  const reorderAction = useCallback((actionId: string, newOrder: number) => {
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        customOrder: { ...prev.customOrder, [actionId]: newOrder },
-      };
-      saveState(newState);
-      return newState;
-    });
-  }, []);
-
-  // Execute action
-  const executeAction = useCallback((action: QuickAction) => {
-    // Check if disabled
-    const disabled = typeof action.disabled === "function"
-      ? action.disabled(context)
-      : action.disabled;
-    if (disabled) return;
-
-    action.handler(context);
-    setState((prev) => ({ ...prev, isOpen: false }));
-  }, [context]);
-
-  // Menu state
-  const openMenu = useCallback(() => {
-    setState((prev) => ({ ...prev, isOpen: true }));
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setState((prev) => ({ ...prev, isOpen: false }));
-  }, []);
-
-  const toggleMenu = useCallback(() => {
-    setState((prev) => ({ ...prev, isOpen: !prev.isOpen }));
-  }, []);
+  // Keyboard sub-hook (registers global listeners)
+  useQuickActionKeyboard({ actions, executeAction, toggleMenu });
 
   return {
     context,
@@ -536,20 +136,10 @@ export function useQuickActions(): UseQuickActionsReturn {
     togglePin,
     reorderAction,
     executeAction,
-    isOpen: state.isOpen,
+    isOpen,
     openMenu,
     closeMenu,
     toggleMenu,
   };
 }
 
-/**
- * Category display info
- */
-export const QUICK_ACTION_CATEGORIES: Record<QuickActionCategory, { label: string; order: number }> = {
-  create: { label: "Create", order: 1 },
-  communication: { label: "Communication", order: 2 },
-  export: { label: "Export", order: 3 },
-  navigation: { label: "Navigation", order: 4 },
-  common: { label: "Common", order: 5 },
-};
