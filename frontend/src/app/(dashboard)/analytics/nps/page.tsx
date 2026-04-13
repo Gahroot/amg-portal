@@ -55,6 +55,11 @@ import type {
   NPSScoreCategory,
   NPSSurveyCreateData,
 } from "@/types/nps-survey";
+import {
+  isNPSFollowUpPriority,
+  isNPSFollowUpStatus,
+  isNPSScoreCategory,
+} from "@/lib/type-guards";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -214,6 +219,9 @@ function CreateSurveyDialog({ open, onClose }: CreateSurveyDialogProps) {
       name: name.trim(),
       quarter: parsedQuarter,
       year: parsedYear,
+      distribution_method: "email",
+      reminder_enabled: true,
+      reminder_days: 7,
     };
     if (description.trim()) payload.description = description.trim();
     if (closesAt) payload.closes_at = new Date(closesAt).toISOString();
@@ -722,7 +730,11 @@ function ResponsesTab({
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={SCORE_CATEGORY_VARIANT[r.score_category]}
+                      variant={
+                        isNPSScoreCategory(r.score_category)
+                          ? SCORE_CATEGORY_VARIANT[r.score_category]
+                          : "secondary"
+                      }
                     >
                       {r.score_category}
                     </Badge>
@@ -872,7 +884,13 @@ function FollowUpsTab({
               {followUps.map((fu) => (
                 <TableRow key={fu.id}>
                   <TableCell>
-                    <Badge variant={PRIORITY_VARIANT[fu.priority]}>
+                    <Badge
+                      variant={
+                        isNPSFollowUpPriority(fu.priority)
+                          ? PRIORITY_VARIANT[fu.priority]
+                          : "secondary"
+                      }
+                    >
                       {fu.priority}
                     </Badge>
                   </TableCell>
@@ -886,7 +904,13 @@ function FollowUpsTab({
                     {fu.action_type.replace(/_/g, " ")}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={FOLLOW_UP_STATUS_VARIANT[fu.status]}>
+                    <Badge
+                      variant={
+                        isNPSFollowUpStatus(fu.status)
+                          ? FOLLOW_UP_STATUS_VARIANT[fu.status]
+                          : "secondary"
+                      }
+                    >
                       {fu.status.replace(/_/g, " ")}
                     </Badge>
                   </TableCell>

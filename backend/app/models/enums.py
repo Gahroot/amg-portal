@@ -184,8 +184,8 @@ class ExpiryStatus(StrEnum):
     """Expiry urgency categories for documents."""
 
     expired = "expired"
-    expiring_30 = "expiring_30"   # within 30 days
-    expiring_90 = "expiring_90"   # within 90 days
+    expiring_30 = "expiring_30"  # within 30 days
+    expiring_90 = "expiring_90"  # within 90 days
     valid = "valid"
 
 
@@ -586,10 +586,10 @@ class PulseSurveyStatus(StrEnum):
 class PulseSurveyResponseType(StrEnum):
     """Response type options for pulse surveys"""
 
-    emoji = "emoji"          # 😊 😐 😞
-    stars = "stars"          # 1–5 stars
-    yes_no = "yes_no"        # Yes / No
-    thumbs = "thumbs"        # 👍 / 👎
+    emoji = "emoji"  # 😊 😐 😞
+    stars = "stars"  # 1–5 stars
+    yes_no = "yes_no"  # Yes / No
+    thumbs = "thumbs"  # 👍 / 👎
 
 
 class PulseSurveyTrigger(StrEnum):
@@ -614,3 +614,45 @@ class TaxDocumentStatus(StrEnum):
     draft = "draft"
     published = "published"
     superseded = "superseded"
+
+
+class LeadStatus(StrEnum):
+    """Sales pipeline status for a prospect (pre-client_profile)."""
+
+    new = "new"
+    contacting = "contacting"
+    qualifying = "qualifying"
+    qualified = "qualified"
+    disqualified = "disqualified"
+    converted = "converted"
+
+
+class LeadSource(StrEnum):
+    """How the lead reached the firm."""
+
+    referral_partner = "referral_partner"
+    existing_client = "existing_client"
+    inbound_web = "inbound_web"
+    outbound = "outbound"
+    event = "event"
+    other = "other"
+
+
+class OpportunityStage(StrEnum):
+    """Pipeline stage for a qualified opportunity."""
+
+    qualifying = "qualifying"
+    proposal = "proposal"
+    negotiation = "negotiation"
+    won = "won"
+    lost = "lost"
+
+
+class CrmActivityType(StrEnum):
+    """Type of CRM activity recorded against a lead, opportunity, or client."""
+
+    note = "note"
+    call = "call"
+    email = "email"
+    meeting = "meeting"
+    task = "task"

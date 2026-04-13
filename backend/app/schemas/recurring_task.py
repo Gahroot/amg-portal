@@ -24,7 +24,7 @@ class RecurringTaskTemplateCreate(BaseModel):
         try:
             from datetime import datetime as dt
 
-            from dateutil.rrule import rrulestr
+            from dateutil.rrule import rrulestr  # type: ignore[import-untyped, unused-ignore]
 
             rrulestr(v, dtstart=dt(2026, 1, 1))
         except Exception as exc:

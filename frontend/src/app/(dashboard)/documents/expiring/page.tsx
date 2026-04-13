@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useExpiringDocuments } from "@/hooks/use-documents";
 import { getDocumentDownloadUrl } from "@/lib/api/documents";
 import type { ExpiringDocumentItem, ExpiryStatus } from "@/types/document";
+import { isExpiryStatus } from "@/lib/type-guards";
 import { DataTableExport } from "@/components/ui/data-table-export";
 import type { ExportColumn } from "@/lib/export-utils";
 import { API_BASE_URL } from "@/lib/constants";
@@ -259,8 +260,12 @@ export default function ExpiringDocumentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.id} className={rowClass(doc.expiry_status)}>
+                {documents.map((doc) => {
+                  const expiryStatus: ExpiryStatus = isExpiryStatus(doc.expiry_status)
+                    ? doc.expiry_status
+                    : "valid";
+                  return (
+                  <TableRow key={doc.id} className={rowClass(expiryStatus)}>
                     <TableCell className="max-w-[200px]">
                       <div className="flex items-center gap-2">
                         <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -285,7 +290,7 @@ export default function ExpiringDocumentsPage() {
                     </TableCell>
                     <TableCell>
                       <ExpiryStatusBadge
-                        status={doc.expiry_status}
+                        status={expiryStatus}
                         days={doc.days_until_expiry}
                       />
                     </TableCell>
@@ -303,7 +308,8 @@ export default function ExpiringDocumentsPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           )}

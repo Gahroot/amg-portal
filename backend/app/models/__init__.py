@@ -26,6 +26,7 @@ from app.models.communication_audit import CommunicationAudit  # noqa: F401
 from app.models.communication_log import CommunicationLog  # noqa: F401
 from app.models.communication_template import CommunicationTemplate  # noqa: F401
 from app.models.conversation import Conversation  # noqa: F401
+from app.models.crm_activity import CrmActivity  # noqa: F401
 from app.models.custom_report import CustomReport  # noqa: F401
 from app.models.dashboard_config import DashboardConfig  # noqa: F401
 from app.models.decision_request import DecisionRequest  # noqa: F401
@@ -44,6 +45,7 @@ from app.models.escalation_template import EscalationTemplate  # noqa: F401
 from app.models.family_member import FamilyMember, FamilyRelationship  # noqa: F401
 from app.models.invoice import Invoice  # noqa: F401
 from app.models.kyc_document import KYCDocument  # noqa: F401
+from app.models.lead import Lead  # noqa: F401
 from app.models.meeting_slot import Meeting, RMAvailability, RMBlackout  # noqa: F401
 from app.models.meeting_type import MeetingType  # noqa: F401
 from app.models.message_digest import MessageDigestPreference  # noqa: F401
@@ -51,6 +53,7 @@ from app.models.milestone import Milestone  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.notification_preference import NotificationPreference  # noqa: F401
 from app.models.nps_survey import NPSFollowUp, NPSResponse, NPSSurvey  # noqa: F401
+from app.models.opportunity import Opportunity  # noqa: F401
 from app.models.partner import PartnerBlockedDate, PartnerProfile  # noqa: F401
 from app.models.partner_assignment import AssignmentHistory, PartnerAssignment  # noqa: F401
 from app.models.partner_blocker import PartnerBlocker  # noqa: F401

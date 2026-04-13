@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def compute_next_due(rrule_str: str, after: date) -> date | None:
     """Parse RRULE and compute the next occurrence after `after`."""
-    from dateutil.rrule import rrulestr  # type: ignore[import-untyped]
+    from dateutil.rrule import rrulestr  # type: ignore[import-untyped, unused-ignore]
 
     dtstart = datetime(after.year, after.month, after.day, tzinfo=UTC)
     rule = rrulestr(rrule_str, dtstart=dtstart)
@@ -51,9 +51,7 @@ async def generate_task_from_template(
     Returns the created task, or None if milestone_id is not set.
     """
     if not template.milestone_id:
-        logger.warning(
-            "Template %s has no milestone_id — skipping task generation", template.id
-        )
+        logger.warning("Template %s has no milestone_id — skipping task generation", template.id)
         return None
 
     today = datetime.now(UTC).date()
@@ -112,9 +110,7 @@ async def generate_task_from_template(
                     ),
                 )
     except Exception:
-        logger.exception(
-            "Failed to send notification for auto-generated task %s", task.id
-        )
+        logger.exception("Failed to send notification for auto-generated task %s", task.id)
 
     return task
 

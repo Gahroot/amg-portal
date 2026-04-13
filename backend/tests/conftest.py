@@ -24,7 +24,12 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text as _text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
 
 from app.core.rate_limit import _fallback_cache
@@ -53,6 +58,7 @@ def pytest_configure(config: pytest.Config) -> None:
         "integration: marks integration tests requiring database",
     )
 
+
 # ---------------------------------------------------------------------------
 # Test database configuration
 # ---------------------------------------------------------------------------
@@ -62,7 +68,7 @@ _TEST_DB = "amg_portal_test"
 TEST_DATABASE_URL = f"postgresql+asyncpg://amg:amg_dev_password@localhost:5433/{_TEST_DB}"
 
 
-def _make_engine() -> object:
+def _make_engine() -> AsyncEngine:
     """Create a fresh async engine with NullPool (no connection reuse)."""
     return create_async_engine(
         TEST_DATABASE_URL,
@@ -80,9 +86,7 @@ async def _async_setup() -> None:
     """Create the test DB (if absent) and build all tables."""
     conn = await asyncpg.connect(_PG_ADMIN_URL)
     try:
-        exists = await conn.fetchval(
-            "SELECT 1 FROM pg_database WHERE datname=$1", _TEST_DB
-        )
+        exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname=$1", _TEST_DB)
         if not exists:
             await conn.execute(f'CREATE DATABASE "{_TEST_DB}"')
     finally:
@@ -129,9 +133,7 @@ async def db_session(
     one session are visible to the other).  All rows are deleted at the end.
     """
     engine = _make_engine()
-    session_factory = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     # Route handlers each get a fresh session from the same test engine
     async def _override() -> AsyncGenerator[AsyncSession, None]:
@@ -149,9 +151,7 @@ async def db_session(
 
         cursor: int = 0
         while True:
-            cursor, keys = await redis_client.scan(
-                cursor, match="rate_limit:*", count=100
-            )
+            cursor, keys = await redis_client.scan(cursor, match="rate_limit:*", count=100)
             if keys:
                 await redis_client.delete(*keys)
             if cursor == 0:
@@ -168,12 +168,8 @@ async def db_session(
 
     # Wipe every table so the next test starts clean
     async with engine.begin() as conn:
-        table_names = ", ".join(
-            f'"{t.name}"' for t in Base.metadata.sorted_tables
-        )
-        await conn.execute(
-            _text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE")
-        )
+        table_names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+        await conn.execute(_text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE"))
 
     await engine.dispose()
 
@@ -186,9 +182,7 @@ async def db_session(
 @pytest_asyncio.fixture
 async def anon_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:  # noqa: ARG001
     """Unauthenticated async HTTP test client."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
@@ -296,34 +290,26 @@ async def rm_client(anon_client: AsyncClient, rm_user: User) -> AsyncClient:
 
 
 @pytest_asyncio.fixture
-async def coordinator_client(
-    anon_client: AsyncClient, coordinator_user: User
-) -> AsyncClient:
+async def coordinator_client(anon_client: AsyncClient, coordinator_user: User) -> AsyncClient:
     anon_client.headers.update(auth_headers(coordinator_user))
     return anon_client
 
 
 @pytest_asyncio.fixture
-async def compliance_client(
-    anon_client: AsyncClient, compliance_user: User
-) -> AsyncClient:
+async def compliance_client(anon_client: AsyncClient, compliance_user: User) -> AsyncClient:
     anon_client.headers.update(auth_headers(compliance_user))
     return anon_client
 
 
 @pytest_asyncio.fixture
-async def client_user_http(
-    anon_client: AsyncClient, client_user: User
-) -> AsyncClient:
+async def client_user_http(anon_client: AsyncClient, client_user: User) -> AsyncClient:
     """HTTP client authenticated as a ``client`` role user."""
     anon_client.headers.update(auth_headers(client_user))
     return anon_client
 
 
 @pytest_asyncio.fixture
-async def partner_http(
-    anon_client: AsyncClient, partner_user: User
-) -> AsyncClient:
+async def partner_http(anon_client: AsyncClient, partner_user: User) -> AsyncClient:
     """HTTP client authenticated as a ``partner`` role user."""
     anon_client.headers.update(auth_headers(partner_user))
     return anon_client
@@ -350,9 +336,7 @@ async def db_client(db_session: AsyncSession, rm_user: User) -> Client:
 
 
 @pytest_asyncio.fixture
-async def db_client_profile(
-    db_session: AsyncSession, rm_user: User
-) -> ClientProfile:
+async def db_client_profile(db_session: AsyncSession, rm_user: User) -> ClientProfile:
     """A ClientProfile in draft/pending state assigned to ``rm_user``."""
     profile = ClientProfile(
         id=uuid.uuid4(),
@@ -369,9 +353,7 @@ async def db_client_profile(
 
 
 @pytest_asyncio.fixture
-async def db_client_profile_pending_md(
-    db_session: AsyncSession, rm_user: User
-) -> ClientProfile:
+async def db_client_profile_pending_md(db_session: AsyncSession, rm_user: User) -> ClientProfile:
     """A ClientProfile that has passed compliance and is awaiting MD approval."""
     profile = ClientProfile(
         id=uuid.uuid4(),

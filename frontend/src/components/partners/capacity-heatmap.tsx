@@ -10,6 +10,7 @@ import {
   getPartnerBlockedDates,
 } from "@/lib/api/partners";
 import type { CapacityDayEntry, CapacityStatus } from "@/types/partner";
+import { isCapacityStatus } from "@/lib/type-guards";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -244,6 +245,9 @@ export function CapacityHeatmap({
               );
             }
 
+            const entryStatus: CapacityStatus = isCapacityStatus(entry.status)
+              ? entry.status
+              : "available";
             return (
               <Tooltip key={iso}>
                 <TooltipTrigger asChild>
@@ -254,13 +258,13 @@ export function CapacityHeatmap({
                       "hover:ring-2 hover:ring-offset-1 hover:ring-blue-400",
                       isSelected && "ring-2 ring-offset-1 ring-blue-600",
                       isToday && "font-bold",
-                      getStatusColor(entry.status, entry.utilisation),
+                      getStatusColor(entryStatus, entry.utilisation),
                     )}
                   >
                     <span>{format(day, "d")}</span>
-                    {entry.status !== "available" && (
+                    {entryStatus !== "available" && (
                       <span className="text-[9px] leading-none opacity-80">
-                        {entry.status === "blocked"
+                        {entryStatus === "blocked"
                           ? "🚫"
                           : `${entry.active_assignments}/${entry.max_concurrent}`}
                       </span>
@@ -269,7 +273,7 @@ export function CapacityHeatmap({
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[200px]">
                   <p className="font-medium">{format(day, "EEE, MMM d")}</p>
-                  <p className="text-xs">{getStatusLabel(entry.status)}</p>
+                  <p className="text-xs">{getStatusLabel(entryStatus)}</p>
                   {entry.status !== "blocked" && (
                     <p className="text-xs">
                       {entry.active_assignments}/{entry.max_concurrent} assignments

@@ -38,6 +38,8 @@ import {
   Clock,
   Zap,
   Plug,
+  TrendingUp,
+  UserPlus,
 } from "lucide-react";
 import type { PortalNavConfig } from "@/types/navigation";
 
@@ -65,6 +67,32 @@ export const dashboardNavConfig: PortalNavConfig = {
           icon: PieChart,
           tooltip: "RM Portfolio View",
           roles: [MD, RM, COORD, FIN],
+        },
+      ],
+    },
+    {
+      label: "CRM",
+      items: [
+        {
+          title: "CRM Overview",
+          href: "/crm",
+          icon: TrendingUp,
+          tooltip: "Pipeline & leads overview",
+          roles: [MD, RM, COORD],
+        },
+        {
+          title: "Leads",
+          href: "/crm/leads",
+          icon: UserPlus,
+          tooltip: "Prospect leads",
+          roles: [MD, RM, COORD],
+        },
+        {
+          title: "Pipeline",
+          href: "/crm/pipeline",
+          icon: Kanban,
+          tooltip: "Sales pipeline board",
+          roles: [MD, RM, COORD],
         },
       ],
     },

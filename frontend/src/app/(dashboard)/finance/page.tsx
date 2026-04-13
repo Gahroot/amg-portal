@@ -129,7 +129,7 @@ function buildColumns(clientMap: ClientMap): ColumnDef<Invoice>[] {
       header: "Due Date",
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm">
-          {formatDate(row.original.due_date)}
+          {formatDate(row.original.due_date ?? null)}
         </span>
       ),
     },

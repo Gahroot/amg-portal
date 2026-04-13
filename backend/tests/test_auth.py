@@ -139,29 +139,26 @@ class TestTokenRefresh:
         # Store a matching RefreshToken row so the /refresh endpoint can
         # look it up for rotation / reuse detection.
         payload = decode_refresh_token(refresh)
-        db_session.add(RefreshToken(
-            user_id=user.id,
-            token_hash=hash_token(refresh),
-            jti=payload["jti"],
-            family_id=payload["family"],
-            expires_at=datetime.now(UTC) + timedelta(days=7),
-        ))
+        assert payload is not None
+        db_session.add(
+            RefreshToken(
+                user_id=user.id,
+                token_hash=hash_token(refresh),
+                jti=payload["jti"],
+                family_id=payload["family"],
+                expires_at=datetime.now(UTC) + timedelta(days=7),
+            )
+        )
         await db_session.commit()
 
-        resp = await anon_client.post(
-            f"{BASE}/refresh", json={"refresh_token": refresh}
-        )
+        resp = await anon_client.post(f"{BASE}/refresh", json={"refresh_token": refresh})
         assert resp.status_code == 200
         data = resp.json()
         assert data["access_token"]
         assert data["refresh_token"]
 
-    async def test_invalid_refresh_token_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
-        resp = await anon_client.post(
-            f"{BASE}/refresh", json={"refresh_token": "not-a-real-token"}
-        )
+    async def test_invalid_refresh_token_returns_401(self, anon_client: AsyncClient) -> None:
+        resp = await anon_client.post(f"{BASE}/refresh", json={"refresh_token": "not-a-real-token"})
         assert resp.status_code == 401
 
     async def test_refresh_for_suspended_user_returns_401(
@@ -173,9 +170,7 @@ class TestTokenRefresh:
         await db_session.commit()
 
         refresh = create_refresh_token({"sub": str(user.id), "email": user.email})
-        resp = await anon_client.post(
-            f"{BASE}/refresh", json={"refresh_token": refresh}
-        )
+        resp = await anon_client.post(f"{BASE}/refresh", json={"refresh_token": refresh})
         assert resp.status_code == 401
 
 
@@ -185,9 +180,7 @@ class TestTokenRefresh:
 
 
 class TestGetMe:
-    async def test_returns_current_user(
-        self, anon_client: AsyncClient, rm_user: User
-    ) -> None:
+    async def test_returns_current_user(self, anon_client: AsyncClient, rm_user: User) -> None:
         anon_client.headers.update(auth_headers(rm_user))
         resp = await anon_client.get(f"{BASE}/me")
         assert resp.status_code == 200
@@ -225,9 +218,7 @@ class TestMFASetup:
         assert "backup_codes" in data
         assert len(data["backup_codes"]) > 0
 
-    async def test_setup_requires_authentication(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_setup_requires_authentication(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.post(f"{BASE}/mfa/setup")
         assert resp.status_code == 401
 
@@ -241,9 +232,7 @@ class TestMFASetup:
         assert setup_resp.status_code == 200
 
         # Submit a clearly-wrong code
-        resp = await anon_client.post(
-            f"{BASE}/mfa/verify-setup", json={"code": "000000"}
-        )
+        resp = await anon_client.post(f"{BASE}/mfa/verify-setup", json={"code": "000000"})
         assert resp.status_code == 400
 
 
@@ -253,18 +242,12 @@ class TestMFASetup:
 
 
 class TestProfileUpdate:
-    async def test_update_full_name(
-        self, anon_client: AsyncClient, rm_user: User
-    ) -> None:
+    async def test_update_full_name(self, anon_client: AsyncClient, rm_user: User) -> None:
         anon_client.headers.update(auth_headers(rm_user))
-        resp = await anon_client.patch(
-            f"{BASE}/me", json={"full_name": "Updated Name"}
-        )
+        resp = await anon_client.patch(f"{BASE}/me", json={"full_name": "Updated Name"})
         assert resp.status_code == 200
         assert resp.json()["full_name"] == "Updated Name"
 
-    async def test_update_requires_authentication(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_update_requires_authentication(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.patch(f"{BASE}/me", json={"full_name": "Anon"})
         assert resp.status_code == 401

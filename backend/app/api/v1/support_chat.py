@@ -4,7 +4,6 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
 
 from app.api.deps import DB, CurrentUser, RLSContext, require_internal
 from app.api.ws_connection import connection_manager
@@ -95,13 +94,9 @@ async def create_support_conversation(
     _rls: RLSContext,
 ) -> SupportConversationResponse:
     """Start a new support conversation or get existing open one."""
-    conversation = await support_chat_service.get_or_create_conversation(
-        db, current_user.id, data
-    )
+    conversation = await support_chat_service.get_or_create_conversation(db, current_user.id, data)
 
-    unread_count = await support_chat_service.get_unread_count(
-        db, conversation.id, "user"
-    )
+    unread_count = await support_chat_service.get_unread_count(db, conversation.id, "user")
 
     return SupportConversationResponse(
         **_conversation_to_response(conversation, unread_count=unread_count)
@@ -148,9 +143,7 @@ async def get_user_conversation(
     if not conversation:
         raise NotFoundException("Conversation not found")
 
-    unread_count = await support_chat_service.get_unread_count(
-        db, conversation_id, "user"
-    )
+    unread_count = await support_chat_service.get_unread_count(db, conversation_id, "user")
 
     return SupportConversationResponse(
         **_conversation_to_response(conversation, unread_count=unread_count)
@@ -318,9 +311,7 @@ async def create_offline_message(
     _rls: RLSContext,
 ) -> OfflineMessageResponse:
     """Leave a message when support is offline."""
-    message = await support_chat_service.create_offline_message(
-        db, current_user.id, data
-    )
+    message = await support_chat_service.create_offline_message(db, current_user.id, data)
     return OfflineMessageResponse.model_validate(message)
 
 
@@ -371,9 +362,7 @@ async def assign_conversation_to_agent(
     _rls: RLSContext,
 ) -> SupportConversationResponse:
     """Assign a conversation to an agent."""
-    conversation = await support_chat_service.assign_agent(
-        db, conversation_id, data.agent_id
-    )
+    conversation = await support_chat_service.assign_agent(db, conversation_id, data.agent_id)
 
     return SupportConversationResponse(**_conversation_to_response(conversation))
 

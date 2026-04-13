@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useExpiringDocuments } from "@/hooks/use-documents";
 import { getDocumentDownloadUrl } from "@/lib/api/documents";
 import type { ExpiringDocumentItem, ExpiryStatus } from "@/types/document";
+import { isExpiryStatus } from "@/lib/type-guards";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -96,7 +97,10 @@ function ExpiringDocumentRow({ doc }: { doc: ExpiringDocumentItem }) {
           {docTypeLabel} · Expires {formatDate(doc.expiry_date)} · {formatBytes(doc.file_size)}
         </p>
       </div>
-      <ExpiryBadge status={doc.expiry_status} days={doc.days_until_expiry} />
+      <ExpiryBadge
+        status={isExpiryStatus(doc.expiry_status) ? doc.expiry_status : "valid"}
+        days={doc.days_until_expiry}
+      />
       <Button
         variant="ghost"
         size="icon-xs"

@@ -17,10 +17,6 @@ import {
   useBudgetApprovalRequests,
   usePendingBudgetApprovals,
 } from "@/hooks/use-budget-approvals";
-import type {
-  BudgetApprovalStatus,
-  BudgetRequestType,
-} from "@/types/budget-approval";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -31,12 +27,12 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatRequestType(type: BudgetRequestType): string {
+function formatRequestType(type: string): string {
   return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function getStatusVariant(
-  status: BudgetApprovalStatus
+  status: string
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "approved":
@@ -52,7 +48,7 @@ function getStatusVariant(
   }
 }
 
-function formatStatus(status: BudgetApprovalStatus): string {
+function formatStatus(status: string): string {
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -164,7 +160,7 @@ function AllTab() {
                   </Badge>
                 </TableCell>
                 <TableCell className="tabular-nums">
-                  {formatCurrency(req.requested_amount)}
+                  {formatCurrency(Number(req.requested_amount))}
                 </TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(req.status)}>

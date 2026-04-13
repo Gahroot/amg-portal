@@ -455,4 +455,23 @@ export const queryKeys = {
 
   // ── Global Search ──────────────────────────────────────────────────────────
   searchSuggestions: (query: string) => ["search-suggestions", query] as const,
+
+  // ── CRM ────────────────────────────────────────────────────────────────────
+  crm: {
+    leads: {
+      all: ["crm", "leads"] as const,
+      list: (params?: unknown) => ["crm", "leads", "list", params] as const,
+      detail: (id: string) => ["crm", "leads", "detail", id] as const,
+    },
+    opportunities: {
+      all: ["crm", "opportunities"] as const,
+      list: (params?: unknown) => ["crm", "opportunities", "list", params] as const,
+      detail: (id: string) => ["crm", "opportunities", "detail", id] as const,
+      pipelineSummary: () => ["crm", "opportunities", "pipeline-summary"] as const,
+    },
+    activities: {
+      all: ["crm", "activities"] as const,
+      list: (params?: unknown) => ["crm", "activities", "list", params] as const,
+    },
+  },
 } as const;

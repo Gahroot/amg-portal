@@ -20,6 +20,7 @@ from app.api.v1.communication_logs import router as communication_logs_router
 from app.api.v1.communication_templates import router as communication_templates_router
 from app.api.v1.communications import router as communications_router
 from app.api.v1.conversations import router as conversations_router
+from app.api.v1.crm_activities import router as crm_activities_router
 from app.api.v1.custom_reports import router as custom_reports_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.decision_requests import router as decision_requests_router
@@ -40,10 +41,12 @@ from app.api.v1.intake import router as intake_router
 from app.api.v1.invoices import router as invoices_router
 from app.api.v1.kyc_documents import router as kyc_documents_router
 from app.api.v1.kyc_verifications import router as kyc_verifications_router
+from app.api.v1.leads import router as leads_router
 from app.api.v1.meetings import router as meetings_router
 from app.api.v1.messaging import router as messaging_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.nps_surveys import router as nps_surveys_router
+from app.api.v1.opportunities import router as opportunities_router
 from app.api.v1.partner_assignments import router as assignments_router
 from app.api.v1.partner_availability import router as partner_availability_router
 from app.api.v1.partner_capabilities import router as partner_capabilities_router
@@ -89,10 +92,11 @@ from app.api.v1.workload import router as workload_router
 router = APIRouter()
 router.include_router(auth_router, prefix="/auth", tags=["auth"])
 router.include_router(users_router, prefix="/users", tags=["users"])
-router.include_router(
-    user_preferences_router, prefix="/user", tags=["user-preferences"]
-)
+router.include_router(user_preferences_router, prefix="/user", tags=["user-preferences"])
 router.include_router(clients_router, prefix="/clients", tags=["clients"])
+router.include_router(leads_router, prefix="/leads", tags=["crm-leads"])
+router.include_router(opportunities_router, prefix="/opportunities", tags=["crm-opportunities"])
+router.include_router(crm_activities_router, prefix="/crm-activities", tags=["crm-activities"])
 router.include_router(
     client_comm_prefs_router,
     prefix="/clients",
@@ -136,15 +140,11 @@ router.include_router(
 router.include_router(assignments_router, prefix="/assignments", tags=["assignments"])
 router.include_router(deliverables_router, prefix="/deliverables", tags=["deliverables"])
 router.include_router(partner_portal_router, prefix="/partner-portal", tags=["partner-portal"])
-router.include_router(
-    partner_payments_router, prefix="/partner-portal", tags=["partner-payments"]
-)
+router.include_router(partner_payments_router, prefix="/partner-portal", tags=["partner-payments"])
 router.include_router(
     partner_payments_internal_router, prefix="/partner-payments", tags=["partner-payments"]
 )
-router.include_router(
-    partner_tax_documents_router, prefix="/tax-documents", tags=["tax-documents"]
-)
+router.include_router(partner_tax_documents_router, prefix="/tax-documents", tags=["tax-documents"])
 router.include_router(documents_router, prefix="/documents", tags=["documents"])
 router.include_router(kyc_documents_router, prefix="/kyc", tags=["kyc-documents"])
 router.include_router(kyc_verifications_router, prefix="/kyc", tags=["kyc-verifications"])
@@ -203,9 +203,7 @@ router.include_router(
     prefix="/recurring-tasks",
     tags=["recurring-tasks"],
 )
-router.include_router(
-    table_views_router, prefix="/table-views", tags=["table-views"]
-)
+router.include_router(table_views_router, prefix="/table-views", tags=["table-views"])
 router.include_router(
     capability_reviews_router,
     prefix="/capability-reviews",
@@ -256,9 +254,7 @@ router.include_router(
 )
 router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
 router.include_router(search_router, prefix="/search", tags=["search"])
-router.include_router(
-    saved_filters_router, prefix="/saved-filters", tags=["saved-filters"]
-)
+router.include_router(saved_filters_router, prefix="/saved-filters", tags=["saved-filters"])
 router.include_router(
     program_templates_router,
     prefix="/program-templates",

@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveNPSSurvey, useSubmitNPSResponse } from "@/hooks/use-nps-surveys";
 import type { NPSResponse, NPSScoreCategory } from "@/types/nps-survey";
+import { isNPSScoreCategory } from "@/lib/type-guards";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,10 @@ function AlreadyRespondedView() {
 // ─── Thank You State ─────────────────────────────────────────────────────────
 
 function ThankYouView({ response }: { response: NPSResponse }) {
-  const info = getCategoryInfo(response.score_category);
+  const category: NPSScoreCategory = isNPSScoreCategory(response.score_category)
+    ? response.score_category
+    : "passive";
+  const info = getCategoryInfo(category);
 
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
@@ -170,7 +174,6 @@ function SurveyForm({
       {
         surveyId,
         data: {
-          survey_id: surveyId,
           score: selectedScore,
           comment: comment.trim() || undefined,
           response_channel: "portal",

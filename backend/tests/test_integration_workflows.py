@@ -71,16 +71,13 @@ async def _client_for(*users: User) -> AsyncGenerator[tuple[AsyncClient, ...], N
     headers don't collide.
     """
     clients: list[AsyncClient] = []
-    cms = [
-        AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
-        for _ in users
-    ]
+    cms = [AsyncClient(transport=ASGITransport(app=app), base_url="http://test") for _ in users]
     try:
         for cm, user in zip(cms, users, strict=True):
             await cm.__aenter__()
             cm.headers.update(_auth_headers(user))
             clients.append(cm)
-        yield tuple(clients)  # type: ignore[misc]
+        yield tuple(clients)
     finally:
         for cm in reversed(cms):
             await cm.__aexit__(None, None, None)

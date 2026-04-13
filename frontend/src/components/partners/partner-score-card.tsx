@@ -5,15 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-function scoreColor(score: number | null): string {
-  if (score === null) return "text-muted-foreground";
+function scoreColor(score: number | null | undefined): string {
+  if (score == null) return "text-muted-foreground";
   if (score >= 70) return "text-green-700 dark:text-green-300";
   if (score >= 40) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
 }
 
 function scoreBadgeVariant(
-  status: string | null,
+  status: string | null | undefined,
 ): "default" | "secondary" | "destructive" | "outline" {
   if (!status || status === "good_standing") return "default";
   if (status === "warning") return "secondary";
@@ -48,7 +48,7 @@ export function PartnerScoreCard({ data }: { data: CompositeScore }) {
         {/* Main score */}
         <div className="flex items-baseline gap-3">
           <span className={`text-4xl font-bold ${scoreColor(data.composite_score)}`}>
-            {data.composite_score !== null
+            {data.composite_score != null
               ? data.composite_score.toFixed(1)
               : "N/A"}
           </span>
@@ -62,14 +62,14 @@ export function PartnerScoreCard({ data }: { data: CompositeScore }) {
               Rating Score (60% weight)
             </span>
             <span className="font-medium">
-              {data.avg_rating_score !== null
+              {data.avg_rating_score != null
                 ? `${(data.avg_rating_score * 20).toFixed(1)} / 100`
                 : "No ratings"}
             </span>
           </div>
           <Progress
             value={
-              data.avg_rating_score !== null ? data.avg_rating_score * 20 : 0
+              data.avg_rating_score != null ? data.avg_rating_score * 20 : 0
             }
             className="h-2"
           />
@@ -85,7 +85,7 @@ export function PartnerScoreCard({ data }: { data: CompositeScore }) {
               SLA Compliance (40% weight)
             </span>
             <span className="font-medium">
-              {data.sla_compliance_rate !== null
+              {data.sla_compliance_rate != null
                 ? `${data.sla_compliance_rate.toFixed(1)}%`
                 : "No SLA data"}
             </span>

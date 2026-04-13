@@ -100,7 +100,7 @@ export function AccessibleDialog({
 
   // Handle escape key
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
       if (open && event.key === "Escape") {
         onOpenChange(false);
       }
