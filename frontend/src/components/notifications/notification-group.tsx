@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Check } from "lucide-react";
-import type { NotificationGroup } from "@/types/communication";
+import type { NotificationGroup } from "@/types/notification";
 import { NotificationItem } from "./notification-item";
 
 interface NotificationGroupProps {
