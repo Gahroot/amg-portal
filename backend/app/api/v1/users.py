@@ -3,18 +3,25 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser, require_admin
-from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
+from app.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
 from app.core.security import hash_password
 from app.models.audit_log import AuditLog
 from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.auth import UserResponse
+from app.schemas.deletion_request import DeletionRequestCreate, DeletionRequestResponse
 from app.schemas.user import UserCreateByAdmin, UserListResponse, UserUpdate
 from app.services.crud_base import paginate
+from app.services.deletion_service import deletion_service
 
 router = APIRouter()
 
@@ -99,21 +106,35 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB) -> Any:
 
 @router.delete(
     "/{user_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None,
+    response_model=DeletionRequestResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(require_admin)],
+    summary="Request deletion of a user",
+    description=(
+        "Creates a pending two-person deletion request for the user. A different"
+        " Managing Director must approve via the deletion-requests endpoints before"
+        " the account is soft-deleted."
+    ),
 )
-async def delete_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB) -> None:
+async def delete_user(
+    user_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DB,
+    reason: str = Body(..., embed=True, min_length=10),
+) -> DeletionRequestResponse:
     if user_id == current_user.id:
-        raise BadRequestException("Cannot deactivate yourself")
+        raise ForbiddenException("Cannot delete your own account")
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise NotFoundException("User not found")
-
-    user.status = "inactive"
-    await db.commit()
+    req = await deletion_service.request_deletion(
+        db,
+        data=DeletionRequestCreate(
+            entity_type="users",
+            entity_id=str(user_id),
+            reason=reason,
+        ),
+        requester=current_user,
+    )
+    return DeletionRequestResponse.model_validate(req)
 
 
 @router.post(
