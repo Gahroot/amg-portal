@@ -522,8 +522,19 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
         notification: Notification,
     ) -> None:
         """Broadcast notification via WebSocket for real-time updates."""
-        # TODO: Implement WebSocket broadcast when real-time infrastructure is added
-        logger.debug("Real-time notification %s broadcast (not implemented)", notification.id)
+        from app.api.ws_connection import connection_manager
+
+        try:
+            payload = NotificationResponse.model_validate(notification).model_dump(mode="json")
+            await connection_manager.broadcast_notification(
+                user_id=notification.user_id,
+                notification=payload,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to broadcast realtime notification %s",
+                notification.id,
+            )
 
     # ------------------------------------------------------------------ #
     # Digest                                                               #
