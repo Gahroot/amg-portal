@@ -1,9 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { refreshToken as refreshTokenApi } from '@/lib/api/auth';
+import { parseJwtExp } from '@/lib/utils';
 
 const REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 const BACKGROUND_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
@@ -11,17 +13,6 @@ const REAUTH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes - require biometric re-aut
 
 const LAST_ACTIVITY_KEY = 'amg_last_activity';
 const BIOMETRIC_ENABLED_KEY = 'amg_biometric_enabled';
-
-function parseJwtExp(token: string): number | null {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const decoded = JSON.parse(atob(payload));
-    return typeof decoded.exp === 'number' ? decoded.exp * 1000 : null;
-  } catch {
-    return null;
-  }
-}
 
 export function useSession() {
   const token = useAuthStore((s) => s.token);
@@ -96,13 +87,14 @@ export function useSession() {
             return;
           }
 
-          // Check if biometric re-auth is needed
+          // If biometric re-auth is needed, force the user through the login flow
+          // instead of silently leaving a stale session behind.
           const needsReauth = await checkBiometricReauthRequired();
           if (needsReauth) {
-            // The auth store will handle this - the user will need to re-authenticate
-            // This is a soft requirement - we mark that re-auth is needed
-            // The actual biometric prompt will be shown when user tries to interact
             await SecureStore.setItemAsync('amg_needs_reauth', 'true');
+            await clearAuth();
+            router.replace('/(auth)/login');
+            return;
           }
         }
 

@@ -7,8 +7,33 @@ import { onlineManager } from '@tanstack/react-query';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 
 import { dataCache } from '@/services/DataCache';
+import { refreshToken as refreshTokenApi } from '@/lib/api/auth';
+import { useAuthStore } from '@/lib/auth-store';
+import { parseJwtExp } from '@/lib/utils';
+
+const TOKEN_EXPIRY_SKEW_MS = 30 * 1000;
+
+async function ensureFreshToken(): Promise<boolean> {
+  const store = useAuthStore.getState();
+  const exp = parseJwtExp(store.token);
+  if (exp && exp - Date.now() > TOKEN_EXPIRY_SKEW_MS) {
+    return true;
+  }
+  if (!store.refreshToken) {
+    return false;
+  }
+  try {
+    const res = await refreshTokenApi(store.refreshToken);
+    await store.setTokens(res.access_token, res.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export interface OfflineState {
   isOnline: boolean;
@@ -217,6 +242,12 @@ export function useOfflineQueue<T>(queueKey: string) {
       let failed = 0;
 
       for (const item of queue) {
+        if (!(await ensureFreshToken())) {
+          await SecureStore.setItemAsync('amg_needs_reauth', 'true');
+          await useAuthStore.getState().clearAuth();
+          router.replace('/(auth)/login');
+          return { processed, failed: queue.length - processed };
+        }
         try {
           const success = await processor(item);
           if (success) {

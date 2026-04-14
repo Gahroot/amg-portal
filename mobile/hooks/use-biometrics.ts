@@ -3,6 +3,9 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { useAuthStore } from '@/lib/auth-store';
+import { getMe } from '@/lib/api/auth';
+
 // Storage keys
 const BIOMETRIC_ENABLED_KEY = 'amg_biometric_enabled';
 const BIOMETRIC_CREDS_KEY = 'amg_biometric_creds';
@@ -172,10 +175,26 @@ export function useBiometrics() {
       });
 
       if (result.success) {
-        // Record successful authentication time
-        await SecureStore.setItemAsync(BIOMETRIC_LAST_AUTH_KEY, Date.now().toString());
+        // Biometric unlock must not bypass server-side session invalidation
+        // (password change, remote logout) — probe /auth/me before trusting creds.
+        try {
+          await getMe();
+        } catch (err: unknown) {
+          const status401 =
+            typeof err === 'object' &&
+            err !== null &&
+            'response' in err &&
+            (err as { response?: { status?: number } }).response?.status === 401;
+          if (status401) {
+            await SecureStore.deleteItemAsync(BIOMETRIC_CREDS_KEY);
+            await useAuthStore.getState().clearAuth();
+            setStatus((prev) => ({ ...prev, hasStoredCredentials: false }));
+            return null;
+          }
+          return null;
+        }
 
-        // Return stored credentials
+        await SecureStore.setItemAsync(BIOMETRIC_LAST_AUTH_KEY, Date.now().toString());
         return getCredentials();
       }
 
