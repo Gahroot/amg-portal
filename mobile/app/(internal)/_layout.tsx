@@ -1,7 +1,17 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { LayoutDashboard, BookOpen, User } from 'lucide-react-native';
 
+import { useAuthStore } from '@/lib/auth-store';
+import { INTERNAL_ROLES } from '@/types/user';
+
 export default function InternalLayout() {
+  const user = useAuthStore((state) => state.user);
+
+  if (!user || !INTERNAL_ROLES.includes(user.role)) {
+    router.replace('/');
+    return null;
+  }
+
   return (
     <Tabs
       screenOptions={{
