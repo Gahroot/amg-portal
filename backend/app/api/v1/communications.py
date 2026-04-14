@@ -1,10 +1,11 @@
 """Communication/message management endpoints."""
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, File, Form, Query, UploadFile
 
 from app.api.deps import DB, CurrentUser, RLSContext
 from app.core.exceptions import (
@@ -14,6 +15,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.models.communication import Communication
+from app.models.conversation import Conversation
 from app.schemas.communication import (
     AudioUploadResponse,
     CommunicationCreate,
@@ -29,9 +31,17 @@ from app.schemas.communication import (
 )
 from app.schemas.notification import CreateNotificationRequest
 from app.services.audio_service import audio_service
+from app.services.communication_audit_service import log_communication_event
 from app.services.communication_service import communication_service
 from app.services.notification_service import notification_service
+from app.services.storage import (
+    ALLOWED_AUDIO_MIME_TYPES,
+    MAX_AUDIO_FILE_SIZE,
+    storage_service,
+)
 from app.services.template_service import template_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -219,6 +229,24 @@ async def send_from_template(
 
     await db.commit()
     await db.refresh(comm)
+
+    try:
+        await log_communication_event(
+            db,
+            communication_id=comm.id,
+            action="message_sent_from_template",
+            actor_id=current_user.id,
+            details={
+                "template_id": str(data.template_id),
+                "template_type": template.template_type,
+                "template_name": template.name,
+                "recipient_user_ids": [str(uid) for uid in data.recipient_user_ids],
+                "channel": "in_portal",
+            },
+        )
+    except Exception:
+        logger.exception("Failed to log audit event for template communication %s", comm.id)
+
     return CommunicationResponse.model_validate(comm)
 
 
@@ -290,18 +318,32 @@ async def review_communication(
 
 @router.post("/upload-audio", response_model=AudioUploadResponse)
 async def upload_voice_message(
+    db: DB,
     current_user: CurrentUser,
     _rls: RLSContext,
+    conversation_id: uuid.UUID = Form(...),
     file: UploadFile = File(...),
 ) -> AudioUploadResponse:
-    """Upload a voice message audio file to MinIO.
+    """Upload a voice message audio file scoped to a conversation.
 
     Returns the storage object path and a short-lived presigned download URL.
     The caller should include the object_path in the message's attachment_ids
     as ``voice:<object_path>`` when sending the message.
     """
-    object_path, file_size = await audio_service.upload_voice_message(
-        file, str(current_user.id)
+    conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise NotFoundException("Conversation not found")
+    if current_user.id not in conversation.participant_ids:
+        raise ForbiddenException("User is not a participant in this conversation")
+
+    await storage_service.validate_file(
+        file,
+        max_size=MAX_AUDIO_FILE_SIZE,
+        allowed_types=ALLOWED_AUDIO_MIME_TYPES,
+    )
+
+    object_path, file_size = await storage_service.upload_file(
+        file, f"voice_messages/{conversation_id}"
     )
     url = audio_service.get_audio_url(object_path)
     return AudioUploadResponse(object_path=object_path, url=url, file_size=file_size)
