@@ -1,7 +1,16 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { BookOpen, MessageSquare, BarChart3, Settings } from 'lucide-react-native';
 
+import { useAuthStore } from '@/lib/auth-store';
+
 export default function ClientLayout() {
+  const user = useAuthStore((state) => state.user);
+
+  if (!user || user.role !== 'client') {
+    router.replace('/');
+    return null;
+  }
+
   return (
     <Tabs
       screenOptions={{
