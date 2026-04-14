@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     # Backend (for generating absolute URLs like calendar feed URLs)
     BACKEND_URL: str = "http://localhost:8000"
 
+    # Cookie domain for auth cookies. In cross-origin deployments (separate
+    # frontend/backend subdomains) set to the parent domain prefixed with a dot,
+    # e.g. ".up.railway.app". None yields host-only cookies (fine for local dev).
+    COOKIE_DOMAIN: str | None = None
+
     # MFA
     MFA_GRACE_PERIOD_DAYS: int = 7
     MFA_SETUP_TOKEN_EXPIRE_MINUTES: int = 30
