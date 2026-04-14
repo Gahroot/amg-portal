@@ -143,6 +143,11 @@ class AuditAction(StrEnum):
     create = "create"
     update = "update"
     delete = "delete"
+    approval_approved = "approval_approved"
+    approval_rejected = "approval_rejected"
+    partner_status_changed = "partner_status_changed"
+    budget_step_approved = "budget_step_approved"
+    budget_step_rejected = "budget_step_rejected"
 
 
 class DeliverableType(StrEnum):
