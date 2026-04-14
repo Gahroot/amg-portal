@@ -117,6 +117,7 @@ def _set_auth_cookies(
         samesite=samesite,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
+        domain=settings.COOKIE_DOMAIN,
     )
     response.set_cookie(
         key="refresh_token",
@@ -126,15 +127,30 @@ def _set_auth_cookies(
         samesite=samesite,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/api/v1/auth/refresh",
+        domain=settings.COOKIE_DOMAIN,
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    """Clear auth cookies."""
-    response.delete_cookie(key="access_token", path="/")
+    """Clear auth cookies with the same attrs used on set, so browsers match."""
+    cross_origin = _is_cross_origin()
+    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
+    secure = True if cross_origin else not settings.DEBUG
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        domain=settings.COOKIE_DOMAIN,
+        samesite=samesite,
+        secure=secure,
+        httponly=True,
+    )
     response.delete_cookie(
         key="refresh_token",
         path="/api/v1/auth/refresh",
+        domain=settings.COOKIE_DOMAIN,
+        samesite=samesite,
+        secure=secure,
+        httponly=True,
     )
 
 
@@ -151,12 +167,23 @@ def _set_mfa_setup_cookie(response: Response, token: str) -> None:
         samesite=samesite,
         max_age=settings.MFA_SETUP_TOKEN_EXPIRE_MINUTES * 60,
         path="/api/v1/auth/mfa",
+        domain=settings.COOKIE_DOMAIN,
     )
 
 
 def _clear_mfa_setup_cookie(response: Response) -> None:
-    """Clear the MFA setup cookie."""
-    response.delete_cookie(key="mfa_setup_token", path="/api/v1/auth/mfa")
+    """Clear the MFA setup cookie with attrs matching _set_mfa_setup_cookie."""
+    cross_origin = _is_cross_origin()
+    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
+    secure = True if cross_origin else not settings.DEBUG
+    response.delete_cookie(
+        key="mfa_setup_token",
+        path="/api/v1/auth/mfa",
+        domain=settings.COOKIE_DOMAIN,
+        samesite=samesite,
+        secure=secure,
+        httponly=True,
+    )
 
 
 async def _issue_refresh_token(
