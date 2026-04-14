@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
+from app.middleware.audit import with_system_audit_context
 from app.models.access_audit import AccessAudit
 from app.models.client import Client
 from app.models.enums import EscalationLevel, EscalationStatus, SLABreachStatus, UserRole
@@ -58,6 +59,7 @@ logger = logging.getLogger(__name__)
 _scheduler: AsyncIOScheduler | None = None
 
 
+@with_system_audit_context
 async def _check_sla_breaches_job() -> None:
     """Periodic job: check and update SLA breach statuses, then notify on new breaches."""
     logger.info("Running SLA breach check job")
@@ -144,6 +146,7 @@ async def _check_sla_breaches_job() -> None:
         logger.exception("Error in SLA breach check job")
 
 
+@with_system_audit_context
 async def _check_milestone_risks_job() -> None:
     """Periodic job: check milestones for risk and escalate.
 
@@ -304,6 +307,7 @@ async def _check_milestone_risks_job() -> None:
         logger.exception("Error in milestone risk check job")
 
 
+@with_system_audit_context
 async def _send_daily_digests_job() -> None:
     """Daily job: send digest emails to users with daily frequency."""
     logger.info("Running daily digest job")
@@ -332,6 +336,7 @@ async def _send_daily_digests_job() -> None:
         logger.exception("Error in daily digest job")
 
 
+@with_system_audit_context
 async def _send_weekly_digests_job() -> None:
     """Weekly job: send digest emails to users with weekly frequency."""
     logger.info("Running weekly digest job")
@@ -360,6 +365,7 @@ async def _send_weekly_digests_job() -> None:
         logger.exception("Error in weekly digest job")
 
 
+@with_system_audit_context
 async def _process_queued_notifications_job() -> None:
     """Periodic job: process queued notifications when users exit quiet hours.
 
@@ -395,6 +401,7 @@ class _ProgramSnapshot(TypedDict):
     milestones: list[_MilestoneSnapshot]
 
 
+@with_system_audit_context
 async def _send_weekly_status_reports_job() -> None:
     """Friday job: send weekly status reports for active programs."""
     logger.info("Running weekly status reports job")
@@ -495,6 +502,7 @@ async def _send_weekly_status_reports_job() -> None:
         logger.exception("Error in weekly status reports job")
 
 
+@with_system_audit_context
 async def _check_partner_threshold_alerts_job() -> None:
     """Daily job: alert MDs about partners with avg overall score below 3.0."""
     logger.info("Running partner threshold alerts job")
@@ -562,6 +570,7 @@ async def _check_partner_threshold_alerts_job() -> None:
         logger.exception("Error in partner threshold alerts job")
 
 
+@with_system_audit_context
 async def _process_report_schedules_job() -> None:
     """Daily job: process scheduled reports, store in MinIO, and email them."""
     logger.info("Running report schedules job")
@@ -659,6 +668,7 @@ async def _process_report_schedules_job() -> None:
         logger.exception("Error in report schedules job")
 
 
+@with_system_audit_context
 async def _check_capability_review_reminders_job() -> None:
     """Daily job: send reminders for upcoming capability reviews and escalate overdue ones."""
     logger.info("Running capability review reminders job")
@@ -737,6 +747,7 @@ async def _check_capability_review_reminders_job() -> None:
         logger.exception("Error in capability review reminders job")
 
 
+@with_system_audit_context
 async def _quarterly_audit_reminder_job() -> None:
     """Quarterly job: remind compliance team to conduct access audit."""
     logger.info("Running quarterly audit reminder job")
@@ -859,6 +870,7 @@ async def _quarterly_audit_reminder_job() -> None:
         logger.exception("Error in quarterly audit reminder job")
 
 
+@with_system_audit_context
 async def _check_data_retention_job() -> None:
     """Daily job: notify compliance team of programs eligible for archival.
 
@@ -954,6 +966,7 @@ async def _check_data_retention_job() -> None:
         logger.exception("Error in data retention check job")
 
 
+@with_system_audit_context
 async def _check_kyc_expiry_job() -> None:  # noqa: PLR0915
     """Daily job: check KYC documents for expiry and notify relevant users.
 
@@ -1123,6 +1136,7 @@ def _calculate_next_run(
     return from_time + timedelta(days=1)
 
 
+@with_system_audit_context
 async def _run_predictive_alerts_job() -> None:
     """Periodic job: run predictive risk scoring and notify RMs of at-risk milestones."""
     logger.info("Running predictive alerts job")
@@ -1183,6 +1197,7 @@ async def _run_predictive_alerts_job() -> None:
         logger.exception("Error running predictive alerts job")
 
 
+@with_system_audit_context
 async def _check_escalation_triggers_job() -> None:
     """Periodic job: evaluate auto-trigger escalation rules."""
 
@@ -1198,6 +1213,7 @@ async def _check_escalation_triggers_job() -> None:
         logger.exception("Error in escalation auto-trigger check job")
 
 
+@with_system_audit_context
 async def _auto_progress_escalations_job() -> None:
     """Periodic job (every 15 min): auto-progress escalations past their time threshold.
 
@@ -1405,6 +1421,7 @@ async def _escalate_sla_breach(
     return True
 
 
+@with_system_audit_context
 async def _check_escalation_deadlines_job() -> None:
     """Periodic job (every 15 min): check upcoming milestone deadlines and active SLA
     breaches, then create Escalation records with levels matched to urgency.
@@ -1497,6 +1514,7 @@ async def _check_escalation_deadlines_job() -> None:
         logger.exception("Error in escalation deadline check job")
 
 
+@with_system_audit_context
 async def _process_message_digests_job() -> None:
     """Hourly job: process message digests for users with hourly frequency.
 
@@ -1513,6 +1531,7 @@ async def _process_message_digests_job() -> None:
         logger.exception("Error in message digest processing job")
 
 
+@with_system_audit_context
 async def _send_event_reminders_job() -> None:
     """Periodic job: send reminders for upcoming scheduled events."""
     logger.info("Running event reminders job")
@@ -1524,6 +1543,7 @@ async def _send_event_reminders_job() -> None:
         logger.exception("Error in event reminders job")
 
 
+@with_system_audit_context
 async def _check_client_dates_job() -> None:
     """Daily job: send birthday and important date reminders to RMs (7-day lookahead)."""
     logger.info("Running client dates reminder job")
@@ -1535,6 +1555,7 @@ async def _check_client_dates_job() -> None:
         logger.exception("Error in client dates reminder job")
 
 
+@with_system_audit_context
 async def _check_document_expiry_job() -> None:
     """Daily job: send expiry alerts for passports, visas, and certifications."""
     logger.info("Running document expiry alerts job")
@@ -1546,6 +1567,7 @@ async def _check_document_expiry_job() -> None:
         logger.exception("Error in document expiry alerts job")
 
 
+@with_system_audit_context
 async def _check_partner_performance_trend_alerts_job() -> None:
     """Daily job: check partner performance metrics vs thresholds and alert on declining trends."""
     logger.info("Running partner performance trend alerts job")
@@ -1567,6 +1589,7 @@ async def _check_partner_performance_trend_alerts_job() -> None:
         logger.exception("Error in partner performance trend alerts job")
 
 
+@with_system_audit_context
 async def _process_recurring_tasks_job() -> None:
     """Daily job: process recurring task templates and generate due tasks."""
     logger.info("Running recurring task processing job")
@@ -1580,6 +1603,7 @@ async def _process_recurring_tasks_job() -> None:
         logger.exception("Error processing recurring tasks")
 
 
+@with_system_audit_context
 async def _send_milestone_reminder_notifications_job() -> None:
     """Daily job: send milestone due-date reminders to portal client users.
 
@@ -1599,6 +1623,7 @@ async def _send_milestone_reminder_notifications_job() -> None:
         logger.exception("Error in milestone reminder notifications job")
 
 
+@with_system_audit_context
 async def _mark_overdue_document_requests_job() -> None:
     """Daily job: mark document requests whose deadline has passed as overdue."""
     logger.info("Running overdue document requests job")
@@ -1612,6 +1637,7 @@ async def _mark_overdue_document_requests_job() -> None:
         logger.exception("Error marking overdue document requests")
 
 
+@with_system_audit_context
 async def _cleanup_expired_refresh_tokens_job() -> None:
     """Delete expired refresh tokens to keep the table lean."""
     try:
