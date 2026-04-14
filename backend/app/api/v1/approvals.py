@@ -12,7 +12,13 @@ from app.api.deps import DB, CurrentUser, require_internal, require_rm_or_above
 from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.approval import ProgramApproval
 from app.models.approval_comment import ApprovalComment
-from app.models.enums import ApprovalType, NotificationType, ProgramApprovalStatus, UserRole
+from app.models.enums import (
+    ApprovalType,
+    AuditAction,
+    NotificationType,
+    ProgramApprovalStatus,
+    UserRole,
+)
 from app.models.program import Program
 from app.models.user import User
 from app.schemas.approval import (
@@ -24,6 +30,7 @@ from app.schemas.approval import (
     ApprovalResponse,
 )
 from app.schemas.notification import CreateNotificationRequest
+from app.services.audit_service import log_action
 from app.services.notification_service import notification_service
 
 router = APIRouter()
@@ -221,6 +228,26 @@ async def decide_approval(
 
     await db.commit()
     await db.refresh(approval)
+
+    semantic_action = (
+        AuditAction.approval_approved
+        if approval.status == ProgramApprovalStatus.approved
+        else AuditAction.approval_rejected
+    )
+    await log_action(
+        db,
+        action=semantic_action,
+        entity_type="program_approval",
+        entity_id=str(approval.id),
+        user=current_user,
+        after_state={
+            "status": approval.status.value,
+            "approval_type": approval.approval_type,
+            "comments": data.comments,
+        },
+    )
+    await db.commit()
+
     return await _build_approval_response(approval, db)
 
 

@@ -23,6 +23,7 @@ from app.models.budget_approval import (
     BudgetApprovalStep,
 )
 from app.models.enums import (
+    AuditAction,
     BudgetApprovalStatus,
     BudgetRequestType,
 )
@@ -48,6 +49,7 @@ from app.schemas.budget_approval import (
     PendingApprovalItem,
     PendingApprovalsResponse,
 )
+from app.services.audit_service import log_action
 
 router = APIRouter()
 
@@ -615,6 +617,26 @@ async def decide_step(
 
     if not step:
         raise NotFoundException("Step not found")
+
+    semantic_action = (
+        AuditAction.budget_step_approved
+        if data.decision == "approved"
+        else AuditAction.budget_step_rejected
+    )
+    await log_action(
+        service.db,
+        action=semantic_action,
+        entity_type="budget_approval_step",
+        entity_id=str(step.id),
+        user=current_user,
+        after_state={
+            "decision": data.decision,
+            "request_id": str(step.request_id),
+            "comments": data.comments,
+        },
+    )
+    await service.db.commit()
+
     return await _build_approval_step_response(step)
 
 

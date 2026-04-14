@@ -8,7 +8,7 @@ from sqlalchemy import and_, or_, select
 
 from app.api.deps import DB, CurrentUser, require_admin, require_internal, require_rm_or_above
 from app.core.exceptions import BadRequestException, NotFoundException
-from app.models.enums import PartnerStatus, UserRole
+from app.models.enums import AuditAction, PartnerStatus, UserRole
 from app.models.partner import PartnerBlockedDate, PartnerProfile
 from app.models.partner_threshold import PartnerThreshold
 from app.models.user import User
@@ -34,6 +34,7 @@ from app.schemas.partner_threshold import (
     PartnerThresholdCreate,
     PartnerThresholdResponse,
 )
+from app.services.audit_service import log_action
 from app.services.crud_base import paginate
 from app.services.duplicate_detection_service import check_partner_duplicates
 from app.services.partner_capacity_service import (
@@ -322,11 +323,25 @@ async def update_partner(
         raise NotFoundException("Partner not found")
 
     update_data = data.model_dump(exclude_unset=True)
+    before_status = partner.status
     for field, value in update_data.items():
         setattr(partner, field, value)
 
     await db.commit()
     await db.refresh(partner)
+
+    if "status" in update_data and partner.status != before_status:
+        await log_action(
+            db,
+            action=AuditAction.partner_status_changed,
+            entity_type="partner_profile",
+            entity_id=str(partner.id),
+            user=current_user,
+            before_state={"status": PartnerStatus(before_status).value},
+            after_state={"status": partner.status.value},
+        )
+        await db.commit()
+
     return partner
 
 
