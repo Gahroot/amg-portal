@@ -19,6 +19,7 @@ API_KEY_SCOPES = {
     "read:communications": "Read communications",
     "write:communications": "Send communications",
     "read:reports": "Generate and read reports",
+    "admin:keys": "Manage API keys (create, update, revoke)",
     "*": "Full access to all resources",
 }
 
@@ -47,7 +48,7 @@ DEFAULT_SCOPES_BY_ROLE = {
         "read:partners",
         "read:communications",
     ],
-    "managing_director": ["*"],
+    "managing_director": ["*", "admin:keys"],
     "finance_compliance": [
         "read:clients",
         "read:programs",

@@ -6,16 +6,18 @@ API keys are used for programmatic access to the API.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import desc, select
 
 from app.api.deps import DB, CurrentUser
-from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.api_auth import require_api_key_scope
+from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.models.api_key import APIKey
 from app.models.audit_log import AuditLog
 from app.models.enums import AuditAction
 from app.schemas.api_key import (
     API_KEY_SCOPES,
+    DEFAULT_SCOPES_BY_ROLE,
     APIKeyCreate,
     APIKeyCreatedResponse,
     APIKeyListResponse,
@@ -25,6 +27,20 @@ from app.schemas.api_key import (
 )
 
 router = APIRouter()
+
+
+def _enforce_role_scopes(role: str, requested: list[str]) -> list[str]:
+    allowed = DEFAULT_SCOPES_BY_ROLE.get(role, [])
+    if not requested:
+        return list(allowed)
+    if "*" in allowed:
+        return requested
+    for scope in requested:
+        if scope not in allowed:
+            raise ForbiddenException(
+                f"Requested scope not permitted for your role: {scope}"
+            )
+    return requested
 
 
 def _validate_scopes(scopes: list[str]) -> None:
@@ -80,7 +96,12 @@ async def list_api_keys(
     )
 
 
-@router.post("", response_model=APIKeyCreatedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=APIKeyCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key_scope("admin:keys"))],
+)
 async def create_api_key(
     data: APIKeyCreate,
     current_user: CurrentUser,
@@ -90,8 +111,8 @@ async def create_api_key(
 
     **Important:** The returned `key` value is shown only once. Store it securely!
     """
-    # Validate scopes
     _validate_scopes(data.scopes)
+    effective_scopes = _enforce_role_scopes(current_user.role, data.scopes)
 
     # Check if user has reached the maximum number of active keys
     active_keys_query = select(APIKey).where(
@@ -111,7 +132,7 @@ async def create_api_key(
     api_key, plain_key = APIKey.create(
         user_id=current_user.id,
         name=data.name,
-        scopes=data.scopes,
+        scopes=effective_scopes,
         expires_at=data.get_expires_at(),
         rate_limit=data.rate_limit,
     )
@@ -172,7 +193,11 @@ async def get_api_key(
     return APIKeyResponse.model_validate(api_key)
 
 
-@router.post("/{key_id}/revoke", response_model=APIKeyResponse)
+@router.post(
+    "/{key_id}/revoke",
+    response_model=APIKeyResponse,
+    dependencies=[Depends(require_api_key_scope("admin:keys"))],
+)
 async def revoke_api_key(
     key_id: str,
     current_user: CurrentUser,
@@ -225,6 +250,7 @@ async def revoke_api_key(
     "/{key_id}/regenerate",
     response_model=APIKeyCreatedResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key_scope("admin:keys"))],
 )
 async def regenerate_api_key(
     key_id: str,
@@ -293,7 +319,11 @@ async def regenerate_api_key(
     )
 
 
-@router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_api_key_scope("admin:keys"))],
+)
 async def delete_api_key(
     key_id: str,
     current_user: CurrentUser,
