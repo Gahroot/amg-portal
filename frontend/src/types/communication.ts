@@ -11,6 +11,7 @@
  * @see backend/app/schemas/conversation.py
  */
 import type { components } from "./generated";
+import type { Notification } from "./notification";
 
 // ---------------------------------------------------------------------------
 // API types — re-exported from generated OpenAPI schema
@@ -84,26 +85,12 @@ export interface ConversationUpdateData {
   participant_ids?: string[];
 }
 
-// Notification types
-export interface Notification {
-  id: string;
-  user_id: string;
-  notification_type: NotificationType;
-  title: string;
-  body: string;
-  action_url?: string;
-  action_label?: string;
-  entity_type?: string;
-  entity_id?: string;
-  priority: string;
-  is_read: boolean;
-  read_at?: string;
-  email_delivered: boolean;
-  group_key?: string;
-  snoozed_until?: string;
-  snooze_count: number;
-  created_at: string;
-}
+export type {
+  Notification,
+  NotificationListResponse,
+  NotificationGroup,
+  GroupedNotificationsResponse,
+} from "./notification";
 
 export type SnoozeDurationPreset = 60 | 240 | 1440 | 1441 | 10080;
 
@@ -114,38 +101,6 @@ export const SNOOZE_PRESETS: { value: SnoozeDurationPreset; label: string }[] = 
   { value: 1441, label: "Tomorrow afternoon (2 PM)" },
   { value: 10080, label: "Next week (Monday 9 AM)" },
 ];
-
-export interface NotificationGroup {
-  group_key: string;
-  group_label: string;
-  notification_type: NotificationType;
-  entity_type?: string;
-  entity_id?: string;
-  priority: string;
-  count: number;
-  unread_count: number;
-  is_read: boolean;
-  latest_created_at: string;
-  latest_title: string;
-  latest_body: string;
-  action_url?: string;
-  action_label?: string;
-  notifications: Notification[];
-}
-
-export interface NotificationListResponse {
-  notifications: Notification[];
-  total: number;
-  groups?: NotificationGroup[];
-  group_mode?: "type" | "entity" | "time" | null;
-}
-
-export interface GroupedNotificationsResponse {
-  groups: NotificationGroup[];
-  total_groups: number;
-  total_notifications: number;
-  group_mode: "type" | "entity" | "time";
-}
 
 export interface NotificationPreference {
   id: string;

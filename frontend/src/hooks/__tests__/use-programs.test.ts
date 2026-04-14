@@ -48,6 +48,7 @@ const sampleProgram: Program = {
   end_date: "2025-12-31",
   status: "active",
   rag_status: "green",
+  brief_visible_to_client: false,
   milestone_count: 5,
   completed_milestone_count: 2,
   created_by: "admin",

@@ -30,7 +30,8 @@ import {
 import { NotificationItem } from "./notification-item";
 import { NotificationGroup } from "./notification-group";
 import { CheckCheck, Layers, List, AlarmClock } from "lucide-react";
-import type { NotificationGroup as NotificationGroupType, NotificationListResponse, SnoozeDurationPreset } from "@/types/communication";
+import type { NotificationGroup as NotificationGroupType, NotificationListResponse } from "@/types/notification";
+import type { SnoozeDurationPreset } from "@/types/communication";
 
 interface NotificationCenterProps {
   open: boolean;

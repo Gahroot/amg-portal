@@ -63,9 +63,9 @@ export default function PartnerOnboardingPage() {
 
     setIsSaving(true);
     try {
-      const currentChecklist = onboarding.checklist_items || {};
+      const currentChecklist = (onboarding.checklist_items || {}) as Record<string, Record<string, boolean>>;
       const stageChecklist = currentChecklist[stage] || {};
-      const updatedChecklist = {
+      const updatedChecklist: Record<string, Record<string, boolean>> = {
         ...currentChecklist,
         [stage]: {
           ...stageChecklist,
@@ -236,7 +236,9 @@ export default function PartnerOnboardingPage() {
               {Object.entries(DEFAULT_CHECKLIST_ITEMS[onboarding.current_stage as OnboardingStage] || {}).map(
                 ([key, label]) => {
                   const isChecked =
-                    onboarding.checklist_items?.[onboarding.current_stage]?.[key] === true;
+                    (onboarding.checklist_items as Record<string, Record<string, boolean>> | undefined)?.[
+                      onboarding.current_stage
+                    ]?.[key] === true;
                   const isDisabled = onboarding.current_stage === "review";
 
                   return (

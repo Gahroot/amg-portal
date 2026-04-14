@@ -1,7 +1,8 @@
 "use client";
 
 import { format } from "date-fns";
-import type { Notification, SnoozeDurationPreset } from "@/types/communication";
+import type { Notification } from "@/types/notification";
+import type { SnoozeDurationPreset } from "@/types/communication";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -100,7 +101,7 @@ export function NotificationItem({
               {isSnoozed ? (
                 <SnoozeButton
                   isSnoozed={isSnoozed}
-                  snoozedUntil={notification.snoozed_until}
+                  snoozedUntil={notification.snoozed_until ?? undefined}
                   snoozeCount={notification.snooze_count}
                   onUnsnooze={handleUnsnooze}
                   compact
@@ -170,7 +171,7 @@ export function NotificationItem({
             {isSnoozed ? (
               <SnoozeButton
                 isSnoozed={isSnoozed}
-                snoozedUntil={notification.snoozed_until}
+                snoozedUntil={notification.snoozed_until ?? undefined}
                 snoozeCount={notification.snooze_count}
                 onUnsnooze={handleUnsnooze}
               />

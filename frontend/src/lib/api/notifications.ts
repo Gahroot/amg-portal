@@ -1,13 +1,15 @@
 import api from "@/lib/api";
 import type {
-  Notification,
-  NotificationListResponse,
   NotificationPreference,
   NotificationPreferenceUpdateData,
-  GroupedNotificationsResponse,
   SnoozeRequestData,
 } from "@/types/communication";
-import type { NotificationListParams } from "@/types/notification";
+import type {
+  Notification,
+  NotificationListResponse,
+  GroupedNotificationsResponse,
+  NotificationListParams,
+} from "@/types/notification";
 
 export type { NotificationListParams };
 

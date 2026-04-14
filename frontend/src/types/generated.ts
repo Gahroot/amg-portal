@@ -886,6 +886,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Leads */
+        get: operations["list_leads_api_v1_leads__get"];
+        put?: never;
+        /** Create Lead */
+        post: operations["create_lead_api_v1_leads__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lead */
+        get: operations["get_lead_api_v1_leads__lead_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Lead */
+        delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Lead */
+        patch: operations["update_lead_api_v1_leads__lead_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Convert Lead */
+        post: operations["convert_lead_api_v1_leads__lead_id__convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Opportunities */
+        get: operations["list_opportunities_api_v1_opportunities__get"];
+        put?: never;
+        /** Create Opportunity */
+        post: operations["create_opportunity_api_v1_opportunities__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/pipeline-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pipeline Summary */
+        get: operations["get_pipeline_summary_api_v1_opportunities_pipeline_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Opportunity */
+        get: operations["get_opportunity_api_v1_opportunities__opportunity_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Opportunity */
+        delete: operations["delete_opportunity_api_v1_opportunities__opportunity_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Opportunity */
+        patch: operations["update_opportunity_api_v1_opportunities__opportunity_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder Opportunity */
+        post: operations["reorder_opportunity_api_v1_opportunities__opportunity_id__reorder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/crm-activities/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Activities */
+        get: operations["list_activities_api_v1_crm_activities__get"];
+        put?: never;
+        /** Create Activity */
+        post: operations["create_activity_api_v1_crm_activities__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/crm-activities/{activity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Activity */
+        delete: operations["delete_activity_api_v1_crm_activities__activity_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Activity */
+        patch: operations["update_activity_api_v1_crm_activities__activity_id__patch"];
+        trace?: never;
+    };
     "/api/v1/clients/{client_id}/communication-preferences": {
         parameters: {
             query?: never;
@@ -1644,6 +1805,26 @@ export interface paths {
          *     - Fires the standard design→active side effect (kickoff notification).
          */
         post: operations["emergency_activate_program_api_v1_programs__program_id__emergency_activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/programs/{program_id}/brief/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Program Brief
+         * @description Mark the program brief as visible to the client and record the share timestamp.
+         */
+        post: operations["share_program_brief_api_v1_programs__program_id__brief_share_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13579,7 +13760,10 @@ export interface components {
             proficiency_level: string;
             /** Years Experience */
             years_experience?: string | null;
-            /** Verified */
+            /**
+             * Verified
+             * @default false
+             */
             verified: boolean;
             /** Verified By */
             verified_by?: string | null;
@@ -13963,7 +14147,10 @@ export interface components {
             expiry_date?: string | null;
             /** Document Url */
             document_url?: string | null;
-            /** Verification Status */
+            /**
+             * Verification Status
+             * @default pending
+             */
             verification_status: string;
             /** Verified By */
             verified_by?: string | null;
@@ -15531,6 +15718,85 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** CrmActivityCreate */
+        CrmActivityCreate: {
+            /** @default note */
+            type: components["schemas"]["CrmActivityType"];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Lead Id */
+            lead_id?: string | null;
+            /** Opportunity Id */
+            opportunity_id?: string | null;
+            /** Client Profile Id */
+            client_profile_id?: string | null;
+        };
+        /** CrmActivityListResponse */
+        CrmActivityListResponse: {
+            /** Activities */
+            activities: components["schemas"]["CrmActivityResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** CrmActivityResponse */
+        CrmActivityResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["CrmActivityType"];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Lead Id */
+            lead_id: string | null;
+            /** Opportunity Id */
+            opportunity_id: string | null;
+            /** Client Profile Id */
+            client_profile_id: string | null;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CrmActivityType
+         * @description Type of CRM activity recorded against a lead, opportunity, or client.
+         * @enum {string}
+         */
+        CrmActivityType: "note" | "call" | "email" | "meeting" | "task";
+        /** CrmActivityUpdate */
+        CrmActivityUpdate: {
+            type?: components["schemas"]["CrmActivityType"] | null;
+            /** Subject */
+            subject?: string | null;
+            /** Body */
+            body?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
         };
         /** CustodyChainResponse */
         CustodyChainResponse: {
@@ -18648,6 +18914,143 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * LeadConvertRequest
+         * @description Convert a qualified lead into a ClientProfile intake.
+         */
+        LeadConvertRequest: {
+            /** Legal Name */
+            legal_name: string;
+            /**
+             * Primary Email
+             * Format: email
+             */
+            primary_email: string;
+            entity_type: components["schemas"]["ClientType"];
+            /** Phone */
+            phone?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** LeadCreate */
+        LeadCreate: {
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Company */
+            company?: string | null;
+            /** @default new */
+            status: components["schemas"]["LeadStatus"];
+            /** @default other */
+            source: components["schemas"]["LeadSource"];
+            /** Source Details */
+            source_details?: string | null;
+            /** Estimated Value */
+            estimated_value?: number | string | null;
+            estimated_client_type?: components["schemas"]["ClientType"] | null;
+            /** Referred By Partner Id */
+            referred_by_partner_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+        };
+        /** LeadListResponse */
+        LeadListResponse: {
+            /** Leads */
+            leads: components["schemas"]["LeadResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** LeadResponse */
+        LeadResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Company */
+            company: string | null;
+            status: components["schemas"]["LeadStatus"];
+            source: components["schemas"]["LeadSource"];
+            /** Source Details */
+            source_details: string | null;
+            /** Estimated Value */
+            estimated_value: string | null;
+            estimated_client_type: components["schemas"]["ClientType"] | null;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Referred By Partner Id */
+            referred_by_partner_id: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Disqualified Reason */
+            disqualified_reason: string | null;
+            /** Converted At */
+            converted_at: string | null;
+            /** Converted Client Profile Id */
+            converted_client_profile_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * LeadSource
+         * @description How the lead reached the firm.
+         * @enum {string}
+         */
+        LeadSource: "referral_partner" | "existing_client" | "inbound_web" | "outbound" | "event" | "other";
+        /**
+         * LeadStatus
+         * @description Sales pipeline status for a prospect (pre-client_profile).
+         * @enum {string}
+         */
+        LeadStatus: "new" | "contacting" | "qualifying" | "qualified" | "disqualified" | "converted";
+        /** LeadUpdate */
+        LeadUpdate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Company */
+            company?: string | null;
+            status?: components["schemas"]["LeadStatus"] | null;
+            source?: components["schemas"]["LeadSource"] | null;
+            /** Source Details */
+            source_details?: string | null;
+            /** Estimated Value */
+            estimated_value?: number | string | null;
+            estimated_client_type?: components["schemas"]["ClientType"] | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Referred By Partner Id */
+            referred_by_partner_id?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Disqualified Reason */
+            disqualified_reason?: string | null;
+        };
         /** LifestyleProfile */
         LifestyleProfile: {
             /** Travel Preferences */
@@ -19781,7 +20184,10 @@ export interface components {
              * Format: uuid
              */
             partner_id: string;
-            /** Current Stage */
+            /**
+             * Current Stage
+             * @default initial
+             */
             current_stage: string;
             /**
              * Checklist Items
@@ -19791,6 +20197,8 @@ export interface components {
                 [key: string]: {
                     [key: string]: boolean;
                 };
+            } | {
+                [key: string]: unknown;
             };
             /**
              * Completed Stages
@@ -19801,11 +20209,8 @@ export interface components {
             assigned_coordinator?: string | null;
             /** Coordinator Name */
             coordinator_name?: string | null;
-            /**
-             * Started At
-             * Format: date-time
-             */
-            started_at: string;
+            /** Started At */
+            started_at?: string | null;
             /** Completed At */
             completed_at?: string | null;
             /**
@@ -19857,6 +20262,134 @@ export interface components {
             completed_stages?: string[] | null;
             /** Assigned Coordinator */
             assigned_coordinator?: string | null;
+        };
+        /** OpportunityCreate */
+        OpportunityCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** @default qualifying */
+            stage: components["schemas"]["OpportunityStage"];
+            /** Value */
+            value?: number | string | null;
+            /**
+             * Probability
+             * @default 50
+             */
+            probability: number;
+            /** Expected Close Date */
+            expected_close_date?: string | null;
+            /** Program Type */
+            program_type?: string | null;
+            /** Next Step */
+            next_step?: string | null;
+            /** Next Step At */
+            next_step_at?: string | null;
+            /** Lead Id */
+            lead_id?: string | null;
+            /** Client Profile Id */
+            client_profile_id?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+        };
+        /** OpportunityListResponse */
+        OpportunityListResponse: {
+            /** Opportunities */
+            opportunities: components["schemas"]["OpportunityResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * OpportunityReorderRequest
+         * @description Drag-and-drop reorder payload for kanban.
+         */
+        OpportunityReorderRequest: {
+            new_stage: components["schemas"]["OpportunityStage"];
+            /** After Opportunity Id */
+            after_opportunity_id?: string | null;
+        };
+        /** OpportunityResponse */
+        OpportunityResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            stage: components["schemas"]["OpportunityStage"];
+            /** Position */
+            position: number;
+            /** Value */
+            value: string | null;
+            /** Probability */
+            probability: number;
+            /** Expected Close Date */
+            expected_close_date: string | null;
+            /** Program Type */
+            program_type: string | null;
+            /** Next Step */
+            next_step: string | null;
+            /** Next Step At */
+            next_step_at: string | null;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Lead Id */
+            lead_id: string | null;
+            /** Client Profile Id */
+            client_profile_id: string | null;
+            /** Won At */
+            won_at: string | null;
+            /** Lost At */
+            lost_at: string | null;
+            /** Lost Reason */
+            lost_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * OpportunityStage
+         * @description Pipeline stage for a qualified opportunity.
+         * @enum {string}
+         */
+        OpportunityStage: "qualifying" | "proposal" | "negotiation" | "won" | "lost";
+        /** OpportunityUpdate */
+        OpportunityUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            stage?: components["schemas"]["OpportunityStage"] | null;
+            /** Value */
+            value?: number | string | null;
+            /** Probability */
+            probability?: number | null;
+            /** Expected Close Date */
+            expected_close_date?: string | null;
+            /** Program Type */
+            program_type?: string | null;
+            /** Next Step */
+            next_step?: string | null;
+            /** Next Step At */
+            next_step_at?: string | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Lost Reason */
+            lost_reason?: string | null;
         };
         /** OverdueEscalationResponse */
         OverdueEscalationResponse: {
@@ -20920,6 +21453,19 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * PipelineSummary
+         * @description Aggregate stats for the pipeline dashboard.
+         */
+        PipelineSummary: {
+            stage: components["schemas"]["OpportunityStage"];
+            /** Count */
+            count: number;
+            /** Total Value */
+            total_value: string;
+            /** Weighted Value */
+            weighted_value: string;
+        };
         /** PlaybookCreate */
         PlaybookCreate: {
             /** Escalation Type */
@@ -21490,6 +22036,15 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Brief Content */
+            brief_content?: string | null;
+            /**
+             * Brief Visible To Client
+             * @default false
+             */
+            brief_visible_to_client: boolean;
+            /** Brief Shared At */
+            brief_shared_at?: string | null;
             /**
              * Milestones
              * @default []
@@ -21615,6 +22170,15 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Brief Content */
+            brief_content?: string | null;
+            /**
+             * Brief Visible To Client
+             * @default false
+             */
+            brief_visible_to_client: boolean;
+            /** Brief Shared At */
+            brief_shared_at?: string | null;
         };
         /**
          * ProgramStatus
@@ -21784,6 +22348,10 @@ export interface components {
             /** End Date */
             end_date?: string | null;
             status?: components["schemas"]["ProgramStatus"] | null;
+            /** Brief Content */
+            brief_content?: string | null;
+            /** Brief Visible To Client */
+            brief_visible_to_client?: boolean | null;
         };
         /** ProgressSummary */
         ProgressSummary: {
@@ -22211,7 +22779,10 @@ export interface components {
             category_name?: string | null;
             /** Qualification Level */
             qualification_level: string;
-            /** Approval Status */
+            /**
+             * Approval Status
+             * @default pending
+             */
             approval_status: string;
             /** Approved By */
             approved_by?: string | null;
@@ -27550,6 +28121,557 @@ export interface operations {
             };
         };
     };
+    list_leads_api_v1_leads__get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LeadStatus"] | null;
+                source?: components["schemas"]["LeadSource"] | null;
+                owner_id?: string | null;
+                search?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_lead_api_v1_leads__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_api_v1_leads__lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_lead_api_v1_leads__lead_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_api_v1_leads__lead_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_lead_api_v1_leads__lead_id__convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadConvertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_opportunities_api_v1_opportunities__get: {
+        parameters: {
+            query?: {
+                stage?: components["schemas"]["OpportunityStage"] | null;
+                owner_id?: string | null;
+                lead_id?: string | null;
+                client_profile_id?: string | null;
+                search?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_opportunity_api_v1_opportunities__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pipeline_summary_api_v1_opportunities_pipeline_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineSummary"][];
+                };
+            };
+        };
+    };
+    get_opportunity_api_v1_opportunities__opportunity_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_opportunity_api_v1_opportunities__opportunity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_opportunity_api_v1_opportunities__opportunity_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_opportunity_api_v1_opportunities__opportunity_id__reorder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpportunityReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_activities_api_v1_crm_activities__get: {
+        parameters: {
+            query?: {
+                lead_id?: string | null;
+                opportunity_id?: string | null;
+                client_profile_id?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmActivityListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_activity_api_v1_crm_activities__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrmActivityCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmActivityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_activity_api_v1_crm_activities__activity_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_activity_api_v1_crm_activities__activity_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrmActivityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmActivityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_communication_preferences_api_v1_clients__client_id__communication_preferences_get: {
         parameters: {
             query?: never;
@@ -28893,6 +30015,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProgramDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_program_brief_api_v1_programs__program_id__brief_share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44186,9 +45339,7 @@ export interface operations {
     };
     create_program_template_api_v1_program_templates__post: {
         parameters: {
-            query?: {
-                _?: null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
