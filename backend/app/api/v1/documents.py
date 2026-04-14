@@ -21,7 +21,12 @@ from app.api.deps import (
     require_internal,
 )
 from app.core.config import settings
-from app.core.exceptions import BadRequestException, GoneException, NotFoundException
+from app.core.exceptions import (
+    AppException,
+    BadRequestException,
+    GoneException,
+    NotFoundException,
+)
 from app.models.document import Document
 from app.models.document_share import DocumentShare
 from app.schemas.document import (
@@ -430,8 +435,11 @@ async def delete_document(
     if not doc:
         raise NotFoundException("Document not found")
 
-    with contextlib.suppress(Exception):
+    try:
         await storage_service.delete_file(str(doc.file_path))
+    except Exception as exc:
+        logger.exception("Failed to delete document object %s from storage", doc.file_path)
+        raise AppException("Failed to delete document from storage") from exc
 
     await db.delete(doc)
     await db.commit()

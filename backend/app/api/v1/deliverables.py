@@ -17,7 +17,12 @@ from app.api.deps import (
     require_coordinator_or_above,
     require_internal,
 )
-from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
+from app.core.exceptions import (
+    AppException,
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+)
 from app.models.deliverable import Deliverable
 from app.models.document import Document
 from app.models.partner_assignment import PartnerAssignment
@@ -380,6 +385,33 @@ async def review_deliverable(
             )
 
     return build_deliverable_response(deliverable)
+
+
+@router.delete("/{deliverable_id}", status_code=204)
+async def delete_deliverable(
+    deliverable_id: UUID,
+    db: DB,
+    current_user: CurrentUser,
+    _rls: RLSContext,
+    _: None = Depends(require_coordinator_or_above),
+) -> None:
+    result = await db.execute(select(Deliverable).where(Deliverable.id == deliverable_id))
+    deliverable = result.scalar_one_or_none()
+    if not deliverable:
+        raise NotFoundException("Deliverable not found")
+
+    if deliverable.file_path:
+        try:
+            await storage_service.delete_file(str(deliverable.file_path))
+        except Exception as exc:
+            logger.exception(
+                "Failed to delete deliverable object %s from storage",
+                deliverable.file_path,
+            )
+            raise AppException("Failed to delete deliverable from storage") from exc
+
+    await db.delete(deliverable)
+    await db.commit()
 
 
 @router.get("/{deliverable_id}/download")
