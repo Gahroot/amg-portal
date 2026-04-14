@@ -194,8 +194,28 @@ class StorageService:
 
         await run_in_threadpool(_init)
 
-    async def upload_file(self, file: UploadFile, prefix: str) -> tuple[str, int]:
+    @staticmethod
+    def _validate_prefix(prefix: str) -> None:
+        if (
+            not prefix
+            or ".." in prefix
+            or prefix.startswith("/")
+            or "\\" in prefix
+            or "\x00" in prefix
+        ):
+            raise BadRequestException("Invalid storage prefix")
+
+    async def upload_file(
+        self,
+        file: UploadFile,
+        prefix: str,
+        *,
+        max_size: int = MAX_FILE_SIZE,
+        allowed_types: set[str] = ALLOWED_MIME_TYPES,
+    ) -> tuple[str, int]:
         """Upload file to MinIO, return (object_path, file_size)."""
+        self._validate_prefix(prefix)
+        await self.validate_file(file, max_size=max_size, allowed_types=allowed_types)
         await self._ensure_bucket()
 
         ext = ""
@@ -262,10 +282,14 @@ class StorageService:
         allowlist first.  The file bytes are then inspected with the ``filetype``
         library to ensure the actual file signature matches the declared type,
         preventing spoofed Content-Type headers from bypassing the allowlist.
+
+        Idempotent: safe to call multiple times — the file pointer is rewound
+        before and after inspection.
         """
         content_type = file.content_type or "application/octet-stream"
         if content_type not in allowed_types:
             raise BadRequestException(f"File type '{content_type}' is not allowed")
+        await file.seek(0)
         contents = await file.read()
         if len(contents) > max_size:
             raise BadRequestException(
@@ -280,12 +304,21 @@ class StorageService:
         entity_type: str,
         entity_id: str,
         subfolder: str = "",
+        *,
+        max_size: int = MAX_FILE_SIZE,
+        allowed_types: set[str] = ALLOWED_MIME_TYPES,
     ) -> tuple[str, int]:
         """Upload file scoped to an entity, return (object_path, file_size)."""
+        self._validate_prefix(entity_type)
+        self._validate_prefix(entity_id)
+        if subfolder:
+            self._validate_prefix(subfolder)
         prefix = f"{entity_type}s/{entity_id}"
         if subfolder:
             prefix = f"{prefix}/{subfolder}"
-        return await self.upload_file(file, prefix)
+        return await self.upload_file(
+            file, prefix, max_size=max_size, allowed_types=allowed_types
+        )
 
     async def delete_file(self, object_name: str) -> None:
         """Delete a file from MinIO."""
