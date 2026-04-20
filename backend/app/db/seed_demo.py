@@ -1148,18 +1148,18 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
                 {
                     "id": "ch",
                     "label": "Switzerland (Zurich)",
-                    "description": "Strongest asset protection. Higher setup costs. Established banking relationships.",
-                },  # noqa: E501
+                    "description": "Strongest asset protection. Higher setup costs. Established banking relationships.",  # noqa: E501
+                },
                 {
                     "id": "je",
                     "label": "Jersey (Channel Islands)",
-                    "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families.",
-                },  # noqa: E501
+                    "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families.",  # noqa: E501
+                },
                 {
                     "id": "uk",
                     "label": "United Kingdom",
-                    "description": "Familiar legal framework. Easier administration. Higher tax exposure.",
-                },  # noqa: E501
+                    "description": "Familiar legal framework. Easier administration. Higher tax exposure.",  # noqa: E501
+                },
             ],
             deadline_date=date.today() + timedelta(days=7),
             consequence_text="If no selection is made, we will proceed with the recommended option (Jersey) to maintain the project timeline.",  # noqa: E501
@@ -1176,18 +1176,18 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
                 {
                     "id": "em",
                     "label": "Dr. Elisabeth Moreau",
-                    "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris.",
-                },  # noqa: E501
+                    "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris.",  # noqa: E501
+                },
                 {
                     "id": "jw",
                     "label": "Jonathan Wei",
-                    "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong.",
-                },  # noqa: E501
+                    "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong.",  # noqa: E501
+                },
                 {
                     "id": "ar",
                     "label": "Anna Rossi",
-                    "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan.",
-                },  # noqa: E501
+                    "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan.",  # noqa: E501
+                },
             ],
             deadline_date=date.today() + timedelta(days=5),
             status=DecisionRequestStatus.pending,

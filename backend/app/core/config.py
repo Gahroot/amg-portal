@@ -153,7 +153,16 @@ class Settings(BaseSettings):
     FREETSA_URL: str = "https://freetsa.org/tsr"
     # First UTC date the real chain is active.  Rows before this were
     # backfilled with placeholder row_hash/hmac — verify_day ignores them.
+    # Unset defaults to "tomorrow UTC" in __init__ so the migration's
+    # placeholder rows never get verified as real chain rows (would otherwise
+    # page compliance on the first nightly verify after deploy).  Operators
+    # should set this explicitly to the deploy date once backfill is done.
     AUDIT_CHAIN_START_AT: date | None = None
+    # Long-lived seed for deriving per-day HMAC keys when
+    # AUDIT_HMAC_KEY_YYYYMMDD is not pre-provisioned.  Distinct from
+    # SECRET_KEY so a JWT-signing-key compromise does not also compromise
+    # the audit HMAC.  Required in production; DEBUG derives from SECRET_KEY.
+    AUDIT_HMAC_SEED_V1: str = ""
 
     # Column encryption KEKs (Phase 1.1).  Each value is a 32-byte key encoded
     # as urlsafe-b64 or hex.  Lazy rotation: bump CURRENT_KEK_ID; old ciphertexts
@@ -164,7 +173,7 @@ class Settings(BaseSettings):
     CURRENT_KEK_ID: int = 1
     AMG_BIDX_KEY_V1: str = ""
 
-    def __init__(self, **kwargs: Any) -> None:  # noqa: PLR0912 — linear config validation chain
+    def __init__(self, **kwargs: Any) -> None:  # noqa: PLR0912,PLR0915 — linear config validation chain
         super().__init__(**kwargs)
         # --- SECRET_KEY ---
         _secret_key_placeholder = "change-me-in-production"
@@ -297,6 +306,46 @@ class Settings(BaseSettings):
                 info=b"amg|bidx|dev|v1",
             ).derive(self.SECRET_KEY.encode("utf-8"))
             self.AMG_BIDX_KEY_V1 = base64.urlsafe_b64encode(dev_bidx).decode("utf-8")
+
+        # --- Audit-chain HMAC seed (Phase 1.12 Fix C) ---
+        # Distinct from SECRET_KEY so a JWT-signing-key compromise does not
+        # also let an attacker forge valid audit HMACs.  Required in prod;
+        # derived from SECRET_KEY (with a dedicated info label) in DEBUG.
+        if not self.AUDIT_HMAC_SEED_V1:
+            if not self.DEBUG:
+                raise ValueError(
+                    "AUDIT_HMAC_SEED_V1 must be set in production (32 bytes "
+                    "urlsafe-b64).  Generate with: "
+                    "python -c 'import secrets,base64; "
+                    "print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'"
+                )
+            from cryptography.hazmat.primitives import hashes as _h3
+            from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF3
+
+            dev_seed = _HKDF3(
+                algorithm=_h3.SHA256(),
+                length=32,
+                salt=None,
+                info=b"amg|audit|hmac|seed|dev|v1",
+            ).derive(self.SECRET_KEY.encode("utf-8"))
+            self.AUDIT_HMAC_SEED_V1 = base64.urlsafe_b64encode(dev_seed).decode("utf-8")
+
+        # --- Audit-chain start-at default (Phase 1.12 Fix B) ---
+        # When unset, default to tomorrow UTC so verify_day skips rows
+        # created up to and including the deploy day (their row_hash may be
+        # a placeholder from the backfill migration).  Operators should set
+        # AUDIT_CHAIN_START_AT explicitly to pin the chain genesis.
+        if self.AUDIT_CHAIN_START_AT is None:
+            import logging
+            from datetime import UTC, datetime, timedelta
+
+            tomorrow = (datetime.now(UTC) + timedelta(days=1)).date()
+            self.AUDIT_CHAIN_START_AT = tomorrow
+            logging.getLogger(__name__).warning(
+                "AUDIT_CHAIN_START_AT not set; defaulting to %s (tomorrow UTC). "
+                "Set this explicitly in production once backfill is complete.",
+                tomorrow.isoformat(),
+            )
 
 
 settings = Settings()

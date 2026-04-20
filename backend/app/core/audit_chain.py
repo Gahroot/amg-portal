@@ -118,11 +118,21 @@ def _canonical_json(entry: AuditLog) -> bytes:
 def _daily_hmac_key(day: date) -> bytes:
     """Return the 32-byte HMAC key for the given UTC day.
 
-    Production sets ``AUDIT_HMAC_KEY_YYYYMMDD`` in the environment (one entry
-    per day, rotated by the ops runbook).  When that variable is missing the
-    key is HKDF-derived from ``SECRET_KEY`` — convenient for dev, but production
-    should pre-provision explicit per-day keys so a DB compromise alone can't
-    be combined with a known ``SECRET_KEY`` to forge valid HMACs.
+    Key derivation precedence:
+
+    1. ``AUDIT_HMAC_KEY_YYYYMMDD`` env var — if pre-provisioned by the ops
+       runbook, use that day's explicit key.  Strongest posture: each day's
+       key is distinct at rest and on the wire.
+    2. HKDF(``AUDIT_HMAC_SEED_V1``, info=``amg|audit|hmac|YYYY-MM-DD``) —
+       default fallback.  The seed is a long-lived secret *distinct from*
+       ``SECRET_KEY`` so a JWT-signing-key compromise alone cannot forge
+       audit HMACs.  Required in production (config gate); DEBUG derives
+       from SECRET_KEY via ``config.Settings.__init__``.
+
+    Previously (Phase 1 v1) the fallback keyed off ``SECRET_KEY`` directly,
+    which weakened the two-key-compromise property — a leaked SECRET_KEY
+    plus DB access was enough to rewrite any day's HMACs.  Moving to a
+    dedicated seed decouples those surfaces.
     """
     env_key = f"AUDIT_HMAC_KEY_{day.strftime('%Y%m%d')}"
     raw = os.environ.get(env_key, "")
@@ -133,16 +143,34 @@ def _daily_hmac_key(day: date) -> bytes:
             decoded = raw.encode("utf-8")
         if len(decoded) >= 32:
             return decoded[:32]
-        # Short/weird value — fall through to HKDF so we never silently use a
-        # tiny key.
+        # Short/weird value — fall through to seed-derived so we never
+        # silently use a tiny key.
         logger.warning(
-            "AUDIT_HMAC_KEY_%s is <32 bytes; falling back to HKDF-derived key",
+            "AUDIT_HMAC_KEY_%s is <32 bytes; falling back to seed-derived key",
             day.strftime("%Y%m%d"),
+        )
+    # Derive from the dedicated seed.  Settings validation guarantees this is
+    # non-empty in prod (raises at startup otherwise); reaching here with an
+    # unset seed implies a misconfigured test harness or a direct-import path.
+    seed_raw = settings.AUDIT_HMAC_SEED_V1
+    if not seed_raw:
+        raise RuntimeError(
+            "AUDIT_HMAC_SEED_V1 is not configured; refusing to derive an "
+            "audit HMAC key.  Set the env var (prod) or run with DEBUG=True."
+        )
+    try:
+        seed = base64.urlsafe_b64decode(seed_raw + "=" * (-len(seed_raw) % 4))
+    except Exception:
+        seed = seed_raw.encode("utf-8")
+    if len(seed) < 32:
+        raise RuntimeError(
+            "AUDIT_HMAC_SEED_V1 must decode to at least 32 bytes; "
+            f"got {len(seed)}.",
         )
     info = f"amg|audit|hmac|{day.isoformat()}".encode()
     return HKDF(
         algorithm=hashes.SHA256(), length=32, salt=None, info=info
-    ).derive(settings.SECRET_KEY.encode("utf-8"))
+    ).derive(seed[:32])
 
 
 # ---------------------------------------------------------------------------

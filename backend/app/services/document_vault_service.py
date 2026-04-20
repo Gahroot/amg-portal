@@ -135,7 +135,7 @@ async def seal_document(
             "action": "sealed",
             "user_id": str(user_id),
             "timestamp": now.isoformat(),
-            "details": f"Document sealed for compliance. Retention: {retention_policy or 'not set'}",
+            "details": f"Document sealed for compliance. Retention: {retention_policy or 'not set'}",  # noqa: E501
         }
     )
     doc.chain_of_custody = custody
