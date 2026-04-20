@@ -41,6 +41,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "bcrypt" },
     { name = "cachetools" },
+    { name = "content-size-limit-asgi" },
     { name = "cryptography" },
     { name = "docusign-esign" },
     { name = "email-validator" },
@@ -61,6 +62,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "qrcode", extra = ["pil"] },
     { name = "redis" },
+    { name = "rfc3161ng" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
     { name = "weasyprint" },
@@ -93,6 +95,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "bcrypt", specifier = ">=4.0.0" },
     { name = "cachetools", specifier = ">=5.3.0" },
+    { name = "content-size-limit-asgi", specifier = ">=0.1.5" },
     { name = "cryptography", specifier = ">=41.0.0" },
     { name = "docusign-esign", specifier = ">=3.25.0" },
     { name = "email-validator", specifier = ">=2.2.0" },
@@ -116,6 +119,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.17" },
     { name = "qrcode", extras = ["pil"], specifier = ">=7.4.0" },
     { name = "redis", specifier = ">=5.2.0" },
+    { name = "rfc3161ng", specifier = ">=2.1.3" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.36" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
     { name = "weasyprint", specifier = ">=62.0" },
@@ -552,6 +556,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
+name = "content-size-limit-asgi"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/5b/54a62053480a2cc3e17e441bfe15c5732028a328b6d5063d46e93a38dbdc/content_size_limit_asgi-0.1.5.tar.gz", hash = "sha256:a6a2511c72e0c808b95fbe3cbfa9cdf15d39bbd30151796e04908f9f2a651767", size = 4723, upload-time = "2020-11-27T12:28:39.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/bb/45f8b005b1cecf99ef46d2450eadaecaf3f65650b9fbdcf674c8c8c77bca/content_size_limit_asgi-0.1.5-py3-none-any.whl", hash = "sha256:0cf3b66b15f8bc4b37f01966b9d3b9b3b3056f7d08804dc0e3662c6cdc461d16", size = 4812, upload-time = "2020-11-27T12:28:38.746Z" },
 ]
 
 [[package]]
@@ -1758,6 +1771,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+]
+
+[[package]]
+name = "rfc3161ng"
+version = "2.1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "pyasn1" },
+    { name = "pyasn1-modules" },
+    { name = "python-dateutil" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/87/ab/7b1cc11019fb63d9420093ed9ff339ea544d0158141ac0daf33961a200cf/rfc3161ng-2.1.3.tar.gz", hash = "sha256:1e88614da61b22abd591577f9dd39d3a030335f9e8a12d8bc001149c17d0a01e", size = 22418, upload-time = "2020-10-30T14:38:29.046Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/66/cf13725b4ad06527ca482c99202a683ca3b35586eec9bad5f9e19efb43b9/rfc3161ng-2.1.3-py2.py3-none-any.whl", hash = "sha256:81fe7e4488f523c758b1206bf5e72ba2066b78f2812107b1b7bb16a7596e524b", size = 9949, upload-time = "2020-10-30T14:38:26.277Z" },
 ]
 
 [[package]]

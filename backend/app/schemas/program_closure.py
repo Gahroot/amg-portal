@@ -3,20 +3,22 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str255, Str2000, TextStr
+
 
 class ChecklistItem(BaseModel):
-    key: str
-    label: str
+    key: Str100
+    label: Str255
     completed: bool = False
 
 
 class ProgramClosureCreate(BaseModel):
     program_id: UUID
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class ProgramClosureUpdate(BaseModel):
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class ChecklistUpdate(BaseModel):
@@ -24,19 +26,19 @@ class ChecklistUpdate(BaseModel):
 
 
 class DebriefNotesUpdate(BaseModel):
-    notes: str
+    notes: TextStr
 
 
 class ProgramClosureResponse(BaseModel):
     id: UUID
     program_id: UUID
-    status: str
+    status: Str50
     checklist: list[ChecklistItem]
-    notes: str | None
-    debrief_notes: str | None
+    notes: Str2000 | None
+    debrief_notes: TextStr | None
     debrief_notes_at: datetime | None
     debrief_notes_by: UUID | None
-    debrief_notes_by_name: str | None
+    debrief_notes_by_name: Str255 | None
     initiated_by: UUID
     completed_at: datetime | None
     created_at: datetime

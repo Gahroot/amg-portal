@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
+from app.db.encrypted_json import EncryptedJSON
 from app.models.enums import UserRole
 
 if TYPE_CHECKING:
@@ -36,9 +37,17 @@ class User(Base, TimestampMixin):
     )
     mfa_backup_codes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # Calendar integration tokens (stored as JSON with access_token, refresh_token, etc.)
-    google_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    outlook_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Calendar integration tokens — AES-GCM encrypted at rest. Python side stays
+    # ``dict[str, Any]``; the column on disk is ``BYTEA`` ciphertext. See
+    # ``app/db/encrypted_json.py`` for the wire format.
+    google_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(
+        EncryptedJSON(table="users", column="google_calendar_token"),
+        nullable=True,
+    )
+    outlook_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(
+        EncryptedJSON(table="users", column="outlook_calendar_token"),
+        nullable=True,
+    )
     calendar_last_synced_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

@@ -2,6 +2,7 @@ from app.models.access_audit import AccessAudit, AccessAuditFinding  # noqa: F40
 from app.models.api_key import APIKey  # noqa: F401
 from app.models.approval import ProgramApproval  # noqa: F401
 from app.models.approval_comment import ApprovalComment  # noqa: F401
+from app.models.audit_checkpoint import AuditCheckpoint  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.bookmark import Bookmark  # noqa: F401
 from app.models.budget_approval import (  # noqa: F401

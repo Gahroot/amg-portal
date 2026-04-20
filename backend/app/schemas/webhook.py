@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000, TextStr
 from app.utils.url_safety import validate_safe_webhook_url
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class WebhookCreate(BaseModel):
     secret: str = Field(
         ..., min_length=16, max_length=100, description="Secret key for HMAC signatures"
     )
-    events: list[str] = Field(..., min_length=1, description="Event types to subscribe to")
+    events: list[Str100] = Field(..., min_length=1, description="Event types to subscribe to")
     description: str | None = Field(None, max_length=255, description="Optional description")
 
     @field_validator("url")
@@ -58,7 +59,7 @@ class WebhookUpdate(BaseModel):
 
     url: str | None = Field(None, min_length=1, max_length=500)
     secret: str | None = Field(None, min_length=16, max_length=100)
-    events: list[str] | None = Field(None, min_length=1)
+    events: list[Str100] | None = Field(None, min_length=1)
     is_active: bool | None = None
     description: str | None = Field(None, max_length=255)
 
@@ -86,16 +87,16 @@ class WebhookResponse(BaseModel):
 
     id: UUID
     partner_id: UUID
-    url: str
-    events: list[str]
+    url: Str500
+    events: list[Str100]
     is_active: bool
     last_triggered_at: datetime | None = None
     failure_count: int
-    description: str | None = None
+    description: Str255 | None = None
     created_at: datetime
     updated_at: datetime
     # Secret is never returned in full, only a hint
-    secret_hint: str | None = None
+    secret_hint: Str50 | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -129,11 +130,11 @@ class WebhookDeliveryResponse(BaseModel):
 
     id: UUID
     webhook_id: UUID
-    event_type: str
-    payload: str
+    event_type: Str100
+    payload: TextStr
     status_code: int | None = None
-    response_body: str | None = None
-    error_message: str | None = None
+    response_body: TextStr | None = None
+    error_message: Str2000 | None = None
     success: bool
     attempt_number: int
     duration_ms: int | None = None
@@ -152,7 +153,7 @@ class WebhookDeliveryListResponse(BaseModel):
 class WebhookTestRequest(BaseModel):
     """Request to test a webhook endpoint."""
 
-    event_type: str = Field(..., description="Event type to test")
+    event_type: Str100 = Field(..., description="Event type to test")
 
     @field_validator("event_type")
     @classmethod
@@ -167,6 +168,6 @@ class WebhookTestResponse(BaseModel):
 
     success: bool
     status_code: int | None = None
-    error_message: str | None = None
+    error_message: Str2000 | None = None
     duration_ms: int | None = None
-    payload: str
+    payload: TextStr

@@ -4,71 +4,73 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, computed_field
 
+from app.schemas.base import Str50, Str255, Str500, Str2000
+
 # ---------------------------------------------------------------------------
 # Duplicate detection schemas
 # ---------------------------------------------------------------------------
 
 
 class PartnerDuplicateCheckRequest(BaseModel):
-    firm_name: str | None = None
-    contact_name: str | None = None
+    firm_name: Str255 | None = None
+    contact_name: Str255 | None = None
     contact_email: EmailStr | None = None
-    contact_phone: str | None = None
+    contact_phone: Str50 | None = None
     exclude_id: UUID | None = None
 
 
 class PartnerDuplicateMatchResponse(BaseModel):
     partner_id: UUID
-    firm_name: str
-    contact_name: str
-    contact_email: str
-    contact_phone: str | None
+    firm_name: Str255
+    contact_name: Str255
+    contact_email: Str255
+    contact_phone: Str50 | None
     similarity_score: float
     match_reasons: list[str]
 
 
 class PartnerProfileCreate(BaseModel):
-    firm_name: str
-    contact_name: str
+    firm_name: Str255
+    contact_name: Str255
     contact_email: EmailStr
-    contact_phone: str | None = None
+    contact_phone: Str50 | None = None
     capabilities: list[str] = []
     geographies: list[str] = []
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class PartnerProfileUpdate(BaseModel):
-    firm_name: str | None = None
-    contact_name: str | None = None
+    firm_name: Str255 | None = None
+    contact_name: Str255 | None = None
     contact_email: EmailStr | None = None
-    contact_phone: str | None = None
+    contact_phone: Str50 | None = None
     capabilities: list[str] | None = None
     geographies: list[str] | None = None
-    availability_status: str | None = None
+    availability_status: Str50 | None = None
     max_concurrent_assignments: int | None = None
     compliance_verified: bool | None = None
-    notes: str | None = None
-    status: str | None = None
+    notes: Str2000 | None = None
+    status: Str50 | None = None
 
 
 class PartnerProfileResponse(BaseModel):
     id: UUID
     user_id: UUID | None = None
-    firm_name: str
-    contact_name: str
-    contact_email: str
-    contact_phone: str | None = None
+    firm_name: Str255
+    contact_name: Str255
+    contact_email: Str255
+    contact_phone: Str50 | None = None
     capabilities: list[str] = []
     geographies: list[str] = []
-    availability_status: str
+    availability_status: Str50
     performance_rating: Decimal | None = None
     total_assignments: int
     completed_assignments: int
     max_concurrent_assignments: int = 5
-    compliance_doc_url: str | None = None
+    compliance_doc_url: Str500 | None = None
     compliance_verified: bool
-    notes: str | None = None
-    status: str
+    notes: Str2000 | None = None
+    status: Str50
     last_refreshed_at: datetime | None = None
     refresh_due_at: datetime | None = None
     created_by: UUID
@@ -90,7 +92,7 @@ class PartnerProfileListResponse(BaseModel):
 
 
 class PartnerProvisionRequest(BaseModel):
-    password: str | None = None
+    password: Str255 | None = None
     send_welcome_email: bool = False
 
 
@@ -98,7 +100,7 @@ class CapabilityRefreshRequest(BaseModel):
     accreditations_confirmed: bool
     insurance_confirmed: bool
     capacity_confirmed: bool
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class CapabilityRefreshStatusResponse(BaseModel):
@@ -111,10 +113,10 @@ class CapabilityRefreshStatusResponse(BaseModel):
 
 class RefreshDuePartnerResponse(BaseModel):
     id: UUID
-    firm_name: str
-    contact_name: str
-    contact_email: str
-    status: str
+    firm_name: Str255
+    contact_name: Str255
+    contact_email: Str255
+    status: Str50
     last_refreshed_at: datetime | None = None
     refresh_due_at: datetime | None = None
     is_overdue: bool
@@ -137,9 +139,9 @@ class CapacityDayEntry(BaseModel):
     active_assignments: int
     max_concurrent: int
     is_blocked: bool
-    block_reason: str | None = None
+    block_reason: Str500 | None = None
     utilisation: float
-    status: str  # "available" | "partial" | "full" | "blocked"
+    status: Str50  # "available" | "partial" | "full" | "blocked"
 
 
 class PartnerCapacityHeatmapResponse(BaseModel):
@@ -151,14 +153,14 @@ class PartnerCapacityHeatmapResponse(BaseModel):
 
 class BlockedDateCreate(BaseModel):
     blocked_date: date
-    reason: str | None = None
+    reason: Str500 | None = None
 
 
 class BlockedDateResponse(BaseModel):
     id: UUID
     partner_id: UUID
     blocked_date: date
-    reason: str | None = None
+    reason: Str500 | None = None
     created_by: UUID
     created_at: datetime
 
@@ -168,15 +170,15 @@ class BlockedDateResponse(BaseModel):
 class PartnerCapacitySummaryEntry(BaseModel):
     """One partner's capacity on a target date — used in admin overview."""
 
-    partner_id: str
-    firm_name: str
-    contact_name: str
-    availability_status: str
+    partner_id: Str50
+    firm_name: Str255
+    contact_name: Str255
+    availability_status: Str50
     active_assignments: int
     max_concurrent: int
     is_blocked: bool
     utilisation: float
-    status: str
+    status: Str50
 
 
 class AllPartnersCapacitySummaryResponse(BaseModel):
@@ -190,11 +192,11 @@ class AllPartnersCapacitySummaryResponse(BaseModel):
 class PartnerComparisonItem(BaseModel):
     """Aggregated metrics for one partner in a side-by-side comparison."""
 
-    partner_id: str
-    firm_name: str
-    contact_name: str
-    availability_status: str
-    status: str
+    partner_id: Str50
+    firm_name: Str255
+    contact_name: Str255
+    availability_status: Str50
+    status: Str50
     capabilities: list[str]
     geographies: list[str]
     compliance_verified: bool
@@ -224,7 +226,7 @@ class PartnerComparisonItem(BaseModel):
     # Composite score & trend
     composite_score: float | None  # 0–100
     avg_recent_overall: float | None  # last 90 days avg overall rating
-    trend_direction: str  # "up" | "down" | "neutral"
+    trend_direction: Str50  # "up" | "down" | "neutral"
 
 
 class PartnerComparisonResponse(BaseModel):

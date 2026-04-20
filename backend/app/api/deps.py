@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit_context import audit_context_var
 from app.core.security import decode_access_token, decode_mfa_setup_token
 from app.db.session import apply_rls_context, get_db
 from app.models.enums import UserRole
@@ -85,6 +86,14 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user",
         )
+
+    # Populate the user's role on the request-scoped audit context so that
+    # subsequent transactions opened during this request pick it up via the
+    # ``Session.after_begin`` listener in ``db/session.py``. Middleware cannot
+    # do this itself because the JWT does not carry the role claim.
+    ctx = audit_context_var.get()
+    if ctx is not None and ctx.user_role is None:
+        ctx.user_role = user.role
 
     return user
 
@@ -221,7 +230,21 @@ CurrentPartner = Annotated["PartnerProfile", Depends(get_current_partner_profile
 
 
 async def with_rls(db: DB, current_user: CurrentUser) -> None:
-    """Dependency that sets RLS context on the current DB session."""
+    """Belt-and-braces RLS context dependency.
+
+    Most routes no longer need this: the ``Session.after_begin`` event
+    listener in ``app/db/session.py`` reads the request's
+    :data:`audit_context_var` and issues ``SET LOCAL`` at the start of every
+    transaction automatically. ``get_current_user`` populates the role on
+    the context so the listener has what it needs.
+
+    This dep is kept for routes where the event-based path is insufficient
+    — most commonly when a handler opens a *new* explicit transaction after
+    ``get_current_user`` ran (so the original tx's ``SET LOCAL`` doesn't
+    apply) and wants to guarantee the new tx has RLS vars before the first
+    query. Declaring ``_rls: RLSContext`` forces the ``SET LOCAL`` early on
+    the DB session FastAPI injected for the route.
+    """
     await apply_rls_context(db, str(current_user.id), current_user.role)
 
 

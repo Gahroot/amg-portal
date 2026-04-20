@@ -13,12 +13,13 @@ from enum import Enum
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 
+from app.core.audit_chain import finalize_chain
 from app.core.audit_context import AuditContext, audit_context_var
 from app.models.audit_log import AuditLog
 
 logger = logging.getLogger(__name__)
 
-SKIP_TABLES = {"audit_logs", "alembic_version"}
+SKIP_TABLES = {"audit_logs", "audit_checkpoints", "alembic_version"}
 SENSITIVE_FIELDS = {"hashed_password", "mfa_secret", "mfa_backup_codes"}
 
 
@@ -30,7 +31,7 @@ _SCALAR_CONVERTERS: dict[type, object] = {
 }
 
 
-def _serialize_value(value: object) -> object:
+def _serialize_value(value: object) -> object:  # noqa: PLR0911 — linear type dispatch
     """Convert a value to a JSON-safe representation."""
     if value is None:
         return None
@@ -43,6 +44,11 @@ def _serialize_value(value: object) -> object:
         return [_serialize_value(v) for v in value]
     if isinstance(value, dict):
         return {k: _serialize_value(v) for k, v in value.items()}
+    # Encrypted ciphertext, blind-index HMAC, audit-chain hashes — emit a
+    # length-only placeholder so we record "changed" without leaking bytes
+    # into a JSONB column that would then live forever in audit_logs.
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return f"<bytes:{len(value)}>"
     return value
 
 
@@ -238,6 +244,44 @@ def _log_summary(
             logger.debug("Audit: skipped %s on %s: %s", action, table, reason)
 
 
+@event.listens_for(Session, "before_flush")
+def before_flush(
+    session: Session,
+    flush_context: object,
+    instances: object,
+) -> None:
+    """Finalise chain cols on AuditLog rows added directly to the session.
+
+    Some legacy services (e.g. ``program_state_machine._write_audit_log``)
+    construct ``AuditLog(...)`` + ``db.add(log)`` manually instead of relying
+    on the ``after_flush`` listener.  Those rows skip the hash-chain path
+    and would violate the NOT NULL constraint on ``row_hash``.
+
+    This hook fires BEFORE the INSERT happens, picks up any such
+    unfinalised AuditLog entries from ``session.new``, and runs
+    ``finalize_chain`` on them.  Rows already chained by ``after_flush``
+    (row_hash != None) are untouched.
+    """
+    if session.info.get("skip_audit"):
+        return
+    direct_audits = [
+        obj
+        for obj in list(session.new)
+        if isinstance(obj, AuditLog) and obj.row_hash is None
+    ]
+    if not direct_audits:
+        return
+    try:
+        finalize_chain(session, direct_audits)
+    except Exception:
+        # Same policy as the after_flush path: chain break never fails a
+        # write; the daily verify cron catches it.
+        logger.exception(
+            "Audit: chain finalisation failed for direct-added rows; "
+            "inserting without chain hashes"
+        )
+
+
 @event.listens_for(Session, "after_flush")
 def after_flush(session: Session, flush_context: object) -> None:
     """Create audit log entries after flush completes.
@@ -260,6 +304,16 @@ def after_flush(session: Session, flush_context: object) -> None:
     audit_entries = _audit_creates(session, ctx, skipped)
     audit_entries.extend(_audit_updates(session, ctx, skipped))
     audit_entries.extend(_audit_deletes(session, ctx, skipped))
+
+    if audit_entries:
+        try:
+            finalize_chain(session, audit_entries)
+        except Exception:
+            # Chain finalisation must never make a write fail — the daily
+            # verify cron will flag any gap/corruption out-of-band.
+            logger.exception(
+                "Audit: chain finalisation failed; inserting without chain hashes"
+            )
 
     for entry in audit_entries:
         session.add(entry)

@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str2000
+
 
 class PartnerRatingCreate(BaseModel):
     partner_id: UUID
@@ -10,7 +12,7 @@ class PartnerRatingCreate(BaseModel):
     timeliness_score: int = Field(ge=1, le=5)
     communication_score: int = Field(ge=1, le=5)
     overall_score: int = Field(ge=1, le=5)
-    comments: str | None = None
+    comments: Str2000 | None = None
 
 
 class PartnerRatingResponse(BaseModel):
@@ -22,7 +24,7 @@ class PartnerRatingResponse(BaseModel):
     timeliness_score: int
     communication_score: int
     overall_score: int
-    comments: str | None
+    comments: Str2000 | None
     created_at: datetime
     updated_at: datetime
 

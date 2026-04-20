@@ -10,34 +10,35 @@ from app.models.enums import (
     TaskPriority,
     TaskStatus,
 )
+from app.schemas.base import Str50, Str255, Str2000, TextStr
 
 
 class MilestoneCreate(BaseModel):
-    title: str
-    description: str | None = None
+    title: Str255
+    description: Str2000 | None = None
     due_date: date | None = None
     position: int = 0
 
 
 class MilestoneUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
+    title: Str255 | None = None
+    description: Str2000 | None = None
     due_date: date | None = None
     status: MilestoneStatus | None = None
     position: int | None = None
 
 
 class TaskCreate(BaseModel):
-    title: str
-    description: str | None = None
+    title: Str255
+    description: Str2000 | None = None
     due_date: date | None = None
     assigned_to: UUID | None = None
     priority: TaskPriority = TaskPriority.medium
 
 
 class TaskUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
+    title: Str255 | None = None
+    description: Str2000 | None = None
     due_date: date | None = None
     status: TaskStatus | None = None
     priority: TaskPriority | None = None
@@ -47,10 +48,10 @@ class TaskUpdate(BaseModel):
 class TaskResponse(BaseModel):
     id: UUID
     milestone_id: UUID
-    title: str
-    description: str | None
-    status: str
-    priority: str
+    title: Str255
+    description: Str2000 | None
+    status: Str50
+    priority: Str50
     due_date: date | None
     assigned_to: UUID | None
     created_at: datetime
@@ -62,12 +63,12 @@ class TaskResponse(BaseModel):
 class MilestoneResponse(BaseModel):
     id: UUID
     program_id: UUID
-    title: str
-    description: str | None
+    title: Str255
+    description: Str2000 | None
     due_date: date | None
-    status: str
+    status: Str50
     position: int
-    calendar_event_id: str | None = None
+    calendar_event_id: Str255 | None = None
     task_count: int = 0
     completed_task_count: int = 0
     created_at: datetime
@@ -82,9 +83,9 @@ class MilestoneDetailResponse(MilestoneResponse):
 
 class ProgramCreate(BaseModel):
     client_id: UUID
-    title: str
-    objectives: str | None = None
-    scope: str | None = None
+    title: Str255
+    objectives: Str2000 | None = None
+    scope: Str2000 | None = None
     budget_envelope: Decimal | None = None
     start_date: date | None = None
     end_date: date | None = None
@@ -92,42 +93,42 @@ class ProgramCreate(BaseModel):
 
 
 class ProgramUpdate(BaseModel):
-    title: str | None = None
-    objectives: str | None = None
-    scope: str | None = None
+    title: Str255 | None = None
+    objectives: Str2000 | None = None
+    scope: Str2000 | None = None
     budget_envelope: Decimal | None = None
     start_date: date | None = None
     end_date: date | None = None
     status: ProgramStatus | None = None
-    brief_content: str | None = None
+    brief_content: TextStr | None = None
     brief_visible_to_client: bool | None = None
 
 
 class EmergencyActivationRequest(BaseModel):
-    emergency_reason: str
+    emergency_reason: Str2000
 
 
 class ProgramResponse(BaseModel):
     id: UUID
     client_id: UUID
-    client_name: str = ""
-    title: str
-    objectives: str | None
-    scope: str | None
+    client_name: Str255 = ""
+    title: Str255
+    objectives: Str2000 | None
+    scope: Str2000 | None
     budget_envelope: Decimal | None
     start_date: date | None
     end_date: date | None
-    status: str
+    status: Str50
     archived_at: datetime | None = None
-    emergency_reason: str | None = None
+    emergency_reason: Str2000 | None = None
     retrospective_due_at: datetime | None = None
     created_by: UUID
-    rag_status: str = "green"
+    rag_status: Str50 = "green"
     milestone_count: int = 0
     completed_milestone_count: int = 0
     created_at: datetime
     updated_at: datetime
-    brief_content: str | None = None
+    brief_content: TextStr | None = None
     brief_visible_to_client: bool = False
     brief_shared_at: datetime | None = None
 
@@ -142,9 +143,9 @@ class ArchivalCandidateResponse(BaseModel):
     """A closed program eligible for archival."""
 
     program_id: UUID
-    title: str
+    title: Str255
     client_id: UUID
-    client_name: str
+    client_name: Str255
     closed_at: datetime
     eligible_at: datetime  # closed_at + DATA_RETENTION_DAYS
 
@@ -160,15 +161,15 @@ class ProgramListResponse(BaseModel):
 
 
 class ProgramSummaryMilestone(BaseModel):
-    title: str
-    status: str
+    title: Str255
+    status: Str50
     due_date: date | None
 
 
 class ProgramSummary(BaseModel):
     id: UUID
-    title: str
-    status: str
+    title: Str255
+    status: Str50
     start_date: date | None
     end_date: date | None
     milestone_progress: float = 0.0

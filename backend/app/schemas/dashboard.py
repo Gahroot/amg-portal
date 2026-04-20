@@ -5,13 +5,15 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
+
 
 class ProgramHealthItem(BaseModel):
     id: uuid.UUID
-    title: str
-    status: str
-    client_name: str
-    rag_status: str
+    title: Str255
+    status: Str50
+    client_name: Str255
+    rag_status: Str50
     milestone_count: int
     completed_milestone_count: int
     milestone_progress: float
@@ -38,7 +40,7 @@ class PortfolioSummary(BaseModel):
 
 class PartnerScorecard(BaseModel):
     partner_id: uuid.UUID
-    firm_name: str
+    firm_name: Str255
     avg_quality: float | None
     avg_timeliness: float | None
     avg_communication: float | None
@@ -51,7 +53,7 @@ class PartnerScorecard(BaseModel):
 
 class PartnerRanking(BaseModel):
     partner_id: uuid.UUID
-    firm_name: str
+    firm_name: Str255
     avg_overall: float | None
     total_ratings: int
     total_assignments: int
@@ -69,7 +71,7 @@ class PartnerPerformanceEntry(BaseModel):
     timeliness_score: int
     communication_score: int
     overall_score: int
-    comments: str | None
+    comments: Str2000 | None
     created_at: datetime
 
 
@@ -83,15 +85,15 @@ class RealTimeStats(BaseModel):
 
 
 class ActivityFeedItem(BaseModel):
-    id: str
-    activity_type: str  # "communication", "status_change", "escalation", "deliverable_submission"
-    title: str
-    description: str
-    entity_type: str  # "program", "escalation", "deliverable", "communication"
-    entity_id: str
+    id: Str100
+    activity_type: Str50  # "communication", "status_change", "escalation", "deliverable_submission"
+    title: Str255
+    description: Str2000
+    entity_type: Str50  # "program", "escalation", "deliverable", "communication"
+    entity_id: Str100
     timestamp: datetime
-    actor_name: str | None = None
-    link: str | None = None
+    actor_name: Str255 | None = None
+    link: Str500 | None = None
 
 
 class ActivityFeedResponse(BaseModel):
@@ -100,14 +102,14 @@ class ActivityFeedResponse(BaseModel):
 
 
 class DashboardAlert(BaseModel):
-    id: str
-    severity: str  # "critical", "warning", "info"
-    alert_type: str  # "sla_breach", "overdue_task", "pending_review", "expiring_document"
-    title: str
-    description: str
-    entity_type: str
-    entity_id: str
-    link: str | None = None
+    id: Str100
+    severity: Str50  # "critical", "warning", "info"
+    alert_type: Str50  # "sla_breach", "overdue_task", "pending_review", "expiring_document"
+    title: Str255
+    description: Str2000
+    entity_type: Str50
+    entity_id: Str100
+    link: Str500 | None = None
     due_date: datetime | None = None
 
 
@@ -151,7 +153,7 @@ class ScorecardAverages(BaseModel):
 
 
 class ScorecardDataPoint(BaseModel):
-    week_start: str
+    week_start: Str50
     sla_compliance_pct: float | None
     avg_quality: float | None
     avg_overall: float | None
@@ -159,9 +161,9 @@ class ScorecardDataPoint(BaseModel):
 
 
 class PartnerScorecardResponse(BaseModel):
-    partner_id: str
-    firm_name: str
-    period: str
+    partner_id: Str100
+    firm_name: Str255
+    period: Str50
     metrics: ScorecardMetrics
     rating_breakdown: ScorecardRatingBreakdown
     totals: ScorecardTotals

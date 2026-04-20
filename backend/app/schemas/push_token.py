@@ -5,11 +5,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.schemas.base import Str50, Str255, Str500
+
 
 class PushTokenRegisterRequest(BaseModel):
-    token: str
-    platform: str  # ios, android, web
-    device_name: str | None = None
+    token: Str500
+    platform: Str50  # ios, android, web
+    device_name: Str255 | None = None
 
     @field_validator("platform")
     @classmethod
@@ -23,9 +25,9 @@ class PushTokenRegisterRequest(BaseModel):
 class PushTokenResponse(BaseModel):
     id: UUID
     user_id: UUID
-    token: str
-    platform: str
-    device_name: str | None = None
+    token: Str500
+    platform: Str50
+    device_name: Str255 | None = None
     is_active: bool
     last_used_at: datetime | None = None
     created_at: datetime

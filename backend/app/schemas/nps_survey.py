@@ -12,6 +12,7 @@ from app.models.enums import (
     NPSFollowUpStatus,
     NPSSurveyStatus,
 )
+from app.schemas.base import Str50, Str255, Str2000, TextStr
 
 # ==================== Survey Schemas ====================
 
@@ -20,11 +21,11 @@ class NPSSurveyCreate(BaseModel):
     """Schema for creating a new NPS survey."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     quarter: int = Field(..., ge=1, le=4)
     year: int = Field(..., ge=2020, le=2100)
     questions: list[dict[str, Any]] | dict[str, Any] = Field(default_factory=dict)
-    distribution_method: str = "email"
+    distribution_method: Str50 = "email"
     reminder_enabled: bool = True
     reminder_days: int = Field(default=7, ge=1, le=30)
     scheduled_at: datetime | None = None
@@ -37,9 +38,9 @@ class NPSSurveyUpdate(BaseModel):
     """Schema for updating an NPS survey."""
 
     name: str | None = Field(None, min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     questions: list[dict[str, Any]] | dict[str, Any] | None = None
-    distribution_method: str | None = None
+    distribution_method: Str50 | None = None
     reminder_enabled: bool | None = None
     reminder_days: int | None = Field(None, ge=1, le=30)
     scheduled_at: datetime | None = None
@@ -53,13 +54,13 @@ class NPSSurveyResponse(BaseModel):
     """Schema for NPS survey response."""
 
     id: UUID
-    name: str
-    description: str | None
+    name: Str255
+    description: Str2000 | None
     quarter: int
     year: int
-    status: str
+    status: Str50
     questions: list[dict[str, Any]] | dict[str, Any]
-    distribution_method: str
+    distribution_method: Str50
     reminder_enabled: bool
     reminder_days: int
     scheduled_at: datetime | None
@@ -90,7 +91,7 @@ class NPSResponseCreate(BaseModel):
     score: int = Field(..., ge=0, le=10)
     comment: str | None = Field(None, max_length=5000)
     custom_responses: dict[str, Any] | None = None
-    response_channel: str = "portal"
+    response_channel: Str50 = "portal"
 
 
 class NPSResponseUpdate(BaseModel):
@@ -107,11 +108,11 @@ class NPSResponseDetail(BaseModel):
     survey_id: UUID
     client_profile_id: UUID
     score: int
-    score_category: str
-    comment: str | None
+    score_category: Str50
+    comment: TextStr | None
     custom_responses: dict[str, Any] | None
     responded_at: datetime
-    response_channel: str
+    response_channel: Str50
     follow_up_required: bool
     follow_up_completed: bool
 
@@ -135,7 +136,7 @@ class NPSFollowUpCreate(BaseModel):
     assigned_to: UUID
     priority: NPSFollowUpPriority = NPSFollowUpPriority.medium
     action_type: NPSFollowUpActionType = NPSFollowUpActionType.personal_reach_out
-    notes: str | None = None
+    notes: Str2000 | None = None
     due_at: datetime | None = None
 
 
@@ -146,8 +147,8 @@ class NPSFollowUpUpdate(BaseModel):
     priority: NPSFollowUpPriority | None = None
     status: NPSFollowUpStatus | None = None
     action_type: NPSFollowUpActionType | None = None
-    notes: str | None = None
-    resolution_notes: str | None = None
+    notes: Str2000 | None = None
+    resolution_notes: Str2000 | None = None
     due_at: datetime | None = None
 
 
@@ -159,11 +160,11 @@ class NPSFollowUpResponse(BaseModel):
     response_id: UUID
     client_profile_id: UUID
     assigned_to: UUID
-    priority: str
-    status: str
-    action_type: str
-    notes: str | None
-    resolution_notes: str | None
+    priority: Str50
+    status: Str50
+    action_type: Str50
+    notes: Str2000 | None
+    resolution_notes: Str2000 | None
     due_at: datetime | None
     completed_at: datetime | None
     created_at: datetime
@@ -186,7 +187,7 @@ class NPSSurveyStats(BaseModel):
     """Schema for NPS survey statistics."""
 
     survey_id: UUID
-    survey_name: str
+    survey_name: Str255
     quarter: int
     year: int
     total_sent: int
@@ -207,7 +208,7 @@ class NPSSurveyStats(BaseModel):
 class NPSTrendPoint(BaseModel):
     """Schema for a single point in NPS trend data."""
 
-    period: str  # e.g., "Q1 2024"
+    period: Str50  # e.g., "Q1 2024"
     quarter: int
     year: int
     nps_score: float
@@ -224,18 +225,18 @@ class NPSTrendAnalysis(BaseModel):
     current_nps: float
     previous_nps: float | None
     change: float | None
-    trend_direction: str  # "up", "down", "stable"
+    trend_direction: Str50  # "up", "down", "stable"
 
 
 class NPSClientSummary(BaseModel):
     """Schema for client NPS summary in a survey."""
 
     client_profile_id: UUID
-    legal_name: str
+    legal_name: Str255
     score: int | None
-    score_category: str | None
+    score_category: Str50 | None
     responded_at: datetime | None
-    follow_up_status: str | None
+    follow_up_status: Str50 | None
 
 
 class NPSSurveyClientListResponse(BaseModel):

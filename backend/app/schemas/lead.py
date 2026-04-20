@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.enums import ClientType, LeadSource, LeadStatus
+from app.schemas.base import Str50, Str255, Str500, Str2000
 
 
 class LeadBase(BaseModel):
@@ -18,7 +19,7 @@ class LeadBase(BaseModel):
     estimated_value: Decimal | None = None
     estimated_client_type: ClientType | None = None
     referred_by_partner_id: UUID | None = None
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class LeadCreate(LeadBase):
@@ -37,25 +38,25 @@ class LeadUpdate(BaseModel):
     estimated_client_type: ClientType | None = None
     owner_id: UUID | None = None
     referred_by_partner_id: UUID | None = None
-    notes: str | None = None
+    notes: Str2000 | None = None
     disqualified_reason: str | None = Field(None, max_length=500)
 
 
 class LeadResponse(BaseModel):
     id: UUID
-    full_name: str
-    email: str | None
-    phone: str | None
-    company: str | None
+    full_name: Str255
+    email: Str255 | None
+    phone: Str50 | None
+    company: Str255 | None
     status: LeadStatus
     source: LeadSource
-    source_details: str | None
+    source_details: Str500 | None
     estimated_value: Decimal | None
     estimated_client_type: ClientType | None
     owner_id: UUID
     referred_by_partner_id: UUID | None
-    notes: str | None
-    disqualified_reason: str | None
+    notes: Str2000 | None
+    disqualified_reason: Str500 | None
     converted_at: datetime | None
     converted_client_profile_id: UUID | None
     created_at: datetime
@@ -72,8 +73,8 @@ class LeadListResponse(BaseModel):
 class LeadConvertRequest(BaseModel):
     """Convert a qualified lead into a ClientProfile intake."""
 
-    legal_name: str
+    legal_name: Str255
     primary_email: EmailStr
     entity_type: ClientType
-    phone: str | None = None
-    notes: str | None = None
+    phone: Str50 | None = None
+    notes: Str2000 | None = None

@@ -5,60 +5,62 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
+
 
 class ScheduledEventCreate(BaseModel):
-    title: str
-    description: str | None = None
-    event_type: str
+    title: Str255
+    description: Str2000 | None = None
+    event_type: Str50
     start_time: datetime
     end_time: datetime
-    timezone: str = "UTC"
-    location: str | None = None
-    virtual_link: str | None = None
+    timezone: Str100 = "UTC"
+    location: Str500 | None = None
+    virtual_link: Str500 | None = None
     program_id: UUID | None = None
     client_id: UUID | None = None
     attendee_ids: list[UUID] | None = None
-    recurrence_rule: str | None = None
+    recurrence_rule: Str500 | None = None
     reminder_minutes: int = 30
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class ScheduledEventUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    event_type: str | None = None
+    title: Str255 | None = None
+    description: Str2000 | None = None
+    event_type: Str50 | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
-    timezone: str | None = None
-    location: str | None = None
-    virtual_link: str | None = None
+    timezone: Str100 | None = None
+    location: Str500 | None = None
+    virtual_link: Str500 | None = None
     program_id: UUID | None = None
     client_id: UUID | None = None
     attendee_ids: list[UUID] | None = None
-    status: str | None = None
-    recurrence_rule: str | None = None
+    status: Str50 | None = None
+    recurrence_rule: Str500 | None = None
     reminder_minutes: int | None = None
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class ScheduledEventResponse(BaseModel):
     id: UUID
-    title: str
-    description: str | None = None
-    event_type: str
+    title: Str255
+    description: Str2000 | None = None
+    event_type: Str50
     start_time: datetime
     end_time: datetime
-    timezone: str
-    location: str | None = None
-    virtual_link: str | None = None
+    timezone: Str100
+    location: Str500 | None = None
+    virtual_link: Str500 | None = None
     organizer_id: UUID
     program_id: UUID | None = None
     client_id: UUID | None = None
     attendee_ids: list[UUID] | None = None
-    status: str
-    recurrence_rule: str | None = None
+    status: Str50
+    recurrence_rule: Str500 | None = None
     reminder_minutes: int
-    notes: str | None = None
+    notes: Str2000 | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -76,4 +78,4 @@ class ConflictCheckResponse(BaseModel):
 
 
 class StatusUpdateRequest(BaseModel):
-    status: str
+    status: Str50

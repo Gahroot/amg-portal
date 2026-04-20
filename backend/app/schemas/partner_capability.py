@@ -8,6 +8,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# Note: this file uses Field(max_length=...) inline rather than Str* aliases
+# because column caps vary (Str200 isn't in app.schemas.base).
+
 
 # Enums
 class ProficiencyLevel(StrEnum):
@@ -61,7 +64,7 @@ class CapabilityCreate(BaseModel):
     capability_name: str = Field(..., max_length=100)
     proficiency_level: ProficiencyLevel
     years_experience: Decimal | None = Field(None, ge=0, le=99)
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class CapabilityUpdate(BaseModel):
@@ -70,7 +73,7 @@ class CapabilityUpdate(BaseModel):
     capability_name: str | None = Field(None, max_length=100)
     proficiency_level: ProficiencyLevel | None = None
     years_experience: Decimal | None = Field(None, ge=0, le=99)
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class CapabilityResponse(BaseModel):
@@ -78,13 +81,13 @@ class CapabilityResponse(BaseModel):
 
     id: UUID
     partner_id: UUID
-    capability_name: str
-    proficiency_level: str
+    capability_name: str = Field(..., max_length=100)
+    proficiency_level: str = Field(..., max_length=50)
     years_experience: Decimal | None = None
     verified: bool = False
     verified_by: UUID | None = None
     verified_at: datetime | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
     created_at: datetime
     updated_at: datetime
 
@@ -103,7 +106,7 @@ class ServiceCategoryCreate(BaseModel):
     """Schema for creating a service category."""
 
     name: str = Field(..., max_length=100)
-    description: str | None = None
+    description: str | None = Field(None, max_length=2000)
     required_capabilities: list[str] = []
 
 
@@ -111,7 +114,7 @@ class ServiceCategoryUpdate(BaseModel):
     """Schema for updating a service category."""
 
     name: str | None = Field(None, max_length=100)
-    description: str | None = None
+    description: str | None = Field(None, max_length=2000)
     required_capabilities: list[str] | None = None
     active: bool | None = None
 
@@ -120,8 +123,8 @@ class ServiceCategoryResponse(BaseModel):
     """Schema for service category response."""
 
     id: UUID
-    name: str
-    description: str | None = None
+    name: str = Field(..., max_length=100)
+    description: str | None = Field(None, max_length=2000)
     required_capabilities: list[str] = []
     active: bool
     created_at: datetime
@@ -143,21 +146,21 @@ class QualificationCreate(BaseModel):
 
     category_id: UUID
     qualification_level: QualificationLevel
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class QualificationUpdate(BaseModel):
     """Schema for updating a partner qualification."""
 
     qualification_level: QualificationLevel | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class QualificationApproval(BaseModel):
     """Schema for approving/rejecting a qualification."""
 
     status: ApprovalStatus
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class QualificationResponse(BaseModel):
@@ -166,12 +169,12 @@ class QualificationResponse(BaseModel):
     id: UUID
     partner_id: UUID
     category_id: UUID
-    category_name: str | None = None
-    qualification_level: str
-    approval_status: str = "pending"
+    category_name: str | None = Field(None, max_length=100)
+    qualification_level: str = Field(..., max_length=50)
+    approval_status: str = Field(default="pending", max_length=50)
     approved_by: UUID | None = None
     approved_at: datetime | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
     created_at: datetime
     updated_at: datetime
 
@@ -195,7 +198,7 @@ class CertificationCreate(BaseModel):
     issue_date: date | None = None
     expiry_date: date | None = None
     document_url: str | None = Field(None, max_length=500)
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class CertificationUpdate(BaseModel):
@@ -207,14 +210,14 @@ class CertificationUpdate(BaseModel):
     issue_date: date | None = None
     expiry_date: date | None = None
     document_url: str | None = Field(None, max_length=500)
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class CertificationVerification(BaseModel):
     """Schema for verifying a certification."""
 
     status: CertificationStatus
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
 
 
 class CertificationResponse(BaseModel):
@@ -222,16 +225,16 @@ class CertificationResponse(BaseModel):
 
     id: UUID
     partner_id: UUID
-    name: str
-    issuing_body: str
-    certificate_number: str | None = None
+    name: str = Field(..., max_length=200)
+    issuing_body: str = Field(..., max_length=200)
+    certificate_number: str | None = Field(None, max_length=100)
     issue_date: date | None = None
     expiry_date: date | None = None
-    document_url: str | None = None
-    verification_status: str = "pending"
+    document_url: str | None = Field(None, max_length=500)
+    verification_status: str = Field(default="pending", max_length=50)
     verified_by: UUID | None = None
     verified_at: datetime | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=2000)
     created_at: datetime
     updated_at: datetime
     is_expired: bool = False
@@ -275,11 +278,11 @@ class OnboardingResponse(BaseModel):
 
     id: UUID
     partner_id: UUID
-    current_stage: str = "initial"
+    current_stage: str = Field(default="initial", max_length=50)
     checklist_items: dict[str, dict[str, bool]] | dict[str, Any] = {}
     completed_stages: list[str] = []
     assigned_coordinator: UUID | None = None
-    coordinator_name: str | None = None
+    coordinator_name: str | None = Field(None, max_length=255)
     started_at: datetime | None = None
     completed_at: datetime | None = None
     created_at: datetime
@@ -294,7 +297,7 @@ class CapabilityMatrixResponse(BaseModel):
     """Full capability matrix for a partner."""
 
     partner_id: UUID
-    firm_name: str
+    firm_name: str = Field(..., max_length=255)
     capabilities: list[CapabilityResponse] = []
     qualifications: list[QualificationResponse] = []
     certifications: list[CertificationResponse] = []

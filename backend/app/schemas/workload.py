@@ -4,19 +4,21 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from app.schemas.base import Str50, Str100, Str255
+
 
 class StaffWorkloadItem(BaseModel):
-    user_id: str
-    user_name: str
-    user_email: str
-    role: str
+    user_id: Str100
+    user_name: Str255
+    user_email: Str255
+    role: Str50
     active_programs: int
     pending_tasks: int
     open_escalations: int
     pending_approvals: int
     active_assignments: int
     workload_score: int
-    capacity_status: str  # available, at_capacity, overloaded
+    capacity_status: Str50  # available, at_capacity, overloaded
 
 
 class WorkloadSummary(BaseModel):
@@ -34,13 +36,13 @@ class WorkloadResponse(BaseModel):
 
 
 class StaffAssignmentItem(BaseModel):
-    id: str
-    program_id: str
-    program_title: str
-    client_name: str
-    role: str  # relationship_manager, coordinator, backup
-    assigned_at: str
-    program_status: str
+    id: Str100
+    program_id: Str100
+    program_title: Str255
+    client_name: Str255
+    role: Str50  # relationship_manager, coordinator, backup
+    assigned_at: Str50
+    program_status: Str50
     active_escalations: int
 
 
@@ -50,6 +52,6 @@ class StaffAssignmentsResponse(BaseModel):
 
 
 class AssignStaffRequest(BaseModel):
-    program_id: str
-    user_id: str
-    role: str  # relationship_manager, coordinator, backup
+    program_id: Str100
+    user_id: Str100
+    role: Str50  # relationship_manager, coordinator, backup

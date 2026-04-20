@@ -5,28 +5,30 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255
+
 
 class ReportScheduleCreate(BaseModel):
     """Request body for creating a report schedule."""
 
-    report_type: str = Field(
+    report_type: Str50 = Field(
         ...,
         description=(
             "Report type: portfolio, program_status, completion, annual_review, partner_performance"
         ),
     )
-    entity_id: str | None = None
-    frequency: str = Field(..., description="Frequency: daily, weekly, monthly, quarterly")
-    recipients: list[str] = Field(..., description="List of recipient email addresses")
-    format: str = Field(default="pdf", description="Output format: pdf or csv")
+    entity_id: Str100 | None = None
+    frequency: Str50 = Field(..., description="Frequency: daily, weekly, monthly, quarterly")
+    recipients: list[Str255] = Field(..., description="List of recipient email addresses")
+    format: Str50 = Field(default="pdf", description="Output format: pdf or csv")
 
 
 class ReportScheduleUpdate(BaseModel):
     """Request body for updating a report schedule."""
 
-    frequency: str | None = None
-    recipients: list[str] | None = None
-    format: str | None = None
+    frequency: Str50 | None = None
+    recipients: list[Str255] | None = None
+    format: Str50 | None = None
     is_active: bool | None = None
 
 
@@ -34,12 +36,12 @@ class ReportScheduleResponse(BaseModel):
     """Response body for a report schedule."""
 
     id: UUID
-    report_type: str
-    entity_id: str | None
-    frequency: str
+    report_type: Str50
+    entity_id: Str100 | None
+    frequency: Str50
     next_run: datetime
-    recipients: list[str]
-    format: str
+    recipients: list[Str255]
+    format: Str50
     created_by: UUID
     is_active: bool
     last_run: datetime | None

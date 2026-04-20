@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.portal_feedback import FeedbackType
+from app.schemas.base import Str50, Str255, Str500, TextStr
 
 # ==================== Create/Update Schemas ====================
 
@@ -58,15 +59,15 @@ class PortalFeedbackResponse(BaseModel):
 
     id: UUID
     user_id: UUID | None
-    feedback_type: str
-    description: str
-    page_url: str | None
-    screenshot_url: str | None
-    email: str | None
-    status: str
-    priority: str | None
+    feedback_type: Str50
+    description: TextStr
+    page_url: Str500 | None
+    screenshot_url: Str500 | None
+    email: Str255 | None
+    status: Str50
+    priority: Str50 | None
     assigned_to: UUID | None
-    resolution_notes: str | None
+    resolution_notes: TextStr | None
     resolved_at: datetime | None
     resolved_by: UUID | None
     extra_data: dict[str, Any] | None
@@ -74,9 +75,9 @@ class PortalFeedbackResponse(BaseModel):
     updated_at: datetime
 
     # Computed fields for display
-    user_name: str | None = None
-    user_email: str | None = None
-    assignee_name: str | None = None
+    user_name: Str255 | None = None
+    user_email: Str255 | None = None
+    assignee_name: Str255 | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -103,9 +104,9 @@ class PortalFeedbackSummary(BaseModel):
 class PortalFeedbackTypeOption(BaseModel):
     """Schema for feedback type option."""
 
-    value: str
-    label: str
-    description: str
+    value: Str50
+    label: Str255
+    description: Str500
 
 
 class PortalFeedbackTypesResponse(BaseModel):

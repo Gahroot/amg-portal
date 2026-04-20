@@ -1,6 +1,8 @@
 import base64
 import hashlib
+import os
 import secrets
+from datetime import date
 from typing import Any
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -70,11 +72,27 @@ class Settings(BaseSettings):
     # Example: ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
     TRUSTED_PROXIES: list[str] = []
 
-    # Rate Limiting (requests per minute per IP)
+    # Rate Limiting (requests per minute per IP — legacy flat limits kept for
+    # backward compatibility with any call-sites still using the old single-int
+    # ``RateLimiter(action, n)`` signature)
     RATE_LIMIT_LOGIN: int = 5
     RATE_LIMIT_REGISTER: int = 3
     RATE_LIMIT_FORGOT_PASSWORD: int = 3
     RATE_LIMIT_REFRESH: int = 10
+
+    # Per-role tier limits (requests per minute).  ``anon`` keys off client IP;
+    # ``authed`` and ``admin`` key off the authenticated user_id so limits are
+    # stable across IP changes.  ``admin`` applies to the ``managing_director``
+    # role only; every other authenticated role uses ``authed``.
+    RATE_LIMIT_TIERS: dict[str, dict[str, int]] = {
+        "login": {"anon": 5, "authed": 20, "admin": 100},
+        "register": {"anon": 3, "authed": 10, "admin": 30},
+        "forgot_password": {"anon": 3, "authed": 10, "admin": 30},
+        "refresh": {"anon": 10, "authed": 60, "admin": 200},
+        "mfa_disable": {"anon": 5, "authed": 20, "admin": 100},
+        "export_pdf": {"anon": 0, "authed": 5, "admin": 20},
+        "bulk_email": {"anon": 0, "authed": 3, "admin": 30},
+    }
 
     # Scheduler
     SCHEDULER_ENABLED: bool = True
@@ -126,7 +144,27 @@ class Settings(BaseSettings):
     DOCUSIGN_BASE_URI: str = "https://demo.docusign.net/restapi"
     DOCUSIGN_AUTH_SERVER: str = "account-d.docusign.com"
 
-    def __init__(self, **kwargs: Any) -> None:
+    # Audit chain (Phase 1.12–1.16).  Ed25519 keys are base64-encoded raw
+    # 32-byte values (seed / public-key).  DEBUG deterministically derives a
+    # keypair from SECRET_KEY so dev never needs real key material; prod must
+    # set both explicitly.  FreeTSA anchors each day's Merkle root (1.13).
+    AUDIT_ED25519_PRIVATE_V1: str = ""
+    AUDIT_ED25519_PUBLIC_V1: str = ""
+    FREETSA_URL: str = "https://freetsa.org/tsr"
+    # First UTC date the real chain is active.  Rows before this were
+    # backfilled with placeholder row_hash/hmac — verify_day ignores them.
+    AUDIT_CHAIN_START_AT: date | None = None
+
+    # Column encryption KEKs (Phase 1.1).  Each value is a 32-byte key encoded
+    # as urlsafe-b64 or hex.  Lazy rotation: bump CURRENT_KEK_ID; old ciphertexts
+    # still decrypt via their embedded key-id header byte.  DEBUG derives a
+    # deterministic dev key from SECRET_KEY via HKDF.  BIDX key is separate so
+    # a compromise of the equality-lookup index does not compromise plaintexts.
+    AMG_KEK_KEYS: dict[int, str] = {}
+    CURRENT_KEK_ID: int = 1
+    AMG_BIDX_KEY_V1: str = ""
+
+    def __init__(self, **kwargs: Any) -> None:  # noqa: PLR0912 — linear config validation chain
         super().__init__(**kwargs)
         # --- SECRET_KEY ---
         _secret_key_placeholder = "change-me-in-production"
@@ -175,6 +213,90 @@ class Settings(BaseSettings):
             # Derive a deterministic Fernet key from SECRET_KEY for development
             digest = hashlib.sha256(self.SECRET_KEY.encode("utf-8")).digest()
             self.MFA_ENCRYPTION_KEY = base64.urlsafe_b64encode(digest).decode("utf-8")
+
+        # --- Audit chain Ed25519 keys (Phase 1.13) ---
+        if not self.AUDIT_ED25519_PRIVATE_V1 or not self.AUDIT_ED25519_PUBLIC_V1:
+            if not self.DEBUG:
+                raise ValueError(
+                    "AUDIT_ED25519_PRIVATE_V1 and AUDIT_ED25519_PUBLIC_V1 must be set in "
+                    "production. Generate with: "
+                    "python -c 'import base64; "
+                    "from cryptography.hazmat.primitives.asymmetric.ed25519 import "
+                    "Ed25519PrivateKey; "
+                    "from cryptography.hazmat.primitives.serialization import "
+                    "Encoding, PrivateFormat, PublicFormat, NoEncryption; "
+                    "sk=Ed25519PrivateKey.generate(); "
+                    'print(\"private:\", base64.b64encode(sk.private_bytes('
+                    "Encoding.Raw, PrivateFormat.Raw, NoEncryption())).decode()); "
+                    'print(\"public:\", base64.b64encode(sk.public_key().public_bytes('
+                    "Encoding.Raw, PublicFormat.Raw)).decode())'"
+                )
+            # DEBUG: derive a deterministic keypair from SECRET_KEY so restarts
+            # don't invalidate signatures already in the dev DB.
+            from cryptography.hazmat.primitives import hashes as _h
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+            from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF
+            from cryptography.hazmat.primitives.serialization import (
+                Encoding,
+                NoEncryption,
+                PrivateFormat,
+                PublicFormat,
+            )
+
+            seed = _HKDF(
+                algorithm=_h.SHA256(),
+                length=32,
+                salt=None,
+                info=b"amg|audit|ed25519|dev|v1",
+            ).derive(self.SECRET_KEY.encode("utf-8"))
+            sk = Ed25519PrivateKey.from_private_bytes(seed)
+            priv_b64 = base64.b64encode(
+                sk.private_bytes(Encoding.Raw, PrivateFormat.Raw, NoEncryption())
+            ).decode("utf-8")
+            pub_b64 = base64.b64encode(
+                sk.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+            ).decode("utf-8")
+            self.AUDIT_ED25519_PRIVATE_V1 = priv_b64
+            self.AUDIT_ED25519_PUBLIC_V1 = pub_b64
+            # Stash into the environment so child helpers that re-read from env
+            # (e.g. the Next.js .well-known handler in a dev pod) see the same
+            # value.  setdefault preserves any explicit operator override.
+            os.environ.setdefault("AUDIT_ED25519_PRIVATE_V1", priv_b64)
+            os.environ.setdefault("AUDIT_ED25519_PUBLIC_V1", pub_b64)
+
+        # --- Column-encryption KEK + BIDX keys (Phase 1.1) ---
+        if not self.AMG_KEK_KEYS:
+            if not self.DEBUG:
+                raise ValueError(
+                    "AMG_KEK_KEYS must be set in production (JSON dict of "
+                    "id->32-byte key, e.g. '{\"1\": \"<urlsafe-b64>\"}')."
+                )
+            from cryptography.hazmat.primitives import hashes as _h
+            from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF
+
+            dev_kek = _HKDF(
+                algorithm=_h.SHA256(),
+                length=32,
+                salt=None,
+                info=b"amg|kek|dev|v1",
+            ).derive(self.SECRET_KEY.encode("utf-8"))
+            self.AMG_KEK_KEYS = {1: base64.urlsafe_b64encode(dev_kek).decode("utf-8")}
+            self.CURRENT_KEK_ID = 1
+        if not self.AMG_BIDX_KEY_V1:
+            if not self.DEBUG:
+                raise ValueError(
+                    "AMG_BIDX_KEY_V1 must be set in production. 32 bytes urlsafe-b64."
+                )
+            from cryptography.hazmat.primitives import hashes as _h2
+            from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF2
+
+            dev_bidx = _HKDF2(
+                algorithm=_h2.SHA256(),
+                length=32,
+                salt=None,
+                info=b"amg|bidx|dev|v1",
+            ).derive(self.SECRET_KEY.encode("utf-8"))
+            self.AMG_BIDX_KEY_V1 = base64.urlsafe_b64encode(dev_bidx).decode("utf-8")
 
 
 settings = Settings()

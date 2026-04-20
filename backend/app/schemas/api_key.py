@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
+
 # Available API key scopes
 API_KEY_SCOPES = {
     "read:clients": "Read client information",
@@ -66,7 +68,7 @@ class APIKeyCreate(BaseModel):
     name: str = Field(
         min_length=1, max_length=100, description="A descriptive name for the API key"
     )
-    scopes: list[str] = Field(min_length=1, description="List of permission scopes")
+    scopes: list[Str100] = Field(min_length=1, description="List of permission scopes")
     expires_in_days: int | None = Field(
         default=None,
         ge=1,
@@ -93,9 +95,9 @@ class APIKeyResponse(BaseModel):
     """Response for an API key (without the actual key)."""
 
     id: UUID
-    name: str
-    key_prefix: str
-    scopes: list[str]
+    name: Str100
+    key_prefix: Str50
+    scopes: list[Str100]
     is_active: bool
     last_used_at: datetime | None = None
     expires_at: datetime | None = None
@@ -107,8 +109,8 @@ class APIKeyResponse(BaseModel):
 class APIKeyCreatedResponse(APIKeyResponse):
     """Response when an API key is first created (includes the actual key)."""
 
-    key: str = Field(description="The API key (shown only once!)")
-    warning: str = Field(
+    key: Str255 = Field(description="The API key (shown only once!)")
+    warning: Str500 = Field(
         default="This is the only time you will see this key. Store it securely!",
         description="Warning about key visibility",
     )
@@ -126,11 +128,11 @@ class APIKeyUsageLog(BaseModel):
 
     id: UUID
     api_key_id: UUID
-    endpoint: str
-    method: str
+    endpoint: Str500
+    method: Str50
     status_code: int
-    ip_address: str | None = None
-    user_agent: str | None = None
+    ip_address: Str50 | None = None
+    user_agent: Str2000 | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -147,8 +149,8 @@ class APIKeyUsageResponse(BaseModel):
 class ScopeInfo(BaseModel):
     """Information about an available scope."""
 
-    name: str
-    description: str
+    name: Str100
+    description: Str500
 
 
 class ScopesResponse(BaseModel):

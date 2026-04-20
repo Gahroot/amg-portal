@@ -5,15 +5,17 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
+
 # ─── Meeting Types ─────────────────────────────────────────────────────────────
 
 
 class MeetingTypeResponse(BaseModel):
     id: UUID
-    slug: str
-    label: str
+    slug: Str100
+    label: Str255
     duration_minutes: int
-    description: str | None = None
+    description: Str500 | None = None
     is_active: bool
     display_order: int
 
@@ -57,14 +59,14 @@ class RMAvailabilityResponse(BaseModel):
 
 class RMBlackoutCreate(BaseModel):
     blackout_date: date
-    reason: str | None = None
+    reason: Str500 | None = None
 
 
 class RMBlackoutResponse(BaseModel):
     id: UUID
     rm_id: UUID
     blackout_date: date
-    reason: str | None = None
+    reason: Str500 | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -98,24 +100,24 @@ class MeetingBook(BaseModel):
 
     meeting_type_id: UUID
     start_time: datetime
-    timezone: str = "UTC"
-    agenda: str | None = None
+    timezone: Str100 = "UTC"
+    agenda: Str2000 | None = None
 
 
 class MeetingCancelRequest(BaseModel):
-    reason: str | None = None
+    reason: Str2000 | None = None
 
 
 class MeetingRescheduleRequest(BaseModel):
     new_start_time: datetime
-    timezone: str | None = None
-    reason: str | None = None
+    timezone: Str100 | None = None
+    reason: Str2000 | None = None
 
 
 class MeetingTypeNestedResponse(BaseModel):
     id: UUID
-    slug: str
-    label: str
+    slug: Str100
+    label: Str255
     duration_minutes: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -130,13 +132,13 @@ class MeetingResponse(BaseModel):
     booked_by_user_id: UUID
     start_time: datetime
     end_time: datetime
-    timezone: str
-    status: str
-    agenda: str | None = None
-    notes: str | None = None
-    virtual_link: str | None = None
+    timezone: Str100
+    status: Str50
+    agenda: Str2000 | None = None
+    notes: Str2000 | None = None
+    virtual_link: Str500 | None = None
     cancelled_by_id: UUID | None = None
-    cancellation_reason: str | None = None
+    cancellation_reason: Str2000 | None = None
     reschedule_of_id: UUID | None = None
     scheduled_event_id: UUID | None = None
     created_at: datetime

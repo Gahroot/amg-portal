@@ -6,17 +6,18 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.schemas.base import Str50, Str100, Str255, Str2000
 from app.schemas.family_member import FamilyMemberCreate, FamilyMemberResponse
 
 
 class IntakeStep1Identity(BaseModel):
     """Step 1: Identity information."""
 
-    legal_name: str
-    display_name: str | None = None
-    entity_type: str | None = None
-    jurisdiction: str | None = None
-    tax_id: str | None = None
+    legal_name: Str255
+    display_name: Str255 | None = None
+    entity_type: Str100 | None = None
+    jurisdiction: Str100 | None = None
+    tax_id: Str100 | None = None
 
 
 class IntakeStep2Contact(BaseModel):
@@ -24,55 +25,55 @@ class IntakeStep2Contact(BaseModel):
 
     primary_email: EmailStr
     secondary_email: EmailStr | None = None
-    phone: str | None = None
-    address: str | None = None
+    phone: Str50 | None = None
+    address: Str2000 | None = None
 
 
 class IntakeStep3Preferences(BaseModel):
     """Step 3: Communication preferences."""
 
-    communication_preference: str | None = None
-    sensitivities: str | None = None
-    special_instructions: str | None = None
+    communication_preference: Str50 | None = None
+    sensitivities: Str2000 | None = None
+    special_instructions: Str2000 | None = None
 
 
 class IntakeStep4Lifestyle(BaseModel):
     """Step 4: Lifestyle and travel preferences."""
 
-    travel_preferences: str | None = None
-    dietary_restrictions: str | None = None
-    interests: str | None = None
+    travel_preferences: Str2000 | None = None
+    dietary_restrictions: Str2000 | None = None
+    interests: Str2000 | None = None
     preferred_destinations: list[str] | None = None
-    language_preference: str | None = None
+    language_preference: Str50 | None = None
 
 
 class IntakeFormData(BaseModel):
     """Complete intake form data."""
 
     # Step 1
-    legal_name: str
-    display_name: str | None = None
-    entity_type: str | None = None
-    jurisdiction: str | None = None
-    tax_id: str | None = None
+    legal_name: Str255
+    display_name: Str255 | None = None
+    entity_type: Str100 | None = None
+    jurisdiction: Str100 | None = None
+    tax_id: Str100 | None = None
 
     # Step 2
     primary_email: EmailStr
     secondary_email: EmailStr | None = None
-    phone: str | None = None
-    address: str | None = None
+    phone: Str50 | None = None
+    address: Str2000 | None = None
 
     # Step 3
-    communication_preference: str | None = None
-    sensitivities: str | None = None
-    special_instructions: str | None = None
+    communication_preference: Str50 | None = None
+    sensitivities: Str2000 | None = None
+    special_instructions: Str2000 | None = None
 
     # Step 4
-    travel_preferences: str | None = None
-    dietary_restrictions: str | None = None
-    interests: str | None = None
+    travel_preferences: Str2000 | None = None
+    dietary_restrictions: Str2000 | None = None
+    interests: Str2000 | None = None
     preferred_destinations: list[str] | None = None
-    language_preference: str | None = None
+    language_preference: Str50 | None = None
 
     # Step 5 - Family members
     family_members: list[FamilyMemberCreate] | None = None
@@ -82,29 +83,29 @@ class IntakeDraftData(BaseModel):
     """Draft intake form data (partial)."""
 
     # Step 1
-    legal_name: str | None = None
-    display_name: str | None = None
-    entity_type: str | None = None
-    jurisdiction: str | None = None
-    tax_id: str | None = None
+    legal_name: Str255 | None = None
+    display_name: Str255 | None = None
+    entity_type: Str100 | None = None
+    jurisdiction: Str100 | None = None
+    tax_id: Str100 | None = None
 
     # Step 2
-    primary_email: str | None = None
-    secondary_email: str | None = None
-    phone: str | None = None
-    address: str | None = None
+    primary_email: Str255 | None = None
+    secondary_email: Str255 | None = None
+    phone: Str50 | None = None
+    address: Str2000 | None = None
 
     # Step 3
-    communication_preference: str | None = None
-    sensitivities: str | None = None
-    special_instructions: str | None = None
+    communication_preference: Str50 | None = None
+    sensitivities: Str2000 | None = None
+    special_instructions: Str2000 | None = None
 
     # Step 4
-    travel_preferences: str | None = None
-    dietary_restrictions: str | None = None
-    interests: str | None = None
+    travel_preferences: Str2000 | None = None
+    dietary_restrictions: Str2000 | None = None
+    interests: Str2000 | None = None
     preferred_destinations: list[str] | None = None
-    language_preference: str | None = None
+    language_preference: Str50 | None = None
 
     # Step 5
     family_members: list[FamilyMemberCreate] | None = None
@@ -114,20 +115,20 @@ class IntakeFormResponse(BaseModel):
     """Response body for intake form."""
 
     id: UUID
-    legal_name: str
-    display_name: str | None = None
-    entity_type: str | None = None
-    jurisdiction: str | None = None
-    tax_id: str | None = None
-    primary_email: str
-    secondary_email: str | None = None
-    phone: str | None = None
-    address: str | None = None
-    communication_preference: str | None = None
-    sensitivities: str | None = None
-    special_instructions: str | None = None
-    compliance_status: str
-    approval_status: str
+    legal_name: Str255
+    display_name: Str255 | None = None
+    entity_type: Str100 | None = None
+    jurisdiction: Str100 | None = None
+    tax_id: Str100 | None = None
+    primary_email: Str255
+    secondary_email: Str255 | None = None
+    phone: Str50 | None = None
+    address: Str2000 | None = None
+    communication_preference: Str50 | None = None
+    sensitivities: Str2000 | None = None
+    special_instructions: Str2000 | None = None
+    compliance_status: Str50
+    approval_status: Str50
     intelligence_file: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime

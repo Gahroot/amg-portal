@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str2000
 from app.schemas.document import DocumentResponse
 
 
@@ -10,13 +11,13 @@ class KYCDocumentResponse(BaseModel):
     id: UUID
     client_id: UUID
     document_id: UUID
-    document_type: str
-    status: str
+    document_type: Str100
+    status: Str50
     expiry_date: date | None = None
     verified_by: UUID | None = None
     verified_at: datetime | None = None
-    rejection_reason: str | None = None
-    notes: str | None = None
+    rejection_reason: Str2000 | None = None
+    notes: Str2000 | None = None
     created_at: datetime
     updated_at: datetime
     document: DocumentResponse | None = None
@@ -30,6 +31,6 @@ class KYCDocumentListResponse(BaseModel):
 
 
 class KYCVerifyRequest(BaseModel):
-    status: str
-    rejection_reason: str | None = None
-    notes: str | None = None
+    status: Str50
+    rejection_reason: Str2000 | None = None
+    notes: Str2000 | None = None

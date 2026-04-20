@@ -4,12 +4,13 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.enums import CrmActivityType
+from app.schemas.base import Str255, TextStr
 
 
 class CrmActivityBase(BaseModel):
     type: CrmActivityType = CrmActivityType.note
     subject: str = Field(..., max_length=255)
-    body: str | None = None
+    body: TextStr | None = None
     occurred_at: datetime | None = None
     lead_id: UUID | None = None
     opportunity_id: UUID | None = None
@@ -27,15 +28,15 @@ class CrmActivityCreate(CrmActivityBase):
 class CrmActivityUpdate(BaseModel):
     type: CrmActivityType | None = None
     subject: str | None = Field(None, max_length=255)
-    body: str | None = None
+    body: TextStr | None = None
     occurred_at: datetime | None = None
 
 
 class CrmActivityResponse(BaseModel):
     id: UUID
     type: CrmActivityType
-    subject: str
-    body: str | None
+    subject: Str255
+    body: TextStr | None
     occurred_at: datetime
     lead_id: UUID | None
     opportunity_id: UUID | None

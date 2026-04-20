@@ -4,11 +4,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import TaskPriority, TaskStatus
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
 
 
 class TaskBoardCreate(BaseModel):
-    title: str
-    description: str | None = None
+    title: Str255
+    description: Str2000 | None = None
     milestone_id: UUID
     due_date: date | None = None
     assigned_to: UUID | None = None
@@ -17,8 +18,8 @@ class TaskBoardCreate(BaseModel):
 
 
 class TaskBoardUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
+    title: Str255 | None = None
+    description: Str2000 | None = None
     status: TaskStatus | None = None
     priority: TaskPriority | None = None
     due_date: date | None = None
@@ -28,25 +29,25 @@ class TaskBoardUpdate(BaseModel):
 
 class TaskReorder(BaseModel):
     task_id: UUID
-    new_status: str
+    new_status: Str50
     after_task_id: UUID | None = None  # Task to place after, None for first position
 
 
 class AssigneeInfo(BaseModel):
     id: UUID
-    name: str
-    email: str
+    name: Str255
+    email: Str255
 
 
 class ProgramInfo(BaseModel):
     id: UUID
-    title: str
-    status: str
+    title: Str255
+    status: Str50
 
 
 class MilestoneInfo(BaseModel):
     id: UUID
-    title: str
+    title: Str255
     program_id: UUID
 
 
@@ -57,10 +58,10 @@ class TaskDependencyUpdate(BaseModel):
 class TaskBoardResponse(BaseModel):
     id: UUID
     milestone_id: UUID
-    title: str
-    description: str | None
-    status: str
-    priority: str
+    title: Str255
+    description: Str2000 | None
+    status: Str50
+    priority: Str50
     due_date: date | None
     assigned_to: UUID | None
     assignee: AssigneeInfo | None = None
@@ -83,8 +84,8 @@ class TaskBoardListResponse(BaseModel):
 class TaskFilters(BaseModel):
     program_id: UUID | None = None
     assignee_id: UUID | None = None
-    status: str | None = None
-    priority: str | None = None
+    status: Str50 | None = None
+    priority: Str50 | None = None
     overdue_only: bool = False
 
 
@@ -103,8 +104,8 @@ class TaskBulkUpdate(BaseModel):
 
 
 class BulkUpdateFailure(BaseModel):
-    task_id: str
-    error: str
+    task_id: Str100
+    error: Str500
 
 
 class TaskBulkUpdateResult(BaseModel):

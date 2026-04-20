@@ -7,6 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255
 from app.schemas.user_preferences import UserPreferencesResponse
 
 
@@ -34,19 +35,19 @@ class EntityType(StrEnum):
 class SyncChange(BaseModel):
     """A single change to be synced."""
 
-    entity_type: str
+    entity_type: Str50
     entity_id: UUID | None = None
-    action: str
+    action: Str50
     payload: dict[str, Any] = Field(default_factory=dict)
     client_timestamp: datetime
     # Optional device ID (uses request-level device_id if not provided)
-    device_id: str | None = None
+    device_id: Str100 | None = None
 
 
 class SyncPushRequest(BaseModel):
     """Request to push changes from client to server."""
 
-    device_id: str
+    device_id: Str100
     changes: list[SyncChange]
     client_version: int
     # Last sync timestamp for incremental sync
@@ -68,7 +69,7 @@ class ReadStatusResponse(BaseModel):
 
     id: UUID
     user_id: UUID
-    entity_type: str
+    entity_type: Str50
     entity_id: UUID
     is_read: bool
     read_at: datetime | None = None
@@ -80,10 +81,10 @@ class ReadStatusResponse(BaseModel):
 class ReadStatusUpdate(BaseModel):
     """Request to update read status."""
 
-    entity_type: str
+    entity_type: Str50
     entity_id: UUID
     is_read: bool
-    device_id: str | None = None
+    device_id: Str100 | None = None
 
 
 class BatchReadStatusUpdate(BaseModel):
@@ -107,12 +108,12 @@ class DeviceSessionResponse(BaseModel):
     """Information about a device session."""
 
     id: UUID
-    device_id: str
-    device_type: str
-    device_name: str | None = None
+    device_id: Str100
+    device_type: Str50
+    device_name: Str255 | None = None
     last_seen_at: datetime
     is_active: bool
-    app_version: str | None = None
+    app_version: Str50 | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -120,18 +121,18 @@ class DeviceSessionResponse(BaseModel):
 class DeviceRegisterRequest(BaseModel):
     """Request to register a device session."""
 
-    device_id: str
+    device_id: Str100
     device_type: Literal["web", "ios", "android"]
-    device_name: str | None = None
-    user_agent: str | None = None
-    app_version: str | None = None
+    device_name: Str255 | None = None
+    user_agent: Str255 | None = None
+    app_version: Str50 | None = None
 
 
 class DeviceListResponse(BaseModel):
     """List of user's device sessions."""
 
     devices: list[DeviceSessionResponse]
-    current_device_id: str | None = None
+    current_device_id: Str100 | None = None
     total: int
 
 

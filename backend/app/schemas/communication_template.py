@@ -6,46 +6,48 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str255, Str500, Str2000, TextStr
+
 
 class VariableDefinition(BaseModel):
-    type: str  # string, number, date, boolean
-    description: str
-    default: str | None = None
+    type: Str50  # string, number, date, boolean
+    description: Str500
+    default: Str2000 | None = None
     required: bool = True
 
 
 class TemplateCreate(BaseModel):
-    name: str
-    template_type: str = "custom"
-    subject: str | None = None
-    body: str
+    name: Str255
+    template_type: Str50 = "custom"
+    subject: Str500 | None = None
+    body: TextStr
     variable_definitions: dict[str, VariableDefinition] | None = None
 
 
 class TemplateUpdate(BaseModel):
-    name: str | None = None
-    subject: str | None = None
-    body: str | None = None
+    name: Str255 | None = None
+    subject: Str500 | None = None
+    body: TextStr | None = None
     variable_definitions: dict[str, VariableDefinition] | None = None
     is_active: bool | None = None
 
 
 class TemplateStatusAction(BaseModel):
     action: Literal["submit", "approve", "reject"]
-    reason: str | None = None
+    reason: Str2000 | None = None
 
 
 class TemplateResponse(BaseModel):
     id: UUID
-    name: str
-    template_type: str
-    subject: str | None = None
-    body: str
+    name: Str255
+    template_type: Str50
+    subject: Str500 | None = None
+    body: TextStr
     variable_definitions: dict[str, Any] | None = None
     is_active: bool
     is_system: bool
-    status: str = "draft"
-    rejection_reason: str | None = None
+    status: Str50 = "draft"
+    rejection_reason: Str2000 | None = None
     reviewed_by: UUID | None = None
     reviewed_at: datetime | None = None
     created_by: UUID | None = None
@@ -66,5 +68,5 @@ class TemplateRenderRequest(BaseModel):
 
 
 class TemplateRenderResponse(BaseModel):
-    subject: str | None = None
-    body: str
+    subject: Str500 | None = None
+    body: TextStr

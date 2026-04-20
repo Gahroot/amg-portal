@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str100, Str500, Str2000
+
 
 class CalendarFeedTokenCreate(BaseModel):
     """Request body for creating a new calendar feed token."""
@@ -20,7 +22,7 @@ class CalendarFeedTokenResponse(BaseModel):
     """Response for a calendar feed token (without the actual token for list views)."""
 
     id: UUID
-    name: str
+    name: Str100
     is_active: bool
     last_accessed_at: datetime | None = None
     created_at: datetime
@@ -32,9 +34,9 @@ class CalendarFeedTokenResponse(BaseModel):
 class CalendarFeedTokenCreatedResponse(CalendarFeedTokenResponse):
     """Response when a feed token is first created (includes the full URL)."""
 
-    feed_url: str = Field(description="The full iCal subscription URL")
-    token: str = Field(description="The feed token (shown only once!)")
-    warning: str = Field(
+    feed_url: Str2000 = Field(description="The full iCal subscription URL")
+    token: Str500 = Field(description="The feed token (shown only once!)")
+    warning: Str500 = Field(
         default="This is the only time you will see the full URL. Store it securely!",
         description="Warning about URL visibility",
     )
@@ -45,7 +47,9 @@ class CalendarFeedStatusResponse(BaseModel):
 
     has_active_token: bool
     active_token: CalendarFeedTokenResponse | None = None
-    feed_url: str | None = Field(default=None, description="The feed URL (only if token exists)")
+    feed_url: Str2000 | None = Field(
+        default=None, description="The feed URL (only if token exists)"
+    )
 
 
 class CalendarFeedFilterOptions(BaseModel):

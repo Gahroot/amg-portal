@@ -76,6 +76,7 @@ from app.services.email_service import (
     send_password_reset_email,
     send_registration_account_exists_email,
 )
+from app.services.hibp import enforce_not_pwned
 from app.services.mfa_service import (
     generate_backup_codes,
     generate_provisioning_uri,
@@ -257,6 +258,8 @@ async def register(data: UserCreate, db: DB) -> dict[str, str]:
     Timing of the two branches is kept roughly uniform by hashing the password
     in both cases (bcrypt dominates the wall-clock cost of the endpoint).
     """
+    await enforce_not_pwned(data.password)
+
     # Always run the password hash — even on the duplicate branch — so an
     # attacker cannot distinguish "email taken" from "email free" via timing.
     hashed = hash_password(data.password)
@@ -307,8 +310,13 @@ async def login(data: LoginRequest, db: DB, response: Response) -> Any:
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(data.password, user.hashed_password):
+    ok, needs_rehash = (
+        verify_password(data.password, user.hashed_password) if user else (False, False)
+    )
+    if not user or not ok:
         raise UnauthorizedException("Invalid email or password")
+    if needs_rehash:
+        user.hashed_password = hash_password(data.password)
 
     if user.status != "active":
         raise ForbiddenException("Account is not active")
@@ -499,9 +507,11 @@ async def change_password(
     current_user: CurrentUser,
     db: DB,
 ) -> None:
-    if not verify_password(data.current_password, current_user.hashed_password):
+    ok, _ = verify_password(data.current_password, current_user.hashed_password)
+    if not ok:
         raise BadRequestException("Current password is incorrect")
 
+    await enforce_not_pwned(data.new_password)
     current_user.hashed_password = hash_password(data.new_password)
 
     # Revoke all active refresh tokens so sessions using the old password
@@ -594,6 +604,8 @@ async def reset_password(data: ResetPasswordRequest, db: DB) -> None:
 
     if not user:
         raise BadRequestException("Invalid reset token")
+
+    await enforce_not_pwned(data.new_password)
 
     # Consume the token before updating the password so concurrent requests fail
     prt.is_used = True

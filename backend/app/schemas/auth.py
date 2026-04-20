@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import UserRole
+from app.schemas.base import Str10, Str50, Str100, Str255, Str500, Str2000, TextStr
 
 _RE_UPPER = re.compile(r"[A-Z]")
 _RE_LOWER = re.compile(r"[a-z]")
@@ -28,15 +29,15 @@ def _validate_password_strength(v: str) -> str:
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
-    mfa_code: str | None = None
+    email: Str255
+    password: Str255
+    mfa_code: Str50 | None = None
 
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
-    full_name: str
+    password: str = Field(min_length=8, max_length=255)
+    full_name: Str255
 
     @field_validator("password")
     @classmethod
@@ -46,11 +47,11 @@ class UserCreate(BaseModel):
 
 class UserResponse(BaseModel):
     id: UUID
-    email: str
-    full_name: str
-    phone_number: str | None = None
+    email: Str255
+    full_name: Str255
+    phone_number: Str50 | None = None
     role: UserRole
-    status: str
+    status: Str50
     mfa_enabled: bool = False
     last_login_at: datetime | None = None
     created_at: datetime
@@ -60,32 +61,32 @@ class UserResponse(BaseModel):
 
 
 class Token(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
+    access_token: Str2000
+    refresh_token: Str2000
+    token_type: Str50 = "bearer"
     mfa_required: bool = False
     mfa_setup_required: bool = False
-    mfa_setup_token: str | None = None
+    mfa_setup_token: Str2000 | None = None
 
 
 class MFASetupResponse(BaseModel):
-    secret: str
-    provisioning_uri: str
-    qr_code_base64: str
-    backup_codes: list[str]
+    secret: Str255
+    provisioning_uri: Str500
+    qr_code_base64: TextStr
+    backup_codes: list[Str50]
 
 
 class MFAVerifyRequest(BaseModel):
-    code: str
+    code: Str50
 
 
 class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+    refresh_token: Str2000
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=8)
+    current_password: Str255
+    new_password: str = Field(min_length=8, max_length=255)
 
     @field_validator("new_password")
     @classmethod
@@ -98,8 +99,8 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str = Field(min_length=8)
+    token: Str500
+    new_password: str = Field(min_length=8, max_length=255)
 
     @field_validator("new_password")
     @classmethod
@@ -110,24 +111,24 @@ class ResetPasswordRequest(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     """Request body for updating user profile."""
 
-    full_name: str | None = None
-    phone_number: str | None = None
+    full_name: Str255 | None = None
+    phone_number: Str50 | None = None
 
 
 class UserNotificationPreferencesResponse(BaseModel):
     """Response body for user notification preferences."""
 
     digest_enabled: bool
-    digest_frequency: str
+    digest_frequency: Str50
     notification_type_preferences: dict[str, str] | None = None
     channel_preferences: dict[str, bool] | None = None
     quiet_hours_enabled: bool
-    quiet_hours_start: str | None = None
-    quiet_hours_end: str | None = None
-    timezone: str
+    quiet_hours_start: Str10 | None = None
+    quiet_hours_end: Str10 | None = None
+    timezone: Str100
     # Milestone reminder preferences
     milestone_reminder_days: list[int] | None = None
-    milestone_reminder_channels: list[str] | None = None
+    milestone_reminder_channels: list[Str50] | None = None
     milestone_reminder_program_overrides: dict[str, object] | None = None
 
 
@@ -135,14 +136,14 @@ class UserNotificationPreferencesUpdate(BaseModel):
     """Request body for updating user notification preferences."""
 
     digest_enabled: bool | None = None
-    digest_frequency: str | None = None
+    digest_frequency: Str50 | None = None
     notification_type_preferences: dict[str, str] | None = None
     channel_preferences: dict[str, bool] | None = None
     quiet_hours_enabled: bool | None = None
-    quiet_hours_start: str | None = None
-    quiet_hours_end: str | None = None
-    timezone: str | None = None
+    quiet_hours_start: Str10 | None = None
+    quiet_hours_end: Str10 | None = None
+    timezone: Str100 | None = None
     # Milestone reminder preferences
     milestone_reminder_days: list[int] | None = None
-    milestone_reminder_channels: list[str] | None = None
+    milestone_reminder_channels: list[Str50] | None = None
     milestone_reminder_program_overrides: dict[str, object] | None = None

@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str255, Str2000
+
 
 class TimelineEventType(StrEnum):
     """Types of events that appear on the client timeline."""
@@ -25,15 +27,15 @@ class TimelineEventResponse(BaseModel):
 
     id: UUID
     event_type: TimelineEventType
-    title: str
-    description: str | None = None
+    title: Str255
+    description: Str2000 | None = None
     occurred_at: datetime
     metadata: dict[str, Any] = {}
     # For linking to detail views
     entity_id: UUID | None = None
-    entity_type: str | None = None
+    entity_type: Str50 | None = None
     # Actor info
-    actor_name: str | None = None
+    actor_name: Str255 | None = None
     actor_id: UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -50,5 +52,5 @@ class TimelineListResponse(BaseModel):
 class TimelineExportResponse(BaseModel):
     """Response for timeline export."""
 
-    file_url: str
-    file_name: str
+    file_url: Str2000
+    file_name: Str255
