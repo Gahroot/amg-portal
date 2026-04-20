@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, LargeBinary, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,7 +33,11 @@ class Communication(Base, TimestampMixin):
     # Recipients: {"user_id": {"role": "to/cc/bcc"}}
     recipients: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     subject: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    body: Mapped[str] = mapped_column(Text, nullable=False)
+    # Plaintext body is nullable during the Phase 2.7 migration window.
+    # New rows carry the ciphertext in ``body_ciphertext``; legacy rows keep
+    # plaintext in ``body`` until the backfill migration runs.
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body_ciphertext: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     attachment_ids: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)  # Document IDs
     # Context fields for filtering/reporting
     client_id: Mapped[uuid.UUID | None] = mapped_column(

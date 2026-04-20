@@ -1,18 +1,22 @@
 import asyncio
 import logging
 import uuid
-from datetime import timedelta
+from collections.abc import Iterator
+from datetime import datetime, timedelta
 from io import BytesIO
 
 import filetype
 from fastapi import UploadFile
 from fastapi.concurrency import run_in_threadpool
 from minio import Minio
+from minio.commonconfig import COMPLIANCE
+from minio.retention import Retention
 from minio.sseconfig import Rule, SSEConfig
 from minio.versioningconfig import VersioningConfig
 
 from app.core.config import settings
 from app.core.exceptions import BadRequestException
+from app.core.file_crypto import EnvelopeMetadata, decrypt_stream, encrypt_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +129,17 @@ def _verify_magic_bytes(declared_mime: str, contents: bytes) -> None:
         )
 
 
+class DocumentRetention:
+    """Object Lock retention window for an upload (Phase 2.3).
+
+    Always COMPLIANCE mode — GOVERNANCE can be bypassed by a root key and
+    provides no meaningful protection for IR evidence / KYC material.
+    """
+
+    def __init__(self, retain_until_date: datetime) -> None:
+        self.retain_until_date = retain_until_date
+
+
 class StorageService:
     def __init__(self) -> None:
         self.client = Minio(
@@ -165,7 +180,11 @@ class StorageService:
         def _init() -> None:
             try:
                 if not self.client.bucket_exists(self.bucket):
-                    self.client.make_bucket(self.bucket)
+                    # Enable object lock at creation — required for COMPLIANCE
+                    # retention on sensitive category uploads (Phase 2.3).  On
+                    # MinIO this is a no-op for legacy buckets created without
+                    # ``object_lock=True``; we never retro-enable.
+                    self.client.make_bucket(self.bucket, object_lock=True)
             except Exception:
                 logger.warning(
                     "Could not check/create bucket '%s' — it may be externally managed",
@@ -323,6 +342,107 @@ class StorageService:
     async def delete_file(self, object_name: str) -> None:
         """Delete a file from MinIO."""
         await run_in_threadpool(lambda: self.client.remove_object(self.bucket, object_name))
+
+    # ── Phase 2.1 — client-side envelope encryption ─────────────────────────
+    #
+    # ``upload_encrypted_bytes`` encrypts plaintext with a per-file DEK derived
+    # from the tenant/subject KEK, uploads the envelope blob, and returns the
+    # metadata to persist on the document row.  Callers should validate +
+    # ClamAV-scan plaintext *before* encrypting, never after.
+
+    async def upload_encrypted_bytes(
+        self,
+        object_name: str,
+        plaintext: bytes,
+        *,
+        file_uuid: uuid.UUID,
+        subject_id: uuid.UUID,
+        content_type: str | None = None,
+        retention: DocumentRetention | None = None,
+    ) -> EnvelopeMetadata:
+        """Encrypt + upload plaintext; return the envelope metadata.
+
+        The stored object's media type is ``application/octet-stream`` — the
+        ciphertext is opaque.  Original content type lives on the document row.
+        """
+        await self._ensure_bucket()
+        blob, meta = encrypt_bytes(
+            plaintext, file_uuid=file_uuid, subject_id=subject_id
+        )
+
+        metadata: dict[str, str | list[str] | tuple[str]] = {
+            "x-amz-meta-kek-version": str(meta.kek_version),
+            "x-amz-meta-sha256": meta.sha256_plaintext,
+            "x-amz-meta-envelope": "aes-256-gcm-chunked-v1",
+        }
+        if content_type:
+            metadata["x-amz-meta-original-content-type"] = content_type
+        lock: Retention | None = None
+        if retention is not None:
+            lock = Retention(
+                mode=COMPLIANCE, retain_until_date=retention.retain_until_date
+            )
+
+        def _put() -> None:
+            self.client.put_object(
+                self.bucket,
+                object_name,
+                BytesIO(blob),
+                len(blob),
+                content_type="application/octet-stream",
+                metadata=metadata,
+                retention=lock,
+            )
+
+        await run_in_threadpool(_put)
+        return meta
+
+    async def download_encrypted_bytes(
+        self,
+        object_name: str,
+        *,
+        file_uuid: uuid.UUID,
+        subject_id: uuid.UUID,
+    ) -> bytes:
+        """Fetch + decrypt the full blob into memory."""
+        from app.core.file_crypto import decrypt_blob
+
+        ciphertext = await self.download_file(object_name)
+        return decrypt_blob(
+            ciphertext, file_uuid=file_uuid, subject_id=subject_id
+        )
+
+    async def fetch_ciphertext(self, object_name: str) -> bytes:
+        """Fetch the raw ciphertext blob from MinIO into memory."""
+
+        def _load() -> bytes:
+            resp = self.client.get_object(self.bucket, object_name)
+            try:
+                return bytes(resp.read())
+            finally:
+                resp.close()
+                resp.release_conn()
+
+        return await run_in_threadpool(_load)
+
+    def iter_decrypted_chunks(
+        self,
+        ciphertext: bytes,
+        *,
+        file_uuid: uuid.UUID,
+        subject_id: uuid.UUID,
+    ) -> Iterator[bytes]:
+        """Yield plaintext 1 MiB chunks from an envelope blob.
+
+        Used by the proxy-through download route (Phase 2.4).  The ciphertext
+        is expected to have been fetched up-front (``fetch_ciphertext``); a
+        true streaming decrypt would need lock-step reads between MinIO and
+        ``decrypt_stream`` across an async boundary — deferred to when files
+        exceed memory headroom.
+        """
+        yield from decrypt_stream(
+            BytesIO(ciphertext), file_uuid=file_uuid, subject_id=subject_id
+        )
 
 
 storage_service = StorageService()

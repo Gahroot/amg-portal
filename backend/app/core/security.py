@@ -91,6 +91,94 @@ def decode_mfa_setup_token(token: str) -> dict[str, Any] | None:
         return None
 
 
+# ── Step-up auth (Phase 2.10) ───────────────────────────────
+# Short-lived tokens bound to a list of sensitive actions.  Obtained by
+# re-authenticating via TOTP, passkey, or break-glass approval; consumed
+# by the ``require_step_up`` dependency (Phase 2.11).
+
+
+def create_step_up_token(
+    data: dict[str, Any],
+    *,
+    action_scope: list[str],
+    ttl_minutes: int | None = None,
+) -> str:
+    """Create a short-lived JWT authorising a specific sensitive action.
+
+    ``action_scope`` is a list of action identifiers (e.g. ``["view_pii"]``,
+    ``["wire_approve"]``).  ``require_step_up(action=...)`` dependencies
+    verify the requested action is in the token's scope.
+    """
+    to_encode = data.copy()
+    minutes = ttl_minutes if ttl_minutes is not None else settings.STEP_UP_TOKEN_EXPIRE_MINUTES
+    expire = datetime.now(UTC) + timedelta(minutes=minutes)
+    to_encode.update(
+        {
+            "exp": expire,
+            "type": "step_up",
+            "action_scope": list(action_scope),
+        }
+    )
+    algorithm = _validate_algorithm()
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=algorithm)
+
+
+def decode_step_up_token(token: str) -> dict[str, Any] | None:
+    """Decode a step-up JWT; return the payload iff type=='step_up' and valid."""
+    try:
+        algorithm = _validate_algorithm()
+        payload: dict[str, Any] = jwt.decode(token, settings.SECRET_KEY, algorithms=[algorithm])
+        if payload.get("type") != "step_up":
+            return None
+        return payload
+    except jwt.exceptions.InvalidTokenError:
+        return None
+
+
+# ── Break-glass scoped tokens (Phase 2.8) ───────────────────
+# Issued after a compliance break-glass approval, binds a user to a
+# specific conversation/document for decryption-audit purposes.
+
+
+def create_break_glass_token(
+    data: dict[str, Any],
+    *,
+    action_scope: list[str],
+    resource_ids: list[str],
+    justification: str,
+    ttl_minutes: int | None = None,
+) -> str:
+    to_encode = data.copy()
+    minutes = (
+        ttl_minutes
+        if ttl_minutes is not None
+        else settings.BREAK_GLASS_TOKEN_EXPIRE_MINUTES
+    )
+    expire = datetime.now(UTC) + timedelta(minutes=minutes)
+    to_encode.update(
+        {
+            "exp": expire,
+            "type": "break_glass",
+            "action_scope": list(action_scope),
+            "resource_ids": list(resource_ids),
+            "justification": justification,
+        }
+    )
+    algorithm = _validate_algorithm()
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=algorithm)
+
+
+def decode_break_glass_token(token: str) -> dict[str, Any] | None:
+    try:
+        algorithm = _validate_algorithm()
+        payload: dict[str, Any] = jwt.decode(token, settings.SECRET_KEY, algorithms=[algorithm])
+        if payload.get("type") != "break_glass":
+            return None
+        return payload
+    except jwt.exceptions.InvalidTokenError:
+        return None
+
+
 def decode_refresh_token(token: str) -> dict[str, Any] | None:
     try:
         algorithm = _validate_algorithm()

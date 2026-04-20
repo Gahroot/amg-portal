@@ -112,3 +112,23 @@ def blind_index(value: str) -> bytes:
     normalized = unicodedata.normalize("NFKC", value).strip().lower()
     key = _decode_key(settings.AMG_BIDX_KEY_V1)
     return hmac.new(key, normalized.encode("utf-8"), hashlib.sha256).digest()[:16]
+
+
+# ── Subject-scoped DEK derivation for crypto-shred (Phase 2.6 / 2.14) ─
+
+def derive_subject_dek(subject_id: UUID, subject_version: int, column: str) -> tuple[bytes, int]:
+    """HKDF a DEK bound to ``(subject_id, subject_version, column)``.
+
+    Bumping ``subject_version`` permanently invalidates every ciphertext
+    encrypted under the old version — the new DEK is unrelated.  This is
+    the primitive ``crypto_shred_subject`` stands on: shred = bump the
+    version + purge the plaintext copies (we keep no plaintext).
+    """
+    crypto = get_crypto()
+    key_id = crypto.current_kek_id
+    kek = crypto.unwrap_kek(key_id)
+    info = (
+        f"amg|subject|{subject_id}|v{subject_version}|col|{column}"
+    ).encode()
+    hkdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=info)
+    return hkdf.derive(kek), key_id

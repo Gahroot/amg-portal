@@ -67,6 +67,46 @@ class Settings(BaseSettings):
     # Password Reset
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
 
+    # Step-up auth (Phase 2.10) — short-lived scoped tokens for sensitive
+    # actions (view PII, wire approve, program delete, MFA change, etc.).
+    STEP_UP_TOKEN_EXPIRE_MINUTES: int = 5
+
+    # Break-glass compliance access (Phase 2.8) — longer window because the
+    # approval workflow is manual and we do not want staff to re-run approval
+    # mid-session.  Every use emits an audit-chain row regardless of TTL.
+    BREAK_GLASS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Idle timeout on refresh tokens (Phase 2.12).  ``None`` disables the
+    # check; production should leave this at 30 min to match the plan.
+    REFRESH_TOKEN_IDLE_TIMEOUT_MINUTES: int | None = 30
+
+    # ClamAV (Phase 2.2).  ``CLAMAV_HOST`` empty disables scanning —
+    # uploads skip the scan and the clam_result column is stamped
+    # "disabled".  Production must set these.
+    CLAMAV_HOST: str = ""
+    CLAMAV_PORT: int = 3310
+    CLAMAV_TIMEOUT_SECONDS: float = 30.0
+    CLAMAV_FAIL_OPEN: bool = False  # When scanner unreachable: allow upload?
+
+    # One-time-redemption download tokens (Phase 2.5).
+    DOWNLOAD_TOKEN_TTL_SECONDS: int = 120
+    DOWNLOAD_PROXY_THRESHOLD_BYTES: int = 50 * 1024 * 1024  # 50 MB — above this use redemption
+
+    # Object Lock retention defaults per category (Phase 2.3).
+    OBJECT_LOCK_KYC_YEARS: int = 7
+    OBJECT_LOCK_CONTRACT_YEARS: int = 7
+    OBJECT_LOCK_IR_EVIDENCE_YEARS: int = 10
+
+    # WebAuthn / passkeys (Phase 2.9).  ``WEBAUTHN_RP_ID`` is the effective
+    # domain (no scheme/port) that scopes credentials; ``WEBAUTHN_RP_NAME``
+    # is the display name shown in browser prompts.  ``WEBAUTHN_ORIGINS`` is
+    # the list of origin strings accepted during verification (cross-origin
+    # deploys need both frontend + backend).
+    WEBAUTHN_RP_ID: str = "localhost"
+    WEBAUTHN_RP_NAME: str = "AMG Portal"
+    WEBAUTHN_ORIGINS: list[str] = ["http://localhost:3000"]
+    WEBAUTHN_CHALLENGE_TTL_SECONDS: int = 300
+
     # Trusted reverse proxies (CIDR or exact IPs).
     # X-Forwarded-For is only trusted when the direct connection comes from one of these.
     # Example: ["127.0.0.1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]

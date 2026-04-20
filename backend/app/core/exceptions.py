@@ -148,8 +148,30 @@ async def validation_exception_handler(
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """Handler for FastAPI HTTPException — normalises shape to match AppException."""
-    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    """Handler for FastAPI HTTPException — normalises shape to match AppException.
+
+    Dict details (e.g. ``StepUpRequired.detail = {"error": "step_up_required",
+    "action": ...}``) have well-known marker fields hoisted to the top level
+    so interceptors don't have to dig into a nested ``detail`` key.
+    Stringifying them would break the step-up retry flow.
+    """
+    raw_detail = exc.detail
+    if isinstance(raw_detail, dict):
+        content: dict[str, object] = {
+            "message": _sanitize_error_message(
+                str(raw_detail.get("message") or raw_detail.get("error") or "Error")
+            ),
+            "details": None,
+        }
+        for passthrough in ("error", "action", "action_scope"):
+            if passthrough in raw_detail:
+                content[passthrough] = raw_detail[passthrough]
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=content,
+            headers=getattr(exc, "headers", None),
+        )
+    detail = raw_detail if isinstance(raw_detail, str) else str(raw_detail)
     return JSONResponse(
         status_code=exc.status_code,
         content={"message": _sanitize_error_message(detail), "details": None},

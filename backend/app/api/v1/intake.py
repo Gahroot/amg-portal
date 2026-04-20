@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DB, CurrentUser, require_rm_or_above
+from app.api.deps import DB, CurrentUser, require_rm_or_above, require_step_up
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.enums import ApprovalStatus, ComplianceStatus
@@ -174,7 +174,10 @@ async def submit_intake_form(
 @router.get(
     "/intake/{profile_id}/draft",
     response_model=IntakeFormResponse,
-    dependencies=[Depends(require_rm_or_above)],
+    dependencies=[
+        Depends(require_rm_or_above),
+        Depends(require_step_up("view_pii")),
+    ],
 )
 async def get_draft_intake(
     profile_id: uuid.UUID,

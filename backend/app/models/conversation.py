@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,15 @@ class Conversation(Base, TimestampMixin):
         ARRAY(UUID(as_uuid=True)), nullable=False, default=list
     )
     last_activity_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Phase 2.7 — per-conversation DEK.  Each conversation has a DEK that is
+    # HKDF-derived from the tenant KEK (``crypto.derive_dek(kek, conv_id, "msg")``).
+    # ``dek_key_id`` is populated on first message; ``dek_rotated_at`` is
+    # bumped when membership changes or an operator schedules rotation.
+    dek_key_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dek_rotated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

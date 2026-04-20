@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { AxiosRequestConfig } from "axios";
 
 import { API_BASE_URL } from "@/lib/config";
 import {
@@ -10,6 +11,14 @@ import {
   setTokens,
   removeTokens,
 } from "@/lib/token-storage";
+
+const STEP_UP_HEADER = "X-Step-Up-Token";
+
+type RetriedRequestConfig = AxiosRequestConfig & {
+  _retry?: boolean;
+  _stepUpRetry?: boolean;
+  _skipStepUp?: boolean;
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -36,6 +45,24 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+function extractStepUpAction(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  // Custom exception body shape: { error, message, detail: {...} } — the
+  // step-up marker may live on either `data.error` or `data.detail.error`.
+  const root = data as Record<string, unknown>;
+  if (root.error === "step_up_required" && typeof root.action === "string") {
+    return root.action;
+  }
+  const detail = root.detail;
+  if (detail && typeof detail === "object") {
+    const d = detail as Record<string, unknown>;
+    if (d.error === "step_up_required" && typeof d.action === "string") {
+      return d.action;
+    }
+  }
+  return null;
+}
 
 export function logout(): void {
   // Fire-and-forget: ask the server to clear httpOnly cookies
@@ -67,15 +94,43 @@ const processQueue = (error: Error | null = null) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as RetriedRequestConfig;
 
     // Extract backend error message for all errors (unified `message` field,
     // with `detail` fallback for any non-custom responses)
     const data = error.response?.data;
+    const stepUpAction = extractStepUpAction(data);
     if (data?.message) {
       error.message = data.message;
-    } else if (data?.detail) {
+    } else if (typeof data?.detail === "string") {
       error.message = data.detail;
+    } else if (data?.detail?.message) {
+      error.message = data.detail.message;
+    }
+
+    // Step-up re-auth (RFC 9470): the backend returns 401 with
+    // ``detail.error === "step_up_required"`` and ``detail.action`` naming
+    // the scope that's missing. Prompt the user, then retry once with
+    // ``X-Step-Up-Token``.
+    if (
+      error.response?.status === 401 &&
+      stepUpAction &&
+      !originalRequest._stepUpRetry &&
+      !originalRequest._skipStepUp
+    ) {
+      const { useStepUpStore } = await import("@/stores/step-up");
+      const store = useStepUpStore.getState();
+      const cached = store.getValidToken(stepUpAction);
+      const token = cached ?? (await store.requestToken(stepUpAction));
+      if (!token) {
+        return Promise.reject(error);
+      }
+      originalRequest._stepUpRetry = true;
+      originalRequest.headers = {
+        ...(originalRequest.headers ?? {}),
+        [STEP_UP_HEADER]: token,
+      };
+      return api(originalRequest);
     }
 
     // Skip interceptor for the refresh endpoint itself to avoid deadlocks

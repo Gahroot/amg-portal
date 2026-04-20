@@ -1,5 +1,6 @@
 """Service for communication/message operations."""
 
+import contextlib
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -21,8 +22,35 @@ from app.models.enums import (
 from app.models.user import User
 from app.schemas.communication import CommunicationCreate, SendMessageRequest
 from app.services.crud_base import CRUDBase
+from app.services.message_crypto import decrypt_body, encrypt_body
 
 logger = logging.getLogger(__name__)
+
+
+def _attach_plaintext_body(db: AsyncSession, msg: Communication) -> None:
+    """Decrypt ``body_ciphertext`` into ``msg.body`` for response serialisation.
+
+    Legacy rows (``body_ciphertext is None``) are left untouched — their
+    plaintext still lives in ``body``.  For encrypted rows the mutation is
+    applied after detaching from the session so the transient plaintext
+    can never flush back to the database.
+    """
+    if msg.body_ciphertext is None:
+        return
+    # Detach BEFORE mutating so the plaintext assignment is not tracked.
+    # Safe to suppress: already-detached or never-attached is the no-op case.
+    with contextlib.suppress(Exception):
+        db.expunge(msg)
+    try:
+        msg.body = decrypt_body(
+            msg.body_ciphertext,
+            conversation_id=msg.conversation_id,  # type: ignore[arg-type]
+            sender_id=msg.sender_id,
+            message_id=msg.id,
+        )
+    except Exception:
+        logger.exception("Failed to decrypt message body for %s", msg.id)
+        msg.body = ""
 
 
 class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str, Any]]):
@@ -64,13 +92,32 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
             if conversation:
                 conversation.last_activity_at = datetime.now(UTC)
 
-        # Create communication
+        # Phase 2.7 — encrypt body per conversation.  Messages with no
+        # conversation_id (broadcast-style template sends) skip encryption.
+        plaintext_body = data.body
+        message_id = uuid.uuid4()
+        ciphertext: bytes | None = None
+        if data.conversation_id:
+            ciphertext, key_id = encrypt_body(
+                plaintext_body,
+                conversation_id=data.conversation_id,
+                sender_id=sender_id,
+                message_id=message_id,
+            )
+            if conversation is not None and conversation.dek_key_id is None:
+                conversation.dek_key_id = key_id
+
+        # Create communication.  When encrypted, ``body`` is left NULL —
+        # the plaintext lives only in ``body_ciphertext`` (and is re-populated
+        # in-memory below for the response).
         communication = Communication(
+            id=message_id,
             conversation_id=data.conversation_id,
             channel="in_portal",
             status="sent",
             sender_id=sender_id,
-            body=data.body,
+            body=None if ciphertext is not None else plaintext_body,
+            body_ciphertext=ciphertext,
             attachment_ids=data.attachment_ids,
             sent_at=datetime.now(UTC),
         )
@@ -101,6 +148,12 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 logger.exception(
                     "Failed to handle SLA tracking for conversation %s", conversation.id
                 )
+
+        # Populate plaintext body in-memory for the response and broadcast.
+        # Detach from the session first so this never flushes back to the DB.
+        if ciphertext is not None:
+            db.expunge(communication)
+            communication.body = plaintext_body
 
         # Broadcast via WebSocket to all participants
         if conversation and communication:
@@ -296,6 +349,12 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         total = (await db.execute(count_query)).scalar_one()
         result = await db.execute(query.offset(skip).limit(limit))
         messages = list(result.scalars().all())
+
+        # Phase 2.7 — decrypt ciphertext bodies into in-memory ``body`` for
+        # the response.  Detach each row from the session so the mutation
+        # cannot leak back to the DB on a later flush.
+        for msg in messages:
+            _attach_plaintext_body(db, msg)
 
         return messages, total
 
@@ -495,6 +554,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 communication_id,
             )
 
+        _attach_plaintext_body(db, communication)
         return communication
 
     async def review_communication(
@@ -569,6 +629,7 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
                 communication_id,
             )
 
+        _attach_plaintext_body(db, communication)
         return communication
 
     async def get_pending_reviews(
@@ -588,6 +649,8 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         total = (await db.execute(count_query)).scalar_one()
         result = await db.execute(query.offset(skip).limit(limit))
         messages = list(result.scalars().all())
+        for msg in messages:
+            _attach_plaintext_body(db, msg)
         return messages, total
 
     async def get_communications_by_approval_status(
@@ -612,6 +675,8 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
         total = (await db.execute(count_query)).scalar_one()
         result = await db.execute(query.offset(skip).limit(limit))
         messages = list(result.scalars().all())
+        for msg in messages:
+            _attach_plaintext_body(db, msg)
         return messages, total
 
     async def broadcast_new_message(

@@ -1,7 +1,7 @@
 """API dependencies — auth + RBAC."""
 
 import uuid
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
@@ -9,7 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit_context import audit_context_var
-from app.core.security import decode_access_token, decode_mfa_setup_token
+from app.core.security import (
+    decode_access_token,
+    decode_break_glass_token,
+    decode_mfa_setup_token,
+    decode_step_up_token,
+)
 from app.db.session import apply_rls_context, get_db
 from app.models.enums import UserRole
 from app.models.user import User
@@ -269,3 +274,75 @@ async def get_budget_approval_service(db: DB) -> BudgetApprovalService:
 
 
 BudgetApprovalServiceDep = Annotated[BudgetApprovalService, Depends(get_budget_approval_service)]
+
+
+# ── Step-up auth (Phase 2.10 / 2.11) ────────────────────────
+#
+# ``require_step_up(action="view_pii")`` returns a dependency that accepts the
+# request only when an ``X-Step-Up-Token`` header carries a valid step-up JWT
+# whose subject matches the authenticated user *and* whose ``action_scope``
+# includes ``action``.  Used to gate sensitive operations — PII reads, wire
+# approvals, destructive admin actions, bulk export, MFA changes.
+
+
+STEP_UP_HEADER = "X-Step-Up-Token"
+BREAK_GLASS_HEADER = "X-Break-Glass-Token"
+
+
+class StepUpRequired(HTTPException):
+    """401 with a ``WWW-Authenticate`` hint per RFC 9470 semantics."""
+
+    def __init__(self, action: str, message: str = "Step-up authentication required") -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": "step_up_required", "action": action, "message": message},
+            headers={
+                "WWW-Authenticate": (
+                    f'Bearer error="insufficient_user_authentication", '
+                    f'error_description="{message}", action_scope="{action}"'
+                )
+            },
+        )
+
+
+def require_step_up(action: str) -> Any:
+    """Dependency factory enforcing a valid step-up token for a named action."""
+
+    async def _dep(request: Request, current_user: CurrentUser) -> User:
+        token = request.headers.get(STEP_UP_HEADER)
+        if not token:
+            raise StepUpRequired(action, "Step-up token missing")
+        payload = decode_step_up_token(token)
+        if payload is None:
+            raise StepUpRequired(action, "Step-up token invalid or expired")
+        if payload.get("sub") != str(current_user.id):
+            raise StepUpRequired(action, "Step-up token subject mismatch")
+        scope = payload.get("action_scope") or []
+        if action not in scope:
+            raise StepUpRequired(action, "Step-up token does not cover this action")
+        return current_user
+
+    return _dep
+
+
+def require_break_glass(action: str) -> Any:
+    """Dependency factory accepting either step-up OR an active break-glass token."""
+
+    async def _dep(request: Request, current_user: CurrentUser) -> User:
+        # Break-glass takes precedence (stricter audit trail).
+        bg = request.headers.get(BREAK_GLASS_HEADER)
+        if bg:
+            payload = decode_break_glass_token(bg)
+            if payload and payload.get("sub") == str(current_user.id):
+                scope = payload.get("action_scope") or []
+                if action in scope:
+                    return current_user
+        # Fall back to step-up.
+        su = request.headers.get(STEP_UP_HEADER)
+        if su:
+            payload = decode_step_up_token(su)
+            if payload and payload.get("sub") == str(current_user.id):
+                scope = payload.get("action_scope") or []
+                if action in scope:
+                    return current_user
+        raise StepUpRequired(action, "Step-up or break-glass authorisation required")

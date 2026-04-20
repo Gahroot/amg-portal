@@ -148,6 +148,27 @@ class AuditAction(StrEnum):
     partner_status_changed = "partner_status_changed"
     budget_step_approved = "budget_step_approved"
     budget_step_rejected = "budget_step_rejected"
+    # Phase 2 — file vault + compliance actions
+    document_upload = "document_upload"
+    document_stream = "document_stream"
+    document_stream_stepup = "document_stream_stepup"
+    document_download_redeemed = "document_download_redeemed"
+    document_shredded = "document_shredded"
+    subject_shredded = "subject_shredded"
+    break_glass_requested = "break_glass_requested"
+    break_glass_approved = "break_glass_approved"
+    break_glass_rejected = "break_glass_rejected"
+    break_glass_consumed = "break_glass_consumed"
+    erasure_requested = "erasure_requested"
+    erasure_approved = "erasure_approved"
+    erasure_rejected = "erasure_rejected"
+    erasure_executed = "erasure_executed"
+    consent_granted = "consent_granted"
+    consent_revoked = "consent_revoked"
+    data_export = "data_export"
+    webauthn_registered = "webauthn_registered"
+    webauthn_removed = "webauthn_removed"
+    step_up_minted = "step_up_minted"
 
 
 class DeliverableType(StrEnum):

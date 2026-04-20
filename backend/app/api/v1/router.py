@@ -19,6 +19,7 @@ from app.api.v1.communication_audit import router as communication_audit_router
 from app.api.v1.communication_logs import router as communication_logs_router
 from app.api.v1.communication_templates import router as communication_templates_router
 from app.api.v1.communications import router as communications_router
+from app.api.v1.compliance import router as compliance_router
 from app.api.v1.conversations import router as conversations_router
 from app.api.v1.crm_activities import router as crm_activities_router
 from app.api.v1.custom_reports import router as custom_reports_router
@@ -36,6 +37,7 @@ from app.api.v1.export import router as export_router
 from app.api.v1.exports.pdf import router as export_pdf_router
 from app.api.v1.family_members import router as family_members_router
 from app.api.v1.feedback import router as feedback_router
+from app.api.v1.files import router as files_router
 from app.api.v1.imports import router as imports_router
 from app.api.v1.intake import router as intake_router
 from app.api.v1.invoices import router as invoices_router
@@ -86,6 +88,7 @@ from app.api.v1.travel import router as travel_router
 from app.api.v1.travel import webhook_router as travel_webhook_router
 from app.api.v1.user_preferences import router as user_preferences_router
 from app.api.v1.users import router as users_router
+from app.api.v1.webauthn import router as webauthn_router
 from app.api.v1.webhooks import router as webhooks_router
 from app.api.v1.workload import router as workload_router
 
@@ -146,6 +149,9 @@ router.include_router(
 )
 router.include_router(partner_tax_documents_router, prefix="/tax-documents", tags=["tax-documents"])
 router.include_router(documents_router, prefix="/documents", tags=["documents"])
+router.include_router(files_router, prefix="/files", tags=["secure-files"])
+router.include_router(compliance_router, prefix="/compliance", tags=["compliance"])
+router.include_router(webauthn_router, prefix="/webauthn", tags=["webauthn"])
 router.include_router(kyc_documents_router, prefix="/kyc", tags=["kyc-documents"])
 router.include_router(kyc_verifications_router, prefix="/kyc", tags=["kyc-verifications"])
 router.include_router(

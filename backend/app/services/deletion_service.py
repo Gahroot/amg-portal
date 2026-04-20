@@ -159,6 +159,21 @@ class DeletionService:
 
         now = datetime.now(UTC)
 
+        # Phase 2.6 — crypto-shred for document deletions.  A document's
+        # cipher material is destroyed by flipping ``crypto_shredded`` +
+        # nulling ``dek_wrapped`` (this subject's KEK version handles the
+        # broader case via shred_subject).  Plaintext/ciphertext stays on
+        # MinIO under Object Lock; authentication fails on read.
+        if deletion_req.entity_type == "documents":
+            from app.services.crypto_shred import shred_document
+
+            await shred_document(
+                db,
+                document=entity,
+                actor=approver,
+                reason=deletion_req.reason,
+            )
+
         # Soft-delete: set status to "deleted" when the field exists,
         # otherwise set deleted_at (future-proof fallback).
         if hasattr(entity, "status"):

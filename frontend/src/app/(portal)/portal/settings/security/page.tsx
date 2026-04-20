@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MFASetup } from "@/components/auth/mfa-setup";
+import { PasskeysCard } from "@/components/auth/passkeys-card";
 
 type PageState = "idle" | "setup" | "disable";
 
@@ -218,6 +219,9 @@ export default function PortalSecurityPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Passkeys Card */}
+      <PasskeysCard />
 
       {/* Password Change Card */}
       <Card>

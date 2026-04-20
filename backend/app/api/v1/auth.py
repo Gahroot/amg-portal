@@ -10,7 +10,7 @@ from sqlalchemy import asc, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DB, CurrentUser, MFASetupUser
+from app.api.deps import DB, CurrentUser, MFASetupUser, require_step_up
 from app.core.config import settings
 from app.core.exceptions import (
     BadRequestException,
@@ -30,6 +30,7 @@ from app.core.security import (
     create_mfa_setup_token,
     create_password_reset_token,
     create_refresh_token,
+    create_step_up_token,
     decode_password_reset_token,
     decode_refresh_token,
     decrypt_mfa_secret,
@@ -54,6 +55,7 @@ from app.schemas.auth import (
     ProfileUpdateRequest,
     RefreshTokenRequest,
     ResetPasswordRequest,
+    StepUpTokenRequest,
     Token,
     UserCreate,
     UserNotificationPreferencesResponse,
@@ -233,6 +235,7 @@ async def _issue_refresh_token(
             family_id=fid,
             is_revoked=False,
             expires_at=expires_at,
+            last_active_at=datetime.now(UTC),
         )
     )
     return token
@@ -450,6 +453,29 @@ async def refresh(
     # Verify token hash matches
     if stored_token.token_hash != hash_token(raw_token):
         raise UnauthorizedException("Invalid refresh token")
+
+    # Phase 2.12 — sliding idle timeout.  If this family has been inactive
+    # longer than the configured window, revoke the whole family so a
+    # resumed device cannot silently roll forward to a fresh pair.
+    idle_limit = settings.REFRESH_TOKEN_IDLE_TIMEOUT_MINUTES
+    last_active = stored_token.last_active_at or stored_token.created_at
+    if idle_limit is not None and last_active is not None:
+        now = datetime.now(UTC)
+        # ``created_at`` may be naïve in legacy rows — coerce to UTC.
+        if last_active.tzinfo is None:
+            last_active = last_active.replace(tzinfo=UTC)
+        if now - last_active > timedelta(minutes=idle_limit):
+            await db.execute(
+                update(RefreshToken)
+                .where(
+                    RefreshToken.family_id == token_family,
+                    RefreshToken.is_revoked.is_(False),
+                )
+                .values(is_revoked=True)
+            )
+            await db.commit()
+            _clear_auth_cookies(response)
+            raise UnauthorizedException("Session idle timeout")
 
     # Mark current token as revoked (rotation)
     stored_token.is_revoked = True
@@ -677,9 +703,20 @@ async def mfa_verify_setup(
     )
 
 
-@router.post("/mfa/disable", dependencies=[Depends(rate_limit_mfa_disable)])
+@router.post(
+    "/mfa/disable",
+    dependencies=[
+        Depends(rate_limit_mfa_disable),
+        Depends(require_step_up("mfa_change")),
+    ],
+)
 async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB) -> Any:
-    """Disable MFA after verifying a TOTP code."""
+    """Disable MFA after verifying a TOTP code.
+
+    Phase 2.11 — gated behind step-up (``action_scope=mfa_change``) on top of
+    the existing TOTP verification, so a stolen access token alone cannot
+    remove the second factor.
+    """
     if not current_user.mfa_enabled or not current_user.mfa_secret:
         raise BadRequestException("MFA is not enabled")
 
@@ -692,6 +729,54 @@ async def mfa_disable(data: MFAVerifyRequest, current_user: CurrentUser, db: DB)
     current_user.mfa_backup_codes = None
     await db.commit()
     return {"message": "MFA disabled successfully"}
+
+
+# ── Step-up auth (Phase 2.10) ───────────────────────────────
+
+
+@router.post("/step-up")
+async def mint_step_up_token(
+    data: StepUpTokenRequest,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Mint a short-lived step-up token for a list of sensitive actions.
+
+    The caller must re-authenticate by providing either:
+
+    * ``password`` — the current account password, or
+    * ``totp_code`` — a valid TOTP (if MFA is enabled).
+
+    The returned token is single-session and must be replayed in the
+    ``X-Step-Up-Token`` header when calling a gated endpoint.
+    """
+    # Verify at least one factor.
+    proved = False
+    if data.password:
+        ok, _ = verify_password(data.password, current_user.hashed_password)
+        if ok:
+            proved = True
+    if not proved and data.totp_code:
+        if not current_user.mfa_secret:
+            raise BadRequestException("MFA not enrolled; cannot use TOTP for step-up")
+        decrypted = decrypt_mfa_secret(current_user.mfa_secret)
+        if verify_totp(decrypted, data.totp_code):
+            proved = True
+
+    if not proved:
+        raise UnauthorizedException("Step-up re-authentication failed")
+
+    if not data.action_scope:
+        raise BadRequestException("action_scope must include at least one action")
+
+    token = create_step_up_token(
+        {"sub": str(current_user.id), "email": current_user.email},
+        action_scope=data.action_scope,
+    )
+    return {
+        "step_up_token": token,
+        "expires_in": settings.STEP_UP_TOKEN_EXPIRE_MINUTES * 60,
+        "action_scope": data.action_scope,
+    }
 
 
 # ── Profile endpoints ───────────────────────────────────────

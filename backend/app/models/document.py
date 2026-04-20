@@ -2,7 +2,17 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -52,6 +62,29 @@ class Document(Base, TimestampMixin):
     # DocuSign eSignature
     envelope_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     docusign_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Envelope encryption (Phase 2.1).  ``kek_version`` is populated iff the
+    # object was uploaded after the envelope-encryption rollout.  Legacy
+    # plaintext objects remain until migrated.
+    kek_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dek_wrapped: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    nonce_prefix: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    clam_result: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Subject scope for crypto-shred (Phase 2.6/2.14).  Typically the
+    # owning client_profile.id so an erasure bump invalidates every file
+    # that subject ever uploaded.  Nullable for back-compat with legacy rows.
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+    crypto_shredded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    # Object Lock tracking (Phase 2.3) — informational; MinIO enforces.
+    object_lock_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    object_lock_retain_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     uploader = relationship("User", foreign_keys=[uploaded_by])

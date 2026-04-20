@@ -116,7 +116,8 @@ async def _get_unread_messages_since(
     summaries: list[DigestMessageSummary] = []
     for msg in unread:
         conv = conversations.get(msg.conversation_id)  # type: ignore[arg-type]
-        preview = msg.body[:_PREVIEW_LENGTH] + ("…" if len(msg.body) > _PREVIEW_LENGTH else "")
+        body = msg.body or ""
+        preview = body[:_PREVIEW_LENGTH] + ("…" if len(body) > _PREVIEW_LENGTH else "")
         summaries.append(
             DigestMessageSummary(
                 message_id=str(msg.id),

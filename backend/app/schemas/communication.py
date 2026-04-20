@@ -37,7 +37,9 @@ class CommunicationResponse(BaseModel):
     sender_name: Str255 | None = None
     recipients: dict[str, Any] | None = None
     subject: Str500 | None = None
-    body: TextStr
+    # Body may be ``None`` transiently if a ciphertext row fails to decrypt
+    # (e.g. the subject KEK was crypto-shredded after a GDPR erasure).
+    body: TextStr | None = None
     attachment_ids: list[Str100] | None = None
     client_id: UUID | None = None
     program_id: UUID | None = None

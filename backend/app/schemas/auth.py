@@ -147,3 +147,17 @@ class UserNotificationPreferencesUpdate(BaseModel):
     milestone_reminder_days: list[int] | None = None
     milestone_reminder_channels: list[Str50] | None = None
     milestone_reminder_program_overrides: dict[str, object] | None = None
+
+
+# Phase 2.10 — step-up auth token minting.
+class StepUpTokenRequest(BaseModel):
+    """Re-auth request to mint a step-up token.
+
+    Provide at least one factor: password or TOTP code (if MFA enabled).
+    ``action_scope`` is the list of action identifiers the token authorises.
+    """
+
+    password: Str255 | None = None
+    totp_code: Str10 | None = None
+    action_scope: list[Str50] = Field(default_factory=list, max_length=10)
+

@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, Query, status
 from sqlalchemy import select
 
-from app.api.deps import DB, CurrentUser, require_admin
+from app.api.deps import DB, CurrentUser, require_admin, require_step_up
 from app.core.exceptions import (
     BadRequestException,
     ConflictException,
@@ -109,7 +109,10 @@ async def update_user(user_id: uuid.UUID, data: UserUpdate, db: DB) -> Any:
     "/{user_id}",
     response_model=DeletionRequestResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(require_admin)],
+    dependencies=[
+        Depends(require_admin),
+        Depends(require_step_up("user_delete")),
+    ],
     summary="Request deletion of a user",
     description=(
         "Creates a pending two-person deletion request for the user. A different"
@@ -141,7 +144,10 @@ async def delete_user(
 @router.post(
     "/{user_id}/deactivate",
     response_model=UserResponse,
-    dependencies=[Depends(require_admin)],
+    dependencies=[
+        Depends(require_admin),
+        Depends(require_step_up("user_disable")),
+    ],
 )
 async def deactivate_user(user_id: uuid.UUID, current_user: CurrentUser, db: DB) -> UserResponse:
     """Deactivate a user account.

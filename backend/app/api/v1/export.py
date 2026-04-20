@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, RLSContext, require_internal
+from app.api.deps import DB, CurrentUser, RLSContext, require_internal, require_step_up
 from app.core.exceptions import NotFoundException
 from app.models.client_profile import ClientProfile
 from app.models.communication import Communication
@@ -542,6 +542,7 @@ async def export_resource(
     current_user: CurrentUser,
     _rls: RLSContext,
     _: None = Depends(require_internal),
+    _step_up: None = Depends(require_step_up("bulk_export")),
     format: str = Query("csv", pattern="^(csv|xlsx)$"),  # noqa: A002
     search: str | None = Query(None),
     status: str | None = Query(None),

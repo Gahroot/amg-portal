@@ -14,6 +14,7 @@ from app.api.deps import (
     require_compliance,
     require_internal,
     require_rm_or_above,
+    require_step_up,
 )
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
 from app.models.client_profile import ClientProfile
@@ -211,7 +212,12 @@ async def list_upcoming_dates(
 
 
 @router.get(
-    "/{profile_id}", response_model=ClientProfileResponse, dependencies=[Depends(require_internal)]
+    "/{profile_id}",
+    response_model=ClientProfileResponse,
+    dependencies=[
+        Depends(require_internal),
+        Depends(require_step_up("view_pii")),
+    ],
 )
 async def get_client_profile(
     profile_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext
