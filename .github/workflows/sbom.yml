@@ -1,0 +1,263 @@
+# CycloneDX SBOM (Software Bill of Materials) generation.
+#
+# Per release / per main-push / weekly we produce one CycloneDX JSON BOM per
+# component and one combined artifact:
+#   - sbom-backend       Python deps from the resolved uv venv (cyclonedx-py environment)
+#   - sbom-frontend      Node deps from frontend/package-lock.json (@cyclonedx/cyclonedx-npm)
+#   - sbom-mobile        Node deps from mobile/package-lock.json   (@cyclonedx/cyclonedx-npm)
+#   - sbom-source        Whole-tree source SBOM via syft (anchore/sbom-action)
+#
+# A final aggregate job rolls them up into amg-portal-sboms-${sha}.zip and,
+# on release: published, attaches the JSON files to the GitHub Release.
+#
+# Implements security-plan Phase 3.8 (SBOM) and supports Phase 7.11
+# (supply-chain attestation; vendor procurement questionnaires; NIST SP 800-161
+# / CISA SBOM minimum-elements alignment).
+#
+# All Actions pinned by SHA (security-plan 0.8).
+#
+# Pin sources (verified via grep.app + GitHub API tag→sha lookup):
+#   - actions/checkout            @de0fac2 sequelize/sequelize, sympy/sympy, numpy/numpy, pydantic/pydantic, astral-sh/uv
+#   - actions/setup-node          @53b8394 sequelize/sequelize (matches existing security.yml pin)
+#   - actions/setup-python        @a309ff8 home-assistant/core, sympy/sympy, numpy/numpy, freqtrade/freqtrade, astral-sh/uv
+#   - astral-sh/setup-uv          @cec2083 pydantic/pydantic, astral-sh/ruff, langgenius/dify, openai/openai-agents-python, freqtrade/freqtrade
+#   - actions/upload-artifact     @043fb46 home-assistant/core, Orange-OpenSource/hurl, prefix-dev/pixi, weaviate/weaviate, oxc-project/oxc, immich-app/immich, Azure/bicep
+#   - actions/download-artifact   @3e5f45b astral-sh/uv, grafana/grafana, axios/axios, microsoft/aspire, containerd/containerd, sequelize/sequelize
+#   - anchore/sbom-action         @e22c389 cilium/cilium, nautechsystems/nautilus_trader, microsoft/hve-core, getprobo/probo, cloudnativelabs/kube-router, LearningCircuit/local-deep-research
+#   - softprops/action-gh-release @b430933 jenkinsci/jenkins, containerd/containerd, external-secrets/external-secrets, liquibase/liquibase, ant-design/ant-design, savonet/liquidsoap
+
+name: sbom
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly Monday 08:00 UTC — one hour after security.yml so the same week's
+    # Dependabot bumps surface in both reports.
+    - cron: "0 8 * * 1"
+  release:
+    types: [published]
+
+concurrency:
+  group: sbom-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sbom-backend:
+    name: sbom · backend (cyclonedx-py)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+      - name: Sync resolved venv from uv.lock
+        run: uv sync --frozen
+      - name: Install cyclonedx-bom (provides cyclonedx-py)
+        run: uv tool install cyclonedx-bom
+      - name: Generate backend SBOM
+        # `environment` walks the actual resolved venv (more accurate than `requirements`).
+        # --pyproject embeds project metadata (name/version) into the BOM root component.
+        run: |
+          uv tool run --from cyclonedx-bom cyclonedx-py environment \
+            --pyproject pyproject.toml \
+            --output-format JSON \
+            --output-file ../sbom-backend.cdx.json \
+            .venv
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-backend
+          path: sbom-backend.cdx.json
+          retention-days: 90
+          if-no-files-found: error
+
+  sbom-frontend:
+    name: sbom · frontend (@cyclonedx/cyclonedx-npm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate frontend SBOM
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm@latest \
+            --output-format JSON \
+            --output-file ../sbom-frontend.cdx.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-frontend
+          path: sbom-frontend.cdx.json
+          retention-days: 90
+          if-no-files-found: error
+
+  sbom-mobile:
+    name: sbom · mobile (@cyclonedx/cyclonedx-npm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate mobile SBOM
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm@latest \
+            --output-format JSON \
+            --output-file ../sbom-mobile.cdx.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-mobile
+          path: sbom-mobile.cdx.json
+          retention-days: 90
+          if-no-files-found: error
+
+  sbom-containers:
+    name: sbom · source tree (syft / anchore-sbom-action)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Generate source-tree SBOM
+        # syft scans the working directory and emits CycloneDX JSON. Action also
+        # uploads its own artifact, but we disable that and re-upload below for
+        # consistent naming with the other jobs.
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: ./
+          format: cyclonedx-json
+          output-file: sbom-source.cdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-source
+          path: sbom-source.cdx.json
+          retention-days: 90
+          if-no-files-found: error
+
+  policy:
+    name: sbom · policy (CycloneDX minimum-fields gate)
+    needs: [sbom-backend, sbom-frontend, sbom-mobile, sbom-containers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: sboms
+      - name: Validate CycloneDX required fields
+        # Fails the build if any SBOM is missing bomFormat / specVersion /
+        # serialNumber / components — the CISA minimum-elements baseline.
+        # Inline check; intentionally no extra dep.
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+
+          REQUIRED = ("bomFormat", "specVersion", "serialNumber", "components")
+          failed = []
+          for path in sorted(pathlib.Path("sboms").rglob("*.cdx.json")):
+              try:
+                  doc = json.loads(path.read_text())
+              except Exception as exc:
+                  failed.append(f"{path}: not valid JSON ({exc})")
+                  continue
+              missing = [k for k in REQUIRED if k not in doc]
+              if doc.get("bomFormat") != "CycloneDX":
+                  missing.append("bomFormat!=CycloneDX")
+              if missing:
+                  failed.append(f"{path}: missing/invalid fields: {missing}")
+              else:
+                  print(f"OK  {path}  components={len(doc.get('components', []))}  spec={doc['specVersion']}")
+          if failed:
+              print("\nSBOM policy violations:", file=sys.stderr)
+              for line in failed:
+                  print(f"  - {line}", file=sys.stderr)
+              sys.exit(1)
+          print("\nAll SBOMs satisfy CycloneDX minimum-fields policy.")
+          PY
+
+  aggregate:
+    name: sbom · aggregate
+    needs: [sbom-backend, sbom-frontend, sbom-mobile, sbom-containers, policy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: sboms
+      - name: Flatten artifact directory
+        run: |
+          mkdir -p combined
+          find sboms -type f -name '*.cdx.json' -exec cp -v {} combined/ \;
+          ls -lah combined/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: amg-portal-sboms-${{ github.sha }}
+          path: combined/*.cdx.json
+          retention-days: 90
+          if-no-files-found: error
+
+  release-attach:
+    name: sbom · attach to release
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [aggregate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write  # scoped to this job only — required to upload release assets
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: amg-portal-sboms-${{ github.sha }}
+          path: combined
+      - name: Attach SBOM files to release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: combined/*.cdx.json
+          fail_on_unmatched_files: true

@@ -67,3 +67,19 @@ jobs:
         env:
           # Avoid telemetry in CI.
           NEXT_TELEMETRY_DISABLED: "1"
+
+  sri-check:
+    # Phase 3.10 — fail the build if any third-party JS/CSS is loaded
+    # without an ``integrity=`` (Subresource Integrity) attribute.
+    # Today's posture: zero third-party loads; this guard makes a regression
+    # impossible to merge silently.
+    name: SRI policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run scripts/check-sri.sh
+        run: bash scripts/check-sri.sh

@@ -72,6 +72,10 @@ _EXEMPT_PATHS: Final[frozenset[str]] = frozenset(
         "/api/v1/auth/refresh",
         "/api/v1/auth/forgot-password",
         "/api/v1/auth/reset-password",
+        # Browser-emitted security reports do not carry our CSRF cookie;
+        # the endpoints are still rate-limited and only log to the SIEM.
+        "/api/v1/security/csp-report",
+        "/api/v1/security/reports",
         "/openapi.json",
         "/health",
     }

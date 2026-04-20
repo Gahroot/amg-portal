@@ -6,10 +6,10 @@ from datetime import UTC, datetime, time
 from typing import Any
 from zoneinfo import ZoneInfo
 
-import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.http_client import get_internal_client
 from app.models.push_token import PushToken
 from app.services.crud_base import CRUDBase
 
@@ -206,35 +206,35 @@ class PushService(CRUDBase[PushToken, dict[str, Any], dict[str, Any]]):
         if not messages:
             return False
 
-        # Send to Expo
+        # Send to Expo — trusted Expo endpoint, shared internal client.
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    EXPO_PUSH_URL,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                    },
-                    content=json.dumps(messages),
-                    timeout=30.0,
-                )
+            client = get_internal_client()
+            response = await client.post(
+                EXPO_PUSH_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                content=json.dumps(messages),
+                timeout=30.0,
+            )
 
-                if response.status_code == 200:
-                    result = response.json()
-                    # Handle ticket responses
-                    tickets = result.get("data", [])
+            if response.status_code == 200:
+                result = response.json()
+                # Handle ticket responses
+                tickets = result.get("data", [])
 
-                    # Update last_used_at for successful sends
-                    now = datetime.now(UTC)
-                    for i, ticket in enumerate(tickets):
-                        if ticket.get("status") == "ok" and i < len(tokens):
-                            tokens[i].last_used_at = now
+                # Update last_used_at for successful sends
+                now = datetime.now(UTC)
+                for i, ticket in enumerate(tickets):
+                    if ticket.get("status") == "ok" and i < len(tokens):
+                        tokens[i].last_used_at = now
 
-                    # Deactivate invalid tokens
-                    await self._handle_ticket_errors(db, tickets, token_strings)
+                # Deactivate invalid tokens
+                await self._handle_ticket_errors(db, tickets, token_strings)
 
-                    await db.commit()
-                    return True
+                await db.commit()
+                return True
 
         except Exception:
             return False

@@ -1,6 +1,5 @@
 """Public API webhook endpoints for external integrations."""
 
-import asyncio
 import hashlib
 import hmac
 import json
@@ -10,7 +9,6 @@ import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, Header, Query, status
@@ -624,23 +622,26 @@ async def send_webhook(
         "User-Agent": "AMG-Portal-Webhook/1.0",
     }
 
-    # Re-check host at delivery time to defend against DNS rebinding between
-    # subscription creation and delivery.
-    from app.utils.url_safety import resolve_is_safe_host
-
-    host = urlparse(url).hostname or ""
-    if not await asyncio.to_thread(resolve_is_safe_host, host):
-        return False, None, "Webhook host is not publicly routable"
+    # User-supplied URL — safe_request runs SSRF + DNS-rebinding checks via
+    # the shared external client (follow_redirects=False).
+    from app.core.http_client import UnsafeURLError, safe_request
 
     try:
-        async with httpx.AsyncClient(timeout=WEBHOOK_TIMEOUT_SECONDS) as client:
-            response = await client.post(url, content=payload_json, headers=headers)
+        response = await safe_request(
+            "POST",
+            url,
+            content=payload_json,
+            headers=headers,
+            timeout=WEBHOOK_TIMEOUT_SECONDS,
+        )
 
-            if 200 <= response.status_code < 300:
-                return True, response.status_code, None
-            else:
-                return False, response.status_code, f"HTTP {response.status_code}"
+        if 200 <= response.status_code < 300:
+            return True, response.status_code, None
+        else:
+            return False, response.status_code, f"HTTP {response.status_code}"
 
+    except UnsafeURLError as e:
+        return False, None, f"Unsafe webhook URL: {e}"
     except httpx.TimeoutException:
         return False, None, "Request timed out"
     except Exception as e:

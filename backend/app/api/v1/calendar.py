@@ -13,13 +13,13 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-import httpx
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
 from app.api.deps import DB, CurrentUser
 from app.core.config import settings
 from app.core.exceptions import AppException, BadRequestException, NotFoundException
+from app.core.http_client import get_internal_client
 from app.services.calendar_service import (
     CalendarError,
     generate_ical_for_user,
@@ -135,24 +135,24 @@ async def google_calendar_callback(
         or f"{settings.FRONTEND_URL}/settings/calendar/callback/google"
     )
 
-    async with httpx.AsyncClient() as client:
-        # Exchange code for tokens
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
+    # Trusted Google OAuth endpoint — shared internal client.
+    client = get_internal_client()
+    token_response = await client.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        },
+    )
 
-        if token_response.status_code != 200:
-            logger.error(f"Google token exchange failed: {token_response.text}")
-            raise BadRequestException("Failed to exchange authorization code for tokens")
+    if token_response.status_code != 200:
+        logger.error(f"Google token exchange failed: {token_response.text}")
+        raise BadRequestException("Failed to exchange authorization code for tokens")
 
-        token_data = token_response.json()
+    token_data = token_response.json()
 
     # Store tokens in user record
     current_user.google_calendar_token = {
@@ -197,28 +197,28 @@ async def outlook_calendar_callback(
         f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/oauth2/v2.0/token"
     )
 
-    async with httpx.AsyncClient() as client:
-        # Exchange code for tokens
-        token_response = await client.post(
-            token_url,
-            data={
-                "code": code,
-                "client_id": settings.MICROSOFT_CLIENT_ID,
-                "client_secret": settings.MICROSOFT_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-                "scope": " ".join(MICROSOFT_CALENDAR_SCOPES),
-            },
+    # Trusted Microsoft OAuth endpoint — shared internal client.
+    client = get_internal_client()
+    token_response = await client.post(
+        token_url,
+        data={
+            "code": code,
+            "client_id": settings.MICROSOFT_CLIENT_ID,
+            "client_secret": settings.MICROSOFT_CLIENT_SECRET,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+            "scope": " ".join(MICROSOFT_CALENDAR_SCOPES),
+        },
+    )
+
+    if token_response.status_code != 200:
+        logger.error(
+            "Microsoft token exchange failed with status %s",
+            token_response.status_code,
         )
+        raise BadRequestException("Failed to exchange authorization code for tokens")
 
-        if token_response.status_code != 200:
-            logger.error(
-                "Microsoft token exchange failed with status %s",
-                token_response.status_code,
-            )
-            raise BadRequestException("Failed to exchange authorization code for tokens")
-
-        token_data = token_response.json()
+    token_data = token_response.json()
 
     # Store tokens in user record
     current_user.outlook_calendar_token = {

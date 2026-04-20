@@ -109,10 +109,10 @@ async def _stream_generator(
 async def secure_upload(
     current_user: CurrentUser,
     db: DB,
-    file: Annotated[UploadFile, File(...)],
-    entity_type: Annotated[DocumentEntityType, Form(...)],
-    entity_id: Annotated[uuid.UUID, Form(...)],
-    category: Annotated[DocumentCategory, Form(DocumentCategory.general)],
+    file: Annotated[UploadFile, File()],
+    entity_type: Annotated[DocumentEntityType, Form()],
+    entity_id: Annotated[uuid.UUID, Form()],
+    category: Annotated[DocumentCategory, Form()] = DocumentCategory.general,
     description: Annotated[str | None, Form()] = None,
     subject_id: Annotated[uuid.UUID | None, Form()] = None,
 ) -> dict[str, Any]:
@@ -131,9 +131,7 @@ async def secure_upload(
         ext = "." + file.filename.rsplit(".", 1)[1]
     object_name = f"vault/{entity_type.value}/{entity_id}/{file_uuid}{ext}.enc"
 
-    retention = (
-        _retention_for_category(category) if category in _OBJECT_LOCK_CATEGORIES else None
-    )
+    retention = _retention_for_category(category) if category in _OBJECT_LOCK_CATEGORIES else None
     meta = await storage_service.upload_encrypted_bytes(
         object_name,
         plaintext,
@@ -191,9 +189,7 @@ async def secure_upload(
         "clam_result": doc.clam_result,
         "object_lock_mode": doc.object_lock_mode,
         "object_lock_retain_until": (
-            doc.object_lock_retain_until.isoformat()
-            if doc.object_lock_retain_until
-            else None
+            doc.object_lock_retain_until.isoformat() if doc.object_lock_retain_until else None
         ),
     }
 
@@ -229,9 +225,7 @@ async def _audit_and_stream(
         ),
         media_type=doc.content_type or "application/octet-stream",
         headers={
-            "Content-Disposition": (
-                f'attachment; filename="{_safe_filename(doc.file_name)}"'
-            ),
+            "Content-Disposition": (f'attachment; filename="{_safe_filename(doc.file_name)}"'),
             "Cache-Control": "no-store",
             "X-Content-Type-Options": "nosniff",
         },
@@ -296,9 +290,7 @@ async def proxy_download_gated(
     if doc.kek_version is None:
         raise BadRequestException("Document is not envelope-encrypted")
     await _authorise_download(current_user, doc)
-    return await _audit_and_stream(
-        db, current_user, doc, action=AuditAction.document_stream_stepup
-    )
+    return await _audit_and_stream(db, current_user, doc, action=AuditAction.document_stream_stepup)
 
 
 # ── 2.5 — one-time-redemption token for large files ─────────
@@ -318,9 +310,7 @@ async def issue_download_token(
         raise NotFoundException("Document not found")
     await _authorise_download(current_user, doc)
     if doc.file_size <= settings.DOWNLOAD_PROXY_THRESHOLD_BYTES:
-        raise BadRequestException(
-            "File is small enough for direct proxy download; use /stream."
-        )
+        raise BadRequestException("File is small enough for direct proxy download; use /stream.")
 
     raw = secrets.token_urlsafe(32)
     token_hash = _hash_token(raw)
@@ -352,9 +342,7 @@ async def redeem_download_token(
     """Single-use redemption: returns a 60-120s presigned URL and invalidates."""
     token_hash = _hash_token(token)
     row = (
-        await db.execute(
-            select(DownloadToken).where(DownloadToken.token_hash == token_hash)
-        )
+        await db.execute(select(DownloadToken).where(DownloadToken.token_hash == token_hash))
     ).scalar_one_or_none()
     if row is None:
         raise NotFoundException("Token not found")

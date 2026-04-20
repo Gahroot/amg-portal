@@ -351,7 +351,9 @@ async def push_milestone_to_outlook(
     try:
         import json
 
-        import httpx
+        import httpx  # exception type only — request goes through shared client
+
+        from app.core.http_client import get_internal_client
 
         # Parse stored token
         token_data = user.outlook_calendar_token
@@ -405,28 +407,30 @@ async def push_milestone_to_outlook(
                 "timeZone": "UTC",
             }
 
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json",
-                "Prefer": 'outlook.timezone="UTC"',
-            }
+        # Trusted Microsoft Graph endpoint — internal client; redirects disabled
+        # because graph.microsoft.com never legitimately 3xx's the events POST.
+        client = get_internal_client()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "Prefer": 'outlook.timezone="UTC"',
+        }
+        response = await client.post(
+            "https://graph.microsoft.com/v1.0/me/events",
+            headers=headers,
+            json=event_body,
+            params={"$select": "id"},
+            follow_redirects=False,
+        )
 
-            response = await client.post(
-                "https://graph.microsoft.com/v1.0/me/events",
-                headers=headers,
-                json=event_body,
-                params={"$select": "id"},
-            )
+        if response.status_code == 401:
+            raise OutlookCalendarError("Access token expired")
+        elif response.status_code not in (200, 201):
+            logger.error("Outlook API error: %s - %s", response.status_code, response.text)
+            raise OutlookCalendarError(f"Outlook API error: {response.status_code}")
 
-            if response.status_code == 401:
-                raise OutlookCalendarError("Access token expired")
-            elif response.status_code not in (200, 201):
-                logger.error("Outlook API error: %s - %s", response.status_code, response.text)
-                raise OutlookCalendarError(f"Outlook API error: {response.status_code}")
-
-            event_data = response.json()
-            return event_data.get("id")  # type: ignore[no-any-return]
+        event_data = response.json()
+        return event_data.get("id")  # type: ignore[no-any-return]
 
     except httpx.HTTPError as e:
         logger.error("HTTP error pushing to Outlook: %s", e)

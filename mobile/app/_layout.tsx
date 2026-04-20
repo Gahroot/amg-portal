@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 
+import { DeviceIntegrityGate } from '@/components/DeviceIntegrityGate';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { useAuthStore } from '@/lib/auth-store';
@@ -119,15 +120,17 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthGate>
-            <WidgetManager />
-            <StatusBar style="auto" />
-            <OfflineIndicator position="top" showOnlineToast={true} />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(client)" />
-              <Stack.Screen name="(internal)" />
-              <Stack.Screen name="(partner)" />
-            </Stack>
+            <DeviceIntegrityGate>
+              <WidgetManager />
+              <StatusBar style="auto" />
+              <OfflineIndicator position="top" showOnlineToast={true} />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(client)" />
+                <Stack.Screen name="(internal)" />
+                <Stack.Screen name="(partner)" />
+              </Stack>
+            </DeviceIntegrityGate>
           </AuthGate>
         </QueryClientProvider>
       </SafeAreaProvider>

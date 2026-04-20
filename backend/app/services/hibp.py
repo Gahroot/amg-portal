@@ -17,6 +17,7 @@ import logging
 import httpx
 
 from app.core.exceptions import BadRequestException
+from app.core.http_client import get_internal_client
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,14 @@ async def check_password_pwned(password: str) -> int:
     logger.debug("HIBP range query prefix=%s", prefix)
 
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            response = await client.get(
-                _HIBP_URL.format(prefix=prefix),
-                headers={"User-Agent": _USER_AGENT},
-            )
-            response.raise_for_status()
+        # Trusted public endpoint (HIBP k-anonymity); use shared internal client.
+        client = get_internal_client()
+        response = await client.get(
+            _HIBP_URL.format(prefix=prefix),
+            headers={"User-Agent": _USER_AGENT},
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
     except httpx.HTTPError as exc:
         logger.warning("HIBP lookup failed, failing open: %s", exc)
         return 0
@@ -64,6 +67,5 @@ async def enforce_not_pwned(password: str) -> None:
     count = await check_password_pwned(password)
     if count >= _THRESHOLD:
         raise BadRequestException(
-            "This password has appeared in a public data breach. "
-            "Choose a different password.",
+            "This password has appeared in a public data breach. Choose a different password.",
         )

@@ -22,7 +22,13 @@ def _make_response(text: str, status_code: int = 200) -> MagicMock:
 
 
 class _FakeAsyncClient:
-    """Context-manager stand-in for ``httpx.AsyncClient`` used in tests."""
+    """Stand-in for the pooled client returned by ``get_internal_client``.
+
+    Phase 3.11 routed hibp off per-call ``httpx.AsyncClient(...)`` onto the
+    shared pooled client, so the fake mirrors that surface — no
+    context-manager protocol, and ``get`` tolerates the ``timeout`` kwarg
+    hibp still passes per-request.
+    """
 
     def __init__(self, *, get_return: Any = None, get_raises: Exception | None = None) -> None:
         self._get_return = get_return
@@ -30,13 +36,12 @@ class _FakeAsyncClient:
         self.requested_urls: list[str] = []
         self.request_headers: list[dict[str, str]] = []
 
-    async def __aenter__(self) -> _FakeAsyncClient:
-        return self
-
-    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
-        return None
-
-    async def get(self, url: str, headers: dict[str, str] | None = None) -> Any:
+    async def get(
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
+        **_kwargs: Any,
+    ) -> Any:
         self.requested_urls.append(url)
         self.request_headers.append(headers or {})
         if self._get_raises is not None:
@@ -48,11 +53,7 @@ def _install_fake_client(
     monkeypatch: pytest.MonkeyPatch,
     fake: _FakeAsyncClient,
 ) -> None:
-    monkeypatch.setattr(
-        hibp.httpx,
-        "AsyncClient",
-        lambda *args, **kwargs: fake,  # noqa: ARG005
-    )
+    monkeypatch.setattr(hibp, "get_internal_client", lambda: fake)
 
 
 async def test_prefix_is_uppercase_first_five_of_sha1(
@@ -72,8 +73,10 @@ async def test_prefix_is_uppercase_first_five_of_sha1(
     assert len(fake.requested_urls) == 1
     url = fake.requested_urls[0]
     assert url.endswith(f"/range/{expected_prefix}")
-    assert expected_prefix.isupper() or expected_prefix.isdigit() or all(
-        c.isupper() or c.isdigit() for c in expected_prefix
+    assert (
+        expected_prefix.isupper()
+        or expected_prefix.isdigit()
+        or all(c.isupper() or c.isdigit() for c in expected_prefix)
     )
     assert fake.request_headers[0].get("User-Agent") == "AMG-Portal"
 
@@ -170,5 +173,3 @@ async def test_suffix_match_is_case_sensitive(monkeypatch: pytest.MonkeyPatch) -
 
     count = await hibp.check_password_pwned(password)
     assert count == 0
-
-

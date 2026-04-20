@@ -33,6 +33,11 @@ export function middleware(request: NextRequest) {
   // 'strict-dynamic' ignore host/source-list expressions and 'unsafe-inline'
   // anyway, but dropping it makes the intent explicit. In dev we still need
   // 'unsafe-eval' for React Fast Refresh / Next.js HMR.
+  //
+  // ``report-uri`` (CSP Level 2) and ``report-to`` (Reporting-API) point at
+  // the backend so violations land in Railway logs as ``event=csp.violation``.
+  const cspReportUri = `${apiOrigin}/api/v1/security/csp-report`;
+  const reportingApiUri = `${apiOrigin}/api/v1/security/reports`;
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""};
@@ -44,9 +49,19 @@ export function middleware(request: NextRequest) {
     frame-ancestors 'none';
     base-uri 'self';
     form-action 'self';
+    report-uri ${cspReportUri};
+    report-to csp-endpoint;
   `
     .replace(/\s{2,}/g, " ")
     .trim();
+
+  // Reporting-API endpoint group referenced by ``report-to`` above.
+  const reportToHeader = JSON.stringify({
+    group: "csp-endpoint",
+    max_age: 10886400,
+    endpoints: [{ url: reportingApiUri }],
+    include_subdomains: true,
+  });
 
   // Attach the nonce to request headers so Server Components can read it.
   const requestHeaders = new Headers(request.headers);
@@ -59,6 +74,8 @@ export function middleware(request: NextRequest) {
 
   // Also set the CSP on the response so the browser enforces it.
   response.headers.set("Content-Security-Policy", cspHeader);
+  response.headers.set("Report-To", reportToHeader);
+  response.headers.set("Reporting-Endpoints", `csp-endpoint="${reportingApiUri}"`);
 
   return response;
 }

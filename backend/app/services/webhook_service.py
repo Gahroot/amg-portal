@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.http_client import UnsafeURLError, safe_request
 from app.models.webhook import Webhook, WebhookDelivery
 from app.schemas.webhook import (
     WebhookCreate,
@@ -253,16 +254,25 @@ class WebhookService:
         start_time = time.time()
 
         try:
-            async with httpx.AsyncClient(timeout=WEBHOOK_TIMEOUT_SECONDS) as client:
-                response = await client.post(url, content=payload, headers=headers)
-                duration_ms = int((time.time() - start_time) * 1000)
+            # User-supplied URL — safe_request runs SSRF + DNS rebinding check.
+            response = await safe_request(
+                "POST",
+                url,
+                content=payload,
+                headers=headers,
+                timeout=WEBHOOK_TIMEOUT_SECONDS,
+            )
+            duration_ms = int((time.time() - start_time) * 1000)
 
-                if 200 <= response.status_code < 300:
-                    return True, response.status_code, None, duration_ms
-                else:
-                    error_msg = f"HTTP {response.status_code}: {response.text[:500]}"
-                    return False, response.status_code, error_msg, duration_ms
+            if 200 <= response.status_code < 300:
+                return True, response.status_code, None, duration_ms
+            else:
+                error_msg = f"HTTP {response.status_code}: {response.text[:500]}"
+                return False, response.status_code, error_msg, duration_ms
 
+        except UnsafeURLError as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            return False, None, f"Unsafe webhook URL: {e}", duration_ms
         except httpx.TimeoutException:
             duration_ms = int((time.time() - start_time) * 1000)
             return False, None, "Request timed out", duration_ms

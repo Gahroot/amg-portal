@@ -80,6 +80,7 @@ from app.api.v1.saved_filters import router as saved_filters_router
 from app.api.v1.scheduling import router as scheduling_router
 from app.api.v1.search import router as search_router
 from app.api.v1.security_intelligence import router as security_intelligence_router
+from app.api.v1.security_reports import router as security_reports_router
 from app.api.v1.sla import router as sla_router
 from app.api.v1.support_chat import router as support_chat_router
 from app.api.v1.table_views import router as table_views_router
@@ -248,6 +249,7 @@ router.include_router(
     prefix="/clients",
     tags=["security-intelligence"],
 )
+router.include_router(security_reports_router)
 router.include_router(
     scheduling_router,
     prefix="/scheduling",

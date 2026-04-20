@@ -1,6 +1,7 @@
 """Background job scheduler using APScheduler."""
 
 import logging
+import os
 import random
 from datetime import UTC, date, datetime, timedelta
 from typing import TypedDict
@@ -222,10 +223,12 @@ async def _check_milestone_risks_job() -> None:
                         select(Escalation).where(
                             Escalation.entity_type == "milestone",
                             Escalation.entity_id == str(milestone.id),
-                            Escalation.status.in_([
-                                EscalationStatus.open.value,
-                                EscalationStatus.acknowledged.value,
-                            ]),
+                            Escalation.status.in_(
+                                [
+                                    EscalationStatus.open.value,
+                                    EscalationStatus.acknowledged.value,
+                                ]
+                            ),
                         )
                     )
                     if existing_result.scalar_one_or_none() is not None:
@@ -233,8 +236,10 @@ async def _check_milestone_risks_job() -> None:
 
                     # Create escalation record
                     level_label = (
-                        "severely overdue" if is_severely_overdue
-                        else "overdue" if is_overdue
+                        "severely overdue"
+                        if is_severely_overdue
+                        else "overdue"
+                        if is_overdue
                         else "at risk"
                     )
                     escalation = await create_escalation(
@@ -377,9 +382,7 @@ async def _process_queued_notifications_job() -> None:
     logger.info("Running queued notifications processing job")
     try:
         async with AsyncSessionLocal() as db:
-            result = await notification_service.process_queued_notifications(
-                db, limit=500
-            )
+            result = await notification_service.process_queued_notifications(db, limit=500)
             processed_push, processed_email = result
             logger.info(
                 "Queued notifications processed — %d push, %d email",
@@ -608,9 +611,7 @@ async def _process_report_schedules_job() -> None:
                     # Read the attachment bytes for emailing
                     report_data = await _get_report_data(sched, db)
                     attachment_bytes = (
-                        await _generate_attachment_bytes(sched, report_data)
-                        if report_data
-                        else b""
+                        await _generate_attachment_bytes(sched, report_data) if report_data else b""
                     )
 
                     ext = sched.format or "pdf"
@@ -772,8 +773,7 @@ async def _quarterly_audit_reminder_job() -> None:
             dormant_users = await access_audit_service.detect_dormant_accounts(db)
             dormant_count = len(dormant_users)
             dormant_suffix = (
-                f" There are currently {dormant_count} dormant account(s) "
-                "that require review."
+                f" There are currently {dormant_count} dormant account(s) that require review."
                 if dormant_count > 0
                 else ""
             )
@@ -806,10 +806,7 @@ async def _quarterly_audit_reminder_job() -> None:
                         CreateNotificationRequest(
                             user_id=user_id,
                             notification_type="system",
-                            title=(
-                                f"Q{current_quarter} {current_year}"
-                                " Access Audit Required"
-                            ),
+                            title=(f"Q{current_quarter} {current_year} Access Audit Required"),
                             body=(
                                 f"The Q{current_quarter} {current_year}"
                                 " quarterly access audit has not been"
@@ -838,10 +835,7 @@ async def _quarterly_audit_reminder_job() -> None:
                         CreateNotificationRequest(
                             user_id=user_id,
                             notification_type="system",
-                            title=(
-                                f"Q{current_quarter} {current_year}"
-                                " Access Audit Incomplete"
-                            ),
+                            title=(f"Q{current_quarter} {current_year} Access Audit Incomplete"),
                             body=(
                                 f"The Q{current_quarter} {current_year}"
                                 " quarterly access audit is still in"
@@ -924,9 +918,7 @@ async def _check_data_retention_job() -> None:
                 )
                 recipient_ids = compliance_result.scalars().all()
 
-            program_titles = ", ".join(
-                f"'{c.title}'" for c in candidate_list.candidates[:5]
-            )
+            program_titles = ", ".join(f"'{c.title}'" for c in candidate_list.candidates[:5])
             if candidate_list.total > 5:
                 program_titles += f" and {candidate_list.total - 5} more"
 
@@ -1053,8 +1045,7 @@ async def _check_kyc_expiry_job() -> None:  # noqa: PLR0915
                             Notification.entity_type == "kyc_document",
                             Notification.entity_id == kyc_doc.id,
                             Notification.title.contains(client_name),
-                            Notification.created_at
-                            >= datetime.now() - timedelta(days=7),
+                            Notification.created_at >= datetime.now() - timedelta(days=7),
                         )
                     )
                     if existing_result.scalar_one_or_none() is not None:
@@ -1192,9 +1183,7 @@ async def _run_predictive_alerts_job() -> None:
                 )
 
             await db.commit()
-            logger.info(
-                "Predictive alerts sent for %d programs", len(programs_notified)
-            )
+            logger.info("Predictive alerts sent for %d programs", len(programs_notified))
     except Exception:
         logger.exception("Error running predictive alerts job")
 
@@ -1281,7 +1270,6 @@ async def _escalate_milestone_deadline(
     Returns True if a new escalation was created.
     """
 
-
     assert isinstance(db, AsyncSession)
 
     # due_date is always non-None here (filtered in the query); today/cutoff_24h are dates
@@ -1301,11 +1289,13 @@ async def _escalate_milestone_deadline(
         select(Escalation).where(
             Escalation.entity_type == "milestone",
             Escalation.entity_id == str(ms.id),
-            Escalation.status.in_([
-                EscalationStatus.open.value,
-                EscalationStatus.acknowledged.value,
-                EscalationStatus.investigating.value,
-            ]),
+            Escalation.status.in_(
+                [
+                    EscalationStatus.open.value,
+                    EscalationStatus.acknowledged.value,
+                    EscalationStatus.investigating.value,
+                ]
+            ),
         )
     )
     existing = dup_result.scalar_one_or_none()
@@ -1319,13 +1309,20 @@ async def _escalate_milestone_deadline(
             existing.risk_factors["days_until_due"] = days_until
             existing.escalation_chain = list(existing.escalation_chain or [])
             existing.escalation_chain.append(
-                {"action": "level_upgraded", "to": level.value, "at": now_iso,
-                 "reason": window_label}
+                {
+                    "action": "level_upgraded",
+                    "to": level.value,
+                    "at": now_iso,
+                    "reason": window_label,
+                }
             )
             await db.commit()
             logger.info(
                 "Escalation %s upgraded to %s for milestone %s (%s)",
-                existing.id, level.value, ms.id, window_label,
+                existing.id,
+                level.value,
+                ms.id,
+                window_label,
             )
         return False
 
@@ -1383,11 +1380,13 @@ async def _escalate_sla_breach(
         select(Escalation).where(
             Escalation.entity_type == tracker.entity_type,
             Escalation.entity_id == tracker.entity_id,
-            Escalation.status.in_([
-                EscalationStatus.open.value,
-                EscalationStatus.acknowledged.value,
-                EscalationStatus.investigating.value,
-            ]),
+            Escalation.status.in_(
+                [
+                    EscalationStatus.open.value,
+                    EscalationStatus.acknowledged.value,
+                    EscalationStatus.investigating.value,
+                ]
+            ),
         )
     )
     if dup_result.scalar_one_or_none() is not None:
@@ -1418,7 +1417,10 @@ async def _escalate_sla_breach(
     )
     logger.info(
         "Created %s SLA breach escalation (%s) for %s:%s",
-        level.value, severity, tracker.entity_type, tracker.entity_id,
+        level.value,
+        severity,
+        tracker.entity_type,
+        tracker.entity_id,
     )
     return True
 
@@ -1769,6 +1771,25 @@ async def _cleanup_expired_refresh_tokens_job() -> None:
         logger.exception("Error cleaning up expired refresh tokens")
 
 
+async def _encrypted_backup_job() -> None:
+    """Phase 3.12 — nightly `pg_dump | age` to off-platform S3-compatible bucket.
+
+    Gated by ``BACKUP_ENABLED=true`` so dev / CI / preview envs never run it.
+    """
+    if os.environ.get("BACKUP_ENABLED", "false").lower() != "true":
+        return
+    try:
+        from scripts.backup_encrypted import run as run_backup
+
+        result = await run_backup()
+        logger.info(
+            "backup.completed",
+            extra={"event": "backup.completed", "status": result.get("status")},
+        )
+    except Exception:
+        logger.exception("backup.failed", extra={"event": "backup.failed"})
+
+
 def start_scheduler() -> AsyncIOScheduler | None:
     """Create, configure, and start the background scheduler."""
     global _scheduler  # noqa: PLW0603
@@ -1919,7 +1940,6 @@ def start_scheduler() -> AsyncIOScheduler | None:
         replace_existing=True,
     )
 
-
     _scheduler.add_job(
         _auto_progress_escalations_job,
         "interval",
@@ -2052,6 +2072,18 @@ def start_scheduler() -> AsyncIOScheduler | None:
         minute=15,
         id="verify_audit_chain",
         name="Verify yesterday's audit-log chain + a random prior day",
+        replace_existing=True,
+    )
+
+    # Encrypted off-platform backup — 03:30 UTC (Phase 3.12).  Self-gates on
+    # BACKUP_ENABLED so non-prod environments never call pg_dump.
+    _scheduler.add_job(
+        _encrypted_backup_job,
+        "cron",
+        hour=3,
+        minute=30,
+        id="encrypted_backup",
+        name="Encrypted off-platform Postgres backup",
         replace_existing=True,
     )
 

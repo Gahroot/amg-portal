@@ -3,10 +3,18 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 
 import { API_V1_URL } from '@/lib/config';
+import { buildIntegrityHeader } from '@/lib/device-integrity';
 
 const TOKEN_KEY = 'amg_auth_token';
 const REFRESH_TOKEN_KEY = 'amg_refresh_token';
 
+/**
+ * Cert pinning is enforced at the OS/TLS layer via the Expo config plugin
+ * `mobile/plugins/withCertificatePinning.js` (Android `network_security_config.xml`
+ * + iOS `NSPinnedDomains`). No JS-level pin library is required because the
+ * system trust store rejects mismatching certs before the request leaves the
+ * platform networking stack — see `docs/security-runbooks/mobile-cert-pinning.md`.
+ */
 const api = axios.create({
   baseURL: API_V1_URL,
   timeout: 30_000,
@@ -20,6 +28,9 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Compact device-integrity digest — backend uses it to flag suspicious
+  // sessions (security-plan §7.13). Always send so missing-header == old client.
+  config.headers['X-Device-Integrity'] = buildIntegrityHeader();
   return config;
 });
 

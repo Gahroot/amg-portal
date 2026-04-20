@@ -1,6 +1,3 @@
-import logging
-import logging.handlers
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -20,46 +17,17 @@ from app.core.exceptions import (
     http_exception_handler,
     validation_exception_handler,
 )
+from app.core.http_client import shutdown_http_clients, startup_http_clients
+from app.core.logging import configure_logging
 from app.middleware.audit import AuditContextMiddleware
+from app.middleware.cloudflare_origin import CloudflareOriginAuthMiddleware
 from app.middleware.csrf import CSRFMiddleware
+from app.middleware.logging_context import LoggingContextMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 
+configure_logging()
 
-def _configure_logging() -> None:
-    """Configure structured logging for the application.
-
-    - Always logs to stdout (captured by process manager / Docker).
-    - Optionally writes a rotating file log when LOG_FILE env var is set
-      (e.g. LOG_FILE=backend/app.log).  File rotates at 10 MB, keeps 5 backups.
-    - Log level is controlled by LOG_LEVEL env var (default: INFO).
-    """
-    log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
-    log_level = getattr(logging, log_level_name, logging.INFO)
-
-    fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    datefmt = "%Y-%m-%dT%H:%M:%S"
-
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
-
-    log_file = os.environ.get("LOG_FILE", "")
-    if log_file:
-        os.makedirs(os.path.dirname(log_file) if os.path.dirname(log_file) else ".", exist_ok=True)
-        file_handler = logging.handlers.RotatingFileHandler(
-            log_file,
-            maxBytes=10 * 1024 * 1024,  # 10 MB
-            backupCount=5,
-            encoding="utf-8",
-        )
-        handlers.append(file_handler)
-
-    logging.basicConfig(level=log_level, format=fmt, datefmt=datefmt, handlers=handlers, force=True)
-
-    # Quieten noisy third-party loggers
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("apscheduler").setLevel(logging.WARNING)
-
-
-_configure_logging()
+import logging  # noqa: E402  — must run after configure_logging() to honour root config
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +44,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from app.services.template_seeder import (
         seed_default_templates,
     )
+
+    # Pooled httpx clients — opened once per process, shared across handlers
+    # and APScheduler jobs.  Closed in the teardown branch.
+    await startup_http_clients()
 
     # Seed system templates before starting scheduler
     try:
@@ -108,8 +80,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
 
     scheduler = start_scheduler()
-    yield
-    stop_scheduler(scheduler)
+    try:
+        yield
+    finally:
+        stop_scheduler(scheduler)
+        await shutdown_http_clients()
 
 
 app = FastAPI(
@@ -140,6 +115,7 @@ app.add_middleware(
         "Authorization",
         "X-Requested-With",
         "X-CSRF-Token",
+        "X-Request-ID",
     ],
 )
 
@@ -155,6 +131,13 @@ app.add_middleware(SecurityHeadersMiddleware)
 # `add_middleware` call becomes the *inner* wrapper.)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuditContextMiddleware)
+# Cloudflare AOP compensating control — no-op unless CF_ORIGIN_AUTH_HEADER
+# and CF_ORIGIN_AUTH_TOKEN are both set.  Mounted just inside the logging
+# layer so rejections still get a structured ``request.completed`` line.
+app.add_middleware(CloudflareOriginAuthMiddleware)
+# LoggingContextMiddleware is the outermost wrapper so it sees the unmodified
+# request first and the final response last (correct latency + status capture).
+app.add_middleware(LoggingContextMiddleware)
 
 
 app.include_router(v1_router, prefix=settings.API_V1_PREFIX)

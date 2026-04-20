@@ -34,10 +34,28 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+    "extra": {
+      "certPins": {
+        "api.amg-portal.com": {
+          "primary": "REPLACE_WITH_PROD_LEAF_SPKI_SHA256",
+          "backup": "REPLACE_WITH_BACKUP_SPKI_SHA256",
+          "expiration": "2027-01-01"
+        }
+      }
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-font",
+      "./plugins/withCertificatePinning",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": false
+          }
+        }
+      ],
       [
         "expo-notifications",
         {
