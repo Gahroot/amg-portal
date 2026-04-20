@@ -122,10 +122,27 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
             sent_at=datetime.now(UTC),
         )
         db.add(communication)
+        # Flush to assign identity / emit INSERT without committing, so the
+        # Communication row and the SLA tracker row commit atomically.  If
+        # _handle_sla_tracking raises, the not-yet-committed Communication
+        # is rolled back with it — no orphaned messages without SLA rows.
+        await db.flush()
+
+        # Auto-create or close SLA tracker based on sender role and conversation type.
+        # NOTE: the sla_service helpers (start_sla_clock / close_open_sla_for_entity)
+        # call db.commit() internally, which commits the pending Communication too.
+        # No try/except here — a failure must abort the message send.
+        if conversation is not None:
+            await self._handle_sla_tracking(db, conversation, sender_id)
+
+        # Ensure the Communication is committed even on SLA early-return paths
+        # (e.g. conversation is None, sender not found, already-open tracker).
+        # A commit with no pending work is a safe no-op on SQLAlchemy async.
         await db.commit()
         await db.refresh(communication)
 
-        # Audit trail
+        # Audit trail — best-effort.  log_communication_event commits on its own,
+        # so a failure here cannot roll back the already-committed message.
         try:
             from app.services.communication_audit_service import log_communication_event
 
@@ -139,15 +156,6 @@ class CommunicationService(CRUDBase[Communication, CommunicationCreate, dict[str
             )
         except Exception:
             logger.exception("Failed to log audit event for communication %s", communication.id)
-
-        # Auto-create or close SLA tracker based on sender role and conversation type
-        if conversation:
-            try:
-                await self._handle_sla_tracking(db, conversation, sender_id)
-            except Exception:
-                logger.exception(
-                    "Failed to handle SLA tracking for conversation %s", conversation.id
-                )
 
         # Populate plaintext body in-memory for the response and broadcast.
         # Detach from the session first so this never flushes back to the DB.
