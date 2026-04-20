@@ -20,3 +20,30 @@ Thumbs.db
 AMG Portal Design.docx
 AMG Portal Design.docx.md
 .vercel
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Claude / AI tooling
+.claude/
+.gg/
+
+# Stray glob artifacts (a literal ** directory has been created before)
+/**/types*.ts.bak
