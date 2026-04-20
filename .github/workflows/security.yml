@@ -1,0 +1,110 @@
+# Supply-chain + SCA scans.
+#
+# Runs:
+#   - pip-audit (Python) on uv.lock
+#   - npm audit  (Node)  on frontend + mobile package-locks
+#   - osv-scanner (all)  via Google's reusable workflow
+#
+# All Actions pinned by SHA (security-plan 0.8).
+#
+# Pin sources (verified via grep.app):
+#   - google/osv-scanner-action @c518547 hatchet-dev/hatchet
+
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly full scan on Monday 07:00 UTC so advisories published over the
+    # weekend surface before Dependabot's 09:00 PRs land.
+    - cron: "0 7 * * 1"
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    name: pip-audit (backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+      - name: Export requirements from uv.lock
+        run: uv export --frozen --no-hashes --format requirements-txt > /tmp/requirements.txt
+      - name: Install pip-audit
+        run: uv tool install pip-audit
+      - name: Run pip-audit
+        run: uv tool run pip-audit --requirement /tmp/requirements.txt --strict --disable-pip
+
+  npm-audit-frontend:
+    name: npm audit (frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Audit
+        # Fail on high/critical only. Minor/moderate are surfaced elsewhere.
+        run: npm audit --audit-level=high --production
+
+  npm-audit-mobile:
+    name: npm audit (mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: mobile/package-lock.json
+      - name: Audit
+        run: npm audit --audit-level=high --production
+
+  # osv-scanner runs via Google's reusable workflow — called at the job level,
+  # not under steps. The reusable workflow itself is SHA-pinned, which is the
+  # recommended pattern per its README.
+  osv-scan:
+    name: osv-scanner (all ecosystems)
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+    with:
+      scan-args: |-
+        --recursive
+        --skip-git
+        ./

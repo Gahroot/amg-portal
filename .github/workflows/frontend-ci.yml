@@ -1,0 +1,69 @@
+# Frontend CI — lint, typecheck, test, build.
+#
+# Every `uses:` below is pinned by 40-char SHA with a version comment
+# (security-plan 0.8). Dependabot bumps SHA + comment in lockstep.
+#
+# Pin sources (verified via grep.app):
+#   - actions/checkout@de0fac2   pydantic/pydantic, TryGhost/Ghost
+#   - actions/setup-node@53b8394 TryGhost/Ghost, withastro/astro, yamadashy/repomix
+
+name: frontend-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-typecheck-test-build:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Avoid telemetry in CI.
+          NEXT_TELEMETRY_DISABLED: "1"

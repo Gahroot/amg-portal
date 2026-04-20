@@ -1,0 +1,143 @@
+# Dependabot configuration for AMG Portal.
+#
+# Security plan ref: docs/security-plan.md Phase 0, item 0.9.
+#
+# Scope:
+#   - Python backend         (uv.lock in /backend)
+#   - Next.js frontend       (package-lock.json in /frontend)
+#   - React Native mobile    (package-lock.json in /mobile)
+#   - GitHub Actions         (workflows in /.github/workflows, once created)
+#
+# Conventions:
+#   - Weekly runs on Monday 09:00 UTC so PRs land at start of the week.
+#   - Max 5 open PRs per ecosystem (keeps review queue manageable).
+#   - Minor + patch updates are grouped into a single PR per ecosystem
+#     to reduce review churn. Major bumps open individually so they
+#     get explicit attention.
+#   - Every PR is labelled `dependencies` plus an ecosystem-specific tag.
+#   - Commit prefix `deps(<scope>)` matches the repo's conventional-commit
+#     style so Dependabot PRs are easy to filter.
+#
+# Pattern sources (public repos, verified via grep.app):
+#   - langchain-ai/langchain, langchain-ai/langgraph    (uv ecosystem + minor-and-patch grouping)
+#   - streamlit/streamlit                               (uv with pyproject.toml + dependency groups)
+#   - google/adk-samples                                (uv with Monday schedule)
+#   - strawberry-graphql/strawberry                     (deps(python) commit-message prefix)
+#   - kagent-dev/kagent                                 (multi-ecosystem labels)
+#   - spring-projects/spring-security                   (ignore semver-major via groups)
+#
+# See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # -------------------------------------------------------------------------
+  # Python backend (uv-managed).
+  # Dependabot 'uv' ecosystem reads pyproject.toml + uv.lock natively; do not
+  # use 'pip' here — 'pip' ignores uv.lock and will drift from the resolver.
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "uv"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "backend"
+    commit-message:
+      prefix: "deps(backend)"
+      include: "scope"
+    groups:
+      backend-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # -------------------------------------------------------------------------
+  # Frontend (Next.js 16 + React 19).
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "frontend"
+    commit-message:
+      prefix: "deps(frontend)"
+      include: "scope"
+    groups:
+      frontend-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # -------------------------------------------------------------------------
+  # Mobile (React Native 0.83 + Expo 55).
+  # Expo SDK bumps are coordinated manually — major RN/Expo upgrades almost
+  # always require native changes, so they go through individual review.
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "mobile"
+    commit-message:
+      prefix: "deps(mobile)"
+      include: "scope"
+    groups:
+      mobile-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # -------------------------------------------------------------------------
+  # GitHub Actions.
+  # All Actions are pinned by 40-char SHA (security-plan 0.8); Dependabot
+  # understands SHA-pinned actions and will bump the pin + version comment
+  # in lockstep when a new release is cut.
+  # -------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "security"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"
+    groups:
+      actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
