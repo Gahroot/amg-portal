@@ -43,6 +43,7 @@ coverage/
 
 # Claude / AI tooling
 .claude/
+.gg/
 
 # Stray glob artifacts (a literal ** directory has been created before)
 /**/types*.ts.bak
