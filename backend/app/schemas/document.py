@@ -4,30 +4,32 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000, TextStr
+
 
 class DocumentResponse(BaseModel):
     id: UUID
-    file_path: str
-    file_name: str
+    file_path: Str500
+    file_name: Str255
     file_size: int
-    content_type: str | None = None
-    entity_type: str
+    content_type: Str255 | None = None
+    entity_type: Str50
     entity_id: UUID
-    category: str
-    description: str | None = None
+    category: Str100
+    description: Str2000 | None = None
     version: int
     uploaded_by: UUID
     created_at: datetime
     updated_at: datetime
-    vault_status: str = "active"
-    download_url: str | None = None
+    vault_status: Str50 = "active"
+    download_url: Str2000 | None = None
     # Expiry fields
-    document_type: str | None = None
+    document_type: Str100 | None = None
     expiry_date: date | None = None
-    expiry_status: str | None = None  # computed: expired/expiring_30/expiring_90/valid
+    expiry_status: Str50 | None = None  # computed: expired/expiring_30/expiring_90/valid
     # DocuSign
-    envelope_id: str | None = None
-    docusign_status: str | None = None
+    envelope_id: Str255 | None = None
+    docusign_status: Str50 | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,7 +45,7 @@ class DocumentVersionResponse(BaseModel):
     uploaded_by: UUID
     created_at: datetime
     file_size: int
-    download_url: str | None = None
+    download_url: Str2000 | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,21 +57,19 @@ class DocumentVersionListResponse(BaseModel):
 
 class ExpiringDocumentResponse(BaseModel):
     id: UUID
-    file_name: str
+    file_name: Str255
     file_size: int
-    entity_type: str
+    entity_type: Str50
     entity_id: UUID
-    category: str
-    description: str | None = None
-    document_type: str | None = None
+    category: Str100
+    description: Str2000 | None = None
+    document_type: Str100 | None = None
     expiry_date: date
-    expiry_status: str  # expired / expiring_30 / expiring_90
+    expiry_status: Str50  # expired / expiring_30 / expiring_90
     days_until_expiry: int  # negative if already expired
     uploaded_by: UUID
     created_at: datetime
-    download_url: str | None = None
-
-    model_config = ConfigDict(from_attributes=True)
+    download_url: Str2000 | None = None
 
 
 class ExpiringDocumentsResponse(BaseModel):
@@ -83,7 +83,7 @@ class ExpiringDocumentsResponse(BaseModel):
 class DiffLine(BaseModel):
     line_number_a: int | None = None
     line_number_b: int | None = None
-    content: str
+    content: TextStr
     change_type: Literal["added", "deleted", "context"]
 
 

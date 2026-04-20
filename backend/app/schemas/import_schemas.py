@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000, TextStr
+
 
 class ImportEntityType(StrEnum):
     """Supported entity types for import."""
@@ -33,20 +35,20 @@ class ImportStatus(StrEnum):
 class ColumnMapping(BaseModel):
     """Mapping from a source column to a target field."""
 
-    source_column: str
-    target_field: str
+    source_column: Str255
+    target_field: Str100
     # Optional transform: "uppercase", "lowercase", "date:YYYY-MM-DD", etc.
-    transform: str | None = None
+    transform: Str100 | None = None
 
 
 class ImportError(BaseModel):
     """An error found during import validation."""
 
     row_number: int
-    column: str | None = None
-    field: str | None = None
-    error_type: str  # "required", "format", "duplicate", "reference", "value"
-    message: str
+    column: Str255 | None = None
+    field: Str100 | None = None
+    error_type: Str50  # "required", "format", "duplicate", "reference", "value"
+    message: Str2000
     value: Any | None = None
 
 
@@ -54,13 +56,13 @@ class ImportWarning(BaseModel):
     """A warning found during import validation (non-blocking)."""
 
     row_number: int
-    column: str | None = None
-    field: str | None = None
-    warning_type: str  # "duplicate_match", "similar_existing", "missing_optional"
-    message: str
+    column: Str255 | None = None
+    field: Str100 | None = None
+    warning_type: Str50  # "duplicate_match", "similar_existing", "missing_optional"
+    message: Str2000
     value: Any | None = None
     existing_id: UUID | None = None
-    existing_name: str | None = None
+    existing_name: Str255 | None = None
 
 
 class ImportPreviewRow(BaseModel):
@@ -80,14 +82,14 @@ class ImportPreviewRow(BaseModel):
 class ImportFieldDefinition(BaseModel):
     """Definition of an importable field."""
 
-    name: str
-    display_name: str
-    description: str | None = None
+    name: Str100
+    display_name: Str255
+    description: Str500 | None = None
     required: bool = False
-    field_type: str  # "string", "email", "phone", "date", "number", "enum", "uuid"
+    field_type: Str50  # "string", "email", "phone", "date", "number", "enum", "uuid"
     enum_values: list[str] | None = None
     default_value: Any | None = None
-    validation_regex: str | None = None
+    validation_regex: Str500 | None = None
     example_values: list[str] = []
 
 
@@ -106,8 +108,8 @@ class ImportTemplateResponse(BaseModel):
 class ImportUploadResponse(BaseModel):
     """Response after uploading a file."""
 
-    import_id: str
-    filename: str
+    import_id: Str100
+    filename: Str255
     row_count: int
     columns: list[str]
     detected_mappings: dict[str, str] | None = None  # Auto-detected column -> field mappings
@@ -117,7 +119,7 @@ class ImportUploadResponse(BaseModel):
 class ImportMapColumnsRequest(BaseModel):
     """Request to set column mappings."""
 
-    import_id: str
+    import_id: Str100
     mappings: list[ColumnMapping]
     default_values: dict[str, Any] | None = None
 
@@ -125,14 +127,14 @@ class ImportMapColumnsRequest(BaseModel):
 class ImportValidateRequest(BaseModel):
     """Request to validate import data."""
 
-    import_id: str
+    import_id: Str100
     skip_duplicates: bool = False
 
 
 class ImportValidateResponse(BaseModel):
     """Response after validation."""
 
-    import_id: str
+    import_id: Str100
     status: ImportStatus
     total_rows: int
     valid_rows: int
@@ -146,7 +148,7 @@ class ImportValidateResponse(BaseModel):
 class ImportConfirmRequest(BaseModel):
     """Request to confirm and execute the import."""
 
-    import_id: str
+    import_id: Str100
     skip_invalid_rows: bool = True
     skip_warnings: bool = False
 
@@ -154,7 +156,7 @@ class ImportConfirmRequest(BaseModel):
 class ImportConfirmResponse(BaseModel):
     """Response after import execution."""
 
-    import_id: str
+    import_id: Str100
     status: ImportStatus
     total_rows: int
     imported_rows: int
@@ -167,18 +169,18 @@ class ImportConfirmResponse(BaseModel):
 class ImportErrorReportResponse(BaseModel):
     """Downloadable error report."""
 
-    import_id: str
-    filename: str
-    content_type: str
-    content: str  # Base64-encoded CSV content
+    import_id: Str100
+    filename: Str255
+    content_type: Str100
+    content: TextStr  # Base64-encoded CSV content
 
 
 class ImportJobResponse(BaseModel):
     """Full import job status."""
 
-    import_id: str
+    import_id: Str100
     entity_type: ImportEntityType
-    filename: str
+    filename: Str255
     status: ImportStatus
     created_at: datetime
     updated_at: datetime
@@ -206,55 +208,55 @@ class ImportJobListResponse(BaseModel):
 class ClientImportRow(BaseModel):
     """Data for a single client import row."""
 
-    legal_name: str
-    display_name: str | None = None
-    entity_type: str | None = None
-    jurisdiction: str | None = None
-    tax_id: str | None = None
-    primary_email: str
-    secondary_email: str | None = None
-    phone: str | None = None
-    address: str | None = None
-    communication_preference: str | None = None
-    sensitivities: str | None = None
-    special_instructions: str | None = None
+    legal_name: Str255
+    display_name: Str255 | None = None
+    entity_type: Str100 | None = None
+    jurisdiction: Str100 | None = None
+    tax_id: Str100 | None = None
+    primary_email: Str255
+    secondary_email: Str255 | None = None
+    phone: Str50 | None = None
+    address: Str2000 | None = None
+    communication_preference: Str50 | None = None
+    sensitivities: Str2000 | None = None
+    special_instructions: Str2000 | None = None
     birth_date: date | None = None
-    assigned_rm_email: str | None = None  # For RM assignment by email
+    assigned_rm_email: Str255 | None = None  # For RM assignment by email
 
 
 class PartnerImportRow(BaseModel):
     """Data for a single partner import row."""
 
-    firm_name: str
-    contact_name: str
-    contact_email: str
-    contact_phone: str | None = None
-    capabilities: str | None = None  # Comma-separated
-    geographies: str | None = None  # Comma-separated
-    notes: str | None = None
+    firm_name: Str255
+    contact_name: Str255
+    contact_email: Str255
+    contact_phone: Str50 | None = None
+    capabilities: Str2000 | None = None  # Comma-separated
+    geographies: Str2000 | None = None  # Comma-separated
+    notes: Str2000 | None = None
 
 
 class ProgramImportRow(BaseModel):
     """Data for a single program import row."""
 
-    title: str
-    client_email: str  # Reference by client email
-    objectives: str | None = None
-    scope: str | None = None
+    title: Str255
+    client_email: Str255  # Reference by client email
+    objectives: Str2000 | None = None
+    scope: Str2000 | None = None
     budget_envelope: Decimal | None = None
     start_date: date | None = None
     end_date: date | None = None
-    status: str | None = None
+    status: Str50 | None = None
 
 
 class TaskImportRow(BaseModel):
     """Data for a single task import row."""
 
-    title: str
-    program_title: str | None = None  # Reference by program title
-    milestone_title: str | None = None  # Reference by milestone title within program
-    description: str | None = None
+    title: Str255
+    program_title: Str255 | None = None  # Reference by program title
+    milestone_title: Str255 | None = None  # Reference by milestone title within program
+    description: Str2000 | None = None
     due_date: date | None = None
-    assigned_to_email: str | None = None  # Reference by user email
-    priority: str | None = None
-    status: str | None = None
+    assigned_to_email: Str255 | None = None  # Reference by user email
+    priority: Str50 | None = None
+    status: Str50 | None = None

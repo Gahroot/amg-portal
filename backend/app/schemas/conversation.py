@@ -5,34 +5,35 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str255
 from app.schemas.communication import CommunicationResponse
 
 
 class ConversationCreate(BaseModel):
-    conversation_type: str = "rm_client"
+    conversation_type: Str50 = "rm_client"
     client_id: UUID | None = None
     partner_assignment_id: UUID | None = None
-    title: str | None = None
+    title: Str255 | None = None
     participant_ids: list[UUID] = Field(default_factory=list)
 
 
 class ConversationUpdate(BaseModel):
-    title: str | None = None
+    title: Str255 | None = None
     participant_ids: list[UUID] | None = None
 
 
 class ParticipantInfo(BaseModel):
     id: UUID
-    full_name: str
-    role: str
+    full_name: Str255
+    role: Str50
 
 
 class ConversationResponse(BaseModel):
     id: UUID
-    conversation_type: str
+    conversation_type: Str50
     client_id: UUID | None = None
     partner_assignment_id: UUID | None = None
-    title: str | None = None
+    title: Str255 | None = None
     participant_ids: list[UUID]
     last_activity_at: datetime | None = None
     created_at: datetime

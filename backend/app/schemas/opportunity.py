@@ -5,11 +5,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import OpportunityStage
+from app.schemas.base import Str100, Str255, Str500, Str2000
 
 
 class OpportunityBase(BaseModel):
     title: str = Field(..., max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     stage: OpportunityStage = OpportunityStage.qualifying
     value: Decimal | None = None
     probability: int = Field(50, ge=0, le=100)
@@ -27,7 +28,7 @@ class OpportunityCreate(OpportunityBase):
 
 class OpportunityUpdate(BaseModel):
     title: str | None = Field(None, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     stage: OpportunityStage | None = None
     value: Decimal | None = None
     probability: int | None = Field(None, ge=0, le=100)
@@ -41,22 +42,22 @@ class OpportunityUpdate(BaseModel):
 
 class OpportunityResponse(BaseModel):
     id: UUID
-    title: str
-    description: str | None
+    title: Str255
+    description: Str2000 | None
     stage: OpportunityStage
     position: int
     value: Decimal | None
     probability: int
     expected_close_date: date | None
-    program_type: str | None
-    next_step: str | None
+    program_type: Str100 | None
+    next_step: Str500 | None
     next_step_at: date | None
     owner_id: UUID
     lead_id: UUID | None
     client_profile_id: UUID | None
     won_at: datetime | None
     lost_at: datetime | None
-    lost_reason: str | None
+    lost_reason: Str500 | None
     created_at: datetime
     updated_at: datetime
 

@@ -6,6 +6,8 @@ from typing import Any
 import bcrypt
 import jwt
 import jwt.exceptions
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config import settings
@@ -121,12 +123,35 @@ def decode_password_reset_token(token: str) -> dict[str, Any] | None:
         return None
 
 
+# OWASP 2026 Argon2id parameters: t=2, m=46 MiB, p=1.
+_ph = PasswordHasher(time_cost=2, memory_cost=47104, parallelism=1)
+
+
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    return _ph.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+def verify_password(plain_password: str, hashed_password: str) -> tuple[bool, bool]:
+    """Return ``(is_valid, needs_rehash)``.
+
+    Supports both argon2id (current) and bcrypt (legacy). A successful bcrypt
+    verify always returns ``needs_rehash=True`` so callers silently upgrade the
+    stored hash to argon2id on the next login.
+    """
+    if hashed_password.startswith("$argon2"):
+        try:
+            _ph.verify(hashed_password, plain_password)
+        except (VerificationError, InvalidHashError):
+            # VerificationError covers mismatches AND decode errors on malformed
+            # hashes; InvalidHashError covers prefix-matching-but-unparseable.
+            return False, False
+        return True, _ph.check_needs_rehash(hashed_password)
+
+    try:
+        ok = bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except ValueError:
+        return False, False
+    return ok, ok
 
 
 # ── MFA secret encryption ──────────────────────────────────

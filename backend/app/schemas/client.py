@@ -4,30 +4,31 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import ClientType
+from app.schemas.base import Str50, Str255, Str2000
 
 
 class ClientCreate(BaseModel):
-    name: str
+    name: Str255
     client_type: ClientType
     rm_id: UUID
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class ClientUpdate(BaseModel):
-    name: str | None = None
+    name: Str255 | None = None
     client_type: ClientType | None = None
     rm_id: UUID | None = None
-    status: str | None = None
-    notes: str | None = None
+    status: Str50 | None = None
+    notes: Str2000 | None = None
 
 
 class ClientResponse(BaseModel):
     id: UUID
-    name: str
-    client_type: str
+    name: Str255
+    client_type: Str50
     rm_id: UUID
-    status: str
-    notes: str | None
+    status: Str50
+    notes: Str2000 | None
     created_at: datetime
     updated_at: datetime
 
@@ -43,10 +44,10 @@ class UpcomingDateItemResponse(BaseModel):
     """A single upcoming birthday or important date for a client."""
 
     client_id: UUID
-    client_name: str
+    client_name: Str255
     rm_id: UUID
-    date_type: str
-    label: str
+    date_type: Str50
+    label: Str255
     days_until: int
     occurs_on: date
     years_since: int | None

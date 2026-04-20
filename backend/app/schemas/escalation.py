@@ -3,18 +3,20 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str100, Str255, Str2000
+
 
 class EscalationResponse(BaseModel):
     id: UUID
-    level: str
-    status: str
-    title: str
-    description: str | None = None
-    entity_type: str
-    entity_id: str
+    level: Str50
+    status: Str50
+    title: Str255
+    description: Str2000 | None = None
+    entity_type: Str50
+    entity_id: Str100
     owner_id: UUID
-    owner_email: str | None = None
-    owner_name: str | None = None
+    owner_email: Str255 | None = None
+    owner_name: Str255 | None = None
     program_id: UUID | None = None
     client_id: UUID | None = None
     triggered_at: datetime
@@ -22,11 +24,11 @@ class EscalationResponse(BaseModel):
     resolved_at: datetime | None = None
     closed_at: datetime | None = None
     triggered_by: UUID
-    triggered_by_email: str | None = None
-    triggered_by_name: str | None = None
+    triggered_by_email: Str255 | None = None
+    triggered_by_name: Str255 | None = None
     risk_factors: dict[str, object] | None = None
     escalation_chain: list[dict[str, object]] | None = None
-    resolution_notes: str | None = None
+    resolution_notes: Str2000 | None = None
     created_at: datetime
     updated_at: datetime
     response_deadline: datetime | None = None
@@ -41,46 +43,46 @@ class EscalationListResponse(BaseModel):
 
 
 class EscalationCreate(BaseModel):
-    title: str
-    description: str | None = None
-    entity_type: str
-    entity_id: str
-    level: str
+    title: Str255
+    description: Str2000 | None = None
+    entity_type: Str50
+    entity_id: Str100
+    level: Str50
     program_id: UUID | None = None
     client_id: UUID | None = None
 
 
 class EscalationUpdate(BaseModel):
-    status: str | None = None
-    resolution_notes: str | None = None
+    status: Str50 | None = None
+    resolution_notes: Str2000 | None = None
 
 
 class EscalationTriggerRequest(BaseModel):
-    entity_type: str
-    entity_id: str
-    level: str
-    reason: str
+    entity_type: Str50
+    entity_id: Str100
+    level: Str50
+    reason: Str2000
 
 
 class EscalationChainEntry(BaseModel):
-    action: str
-    at: str
-    by: str | None = None
-    level: str | None = None
-    notes: str | None = None
-    from_level: str | None = None
-    to_level: str | None = None
+    action: Str50
+    at: Str50
+    by: Str255 | None = None
+    level: Str50 | None = None
+    notes: Str2000 | None = None
+    from_level: Str50 | None = None
+    to_level: Str50 | None = None
 
 
 class EscalationChainResponse(BaseModel):
     escalation_id: UUID
-    current_level: str
+    current_level: Str50
     chain: list[dict[str, object]]
     total_entries: int
 
 
 class EscalationProgressRequest(BaseModel):
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class EscalationMetricsResponse(BaseModel):

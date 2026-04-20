@@ -4,33 +4,35 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str255, Str2000
+
 
 class MilestoneTemplateTask(BaseModel):
-    title: str
-    description: str | None = None
-    priority: str = "medium"  # low / medium / high / urgent
+    title: Str255
+    description: Str2000 | None = None
+    priority: Str50 = "medium"  # low / medium / high / urgent
 
 
 class MilestoneTemplateItem(BaseModel):
-    title: str
-    description: str | None = None
+    title: Str255
+    description: Str2000 | None = None
     offset_days: int = 0
     duration_days: int = 7
     tasks: list[MilestoneTemplateTask] = []
 
 
 class ProgramTemplateCreate(BaseModel):
-    name: str
-    description: str | None = None
-    category: str
+    name: Str255
+    description: Str2000 | None = None
+    category: Str50
     milestones_template: list[MilestoneTemplateItem] = []
     estimated_duration_days: int | None = None
 
 
 class ProgramTemplateUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    category: str | None = None
+    name: Str255 | None = None
+    description: Str2000 | None = None
+    category: Str50 | None = None
     milestones_template: list[MilestoneTemplateItem] | None = None
     estimated_duration_days: int | None = None
     is_active: bool | None = None
@@ -38,9 +40,9 @@ class ProgramTemplateUpdate(BaseModel):
 
 class ProgramTemplateResponse(BaseModel):
     id: UUID
-    name: str
-    description: str | None
-    category: str
+    name: Str255
+    description: Str2000 | None
+    category: Str50
     milestones_template: list[dict[str, Any]] | None
     estimated_duration_days: int | None
     is_system_template: bool

@@ -12,6 +12,7 @@ from app.models.enums import (
     BudgetRequestType,
     UserRole,
 )
+from app.schemas.base import Str50, Str100, Str255, Str2000
 
 # === Approval Threshold Schemas ===
 
@@ -20,7 +21,7 @@ class ApprovalThresholdCreate(BaseModel):
     """Schema for creating an approval threshold."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    description: str | None = None
+    description: Str2000 | None = None
     min_amount: Decimal = Field(..., ge=0)
     max_amount: Decimal | None = Field(None, ge=0)
     approval_chain_id: UUID
@@ -32,7 +33,7 @@ class ApprovalThresholdUpdate(BaseModel):
     """Schema for updating an approval threshold."""
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    description: str | None = None
+    description: Str2000 | None = None
     min_amount: Decimal | None = Field(None, ge=0)
     max_amount: Decimal | None = Field(None, ge=0)
     approval_chain_id: UUID | None = None
@@ -44,12 +45,12 @@ class ApprovalThresholdResponse(BaseModel):
     """Schema for approval threshold response."""
 
     id: UUID
-    name: str
-    description: str | None
+    name: Str100
+    description: Str2000 | None
     min_amount: Decimal
     max_amount: Decimal | None
     approval_chain_id: UUID
-    approval_chain_name: str = ""
+    approval_chain_name: Str100 = ""
     is_active: bool
     priority: int
     created_at: datetime
@@ -89,9 +90,9 @@ class ApprovalChainStepResponse(BaseModel):
     id: UUID
     approval_chain_id: UUID
     step_number: int
-    required_role: str
+    required_role: Str50
     specific_user_id: UUID | None
-    specific_user_name: str | None = None
+    specific_user_name: Str255 | None = None
     is_parallel: bool
     timeout_hours: int | None
     auto_approve_on_timeout: bool
@@ -108,7 +109,7 @@ class ApprovalChainCreate(BaseModel):
     """Schema for creating an approval chain."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    description: str | None = None
+    description: Str2000 | None = None
     is_active: bool = True
     steps: list[ApprovalChainStepCreate] = Field(default_factory=list)
 
@@ -117,7 +118,7 @@ class ApprovalChainUpdate(BaseModel):
     """Schema for updating an approval chain."""
 
     name: str | None = Field(None, min_length=1, max_length=100)
-    description: str | None = None
+    description: Str2000 | None = None
     is_active: bool | None = None
 
 
@@ -125,11 +126,11 @@ class ApprovalChainResponse(BaseModel):
     """Schema for approval chain response."""
 
     id: UUID
-    name: str
-    description: str | None
+    name: Str100
+    description: Str2000 | None
     is_active: bool
     created_by: UUID
-    creator_name: str = ""
+    creator_name: Str255 = ""
     created_at: datetime
     updated_at: datetime
     steps: list[ApprovalChainStepResponse] = []
@@ -141,8 +142,8 @@ class ApprovalChainSummary(BaseModel):
     """Brief summary of an approval chain."""
 
     id: UUID
-    name: str
-    description: str | None
+    name: Str100
+    description: Str2000 | None
     is_active: bool
     step_count: int = 0
 
@@ -160,7 +161,7 @@ class BudgetImpactSummary(BaseModel):
     budget_impact: Decimal
     projected_budget: Decimal
     utilization_percentage: float
-    threshold_triggered: str | None = None
+    threshold_triggered: Str100 | None = None
 
 
 class BudgetApprovalRequestCreate(BaseModel):
@@ -169,7 +170,7 @@ class BudgetApprovalRequestCreate(BaseModel):
     program_id: UUID
     request_type: BudgetRequestType
     title: str = Field(..., min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     requested_amount: Decimal = Field(..., gt=0)
     metadata: dict[str, Any] | None = None
 
@@ -178,7 +179,7 @@ class BudgetApprovalRequestUpdate(BaseModel):
     """Schema for updating a budget approval request (before submission)."""
 
     title: str | None = Field(None, min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     requested_amount: Decimal | None = Field(None, gt=0)
     metadata: dict[str, Any] | None = None
 
@@ -187,7 +188,7 @@ class BudgetApprovalStepDecision(BaseModel):
     """Schema for making a decision on an approval step."""
 
     decision: Literal["approved", "rejected"]
-    comments: str | None = None
+    comments: Str2000 | None = None
     delegate_to_user_id: UUID | None = None
 
 
@@ -199,13 +200,13 @@ class BudgetApprovalStepResponse(BaseModel):
     chain_step_id: UUID
     step_number: int
     assigned_user_id: UUID | None
-    assigned_user_name: str | None = None
-    assigned_role: str
-    status: str
-    decision: str | None
-    comments: str | None
+    assigned_user_name: Str255 | None = None
+    assigned_role: Str50
+    status: Str50
+    decision: Str50 | None
+    comments: Str2000 | None
     decided_by: UUID | None
-    decider_name: str | None = None
+    decider_name: Str255 | None = None
     decided_at: datetime | None
     is_timeout: bool
     created_at: datetime
@@ -219,14 +220,14 @@ class BudgetApprovalHistoryResponse(BaseModel):
 
     id: UUID
     request_id: UUID
-    action: str
+    action: Str50
     step_number: int | None
-    from_status: str | None
-    to_status: str | None
+    from_status: Str50 | None
+    to_status: Str50 | None
     actor_id: UUID
-    actor_name: str
-    actor_role: str
-    comments: str | None
+    actor_name: Str255
+    actor_role: Str50
+    comments: Str2000 | None
     metadata: dict[str, Any] | None
     created_at: datetime
 
@@ -238,28 +239,28 @@ class BudgetApprovalRequestResponse(BaseModel):
 
     id: UUID
     program_id: UUID
-    program_title: str = ""
-    request_type: str
-    title: str
-    description: str | None
+    program_title: Str255 = ""
+    request_type: Str50
+    title: Str255
+    description: Str2000 | None
     requested_amount: Decimal
     budget_impact: Decimal
     current_budget: Decimal
     projected_budget: Decimal
     threshold_id: UUID
-    threshold_name: str = ""
+    threshold_name: Str100 = ""
     approval_chain_id: UUID
-    approval_chain_name: str = ""
+    approval_chain_name: Str100 = ""
     current_step: int
     total_steps: int = 0
-    status: str
+    status: Str50
     metadata: dict[str, Any] | None
     requested_by: UUID
-    requester_name: str = ""
+    requester_name: Str255 = ""
     approved_by: UUID | None
-    approver_name: str | None = None
+    approver_name: Str255 | None = None
     final_decision_at: datetime | None
-    final_comments: str | None
+    final_comments: Str2000 | None
     created_at: datetime
     updated_at: datetime
     steps: list[BudgetApprovalStepResponse] = []
@@ -273,15 +274,15 @@ class BudgetApprovalRequestSummary(BaseModel):
 
     id: UUID
     program_id: UUID
-    program_title: str = ""
-    request_type: str
-    title: str
+    program_title: Str255 = ""
+    request_type: Str50
+    title: Str255
     requested_amount: Decimal
-    status: str
+    status: Str50
     current_step: int
     total_steps: int = 0
     created_at: datetime
-    requester_name: str = ""
+    requester_name: Str255 = ""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -314,15 +315,15 @@ class PendingApprovalItem(BaseModel):
 
     id: UUID
     request_id: UUID
-    request_title: str
-    request_type: str
+    request_title: Str255
+    request_type: Str50
     program_id: UUID
-    program_title: str
+    program_title: Str255
     requested_amount: Decimal
     step_number: int
-    status: str
+    status: Str50
     created_at: datetime
-    requester_name: str
+    requester_name: Str255
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -348,7 +349,7 @@ class BudgetImpactResponse(BaseModel):
     """Response with budget impact calculation."""
 
     program_id: UUID
-    program_title: str
+    program_title: Str255
     current_budget: Decimal
     requested_amount: Decimal
     budget_impact: Decimal

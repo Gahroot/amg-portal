@@ -5,14 +5,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from app.schemas.base import Str50, Str255, Str500
+
 
 class PartnerBlockerCreate(BaseModel):
     start_date: date
     end_date: date
-    reason: str | None = None
-    blocker_type: str = "other"
+    reason: Str500 | None = None
+    blocker_type: Str50 = "other"
     is_recurring: bool = False
-    recurrence_type: str | None = None
+    recurrence_type: Str50 | None = None
     recurrence_days: list[int] | None = None
 
     @field_validator("blocker_type")
@@ -57,10 +59,10 @@ class PartnerBlockerResponse(BaseModel):
     partner_id: UUID
     start_date: date
     end_date: date
-    reason: str | None
-    blocker_type: str
+    reason: Str500 | None
+    blocker_type: Str50
     is_recurring: bool
-    recurrence_type: str | None
+    recurrence_type: Str50 | None
     recurrence_days: list[int] | None
     created_by: UUID
     created_at: datetime
@@ -73,10 +75,10 @@ class BlockerConflict(BaseModel):
     """An existing assignment whose due_date falls inside a blocker range."""
 
     assignment_id: UUID
-    assignment_title: str
-    program_title: str | None
+    assignment_title: Str255
+    program_title: Str255 | None
     due_date: date
-    status: str
+    status: Str50
 
 
 class PartnerBlockerCreateResponse(BaseModel):
@@ -92,8 +94,8 @@ class PartnerAvailabilityDay(BaseModel):
     date: date
     is_blocked: bool
     blocker_id: UUID | None = None
-    blocker_type: str | None = None
-    reason: str | None = None
+    blocker_type: Str50 | None = None
+    reason: Str500 | None = None
     is_recurring: bool = False
 
 

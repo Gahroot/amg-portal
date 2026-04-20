@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.base import Str50, Str100, Str255, Str500, Str2000
 from app.utils.url_safety import validate_safe_webhook_url
 
 # ============ Event Types ============
@@ -69,11 +70,11 @@ class PublicWebhookResponse(BaseModel):
     """Response for a public webhook subscription."""
 
     id: UUID
-    url: str
-    events: list[str]
-    secret: str  # Show secret on creation only
+    url: Str500
+    events: list[Str100]
+    secret: Str255  # Show secret on creation only
     is_active: bool
-    description: str | None = None
+    description: Str255 | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -94,22 +95,22 @@ class EventActor(BaseModel):
     """Actor information in events."""
 
     id: UUID
-    name: str
-    email: str
-    role: str
+    name: Str255
+    email: Str255
+    role: Str50
 
 
 class EventTask(BaseModel):
     """Task data in events."""
 
     id: UUID
-    title: str
-    description: str | None = None
-    status: str
-    priority: str
-    due_date: str | None = None
+    title: Str255
+    description: Str2000 | None = None
+    status: Str50
+    priority: Str50
+    due_date: Str50 | None = None
     program_id: UUID | None = None
-    program_name: str | None = None
+    program_name: Str255 | None = None
     assigned_to: EventActor | None = None
     created_at: datetime
     updated_at: datetime | None = None
@@ -119,13 +120,13 @@ class EventAssignment(BaseModel):
     """Assignment data in events."""
 
     id: UUID
-    title: str
-    status: str
+    title: Str255
+    status: Str50
     program_id: UUID
-    program_name: str
+    program_name: Str255
     partner_id: UUID
-    partner_name: str
-    due_date: str | None = None
+    partner_name: Str255
+    due_date: Str50 | None = None
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -134,11 +135,11 @@ class EventProgram(BaseModel):
     """Program data in events."""
 
     id: UUID
-    name: str
-    status: str
+    name: Str255
+    status: Str50
     client_id: UUID
-    client_name: str
-    description: str | None = None
+    client_name: Str255
+    description: Str2000 | None = None
     created_at: datetime
     updated_at: datetime | None = None
 
@@ -147,11 +148,11 @@ class EventDocument(BaseModel):
     """Document data in events."""
 
     id: UUID
-    title: str
-    status: str
-    document_type: str
+    title: Str255
+    status: Str50
+    document_type: Str100
     program_id: UUID | None = None
-    program_name: str | None = None
+    program_name: Str255 | None = None
     uploaded_by: EventActor
     created_at: datetime
     updated_at: datetime | None = None
@@ -161,10 +162,10 @@ class EventDeliverable(BaseModel):
     """Deliverable data in events."""
 
     id: UUID
-    title: str
-    status: str
+    title: Str255
+    status: Str50
     assignment_id: UUID
-    assignment_title: str
+    assignment_title: Str255
     submitted_by: EventActor
     created_at: datetime
     updated_at: datetime | None = None
@@ -174,7 +175,7 @@ class PublicEventPayload(BaseModel):
     """Standard event payload for webhooks."""
 
     id: UUID
-    event_type: str
+    event_type: Str100
     timestamp: datetime
     data: dict[str, Any]
     actor: EventActor | None = None
@@ -188,13 +189,13 @@ class ZapierPollResponse(BaseModel):
 
     results: list[dict[str, Any]]
     has_more: bool = False
-    next_cursor: str | None = None
+    next_cursor: Str255 | None = None
 
 
 class ZapierTestRequest(BaseModel):
     """Request to test Zapier connection."""
 
-    api_key: str = Field(..., description="API key to test")
+    api_key: Str255 = Field(..., description="API key to test")
 
 
 class ZapierTestResponse(BaseModel):
@@ -202,7 +203,7 @@ class ZapierTestResponse(BaseModel):
 
     success: bool
     user: dict[str, Any] | None = None
-    message: str | None = None
+    message: Str500 | None = None
 
 
 # ============ Action Schemas ============
@@ -215,8 +216,8 @@ class CreateTaskRequest(BaseModel):
     description: str | None = Field(None, max_length=5000)
     program_id: UUID | None = None
     milestone_id: UUID | None = None
-    priority: str = Field("medium", pattern="^(low|medium|high|urgent)$")
-    due_date: str | None = None  # ISO date string
+    priority: str = Field("medium", max_length=50, pattern="^(low|medium|high|urgent)$")
+    due_date: str | None = Field(None, max_length=50)  # ISO date string
     assigned_to_id: UUID | None = None
 
 
@@ -224,10 +225,12 @@ class UpdateTaskRequest(BaseModel):
     """Request to update a task via public API."""
 
     title: str | None = Field(None, min_length=1, max_length=255)
-    description: str | None = None
-    status: str | None = Field(None, pattern="^(todo|in_progress|review|done|cancelled)$")
-    priority: str | None = Field(None, pattern="^(low|medium|high|urgent)$")
-    due_date: str | None = None
+    description: str | None = Field(None, max_length=5000)
+    status: str | None = Field(
+        None, max_length=50, pattern="^(todo|in_progress|review|done|cancelled)$"
+    )
+    priority: str | None = Field(None, max_length=50, pattern="^(low|medium|high|urgent)$")
+    due_date: str | None = Field(None, max_length=50)
     assigned_to_id: UUID | None = None
 
 
@@ -235,11 +238,11 @@ class CreateTaskResponse(BaseModel):
     """Response for task creation."""
 
     id: UUID
-    title: str
-    description: str | None = None
-    status: str
-    priority: str
-    due_date: str | None = None
+    title: Str255
+    description: Str2000 | None = None
+    status: Str50
+    priority: Str50
+    due_date: Str50 | None = None
     program_id: UUID | None = None
     milestone_id: UUID | None = None
     assigned_to_id: UUID | None = None
@@ -251,7 +254,7 @@ class CreateTaskResponse(BaseModel):
 class UpdateStatusRequest(BaseModel):
     """Request to update status via public API."""
 
-    status: str = Field(..., description="New status value")
+    status: str = Field(..., max_length=50, description="New status value")
     notes: str | None = Field(None, max_length=1000, description="Optional notes for the change")
 
 
@@ -259,9 +262,9 @@ class UpdateStatusResponse(BaseModel):
     """Response for status update."""
 
     id: UUID
-    status: str
+    status: Str50
     updated_at: datetime
-    message: str = "Status updated successfully"
+    message: Str255 = "Status updated successfully"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -272,9 +275,9 @@ class UpdateStatusResponse(BaseModel):
 class APIInfoResponse(BaseModel):
     """Response for API info endpoint."""
 
-    name: str = "AMG Portal API"
-    version: str = "1.0.0"
-    description: str = "Public API for AMG Portal integrations"
+    name: Str255 = "AMG Portal API"
+    version: Str50 = "1.0.0"
+    description: Str500 = "Public API for AMG Portal integrations"
     event_types: list[dict[str, str]]
-    documentation_url: str = "/api/v1/public/docs"
-    openapi_url: str = "/api/v1/openapi.json"
+    documentation_url: Str255 = "/api/v1/public/docs"
+    openapi_url: Str255 = "/api/v1/openapi.json"

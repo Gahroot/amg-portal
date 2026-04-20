@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import PulseSurveyResponseType, PulseSurveyStatus, PulseSurveyTrigger
+from app.schemas.base import Str50, Str255, Str2000, TextStr
 
 # ==================== Survey Schemas ====================
 
@@ -15,7 +16,7 @@ class PulseSurveyCreate(BaseModel):
     """Schema for creating a new pulse survey."""
 
     title: str = Field(..., min_length=1, max_length=255)
-    question: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1, max_length=2000)
     response_type: PulseSurveyResponseType
     allow_comment: bool = True
     trigger_type: PulseSurveyTrigger = PulseSurveyTrigger.random
@@ -29,7 +30,7 @@ class PulseSurveyUpdate(BaseModel):
     """Schema for updating a pulse survey."""
 
     title: str | None = Field(None, min_length=1, max_length=255)
-    question: str | None = Field(None, min_length=1)
+    question: str | None = Field(None, min_length=1, max_length=2000)
     allow_comment: bool | None = None
     trigger_type: PulseSurveyTrigger | None = None
     active_from: datetime | None = None
@@ -43,12 +44,12 @@ class PulseSurveyDetail(BaseModel):
     """Schema for pulse survey detail response."""
 
     id: UUID
-    title: str
-    question: str
-    response_type: str
+    title: Str255
+    question: Str2000
+    response_type: Str50
     allow_comment: bool
-    status: str
-    trigger_type: str
+    status: Str50
+    trigger_type: Str50
     active_from: datetime | None
     active_to: datetime | None
     max_responses: int | None
@@ -85,8 +86,8 @@ class PulseSurveyResponseDetail(BaseModel):
     id: UUID
     survey_id: UUID
     client_profile_id: UUID
-    response_value: str
-    comment: str | None
+    response_value: Str50
+    comment: TextStr | None
     trigger_context: dict[str, Any] | None
     responded_at: datetime
 
@@ -106,7 +107,7 @@ class PulseSurveyResponseListResponse(BaseModel):
 class PulseSurveyValueCount(BaseModel):
     """Count for a single response value."""
 
-    value: str
+    value: Str50
     count: int
     percent: float
 
@@ -115,8 +116,8 @@ class PulseSurveyStats(BaseModel):
     """Statistics for a pulse survey."""
 
     survey_id: UUID
-    survey_title: str
-    response_type: str
+    survey_title: Str255
+    response_type: Str50
     total_responses: int
     breakdown: list[PulseSurveyValueCount]
     has_comments: int  # number of responses with comments

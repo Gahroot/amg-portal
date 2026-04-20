@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255, Str2000
+
 
 class AccessAuditFindingResponse(BaseModel):
     """Full access audit finding response."""
@@ -14,25 +16,25 @@ class AccessAuditFindingResponse(BaseModel):
     id: uuid.UUID
     audit_id: uuid.UUID
     user_id: uuid.UUID | None = None
-    finding_type: str
-    severity: str
-    description: str
-    recommendation: str | None = None
-    status: str
-    remediation_notes: str | None = None
+    finding_type: Str100
+    severity: Str50
+    description: Str2000
+    recommendation: Str2000 | None = None
+    status: Str50
+    remediation_notes: Str2000 | None = None
     remediated_by: uuid.UUID | None = None
     remediated_at: datetime | None = None
     acknowledged_by: uuid.UUID | None = None
     acknowledged_at: datetime | None = None
-    waived_reason: str | None = None
+    waived_reason: Str2000 | None = None
     waived_by: uuid.UUID | None = None
     waived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     # Computed fields
-    user_email: str | None = None
-    user_name: str | None = None
-    remediator_name: str | None = None
+    user_email: Str255 | None = None
+    user_name: Str255 | None = None
+    remediator_name: Str255 | None = None
 
 
 class AccessAuditResponse(BaseModel):
@@ -41,24 +43,24 @@ class AccessAuditResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    audit_period: str
+    audit_period: Str50
     quarter: int
     year: int
-    status: str
+    status: Str50
     auditor_id: uuid.UUID | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
     users_reviewed: int
     permissions_verified: int
     anomalies_found: int
-    summary: str | None = None
-    recommendations: str | None = None
+    summary: Str2000 | None = None
+    recommendations: Str2000 | None = None
     created_at: datetime
     updated_at: datetime
     # Nested
     findings: list[AccessAuditFindingResponse] = []
     # Computed fields
-    auditor_name: str | None = None
+    auditor_name: Str255 | None = None
 
 
 class AccessAuditListResponse(BaseModel):
@@ -81,58 +83,58 @@ class CreateAccessAuditRequest(BaseModel):
     quarter: int = Field(..., ge=1, le=4)
     year: int = Field(..., ge=2020, le=2100)
     auditor_id: uuid.UUID | None = None
-    summary: str | None = None
+    summary: Str2000 | None = None
 
 
 class UpdateAccessAuditRequest(BaseModel):
     """Request to update an access audit."""
 
-    status: str | None = None
+    status: Str50 | None = None
     auditor_id: uuid.UUID | None = None
     users_reviewed: int | None = None
     permissions_verified: int | None = None
     anomalies_found: int | None = None
-    summary: str | None = None
-    recommendations: str | None = None
+    summary: Str2000 | None = None
+    recommendations: Str2000 | None = None
 
 
 class CreateAccessAuditFindingRequest(BaseModel):
     """Request to create a new audit finding."""
 
     user_id: uuid.UUID | None = None
-    finding_type: str
-    severity: str = Field(default="medium")
-    description: str
-    recommendation: str | None = None
+    finding_type: Str100
+    severity: Str50 = Field(default="medium")
+    description: Str2000
+    recommendation: Str2000 | None = None
 
 
 class UpdateAccessAuditFindingRequest(BaseModel):
     """Request to update an audit finding."""
 
-    finding_type: str | None = None
-    severity: str | None = None
-    description: str | None = None
-    recommendation: str | None = None
-    status: str | None = None
-    remediation_notes: str | None = None
+    finding_type: Str100 | None = None
+    severity: Str50 | None = None
+    description: Str2000 | None = None
+    recommendation: Str2000 | None = None
+    status: Str50 | None = None
+    remediation_notes: Str2000 | None = None
 
 
 class RemediateFindingRequest(BaseModel):
     """Request to remediate a finding."""
 
-    remediation_notes: str | None = None
+    remediation_notes: Str2000 | None = None
 
 
 class AcknowledgeFindingRequest(BaseModel):
     """Request to acknowledge a finding."""
 
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class WaiveFindingRequest(BaseModel):
     """Request to waive a finding."""
 
-    waived_reason: str
+    waived_reason: Str2000
 
 
 class AccessAuditStatistics(BaseModel):

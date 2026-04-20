@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str100
+
 
 class SavedFilterEntityType(StrEnum):
     """Entity types that support saved filters."""
@@ -39,7 +41,7 @@ class SavedFilterResponse(BaseModel):
 
     id: UUID
     user_id: UUID
-    name: str
+    name: Str100
     entity_type: SavedFilterEntityType
     filter_config: dict[str, Any]
     is_default: bool

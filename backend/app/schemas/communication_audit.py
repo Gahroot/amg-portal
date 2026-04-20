@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.base import Str50, Str255, Str2000
+
 
 class CommunicationAuditResponse(BaseModel):
     """Single communication audit entry."""
@@ -14,13 +16,13 @@ class CommunicationAuditResponse(BaseModel):
     id: uuid.UUID
     communication_id: uuid.UUID | None = None
     conversation_id: uuid.UUID | None = None
-    action: str
+    action: Str50
     actor_id: uuid.UUID
-    actor_name: str | None = None
-    actor_email: str | None = None
+    actor_name: Str255 | None = None
+    actor_email: Str255 | None = None
     details: dict[str, object] | None = None
-    ip_address: str | None = None
-    user_agent: str | None = None
+    ip_address: Str50 | None = None
+    user_agent: Str2000 | None = None
     created_at: datetime
 
 
@@ -36,5 +38,5 @@ class CommunicationAuditCreate(BaseModel):
 
     communication_id: uuid.UUID | None = None
     conversation_id: uuid.UUID | None = None
-    action: str
+    action: Str50
     details: dict[str, object] | None = None

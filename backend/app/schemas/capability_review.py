@@ -6,14 +6,16 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Str50, Str100, Str255, Str2000
+
 
 class CapabilityReviewFinding(BaseModel):
     """A finding from a capability review."""
 
-    finding_type: str = Field(..., description="Type of finding")
-    description: str = Field(..., description="Description of the finding")
-    severity: str = Field(default="medium", description="Severity: low, medium, high, critical")
-    recommendation: str | None = Field(default=None, description="Recommended action")
+    finding_type: Str100 = Field(..., description="Type of finding")
+    description: Str2000 = Field(..., description="Description of the finding")
+    severity: Str50 = Field(default="medium", description="Severity: low, medium, high, critical")
+    recommendation: Str2000 | None = Field(default=None, description="Recommended action")
 
 
 class CapabilityReviewResponse(BaseModel):
@@ -24,7 +26,7 @@ class CapabilityReviewResponse(BaseModel):
     id: uuid.UUID
     partner_id: uuid.UUID
     review_year: int
-    status: str
+    status: Str50
     reviewer_id: uuid.UUID | None = None
     scheduled_date: date | None = None
     completed_date: date | None = None
@@ -32,14 +34,14 @@ class CapabilityReviewResponse(BaseModel):
     certifications_reviewed: list[str] | None = None
     qualifications_reviewed: list[str] | None = None
     findings: list[dict[str, Any]] | None = None
-    notes: str | None = None
-    recommendations: str | None = None
+    notes: Str2000 | None = None
+    recommendations: Str2000 | None = None
     reminder_sent_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     # Computed fields
-    partner_name: str | None = None
-    reviewer_name: str | None = None
+    partner_name: Str255 | None = None
+    reviewer_name: Str255 | None = None
 
 
 class CapabilityReviewListResponse(BaseModel):
@@ -56,29 +58,29 @@ class CreateCapabilityReviewRequest(BaseModel):
     review_year: int = Field(..., ge=2020, le=2100)
     reviewer_id: uuid.UUID | None = None
     scheduled_date: date | None = None
-    notes: str | None = None
+    notes: Str2000 | None = None
 
 
 class UpdateCapabilityReviewRequest(BaseModel):
     """Request to update a capability review."""
 
-    status: str | None = None
+    status: Str50 | None = None
     reviewer_id: uuid.UUID | None = None
     scheduled_date: date | None = None
     capabilities_reviewed: list[str] | None = None
     certifications_reviewed: list[str] | None = None
     qualifications_reviewed: list[str] | None = None
     findings: list[dict[str, Any]] | None = None
-    notes: str | None = None
-    recommendations: str | None = None
+    notes: Str2000 | None = None
+    recommendations: Str2000 | None = None
 
 
 class CompleteCapabilityReviewRequest(BaseModel):
     """Request to complete a capability review."""
 
     findings: list[dict[str, Any]] | None = None
-    recommendations: str | None = None
-    notes: str | None = None
+    recommendations: Str2000 | None = None
+    notes: Str2000 | None = None
 
 
 class CapabilityReviewStatistics(BaseModel):

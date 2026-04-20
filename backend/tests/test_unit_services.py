@@ -16,11 +16,11 @@ from datetime import UTC, datetime, timedelta
 class TestPasswordHashing:
     """Tests for app.core.security.hash_password / verify_password."""
 
-    def test_hash_password_returns_bcrypt_hash(self) -> None:
+    def test_hash_password_returns_argon2_hash(self) -> None:
         from app.core.security import hash_password
 
         hashed = hash_password("Secret123!")
-        assert hashed.startswith("$2")
+        assert hashed.startswith("$argon2id$")
         assert hashed != "Secret123!"
 
     def test_different_passwords_produce_different_hashes(self) -> None:
@@ -30,24 +30,28 @@ class TestPasswordHashing:
         h2 = hash_password("passwordB")
         assert h1 != h2
 
-    def test_same_password_produces_different_hashes_bcrypt_salt(self) -> None:
+    def test_same_password_produces_different_hashes_due_to_salt(self) -> None:
         from app.core.security import hash_password
 
         h1 = hash_password("samePassword")
         h2 = hash_password("samePassword")
-        assert h1 != h2  # bcrypt uses random salt
+        assert h1 != h2  # argon2 uses a per-hash random salt
 
     def test_verify_password_correct(self) -> None:
         from app.core.security import hash_password, verify_password
 
         hashed = hash_password("MyPass!")
-        assert verify_password("MyPass!", hashed) is True
+        ok, needs_rehash = verify_password("MyPass!", hashed)
+        assert ok is True
+        assert needs_rehash is False
 
     def test_verify_password_wrong(self) -> None:
         from app.core.security import hash_password, verify_password
 
         hashed = hash_password("MyPass!")
-        assert verify_password("WrongPass!", hashed) is False
+        ok, needs_rehash = verify_password("WrongPass!", hashed)
+        assert ok is False
+        assert needs_rehash is False
 
 
 class TestJWTTokens:

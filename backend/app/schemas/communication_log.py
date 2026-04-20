@@ -6,18 +6,19 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import CommunicationLogChannel, CommunicationLogDirection
+from app.schemas.base import Str50, Str255, Str500, Str2000
 
 
 class CommunicationLogCreate(BaseModel):
     channel: CommunicationLogChannel
     direction: CommunicationLogDirection
-    subject: str
-    summary: str | None = None
+    subject: Str500
+    summary: Str2000 | None = None
     client_id: UUID | None = None
     partner_id: UUID | None = None
     program_id: UUID | None = None
-    contact_name: str | None = None
-    contact_email: str | None = None
+    contact_name: Str255 | None = None
+    contact_email: Str255 | None = None
     occurred_at: datetime
     attachments: dict[str, object] | None = None
     tags: list[str] | None = None
@@ -26,13 +27,13 @@ class CommunicationLogCreate(BaseModel):
 class CommunicationLogUpdate(BaseModel):
     channel: CommunicationLogChannel | None = None
     direction: CommunicationLogDirection | None = None
-    subject: str | None = None
-    summary: str | None = None
+    subject: Str500 | None = None
+    summary: Str2000 | None = None
     client_id: UUID | None = None
     partner_id: UUID | None = None
     program_id: UUID | None = None
-    contact_name: str | None = None
-    contact_email: str | None = None
+    contact_name: Str255 | None = None
+    contact_email: Str255 | None = None
     occurred_at: datetime | None = None
     attachments: dict[str, object] | None = None
     tags: list[str] | None = None
@@ -42,16 +43,16 @@ class CommunicationLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    channel: str
-    direction: str
-    subject: str
-    summary: str | None
+    channel: Str50
+    direction: Str50
+    subject: Str500
+    summary: Str2000 | None
     client_id: UUID | None
     partner_id: UUID | None
     program_id: UUID | None
     logged_by: UUID
-    contact_name: str | None
-    contact_email: str | None
+    contact_name: Str255 | None
+    contact_email: Str255 | None
     occurred_at: datetime
     attachments: dict[str, object] | None
     tags: list[str] | None
@@ -59,10 +60,10 @@ class CommunicationLogResponse(BaseModel):
     updated_at: datetime
 
     # Enriched fields from relationships
-    client_name: str | None = None
-    partner_name: str | None = None
-    program_title: str | None = None
-    logger_name: str | None = None
+    client_name: Str255 | None = None
+    partner_name: Str255 | None = None
+    program_title: Str255 | None = None
+    logger_name: Str255 | None = None
 
 
 class CommunicationLogListResponse(BaseModel):

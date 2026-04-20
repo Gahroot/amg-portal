@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.schemas.base import Str50, Str255, Str500, Str2000
+
 # ============================================================================
 # Field / Filter / Sort / Group definitions
 # ============================================================================
@@ -34,10 +36,10 @@ DataSource = Literal[
 class ReportField(BaseModel):
     """A selected field/column in the report."""
 
-    key: str = Field(..., description="Dot-notation field key, e.g. 'title' or 'client.name'")
-    label: str = Field(..., description="Display label for the column")
+    key: Str255 = Field(..., description="Dot-notation field key, e.g. 'title' or 'client.name'")
+    label: Str255 = Field(..., description="Display label for the column")
     type: FieldType = Field(default="text")
-    expression: str | None = Field(
+    expression: Str500 | None = Field(
         default=None,
         description="Formula for calculated fields",
     )
@@ -46,7 +48,7 @@ class ReportField(BaseModel):
 class ReportFilter(BaseModel):
     """A filter condition applied to the report data."""
 
-    field: str
+    field: Str255
     operator: FilterOperator
     value: Any = None
 
@@ -54,7 +56,7 @@ class ReportFilter(BaseModel):
 class ReportSort(BaseModel):
     """A sort specification for the report."""
 
-    field: str
+    field: Str255
     direction: SortDirection = "asc"
 
 
@@ -67,7 +69,7 @@ class CustomReportCreate(BaseModel):
     """Payload to create a new custom report."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     data_source: DataSource
     fields: list[ReportField] = Field(default_factory=list)
     filters: list[ReportFilter] = Field(default_factory=list)
@@ -80,7 +82,7 @@ class CustomReportUpdate(BaseModel):
     """Partial update for a custom report."""
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = None
+    description: Str2000 | None = None
     data_source: DataSource | None = None
     fields: list[ReportField] | None = None
     filters: list[ReportFilter] | None = None
@@ -93,9 +95,9 @@ class CustomReportResponse(BaseModel):
     """Full custom report representation."""
 
     id: UUID
-    name: str
-    description: str | None
-    data_source: str
+    name: Str255
+    description: Str2000 | None
+    data_source: Str50
     fields: list[dict[str, Any]]
     filters: list[dict[str, Any]]
     sorting: list[dict[str, Any]]
