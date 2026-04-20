@@ -36,9 +36,7 @@ def upgrade() -> None:
         sa.Column("active_from", sa.DateTime(timezone=True), nullable=True),
         sa.Column("active_to", sa.DateTime(timezone=True), nullable=True),
         sa.Column("max_responses", sa.Integer, nullable=True),
-        sa.Column(
-            "min_days_between_shows", sa.Integer, nullable=False, server_default="14"
-        ),
+        sa.Column("min_days_between_shows", sa.Integer, nullable=False, server_default="14"),
         sa.Column(
             "created_by",
             postgresql.UUID(as_uuid=True),
@@ -93,9 +91,7 @@ def upgrade() -> None:
 
     # Indexes
     op.create_index("ix_pulse_surveys_status", "pulse_surveys", ["status"])
-    op.create_index(
-        "ix_pulse_survey_responses_survey_id", "pulse_survey_responses", ["survey_id"]
-    )
+    op.create_index("ix_pulse_survey_responses_survey_id", "pulse_survey_responses", ["survey_id"])
     op.create_index(
         "ix_pulse_survey_responses_client_profile_id",
         "pulse_survey_responses",
@@ -119,15 +115,9 @@ def downgrade() -> None:
     op.drop_constraint(
         "uq_pulse_survey_responses_survey_client", "pulse_survey_responses", type_="unique"
     )
-    op.drop_index(
-        "ix_pulse_survey_responses_responded_at", "pulse_survey_responses"
-    )
-    op.drop_index(
-        "ix_pulse_survey_responses_client_profile_id", "pulse_survey_responses"
-    )
-    op.drop_index(
-        "ix_pulse_survey_responses_survey_id", "pulse_survey_responses"
-    )
+    op.drop_index("ix_pulse_survey_responses_responded_at", "pulse_survey_responses")
+    op.drop_index("ix_pulse_survey_responses_client_profile_id", "pulse_survey_responses")
+    op.drop_index("ix_pulse_survey_responses_survey_id", "pulse_survey_responses")
     op.drop_index("ix_pulse_surveys_status", "pulse_surveys")
     op.drop_table("pulse_survey_responses")
     op.drop_table("pulse_surveys")

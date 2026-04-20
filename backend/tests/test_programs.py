@@ -117,9 +117,7 @@ class TestCreateProgram:
         assert data["status"] == "intake"
         assert float(data["budget_envelope"]) == 250_000.0
 
-    async def test_md_can_create_program(
-        self, md_client: AsyncClient, db_client: Client
-    ) -> None:
+    async def test_md_can_create_program(self, md_client: AsyncClient, db_client: Client) -> None:
         resp = await md_client.post(
             BASE + "/",
             json={
@@ -168,9 +166,7 @@ class TestCreateProgram:
 
 
 class TestListPrograms:
-    async def test_internal_staff_can_list(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/")
         assert resp.status_code == 200
         assert "programs" in resp.json()
@@ -265,9 +261,7 @@ class TestProgramStatusTransitions:
 
         from app.models.milestone import Milestone as Mil
 
-        await db_session.execute(
-            delete(Mil).where(Mil.program_id == test_program_design.id)
-        )
+        await db_session.execute(delete(Mil).where(Mil.program_id == test_program_design.id))
         await db_session.commit()
 
         resp = await rm_client.patch(

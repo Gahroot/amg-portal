@@ -80,9 +80,7 @@ async def get_partner_trends(  # noqa: PLR0912, PLR0915
 ) -> PartnerTrends | None:
     """Return weekly performance trend data for a partner over the last N days."""
     # Fetch partner
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         return None
@@ -187,14 +185,10 @@ async def get_partner_trends(  # noqa: PLR0912, PLR0915
     for week_monday in weeks:
         week_key = week_monday.isoformat()
         sla_total, sla_breached = sla_by_week.get(week_key, (0, 0))
-        sla_compliance = (
-            round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
-        )
+        sla_compliance = round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
         accum = ratings_by_week.get(week_key)
         avg_quality = (
-            round(sum(accum.quality) / len(accum.quality), 2)
-            if accum and accum.quality
-            else None
+            round(sum(accum.quality) / len(accum.quality), 2) if accum and accum.quality else None
         )
         avg_timeliness = (
             round(sum(accum.timeliness) / len(accum.timeliness), 2)
@@ -207,9 +201,7 @@ async def get_partner_trends(  # noqa: PLR0912, PLR0915
             else None
         )
         avg_overall = (
-            round(sum(accum.overall) / len(accum.overall), 2)
-            if accum and accum.overall
-            else None
+            round(sum(accum.overall) / len(accum.overall), 2) if accum and accum.overall else None
         )
         completed_this_week = completions_by_week.get(week_key, 0)
 
@@ -277,9 +269,7 @@ async def get_partner_trends(  # noqa: PLR0912, PLR0915
     all_sla_total = sum(v[0] for v in sla_by_week.values())
     all_sla_breached = sum(v[1] for v in sla_by_week.values())
     overall_sla = (
-        round((1 - all_sla_breached / all_sla_total) * 100, 1)
-        if all_sla_total > 0
-        else None
+        round((1 - all_sla_breached / all_sla_total) * 100, 1) if all_sla_total > 0 else None
     )
 
     # Overall quality average

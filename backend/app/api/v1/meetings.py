@@ -31,6 +31,7 @@ router = APIRouter()
 
 # ─── Meeting Types (public to authenticated users) ────────────────────────────
 
+
 @router.get("/types", response_model=list[MeetingTypeResponse])
 async def list_meeting_types(db: DB) -> list[MeetingTypeResponse]:
     """Return the available meeting types (Quick Check-in, Standard, Extended)."""
@@ -39,6 +40,7 @@ async def list_meeting_types(db: DB) -> list[MeetingTypeResponse]:
 
 
 # ─── RM Availability Management (RM / internal only) ─────────────────────────
+
 
 @router.get(
     "/availability",
@@ -79,9 +81,7 @@ async def create_availability(
     current_user: CurrentUser,
 ) -> RMAvailabilityResponse:
     """Add a recurring weekly availability window for the current RM."""
-    window = await svc.create_availability(
-        db, current_user.id, data.model_dump()
-    )
+    window = await svc.create_availability(db, current_user.id, data.model_dump())
     return RMAvailabilityResponse.model_validate(window)
 
 
@@ -123,6 +123,7 @@ async def delete_availability(
 
 # ─── Blackout Dates (RM only) ─────────────────────────────────────────────────
 
+
 @router.get(
     "/blackouts",
     response_model=list[RMBlackoutResponse],
@@ -150,9 +151,7 @@ async def create_blackout(
     current_user: CurrentUser,
 ) -> RMBlackoutResponse:
     """Mark a date as unavailable for the current RM."""
-    blackout = await svc.create_blackout(
-        db, current_user.id, data.blackout_date, data.reason
-    )
+    blackout = await svc.create_blackout(db, current_user.id, data.blackout_date, data.reason)
     return RMBlackoutResponse.model_validate(blackout)
 
 
@@ -173,6 +172,7 @@ async def delete_blackout(
 
 
 # ─── Available Slots (clients call this to see bookable times) ────────────────
+
 
 @router.get("/slots", response_model=AvailableSlotsResponse)
 async def get_available_slots(
@@ -199,9 +199,7 @@ async def get_available_slots(
         )
         profile = profile_result.scalar_one_or_none()
         if not profile or not profile.assigned_rm_id:
-            raise BadRequestException(
-                "rm_id is required (no RM is assigned to your profile)"
-            )
+            raise BadRequestException("rm_id is required (no RM is assigned to your profile)")
         rm_id = profile.assigned_rm_id
 
     if not to_date:
@@ -220,6 +218,7 @@ async def get_available_slots(
 
 
 # ─── Meeting Booking (client) ─────────────────────────────────────────────────
+
 
 @router.post(
     "/",
@@ -257,6 +256,7 @@ async def book_meeting(
 
 # ─── Client Meeting List ──────────────────────────────────────────────────────
 
+
 @router.get(
     "/my",
     response_model=MeetingListResponse,
@@ -289,6 +289,7 @@ async def list_my_meetings(
 
 # ─── RM Meeting List (internal) ───────────────────────────────────────────────
 
+
 @router.get(
     "/rm",
     response_model=MeetingListResponse,
@@ -317,6 +318,7 @@ async def list_rm_meetings(
 
 # ─── Meeting Detail ───────────────────────────────────────────────────────────
 
+
 @router.get("/{meeting_id}", response_model=MeetingResponse)
 async def get_meeting(
     meeting_id: uuid.UUID,
@@ -339,6 +341,7 @@ async def get_meeting(
 
 # ─── RM Confirms a Meeting ────────────────────────────────────────────────────
 
+
 @router.post(
     "/{meeting_id}/confirm",
     response_model=MeetingResponse,
@@ -357,6 +360,7 @@ async def confirm_meeting(
 
 
 # ─── Cancel a Meeting (both parties can cancel) ───────────────────────────────
+
 
 @router.post("/{meeting_id}/cancel", response_model=MeetingResponse)
 async def cancel_meeting(
@@ -386,6 +390,7 @@ async def cancel_meeting(
 
 # ─── Reschedule a Meeting ─────────────────────────────────────────────────────
 
+
 @router.post("/{meeting_id}/reschedule", response_model=MeetingResponse)
 async def reschedule_meeting(
     meeting_id: uuid.UUID,
@@ -407,9 +412,7 @@ async def reschedule_meeting(
         raise ForbiddenException("Access denied")
 
     if meeting.status in ("cancelled", "completed"):
-        raise BadRequestException(
-            f"Cannot reschedule a meeting with status '{meeting.status}'"
-        )
+        raise BadRequestException(f"Cannot reschedule a meeting with status '{meeting.status}'")
 
     new_meeting = await svc.reschedule_meeting(
         db,

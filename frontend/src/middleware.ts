@@ -28,9 +28,14 @@ export function middleware(request: NextRequest) {
   // Build the WebSocket equivalent of the API origin (http→ws, https→wss).
   const wsOrigin = apiOrigin.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
 
+  // Nonce-based CSP with 'strict-dynamic'. We intentionally DO NOT include
+  // 'unsafe-inline' in script-src — per the CSP3 spec, browsers that support
+  // 'strict-dynamic' ignore host/source-list expressions and 'unsafe-inline'
+  // anyway, but dropping it makes the intent explicit. In dev we still need
+  // 'unsafe-eval' for React Fast Refresh / Next.js HMR.
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""};
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self';

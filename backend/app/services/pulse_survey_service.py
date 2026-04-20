@@ -116,13 +116,17 @@ class PulseSurveyService(CRUDBase[PulseSurvey, PulseSurveyCreate, dict[str, Any]
         now = datetime.now(UTC)
 
         # Build query: active surveys whose window covers now
-        stmt = select(PulseSurvey).where(
-            and_(
-                PulseSurvey.status == PulseSurveyStatus.active,
-                (PulseSurvey.active_from == None) | (PulseSurvey.active_from <= now),  # noqa: E711
-                (PulseSurvey.active_to == None) | (PulseSurvey.active_to >= now),  # noqa: E711
+        stmt = (
+            select(PulseSurvey)
+            .where(
+                and_(
+                    PulseSurvey.status == PulseSurveyStatus.active,
+                    (PulseSurvey.active_from == None) | (PulseSurvey.active_from <= now),  # noqa: E711
+                    (PulseSurvey.active_to == None) | (PulseSurvey.active_to >= now),  # noqa: E711
+                )
             )
-        ).order_by(PulseSurvey.created_at.asc())
+            .order_by(PulseSurvey.created_at.asc())
+        )
 
         result = await db.execute(stmt)
         candidates = list(result.scalars().all())
@@ -131,9 +135,9 @@ class PulseSurveyService(CRUDBase[PulseSurvey, PulseSurveyCreate, dict[str, Any]
             # Check max_responses cap
             if survey.max_responses is not None:
                 count_result = await db.execute(
-                    select(func.count()).select_from(PulseSurveyResponse).where(
-                        PulseSurveyResponse.survey_id == survey.id
-                    )
+                    select(func.count())
+                    .select_from(PulseSurveyResponse)
+                    .where(PulseSurveyResponse.survey_id == survey.id)
                 )
                 total = count_result.scalar_one()
                 if total >= survey.max_responses:
@@ -192,12 +196,14 @@ class PulseSurveyService(CRUDBase[PulseSurvey, PulseSurveyCreate, dict[str, Any]
     ) -> PulseSurveyStats:
         """Compute response statistics for a pulse survey."""
         # Get all response values
-        stmt = select(
-            PulseSurveyResponse.response_value,
-            func.count().label("cnt"),
-        ).where(
-            PulseSurveyResponse.survey_id == survey.id
-        ).group_by(PulseSurveyResponse.response_value)
+        stmt = (
+            select(
+                PulseSurveyResponse.response_value,
+                func.count().label("cnt"),
+            )
+            .where(PulseSurveyResponse.survey_id == survey.id)
+            .group_by(PulseSurveyResponse.response_value)
+        )
 
         result = await db.execute(stmt)
         rows = result.all()
@@ -217,7 +223,9 @@ class PulseSurveyService(CRUDBase[PulseSurvey, PulseSurveyCreate, dict[str, Any]
 
         # Count responses with comments
         comments_result = await db.execute(
-            select(func.count()).select_from(PulseSurveyResponse).where(
+            select(func.count())
+            .select_from(PulseSurveyResponse)
+            .where(
                 and_(
                     PulseSurveyResponse.survey_id == survey.id,
                     PulseSurveyResponse.comment != None,  # noqa: E711

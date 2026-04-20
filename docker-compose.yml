@@ -3,9 +3,9 @@ services:
     image: postgres:17-alpine
     container_name: amg-postgres
     environment:
-      POSTGRES_USER: amg
-      POSTGRES_PASSWORD: amg_dev_password
-      POSTGRES_DB: amg_portal
+      POSTGRES_USER: ${POSTGRES_USER:-amg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-amg_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-amg_portal}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -17,7 +17,7 @@ services:
         -c effective_cache_size=1GB
         -c max_connections=100
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U amg"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amg}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -39,8 +39,8 @@ services:
     image: minio/minio:RELEASE.2025-03-12T18-04-18Z
     container_name: amg-minio
     environment:
-      MINIO_ROOT_USER: amg_minio
-      MINIO_ROOT_PASSWORD: amg_minio_secret
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-amg_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-amg_minio_secret}
     ports:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
@@ -61,7 +61,7 @@ services:
       - ./backend/.env
     environment:
       # Override DB/Redis/MinIO hosts to use Docker service names
-      DATABASE_URL: postgresql+asyncpg://amg:amg_dev_password@postgres:5432/amg_portal
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-amg}:${POSTGRES_PASSWORD:-amg_dev_password}@postgres:5432/${POSTGRES_DB:-amg_portal}
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
       # Public hostname used in presigned URLs returned to browsers.

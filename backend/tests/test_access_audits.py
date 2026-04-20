@@ -83,9 +83,7 @@ class TestCreateAudit:
         assert data["quarter"] == 2
         assert data["year"] == 2026
 
-    async def test_rm_cannot_create(
-        self, rm_client: AsyncClient, rm_user: User
-    ) -> None:
+    async def test_rm_cannot_create(self, rm_client: AsyncClient, rm_user: User) -> None:
         resp = await rm_client.post(
             BASE + "/",
             json={
@@ -109,9 +107,7 @@ class TestCreateAudit:
         )
         assert resp.status_code == 403
 
-    async def test_unauthenticated_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_returns_401(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.post(
             BASE + "/",
             json={
@@ -139,9 +135,7 @@ class TestListAudits:
         assert "audits" in data
         assert data["total"] >= 1
 
-    async def test_client_cannot_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_list(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 
@@ -163,9 +157,7 @@ class TestGetAudit:
         assert data["id"] == str(access_audit.id)
         assert data["audit_period"] == "Q1 2026"
 
-    async def test_nonexistent_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_nonexistent_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = str(uuid.uuid4())
         resp = await rm_client.get(f"{BASE}/{fake_id}")
         assert resp.status_code == 404

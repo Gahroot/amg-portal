@@ -129,9 +129,7 @@ async def test_overdue_task(
 class TestListTasks:
     """Tests for GET /api/v1/tasks/"""
 
-    async def test_internal_staff_can_list_tasks(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list_tasks(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/")
         assert resp.status_code == 200
         data = resp.json()
@@ -139,9 +137,7 @@ class TestListTasks:
         assert "total" in data
         assert isinstance(data["tasks"], list)
 
-    async def test_coordinator_can_list_tasks(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_can_list_tasks(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.get(BASE + "/")
         assert resp.status_code == 200
 
@@ -149,15 +145,11 @@ class TestListTasks:
         resp = await md_client.get(BASE + "/")
         assert resp.status_code == 200
 
-    async def test_client_cannot_list_tasks(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_list_tasks(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 
-    async def test_partner_cannot_list_tasks(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_list_tasks(self, partner_http: AsyncClient) -> None:
         resp = await partner_http.get(BASE + "/")
         assert resp.status_code == 403
 
@@ -196,9 +188,7 @@ class TestListTasks:
         test_task_with_assignee: Task,
         coordinator_user: User,
     ) -> None:
-        resp = await rm_client.get(
-            BASE + "/", params={"assignee_id": str(coordinator_user.id)}
-        )
+        resp = await rm_client.get(BASE + "/", params={"assignee_id": str(coordinator_user.id)})
         assert resp.status_code == 200
         data = resp.json()
         for task in data["tasks"]:
@@ -213,9 +203,7 @@ class TestListTasks:
         # All returned tasks should be overdue
         assert data["total"] >= 1
 
-    async def test_list_tasks_with_pagination(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_list_tasks_with_pagination(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/", params={"skip": 0, "limit": 10})
         assert resp.status_code == 200
         data = resp.json()
@@ -229,10 +217,7 @@ class TestListTasks:
         data = resp.json()
 
         # Find our test task
-        task = next(
-            (t for t in data["tasks"] if t["id"] == str(test_task_with_assignee.id)),
-            None
-        )
+        task = next((t for t in data["tasks"] if t["id"] == str(test_task_with_assignee.id)), None)
         if task:
             assert task["assignee"] is not None
             assert task["program"] is not None
@@ -417,9 +402,7 @@ class TestUpdateTask:
         data = resp.json()
         assert data["status"] == "in_progress"
 
-    async def test_rm_can_update_task(
-        self, rm_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_rm_can_update_task(self, rm_client: AsyncClient, test_task: Task) -> None:
         resp = await rm_client.patch(
             f"{BASE}/{test_task.id}",
             json={"title": "Updated Title", "priority": "high"},
@@ -429,9 +412,7 @@ class TestUpdateTask:
         assert data["title"] == "Updated Title"
         assert data["priority"] == "high"
 
-    async def test_md_can_update_task(
-        self, md_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_md_can_update_task(self, md_client: AsyncClient, test_task: Task) -> None:
         resp = await md_client.patch(
             f"{BASE}/{test_task.id}",
             json={"status": "done"},
@@ -555,9 +536,7 @@ class TestReorderTasks:
         )
         assert resp.status_code == 204
 
-    async def test_rm_can_reorder_task(
-        self, rm_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_rm_can_reorder_task(self, rm_client: AsyncClient, test_task: Task) -> None:
         resp = await rm_client.post(
             BASE + "/reorder",
             json={
@@ -568,9 +547,7 @@ class TestReorderTasks:
         )
         assert resp.status_code == 204
 
-    async def test_md_can_reorder_task(
-        self, md_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_md_can_reorder_task(self, md_client: AsyncClient, test_task: Task) -> None:
         resp = await md_client.post(
             BASE + "/reorder",
             json={
@@ -661,9 +638,7 @@ class TestBatchReorderTasks:
         )
         assert resp.status_code == 204
 
-    async def test_rm_can_batch_reorder(
-        self, rm_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_rm_can_batch_reorder(self, rm_client: AsyncClient, test_task: Task) -> None:
         resp = await rm_client.post(
             BASE + "/batch-reorder",
             json=[
@@ -676,9 +651,7 @@ class TestBatchReorderTasks:
         )
         assert resp.status_code == 204
 
-    async def test_md_can_batch_reorder(
-        self, md_client: AsyncClient, test_task: Task
-    ) -> None:
+    async def test_md_can_batch_reorder(self, md_client: AsyncClient, test_task: Task) -> None:
         resp = await md_client.post(
             BASE + "/batch-reorder",
             json=[
@@ -857,17 +830,13 @@ class TestDeleteTask:
 class TestListProgramsForFilter:
     """Tests for GET /api/v1/tasks/programs"""
 
-    async def test_internal_staff_can_list_programs(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list_programs(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/programs")
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
 
-    async def test_coordinator_can_list_programs(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_can_list_programs(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.get(BASE + "/programs")
         assert resp.status_code == 200
 
@@ -875,15 +844,11 @@ class TestListProgramsForFilter:
         resp = await md_client.get(BASE + "/programs")
         assert resp.status_code == 200
 
-    async def test_client_cannot_list_programs(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_list_programs(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/programs")
         assert resp.status_code == 403
 
-    async def test_partner_cannot_list_programs(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_list_programs(self, partner_http: AsyncClient) -> None:
         resp = await partner_http.get(BASE + "/programs")
         assert resp.status_code == 403
 
@@ -918,17 +883,13 @@ class TestListProgramsForFilter:
 class TestListAssigneesForFilter:
     """Tests for GET /api/v1/tasks/assignees"""
 
-    async def test_internal_staff_can_list_assignees(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list_assignees(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/assignees")
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
 
-    async def test_coordinator_can_list_assignees(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_can_list_assignees(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.get(BASE + "/assignees")
         assert resp.status_code == 200
 
@@ -936,21 +897,15 @@ class TestListAssigneesForFilter:
         resp = await md_client.get(BASE + "/assignees")
         assert resp.status_code == 200
 
-    async def test_client_cannot_list_assignees(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_list_assignees(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/assignees")
         assert resp.status_code == 403
 
-    async def test_partner_cannot_list_assignees(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_list_assignees(self, partner_http: AsyncClient) -> None:
         resp = await partner_http.get(BASE + "/assignees")
         assert resp.status_code == 403
 
-    async def test_assignee_info_structure(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_assignee_info_structure(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/assignees")
         assert resp.status_code == 200
         data = resp.json()
@@ -960,9 +915,7 @@ class TestListAssigneesForFilter:
             assert "name" in assignee
             assert "email" in assignee
 
-    async def test_assignees_only_internal_users(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_assignees_only_internal_users(self, rm_client: AsyncClient) -> None:
         """Assignees list should only contain internal staff (not clients/partners)."""
         resp = await rm_client.get(BASE + "/assignees")
         assert resp.status_code == 200
@@ -980,22 +933,28 @@ class TestListAssigneesForFilter:
 class TestTaskBoardRBAC:
     """RBAC tests summarizing access control for the task board API."""
 
-    @pytest.mark.parametrize("endpoint", [
-        "/",
-        "/programs",
-        "/assignees",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/",
+            "/programs",
+            "/assignees",
+        ],
+    )
     async def test_client_blocked_from_read_endpoints(
         self, client_user_http: AsyncClient, endpoint: str
     ) -> None:
         resp = await client_user_http.get(BASE + endpoint)
         assert resp.status_code == 403
 
-    @pytest.mark.parametrize("endpoint", [
-        "/",
-        "/programs",
-        "/assignees",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/",
+            "/programs",
+            "/assignees",
+        ],
+    )
     async def test_partner_blocked_from_read_endpoints(
         self, partner_http: AsyncClient, endpoint: str
     ) -> None:

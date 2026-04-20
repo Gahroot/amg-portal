@@ -90,9 +90,7 @@ async def client_profile_for_nps(
 
 
 class TestCreateSurvey:
-    async def test_rm_creates_survey(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_rm_creates_survey(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.post(
             BASE + "/",
             json={
@@ -106,9 +104,7 @@ class TestCreateSurvey:
         data = resp.json()
         assert data["name"] == "Test Survey"
 
-    async def test_client_cannot_create(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_create(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.post(
             BASE + "/",
             json={
@@ -120,9 +116,7 @@ class TestCreateSurvey:
         )
         assert resp.status_code == 403
 
-    async def test_unauthenticated_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_returns_401(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.post(
             BASE + "/",
             json={
@@ -162,9 +156,7 @@ class TestListSurveys:
         data = resp.json()
         assert data["total"] >= 1
 
-    async def test_client_cannot_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_list(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 

@@ -65,16 +65,12 @@ async def _notify_client_new_request(
         if not profile:
             return
 
-        user_result = await db.execute(
-            select(User).where(User.id == profile.user_id)
-        )
+        user_result = await db.execute(select(User).where(User.id == profile.user_id))
         client_user = user_result.scalar_one_or_none()
         if not client_user:
             return
 
-        deadline_str = (
-            req.deadline.strftime("%d %B %Y") if req.deadline else "as soon as possible"
-        )
+        deadline_str = req.deadline.strftime("%d %B %Y") if req.deadline else "as soon as possible"
         body = (
             f"Please upload your {req.title}."
             + (f" Deadline: {deadline_str}." if req.deadline else "")
@@ -102,9 +98,7 @@ async def get_document_request(
     request_id: UUID,
 ) -> DocumentRequest | None:
     """Fetch a single document request by ID."""
-    result = await db.execute(
-        select(DocumentRequest).where(DocumentRequest.id == request_id)
-    )
+    result = await db.execute(select(DocumentRequest).where(DocumentRequest.id == request_id))
     return result.scalar_one_or_none()
 
 
@@ -144,9 +138,7 @@ async def list_requests_for_client_user(
     """Return document requests visible to a client portal user."""
     from app.models.client_profile import ClientProfile
 
-    profile_result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == user_id)
-    )
+    profile_result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == user_id))
     profile = profile_result.scalar_one_or_none()
     if not profile:
         return []
@@ -155,11 +147,7 @@ async def list_requests_for_client_user(
     if status:
         filters.append(DocumentRequest.status == status)
 
-    query = (
-        select(DocumentRequest)
-        .where(*filters)
-        .order_by(DocumentRequest.requested_at.desc())
-    )
+    query = select(DocumentRequest).where(*filters).order_by(DocumentRequest.requested_at.desc())
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -392,9 +380,7 @@ async def _notify_client_status_change(
         if not profile:
             return
 
-        user_result = await db.execute(
-            select(User).where(User.id == profile.user_id)
-        )
+        user_result = await db.execute(select(User).where(User.id == profile.user_id))
         client_user = user_result.scalar_one_or_none()
         if not client_user:
             return

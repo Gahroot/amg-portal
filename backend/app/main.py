@@ -4,6 +4,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from content_size_limit_asgi import ContentSizeLimitMiddleware
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.middleware.audit import AuditContextMiddleware
+from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 
 
@@ -137,10 +139,21 @@ app.add_middleware(
         "Content-Type",
         "Authorization",
         "X-Requested-With",
+        "X-CSRF-Token",
     ],
 )
 
+# Reject oversize bodies before they are buffered into memory.  Default 10 MB;
+# upload routes that need more (e.g. document vault) set their own limits
+# closer to the handler.
+app.add_middleware(ContentSizeLimitMiddleware, max_content_size=10 * 1024 * 1024)
+
 app.add_middleware(SecurityHeadersMiddleware)
+# CSRF is mounted *after* SecurityHeadersMiddleware so that its 403 responses
+# still pick up the HSTS / CSP / Permissions-Policy headers on the way out.
+# (Starlette runs middleware in reverse registration order, so the later
+# `add_middleware` call becomes the *inner* wrapper.)
+app.add_middleware(CSRFMiddleware)
 app.add_middleware(AuditContextMiddleware)
 
 

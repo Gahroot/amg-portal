@@ -27,9 +27,7 @@ class DeliverableTemplate(Base, TimestampMixin):
     # MinIO object path
     file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Optional mapping to DeliverableType enum value for smart suggestions
-    deliverable_type: Mapped[str | None] = mapped_column(
-        String(50), nullable=True, index=True
-    )
+    deliverable_type: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -41,6 +39,5 @@ class DeliverableTemplate(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<DeliverableTemplate(id={self.id}, name={self.name!r},"
-            f" category={self.category!r})>"
+            f"<DeliverableTemplate(id={self.id}, name={self.name!r}, category={self.category!r})>"
         )

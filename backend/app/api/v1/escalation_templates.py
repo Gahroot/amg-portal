@@ -144,9 +144,7 @@ async def update_escalation_template(
         allowed = {"is_active"}
         restricted = set(update_data.keys()) - allowed
         if restricted:
-            raise BadRequestException(
-                "System templates can only have 'is_active' updated."
-            )
+            raise BadRequestException("System templates can only have 'is_active' updated.")
 
     if "category" in update_data and update_data["category"] not in VALID_CATEGORIES:
         raise BadRequestException(

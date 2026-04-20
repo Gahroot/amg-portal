@@ -97,9 +97,7 @@ async def list_verifications(
     verifications, total = await paginate(db, query, skip=skip, limit=limit)
 
     return KYCVerificationListResponse(
-        verifications=[
-            KYCVerificationResponse.model_validate(v) for v in verifications
-        ],
+        verifications=[KYCVerificationResponse.model_validate(v) for v in verifications],
         total=total,
     )
 
@@ -150,9 +148,7 @@ async def update_verification(
     return KYCVerificationResponse.model_validate(verification)
 
 
-@router.post(
-    "/verifications/{verification_id}/submit", response_model=KYCVerificationResponse
-)
+@router.post("/verifications/{verification_id}/submit", response_model=KYCVerificationResponse)
 async def submit_verification(
     verification_id: UUID,
     db: DB,
@@ -180,9 +176,7 @@ async def submit_verification(
     return KYCVerificationResponse.model_validate(verification)
 
 
-@router.post(
-    "/verifications/{verification_id}/complete", response_model=KYCVerificationResponse
-)
+@router.post("/verifications/{verification_id}/complete", response_model=KYCVerificationResponse)
 async def complete_verification(
     verification_id: UUID,
     db: DB,
@@ -264,9 +258,7 @@ async def update_check(
 ) -> KYCCheckResponse:
     """Update a check result."""
     result = await db.execute(
-        select(KYCCheck).where(
-            KYCCheck.id == check_id, KYCCheck.verification_id == verification_id
-        )
+        select(KYCCheck).where(KYCCheck.id == check_id, KYCCheck.verification_id == verification_id)
     )
     check = result.scalar_one_or_none()
     if not check:
@@ -285,9 +277,7 @@ async def update_check(
     return KYCCheckResponse.model_validate(check)
 
 
-@router.get(
-    "/verifications/{verification_id}/checks", response_model=KYCCheckListResponse
-)
+@router.get("/verifications/{verification_id}/checks", response_model=KYCCheckListResponse)
 async def list_checks(
     verification_id: UUID,
     db: DB,

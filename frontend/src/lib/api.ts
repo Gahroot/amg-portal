@@ -2,6 +2,11 @@ import axios from "axios";
 
 import { API_BASE_URL } from "@/lib/config";
 import {
+  CSRF_HEADER_NAME,
+  getCsrfToken,
+  isMutatingMethod,
+} from "@/lib/csrf";
+import {
   setTokens,
   removeTokens,
 } from "@/lib/token-storage";
@@ -13,6 +18,23 @@ export const api = axios.create({
   },
   withCredentials: true,
   timeout: 30000,
+});
+
+// CSRF double-submit: echo the ``__Host-csrf`` cookie into the
+// ``X-CSRF-Token`` header on every state-changing request. If the cookie
+// is absent (not logged in, or the session hasn't established it yet),
+// we let the request go through unmodified — the backend will return 403
+// and the caller sees it as any other API error.
+//
+// Pattern source: https://github.com/piccolo-orm/piccolo_admin/blob/master/admin_ui/src/main.ts
+api.interceptors.request.use((config) => {
+  if (isMutatingMethod(config.method)) {
+    const token = getCsrfToken();
+    if (token) {
+      config.headers.set(CSRF_HEADER_NAME, token);
+    }
+  }
+  return config;
 });
 
 export function logout(): void {

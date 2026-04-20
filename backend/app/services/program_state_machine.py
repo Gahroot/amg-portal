@@ -47,13 +47,9 @@ def validate_transition(current_status: str, new_status: str) -> bool:
 
 async def _guard_active(db: AsyncSession, program: Program) -> None:
     """Require at least one milestone and no pending budget approvals before activating."""
-    result = await db.execute(
-        select(Milestone).where(Milestone.program_id == program.id).limit(1)
-    )
+    result = await db.execute(select(Milestone).where(Milestone.program_id == program.id).limit(1))
     if result.scalar_one_or_none() is None:
-        raise ValidationException(
-            "Cannot activate program: it must have at least one milestone."
-        )
+        raise ValidationException("Cannot activate program: it must have at least one milestone.")
 
     from app.services.program_budget_service import has_pending_budget_approval
 
@@ -83,14 +79,11 @@ async def _guard_completed(db: AsyncSession, program: Program) -> None:
 
 async def _guard_closed(db: AsyncSession, program: Program) -> None:
     """Require a completed closure checklist before closing the program."""
-    result = await db.execute(
-        select(ProgramClosure).where(ProgramClosure.program_id == program.id)
-    )
+    result = await db.execute(select(ProgramClosure).where(ProgramClosure.program_id == program.id))
     closure = result.scalar_one_or_none()
     if not closure:
         raise ValidationException(
-            "Cannot close program: no closure checklist found. "
-            "Initiate the closure workflow first."
+            "Cannot close program: no closure checklist found. Initiate the closure workflow first."
         )
     incomplete_items = [
         item for item in (closure.checklist or []) if not item.get("completed", False)
@@ -98,8 +91,7 @@ async def _guard_closed(db: AsyncSession, program: Program) -> None:
     if incomplete_items:
         labels = [str(item["label"]) for item in incomplete_items]
         raise ValidationException(
-            f"Cannot close program: closure checklist has incomplete items: "
-            f"{', '.join(labels)}."
+            f"Cannot close program: closure checklist has incomplete items: {', '.join(labels)}."
         )
 
 
@@ -196,9 +188,7 @@ async def _broadcast_program_update(
 
     # Client portal user (via ClientProfile.user_id)
     if program.client_id:
-        client_result = await db.execute(
-            select(Client).where(Client.id == program.client_id)
-        )
+        client_result = await db.execute(select(Client).where(Client.id == program.client_id))
         client = client_result.scalar_one_or_none()
         if client:
             profile_result = await db.execute(

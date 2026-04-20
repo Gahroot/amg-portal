@@ -479,8 +479,7 @@ async def update_playbook(
     update_data = data.model_dump(exclude_unset=True)
     if "steps" in update_data and update_data["steps"] is not None:
         update_data["steps"] = [
-            s.model_dump() if hasattr(s, "model_dump") else s
-            for s in update_data["steps"]
+            s.model_dump() if hasattr(s, "model_dump") else s for s in update_data["steps"]
         ]
     if "escalation_paths" in update_data and update_data["escalation_paths"] is not None:
         update_data["escalation_paths"] = [
@@ -994,6 +993,8 @@ async def get_escalation_chain_endpoint(
         raise NotFoundException(str(e)) from e
 
     return EscalationChainResponse(**chain_data)  # type: ignore[arg-type]
+
+
 # ── Per-escalation playbook endpoints ─────────────────────────────────
 
 

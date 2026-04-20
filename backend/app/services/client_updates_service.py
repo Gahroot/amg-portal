@@ -106,14 +106,10 @@ def _status_label(status: str) -> str:
     return _STATUS_LABELS.get(status, status.replace("_", " ").title())
 
 
-async def _get_last_read_at(
-    db: AsyncSession, user_id: uuid.UUID
-) -> datetime | None:
+async def _get_last_read_at(db: AsyncSession, user_id: uuid.UUID) -> datetime | None:
     """Return the timestamp stored when the user last marked all updates as read."""
     result = await db.execute(
-        select(NotificationPreference).where(
-            NotificationPreference.user_id == user_id
-        )
+        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
     )
     prefs = result.scalar_one_or_none()
     if not prefs or not prefs.notification_type_preferences:
@@ -128,14 +124,10 @@ async def _get_last_read_at(
         return None
 
 
-async def _set_last_read_at(
-    db: AsyncSession, user_id: uuid.UUID, ts: datetime
-) -> None:
+async def _set_last_read_at(db: AsyncSession, user_id: uuid.UUID, ts: datetime) -> None:
     """Persist the last-read timestamp in the user's notification preferences."""
     result = await db.execute(
-        select(NotificationPreference).where(
-            NotificationPreference.user_id == user_id
-        )
+        select(NotificationPreference).where(NotificationPreference.user_id == user_id)
     )
     prefs = result.scalar_one_or_none()
     if not prefs:
@@ -153,9 +145,7 @@ async def _resolve_client(
     db: AsyncSession, user_id: uuid.UUID
 ) -> tuple[ClientProfile | None, Client | None]:
     """Resolve portal user → (ClientProfile, Client)."""
-    profile_result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == user_id)
-    )
+    profile_result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == user_id))
     profile = profile_result.scalar_one_or_none()
     if not profile:
         return None, None
@@ -426,9 +416,7 @@ async def _collect_decisions_resolved(
             continue
         ts = ts if ts.tzinfo else ts.replace(tzinfo=UTC)
         is_read = (last_read_at is not None) and (ts <= last_read_at)
-        action = (
-            "responded to" if decision.status == "responded" else "declined"
-        )
+        action = "responded to" if decision.status == "responded" else "declined"
         items.append(
             FeedItem(
                 id=f"decision_resolved:{decision.id}",

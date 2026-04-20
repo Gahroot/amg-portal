@@ -73,10 +73,7 @@ async def submit_feedback(
     await db.refresh(feedback, ["user"])
 
     return PortalFeedbackResponse(
-        **{
-            c.name: getattr(feedback, c.name)
-            for c in feedback.__table__.columns
-        },
+        **{c.name: getattr(feedback, c.name) for c in feedback.__table__.columns},
         user_name=current_user.full_name,
         user_email=current_user.email,
     )
@@ -161,10 +158,14 @@ async def list_all_feedback(
     limit: int = Query(50, ge=1, le=100),
 ) -> PortalFeedbackListResponse:
     """List all feedback (admin only)."""
-    query = select(PortalFeedback).options(
-        selectinload(PortalFeedback.user),
-        selectinload(PortalFeedback.assignee),
-    ).order_by(PortalFeedback.created_at.desc())
+    query = (
+        select(PortalFeedback)
+        .options(
+            selectinload(PortalFeedback.user),
+            selectinload(PortalFeedback.assignee),
+        )
+        .order_by(PortalFeedback.created_at.desc())
+    )
 
     if status:
         query = query.where(PortalFeedback.status == status)
@@ -206,32 +207,25 @@ async def get_feedback_summary(
 
     # By status
     status_result = await db.execute(
-        select(PortalFeedback.status, func.count())
-        .group_by(PortalFeedback.status)
+        select(PortalFeedback.status, func.count()).group_by(PortalFeedback.status)
     )
     by_status: dict[str, int] = {row[0]: row[1] for row in status_result}
 
     # By type
     type_result = await db.execute(
-        select(PortalFeedback.feedback_type, func.count())
-        .group_by(PortalFeedback.feedback_type)
+        select(PortalFeedback.feedback_type, func.count()).group_by(PortalFeedback.feedback_type)
     )
     by_type: dict[str, int] = {row[0]: row[1] for row in type_result}
 
     # By priority
     priority_result = await db.execute(
-        select(PortalFeedback.priority, func.count())
-        .group_by(PortalFeedback.priority)
+        select(PortalFeedback.priority, func.count()).group_by(PortalFeedback.priority)
     )
-    by_priority: dict[str, int] = {
-        row[0] or "unprioritized": row[1] for row in priority_result
-    }
+    by_priority: dict[str, int] = {row[0] or "unprioritized": row[1] for row in priority_result}
 
     # Unassigned count
     unassigned_result = await db.execute(
-        select(func.count())
-        .select_from(PortalFeedback)
-        .where(PortalFeedback.assigned_to.is_(None))
+        select(func.count()).select_from(PortalFeedback).where(PortalFeedback.assigned_to.is_(None))
     )
     unassigned_count = unassigned_result.scalar_one()
 
@@ -396,9 +390,7 @@ async def send_feedback_confirmation(email: str, feedback: PortalFeedback) -> No
         FeedbackType.QUESTION: "Question",
     }
 
-    subject = (
-        f"AMG Portal - {type_labels.get(feedback.feedback_type, 'Feedback')} Received"
-    )
+    subject = f"AMG Portal - {type_labels.get(feedback.feedback_type, 'Feedback')} Received"
 
     feedback_type_label = type_labels.get(feedback.feedback_type, "feedback").lower()
     description_preview = feedback.description[:500]

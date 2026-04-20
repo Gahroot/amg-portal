@@ -14,7 +14,6 @@ from app.api.deps import DB, CurrentUser, MFASetupUser
 from app.core.config import settings
 from app.core.exceptions import (
     BadRequestException,
-    ConflictException,
     ForbiddenException,
     NotFoundException,
     UnauthorizedException,
@@ -39,6 +38,7 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
+from app.middleware.csrf import clear_csrf_cookie, set_csrf_cookie
 from app.models.bookmark import Bookmark
 from app.models.enums import UserRole
 from app.models.notification_preference import NotificationPreference
@@ -72,7 +72,10 @@ from app.schemas.recent_item import (
     RecentItemResponse,
     RecentItemType,
 )
-from app.services.email_service import send_password_reset_email
+from app.services.email_service import (
+    send_password_reset_email,
+    send_registration_account_exists_email,
+)
 from app.services.mfa_service import (
     generate_backup_codes,
     generate_provisioning_uri,
@@ -98,19 +101,44 @@ def _is_cross_origin() -> bool:
         return False
 
 
+# Cookie names use the ``__Host-`` prefix, which browsers enforce to require
+# ``Secure``, ``Path=/``, and a missing ``Domain`` attribute.  This guarantees
+# the cookie is first-party-only and cannot be set by a less-secure origin
+# (e.g. a sibling sub-domain on plain HTTP).
+ACCESS_COOKIE_NAME = "__Host-access_token"
+REFRESH_COOKIE_NAME = "__Host-refresh_token"
+MFA_SETUP_COOKIE_NAME = "__Host-mfa-setup-token"
+
+
 def _set_auth_cookies(
     response: Response,
     access_token: str,
     refresh_token: str,
+    *,
+    user_id: str,
 ) -> None:
-    """Set httpOnly cookies for access and refresh tokens."""
+    """Set httpOnly cookies for access + refresh tokens, plus the CSRF cookie.
+
+    The ``__Host-`` prefix mandates ``Secure`` and ``Path=/`` and forbids a
+    ``Domain`` attribute.  In local HTTP development we have to relax the
+    ``Secure`` flag, so the legacy ``access_token`` / ``refresh_token`` names
+    are used instead — the ``__Host-`` prefix is only valid over HTTPS.
+
+    The CSRF cookie value is HMAC-bound to *user_id* so the ``CSRFMiddleware``
+    can reject a cookie that does not belong to the caller's current session.
+    """
     cross_origin = _is_cross_origin()
     # Cross-origin deployments (separate frontend/backend domains) require
     # SameSite=none + Secure so the browser sends cookies on XHR requests.
     samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
     secure = True if cross_origin else not settings.DEBUG
+    # Browsers silently drop a ``__Host-`` cookie unless ``Secure=True`` —
+    # fall back to the un-prefixed name on plain HTTP (DEBUG + same-origin).
+    use_host_prefix = secure
+    access_key = ACCESS_COOKIE_NAME if use_host_prefix else "access_token"
+    refresh_key = REFRESH_COOKIE_NAME if use_host_prefix else "refresh_token"
     response.set_cookie(
-        key="access_token",
+        key=access_key,
         value=access_token,
         httponly=True,
         secure=secure,
@@ -119,71 +147,69 @@ def _set_auth_cookies(
         path="/",
         domain=settings.COOKIE_DOMAIN,
     )
+    # Refresh cookie must now live at Path=/ so the ``__Host-`` prefix is
+    # accepted by the browser.  The refresh handler reads ``request.cookies``
+    # directly (not path-scoped), so widening the path does not change
+    # endpoint behaviour — only widens which requests *carry* the cookie.
     response.set_cookie(
-        key="refresh_token",
+        key=refresh_key,
         value=refresh_token,
         httponly=True,
         secure=secure,
         samesite=samesite,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/api/v1/auth/refresh",
-        domain=settings.COOKIE_DOMAIN,
+        path="/",
     )
+    # CSRF cookie: only set over HTTPS (``__Host-`` + Secure).  Over plain HTTP
+    # the CSRFMiddleware exemption for local dev is handled by the browser
+    # never carrying the cookie, so enforcement degrades cleanly.
+    if secure:
+        set_csrf_cookie(response, user_id)
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    """Clear auth cookies with the same attrs used on set, so browsers match."""
-    cross_origin = _is_cross_origin()
-    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
-    secure = True if cross_origin else not settings.DEBUG
-    response.delete_cookie(
-        key="access_token",
-        path="/",
-        domain=settings.COOKIE_DOMAIN,
-        samesite=samesite,
-        secure=secure,
-        httponly=True,
-    )
-    response.delete_cookie(
-        key="refresh_token",
-        path="/api/v1/auth/refresh",
-        domain=settings.COOKIE_DOMAIN,
-        samesite=samesite,
-        secure=secure,
-        httponly=True,
-    )
+    """Clear auth cookies (both the __Host- prefixed and legacy names)."""
+    response.delete_cookie(key=ACCESS_COOKIE_NAME, path="/")
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/")
+    # Clean up any stale cookies set under the pre-__Host- names so a rollout
+    # does not leave dangling cookies in users' browsers.
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/api/v1/auth/refresh")
+    # CSRF cookie is session-scoped; drop it on logout.
+    clear_csrf_cookie(response)
 
 
 def _set_mfa_setup_cookie(response: Response, token: str) -> None:
-    """Set a short-lived httpOnly cookie for the MFA setup token."""
+    """Set a short-lived httpOnly cookie for the MFA setup token.
+
+    Uses the ``__Host-`` prefix when running over HTTPS; falls back to the
+    un-prefixed name on plain HTTP so local development still works.
+    """
     cross_origin = _is_cross_origin()
     samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
     secure = True if cross_origin else not settings.DEBUG
+    use_host_prefix = secure
+    key = MFA_SETUP_COOKIE_NAME if use_host_prefix else "mfa_setup_token"
+    # Path must be ``/`` for the ``__Host-`` prefix; the dependency that reads
+    # this cookie (`get_mfa_setup_user`) looks it up by name, not by path.
     response.set_cookie(
-        key="mfa_setup_token",
+        key=key,
         value=token,
         httponly=True,
         secure=secure,
         samesite=samesite,
         max_age=settings.MFA_SETUP_TOKEN_EXPIRE_MINUTES * 60,
-        path="/api/v1/auth/mfa",
-        domain=settings.COOKIE_DOMAIN,
+        path="/",
     )
 
 
 def _clear_mfa_setup_cookie(response: Response) -> None:
-    """Clear the MFA setup cookie with attrs matching _set_mfa_setup_cookie."""
-    cross_origin = _is_cross_origin()
-    samesite: Literal["lax", "strict", "none"] = "none" if cross_origin else "lax"
-    secure = True if cross_origin else not settings.DEBUG
-    response.delete_cookie(
-        key="mfa_setup_token",
-        path="/api/v1/auth/mfa",
-        domain=settings.COOKIE_DOMAIN,
-        samesite=samesite,
-        secure=secure,
-        httponly=True,
-    )
+    """Clear the MFA setup cookie (both the __Host- prefixed and legacy names)."""
+    response.delete_cookie(key=MFA_SETUP_COOKIE_NAME, path="/")
+    response.delete_cookie(key="mfa_setup_token", path="/")
+    # Clear the legacy path-scoped variant too.
+    response.delete_cookie(key="mfa_setup_token", path="/api/v1/auth/mfa")
 
 
 async def _issue_refresh_token(
@@ -213,18 +239,49 @@ async def _issue_refresh_token(
 
 @router.post(
     "/register",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(rate_limit_register)],
 )
-async def register(data: UserCreate, db: DB) -> Any:
+async def register(data: UserCreate, db: DB) -> dict[str, str]:
+    """Register a new account.
+
+    Always returns ``202 Accepted`` with the same body regardless of whether
+    the email was already in use — the API itself must not leak account
+    existence.  Differentiation happens via email:
+
+    * brand-new address → the account is created ``pending_approval`` and the
+      usual onboarding flow continues from there.
+    * existing address → a distinct "account already exists; use password
+      reset" email is sent to the legitimate owner.
+
+    Timing of the two branches is kept roughly uniform by hashing the password
+    in both cases (bcrypt dominates the wall-clock cost of the endpoint).
+    """
+    # Always run the password hash — even on the duplicate branch — so an
+    # attacker cannot distinguish "email taken" from "email free" via timing.
+    hashed = hash_password(data.password)
+
     result = await db.execute(select(User).where(User.email == data.email))
-    if result.scalar_one_or_none():
-        raise ConflictException("Email already registered")
+    existing = result.scalar_one_or_none()
+
+    generic_body = {
+        "message": "If the email is eligible, a confirmation will be sent.",
+    }
+
+    if existing is not None:
+        # Fire-and-forget notification to the legitimate owner.  Errors are
+        # suppressed: email delivery failures must never propagate into a
+        # response that would re-leak the account-exists signal.
+        with contextlib.suppress(Exception):
+            await send_registration_account_exists_email(
+                email=existing.email,
+                frontend_url=settings.FRONTEND_URL,
+            )
+        return generic_body
 
     user = User(
         email=data.email,
-        hashed_password=hash_password(data.password),
+        hashed_password=hashed,
         full_name=data.full_name,
         role=UserRole.client.value,
         status="pending_approval",
@@ -233,10 +290,16 @@ async def register(data: UserCreate, db: DB) -> Any:
     try:
         await db.commit()
     except IntegrityError:
+        # Race with a concurrent registration that slipped in after our
+        # pre-check; still do not reveal anything — treat as duplicate.
         await db.rollback()
-        raise ConflictException("Email already registered") from None
-    await db.refresh(user)
-    return user
+        with contextlib.suppress(Exception):
+            await send_registration_account_exists_email(
+                email=data.email,
+                frontend_url=settings.FRONTEND_URL,
+            )
+        return generic_body
+    return generic_body
 
 
 @router.post("/login", response_model=Token, dependencies=[Depends(rate_limit_login)])
@@ -257,7 +320,7 @@ async def login(data: LoginRequest, db: DB, response: Response) -> Any:
         access_token = create_access_token(token_data)
         refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
         await db.commit()
-        _set_auth_cookies(response, access_token, refresh_token)
+        _set_auth_cookies(response, access_token, refresh_token, user_id=str(user.id))
         return Token(access_token=access_token, refresh_token=refresh_token)
 
     # ── MFA not yet set up ──────────────────────────────────
@@ -279,7 +342,7 @@ async def login(data: LoginRequest, db: DB, response: Response) -> Any:
             access_token = create_access_token(token_data)
             refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
             await db.commit()
-            _set_auth_cookies(response, access_token, refresh_token)
+            _set_auth_cookies(response, access_token, refresh_token, user_id=str(user.id))
             _set_mfa_setup_cookie(response, setup_token)
             return Token(
                 access_token=access_token,
@@ -326,7 +389,7 @@ async def login(data: LoginRequest, db: DB, response: Response) -> Any:
     access_token = create_access_token(token_data)
     refresh_token = await _issue_refresh_token(db, str(user.id), token_data)
     await db.commit()
-    _set_auth_cookies(response, access_token, refresh_token)
+    _set_auth_cookies(response, access_token, refresh_token, user_id=str(user.id))
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -340,10 +403,11 @@ async def refresh(
     db: DB,
     data: RefreshTokenRequest | None = None,
 ) -> Any:
-    # Accept refresh token from request body (legacy) or httpOnly cookie
-    raw_token = (
-        data.refresh_token if data and data.refresh_token else request.cookies.get("refresh_token")
-    )
+    # Accept refresh token from request body (legacy) or httpOnly cookie.
+    # Prefer the ``__Host-`` prefixed cookie (HTTPS prod) and fall back to
+    # the legacy name for rollout compatibility / plain-HTTP local dev.
+    cookie_token = request.cookies.get(REFRESH_COOKIE_NAME) or request.cookies.get("refresh_token")
+    raw_token = data.refresh_token if data and data.refresh_token else cookie_token
     if not raw_token:
         raise UnauthorizedException("Missing refresh token")
 
@@ -400,7 +464,7 @@ async def refresh(
         family_id=token_family,
     )
     await db.commit()
-    _set_auth_cookies(response, access_token, refresh_token)
+    _set_auth_cookies(response, access_token, refresh_token, user_id=str(user.id))
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -410,7 +474,7 @@ async def refresh(
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def logout(request: Request, response: Response, db: DB) -> None:
     """Clear auth cookies and revoke the current refresh token."""
-    raw_token = request.cookies.get("refresh_token")
+    raw_token = request.cookies.get(REFRESH_COOKIE_NAME) or request.cookies.get("refresh_token")
     if raw_token:
         payload = decode_refresh_token(raw_token)
         if payload:
@@ -593,7 +657,7 @@ async def mfa_verify_setup(
     access_token = create_access_token(token_data)
     refresh_token = await _issue_refresh_token(db, str(current_user.id), token_data)
     await db.commit()
-    _set_auth_cookies(response, access_token, refresh_token)
+    _set_auth_cookies(response, access_token, refresh_token, user_id=str(current_user.id))
     _clear_mfa_setup_cookie(response)
     return Token(
         access_token=access_token,

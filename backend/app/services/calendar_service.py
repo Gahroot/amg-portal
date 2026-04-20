@@ -267,9 +267,7 @@ async def push_milestone_to_google(
                 )
 
         # Create a new event with extended properties for idempotency
-        event_body["extendedProperties"] = {
-            "private": {"id": external_id, "source": "amg-portal"}
-        }
+        event_body["extendedProperties"] = {"private": {"id": external_id, "source": "amg-portal"}}
         event = (
             service.events()
             .insert(
@@ -278,9 +276,7 @@ async def push_milestone_to_google(
             )
             .execute()
         )
-        logger.info(
-            "Created Google Calendar event %s for milestone %s", event["id"], milestone.id
-        )
+        logger.info("Created Google Calendar event %s for milestone %s", event["id"], milestone.id)
         return str(event["id"])
 
     except ImportError as exc:
@@ -426,9 +422,7 @@ async def push_milestone_to_outlook(
             if response.status_code == 401:
                 raise OutlookCalendarError("Access token expired")
             elif response.status_code not in (200, 201):
-                logger.error(
-                    "Outlook API error: %s - %s", response.status_code, response.text
-                )
+                logger.error("Outlook API error: %s - %s", response.status_code, response.text)
                 raise OutlookCalendarError(f"Outlook API error: {response.status_code}")
 
             event_data = response.json()

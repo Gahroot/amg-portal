@@ -206,9 +206,7 @@ async def calculate_composite_score(
 ) -> dict[str, Any]:
     """Calculate composite score combining ratings and SLA compliance."""
     # Get partner profile
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         return {}
@@ -227,9 +225,9 @@ async def calculate_composite_score(
         sla_result = await db.execute(
             select(
                 func.count(SLATracker.id).label("total"),
-                func.count(
-                    case((SLATracker.breach_status == "breached", SLATracker.id))
-                ).label("breached"),
+                func.count(case((SLATracker.breach_status == "breached", SLATracker.id))).label(
+                    "breached"
+                ),
             ).where(SLATracker.assigned_to == partner.user_id)
         )
         sla_row = sla_result.one()
@@ -316,9 +314,7 @@ async def apply_governance_action(
     db.add(record)
 
     # Update partner profile status for severe actions
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if partner:
         if action in ("suspension", "termination"):
@@ -382,9 +378,7 @@ async def get_governance_dashboard(  # noqa: PLR0912, PLR0915
         .where(PartnerRating.partner_id.in_(partner_ids))
         .group_by(PartnerRating.partner_id)
     )
-    rating_by_pid: dict[Any, Any] = {
-        row.partner_id: row for row in rating_rows.all()
-    }
+    rating_by_pid: dict[Any, Any] = {row.partner_id: row for row in rating_rows.all()}
 
     # --- Query 4: SLA aggregates keyed by user_id ---
     sla_by_uid: dict[Any, Any] = {}
@@ -393,9 +387,9 @@ async def get_governance_dashboard(  # noqa: PLR0912, PLR0915
             select(
                 SLATracker.assigned_to,
                 func.count(SLATracker.id).label("total"),
-                func.count(
-                    case((SLATracker.breach_status == "breached", SLATracker.id))
-                ).label("breached"),
+                func.count(case((SLATracker.breach_status == "breached", SLATracker.id))).label(
+                    "breached"
+                ),
             )
             .where(SLATracker.assigned_to.in_(user_ids))
             .group_by(SLATracker.assigned_to)
@@ -412,17 +406,15 @@ async def get_governance_dashboard(  # noqa: PLR0912, PLR0915
 
     # Build per-partner governance lookups
     now = datetime.now(UTC)
-    latest_gov_by_pid: dict[Any, PartnerGovernance] = {}      # latest overall (no expiry filter)
-    active_gov_by_pid: dict[Any, PartnerGovernance] = {}      # latest non-expired (for status)
+    latest_gov_by_pid: dict[Any, PartnerGovernance] = {}  # latest overall (no expiry filter)
+    active_gov_by_pid: dict[Any, PartnerGovernance] = {}  # latest non-expired (for status)
     for gov in gov_rows_all:
         pid = gov.partner_id
         # latest overall: rows are ordered DESC so first encountered wins
         if pid not in latest_gov_by_pid:
             latest_gov_by_pid[pid] = gov
         # latest non-expired: first non-expired row per partner
-        if pid not in active_gov_by_pid and (
-            gov.expiry_date is None or gov.expiry_date > now
-        ):
+        if pid not in active_gov_by_pid and (gov.expiry_date is None or gov.expiry_date > now):
             active_gov_by_pid[pid] = gov
 
     # --- Query 6: notice counts for all partners in page ---
@@ -455,9 +447,7 @@ async def get_governance_dashboard(  # noqa: PLR0912, PLR0915
                 total_sla_tracked = s.total
                 total_sla_breached = s.breached
             if total_sla_tracked > 0:
-                sla_compliance_rate = round(
-                    (1 - total_sla_breached / total_sla_tracked) * 100, 2
-                )
+                sla_compliance_rate = round((1 - total_sla_breached / total_sla_tracked) * 100, 2)
             else:
                 sla_compliance_rate = 100.0
 

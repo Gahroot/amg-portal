@@ -297,7 +297,9 @@ async def compare_programs(
     response_model=ProgramDetailResponse,
     dependencies=[Depends(require_internal)],
 )
-async def get_program(program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext) -> Any:  # noqa: E501
+async def get_program(
+    program_id: uuid.UUID, db: DB, current_user: CurrentUser, _rls: RLSContext
+) -> Any:  # noqa: E501
     result = await db.execute(
         select(Program)
         .options(
@@ -311,10 +313,7 @@ async def get_program(program_id: uuid.UUID, db: DB, current_user: CurrentUser, 
         raise NotFoundException("Program not found")
     if current_user.role == UserRole.relationship_manager:
         rm_client_ids = await get_rm_client_ids(db, current_user.id)
-        if (
-            program.client_id not in rm_client_ids
-            and program.created_by != current_user.id
-        ):
+        if program.client_id not in rm_client_ids and program.created_by != current_user.id:
             raise ForbiddenException("Access denied: program not in your portfolio")
     return build_program_detail_response(program)
 
@@ -486,9 +485,9 @@ async def emergency_activate_program(
 
     if str(program.status) != "design":
         raise ValidationException(
-                f"Emergency activation requires program to be in 'design' status; "
-                f"current status is '{program.status}'."
-            )
+            f"Emergency activation requires program to be in 'design' status; "
+            f"current status is '{program.status}'."
+        )
 
     milestone_result = await db.execute(
         select(Milestone).where(Milestone.program_id == program.id).limit(1)
@@ -657,7 +656,9 @@ async def get_program_summary(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_coordinator_or_above)],
 )
-async def add_milestone(program_id: uuid.UUID, data: MilestoneCreate, db: DB, _rls: RLSContext) -> Any:  # noqa: E501
+async def add_milestone(
+    program_id: uuid.UUID, data: MilestoneCreate, db: DB, _rls: RLSContext
+) -> Any:  # noqa: E501
     program_result = await db.execute(select(Program).where(Program.id == program_id))
     program = program_result.scalar_one_or_none()
     if not program:

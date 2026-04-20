@@ -5,6 +5,7 @@ Revises: ddc5d4fef8cd
 Create Date: 2024-01-15
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -73,9 +74,7 @@ def upgrade() -> None:
 
     # Create indexes
     op.create_index(op.f("ix_api_keys_user_id"), "api_keys", ["user_id"], unique=False)
-    op.create_index(
-        "ix_api_keys_user_active", "api_keys", ["user_id", "is_active"], unique=False
-    )
+    op.create_index("ix_api_keys_user_active", "api_keys", ["user_id", "is_active"], unique=False)
     op.create_index(op.f("ix_api_keys_key_hash"), "api_keys", ["key_hash"], unique=True)
 
 

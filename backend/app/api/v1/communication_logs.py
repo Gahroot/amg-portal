@@ -39,30 +39,19 @@ def _build_response(log: CommunicationLog) -> CommunicationLogResponse:
         tags=log.tags,
         created_at=log.created_at,
         updated_at=log.updated_at,
-        client_name=(
-            log.client.legal_name if log.client else None
-        ),
-        partner_name=(
-            log.partner.firm_name if log.partner else None
-        ),
-        program_title=(
-            log.program.title if log.program else None
-        ),
-        logger_name=(
-            log.logger.full_name if log.logger else None
-        ),
+        client_name=(log.client.legal_name if log.client else None),
+        partner_name=(log.partner.firm_name if log.partner else None),
+        program_title=(log.program.title if log.program else None),
+        logger_name=(log.logger.full_name if log.logger else None),
     )
 
 
 def _base_query() -> Select[tuple[CommunicationLog]]:
-    return (
-        select(CommunicationLog)
-        .options(
-            selectinload(CommunicationLog.client),
-            selectinload(CommunicationLog.partner),
-            selectinload(CommunicationLog.program),
-            selectinload(CommunicationLog.logger),
-        )
+    return select(CommunicationLog).options(
+        selectinload(CommunicationLog.client),
+        selectinload(CommunicationLog.partner),
+        selectinload(CommunicationLog.program),
+        selectinload(CommunicationLog.logger),
     )
 
 
@@ -87,9 +76,7 @@ async def create_communication_log(
     await db.commit()
     await db.refresh(log)
 
-    result = await db.execute(
-        _base_query().where(CommunicationLog.id == log.id)
-    )
+    result = await db.execute(_base_query().where(CommunicationLog.id == log.id))
     log = result.scalar_one()
     return _build_response(log)
 
@@ -156,9 +143,7 @@ async def get_communication_log(
     _rls: RLSContext,
 ) -> CommunicationLogResponse:
     """Get a single communication log entry."""
-    result = await db.execute(
-        _base_query().where(CommunicationLog.id == log_id)
-    )
+    result = await db.execute(_base_query().where(CommunicationLog.id == log_id))
     log = result.scalar_one_or_none()
     if not log:
         raise NotFoundException("Communication log not found")
@@ -178,9 +163,7 @@ async def update_communication_log(
     _rls: RLSContext,
 ) -> CommunicationLogResponse:
     """Update a communication log entry."""
-    result = await db.execute(
-        _base_query().where(CommunicationLog.id == log_id)
-    )
+    result = await db.execute(_base_query().where(CommunicationLog.id == log_id))
     log = result.scalar_one_or_none()
     if not log:
         raise NotFoundException("Communication log not found")
@@ -192,9 +175,7 @@ async def update_communication_log(
     await db.commit()
     await db.refresh(log)
 
-    result = await db.execute(
-        _base_query().where(CommunicationLog.id == log.id)
-    )
+    result = await db.execute(_base_query().where(CommunicationLog.id == log.id))
     log = result.scalar_one()
     return _build_response(log)
 
@@ -211,9 +192,7 @@ async def delete_communication_log(
     _rls: RLSContext,
 ) -> None:
     """Delete a communication log entry."""
-    result = await db.execute(
-        select(CommunicationLog).where(CommunicationLog.id == log_id)
-    )
+    result = await db.execute(select(CommunicationLog).where(CommunicationLog.id == log_id))
     log = result.scalar_one_or_none()
     if not log:
         raise NotFoundException("Communication log not found")

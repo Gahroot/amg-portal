@@ -1,16 +1,19 @@
 """WebSocket endpoint for real-time communications."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import select
 
 from app.api.ws_connection import connection_manager
+from app.core.config import settings
 from app.core.security import decode_access_token
 from app.db.session import AsyncSessionLocal
 from app.models.conversation import Conversation
@@ -20,6 +23,32 @@ from app.models.user_preferences import UserPreferences
 
 ws_router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# How often (seconds) to re-verify the access token on a live connection.
+# Access tokens are short-lived (see ACCESS_TOKEN_EXPIRE_MINUTES) so a 5 minute
+# cadence ensures revoked / expired tokens do not keep a socket open for long.
+_REAUTH_INTERVAL_SECONDS = 300
+
+
+def _is_origin_allowed(origin: str | None) -> bool:
+    """Return True if ``origin`` is in the configured CORS allowlist.
+
+    Rejects missing / empty Origin headers — browsers always send Origin on
+    WebSocket upgrades, so a missing header indicates a non-browser client that
+    should use a server-to-server integration instead (closes CSWSH vector).
+    """
+    if not origin:
+        return False
+    allowed = {o.rstrip("/") for o in settings.CORS_ORIGINS}
+    # Normalise by comparing scheme+host+port only; ignore any trailing path.
+    try:
+        parsed = urlparse(origin)
+    except ValueError:
+        return False
+    if not parsed.scheme or not parsed.netloc:
+        return False
+    normalised = f"{parsed.scheme}://{parsed.netloc}"
+    return normalised in allowed
 
 
 async def get_ws_user(token: str) -> uuid.UUID | None:
@@ -36,12 +65,42 @@ async def get_ws_user(token: str) -> uuid.UUID | None:
     return None
 
 
+async def _reauth_loop(
+    websocket: WebSocket,
+    token: str,
+    user_id: uuid.UUID,
+) -> None:
+    """Periodically re-validate the access token on a live connection.
+
+    If the token expires, is revoked, or no longer belongs to ``user_id``, the
+    socket is closed with code 1008 (policy violation). Cancelled on disconnect.
+    """
+    try:
+        while True:
+            await asyncio.sleep(_REAUTH_INTERVAL_SECONDS)
+            current_user_id = await get_ws_user(token)
+            if current_user_id is None or current_user_id != user_id:
+                logger.info(
+                    "WebSocket periodic re-auth failed for user %s — closing",
+                    user_id,
+                )
+                with contextlib.suppress(Exception):
+                    await websocket.send_text(
+                        json.dumps(
+                            {"type": "auth_error", "message": "Session expired"}
+                        )
+                    )
+                with contextlib.suppress(Exception):
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+    except asyncio.CancelledError:
+        raise
+
+
 async def get_conversation_participants(conversation_id: uuid.UUID) -> list[uuid.UUID]:
     """Get participant IDs for a conversation."""
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        result = await db.execute(select(Conversation).where(Conversation.id == conversation_id))
         conversation = result.scalar_one_or_none()
         if conversation:
             return list(conversation.participant_ids)
@@ -57,9 +116,7 @@ async def handle_subscribe(
     channels = message.get("channels", [])
     for channel in channels:
         subscriptions.add(channel)
-    await websocket.send_text(
-        json.dumps({"type": "subscribed", "channels": list(subscriptions)})
-    )
+    await websocket.send_text(json.dumps({"type": "subscribed", "channels": list(subscriptions)}))
 
 
 async def handle_unsubscribe(
@@ -71,9 +128,7 @@ async def handle_unsubscribe(
     channels = message.get("channels", [])
     for channel in channels:
         subscriptions.discard(channel)
-    await websocket.send_text(
-        json.dumps({"type": "unsubscribed", "channels": channels})
-    )
+    await websocket.send_text(json.dumps({"type": "unsubscribed", "channels": channels}))
 
 
 async def handle_typing(
@@ -120,9 +175,7 @@ async def handle_device_register(
     device_name = message.get("device_name")
 
     if not device_id:
-        await websocket.send_text(
-            json.dumps({"type": "error", "message": "device_id required"})
-        )
+        await websocket.send_text(json.dumps({"type": "error", "message": "device_id required"}))
         return
 
     try:
@@ -156,10 +209,12 @@ async def handle_device_register(
             await db.commit()
 
         await websocket.send_text(
-            json.dumps({
-                "type": "device_registered",
-                "device_id": device_id,
-            })
+            json.dumps(
+                {
+                    "type": "device_registered",
+                    "device_id": device_id,
+                }
+            )
         )
     except Exception as e:
         logger.exception(f"Failed to register device: {e}")
@@ -182,9 +237,7 @@ async def handle_preference_sync(
     client_version = message.get("version", 1)
 
     if not device_id:
-        await websocket.send_text(
-            json.dumps({"type": "error", "message": "device_id required"})
-        )
+        await websocket.send_text(json.dumps({"type": "error", "message": "device_id required"}))
         return
 
     try:
@@ -208,12 +261,14 @@ async def handle_preference_sync(
                 if client_version < user_prefs.version:
                     # Client is behind, send current state
                     await websocket.send_text(
-                        json.dumps({
-                            "type": "preference_conflict",
-                            "server_version": user_prefs.version,
-                            "client_version": client_version,
-                            "preferences": user_prefs.ui_preferences,
-                        })
+                        json.dumps(
+                            {
+                                "type": "preference_conflict",
+                                "server_version": user_prefs.version,
+                                "client_version": client_version,
+                                "preferences": user_prefs.ui_preferences,
+                            }
+                        )
                     )
                     return
 
@@ -235,11 +290,13 @@ async def handle_preference_sync(
         )
 
         await websocket.send_text(
-            json.dumps({
-                "type": "preference_sync_ack",
-                "version": new_version,
-                "synced_at": datetime.now(UTC).isoformat(),
-            })
+            json.dumps(
+                {
+                    "type": "preference_sync_ack",
+                    "version": new_version,
+                    "synced_at": datetime.now(UTC).isoformat(),
+                }
+            )
         )
     except Exception as e:
         logger.exception(f"Failed to sync preferences: {e}")
@@ -264,10 +321,12 @@ async def handle_read_status_sync(
 
     if not device_id or not entity_type or not entity_id_str:
         await websocket.send_text(
-            json.dumps({
-                "type": "error",
-                "message": "device_id, entity_type, and entity_id required",
-            })
+            json.dumps(
+                {
+                    "type": "error",
+                    "message": "device_id, entity_type, and entity_id required",
+                }
+            )
         )
         return
 
@@ -317,18 +376,18 @@ async def handle_read_status_sync(
         )
 
         await websocket.send_text(
-            json.dumps({
-                "type": "read_status_sync_ack",
-                "entity_type": entity_type_str,
-                "entity_id": str(entity_id),
-                "is_read": is_read,
-                "synced_at": now.isoformat(),
-            })
+            json.dumps(
+                {
+                    "type": "read_status_sync_ack",
+                    "entity_type": entity_type_str,
+                    "entity_id": str(entity_id),
+                    "is_read": is_read,
+                    "synced_at": now.isoformat(),
+                }
+            )
         )
     except ValueError:
-        await websocket.send_text(
-            json.dumps({"type": "error", "message": "Invalid entity_id"})
-        )
+        await websocket.send_text(json.dumps({"type": "error", "message": "Invalid entity_id"}))
     except Exception as e:
         logger.exception(f"Failed to sync read status: {e}")
         await websocket.send_text(
@@ -377,6 +436,17 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     Uses first-message authentication: client must send
     {"type": "auth", "token": "<jwt>"} as the first message.
     """
+    # Validate the Origin header BEFORE accepting to prevent
+    # Cross-Site WebSocket Hijacking (CSWSH). Browsers always send Origin on
+    # WebSocket connections; a missing or non-allowlisted value is rejected.
+    origin = websocket.headers.get("origin")
+    if not _is_origin_allowed(origin):
+        logger.warning(
+            "Rejecting WebSocket connection from disallowed origin: %r", origin
+        )
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
 
     # Wait for auth message with timeout
@@ -391,8 +461,14 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        # Try explicit token in message first, then fall back to httpOnly cookie
-        token: str | None = message.get("token") or websocket.cookies.get("access_token")
+        # Try explicit token in message first, then fall back to httpOnly cookie.
+        # NOTE: tokens are intentionally NEVER read from query string — query
+        # strings leak into access logs, browser history, and proxy logs.
+        token: str | None = (
+            message.get("token")
+            or websocket.cookies.get("__Host-access_token")
+            or websocket.cookies.get("access_token")
+        )
         if not token:
             await websocket.send_text(
                 json.dumps({"type": "auth_error", "message": "Token required"})
@@ -411,20 +487,20 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         await websocket.send_text(json.dumps({"type": "auth_success"}))
 
     except TimeoutError:
-        await websocket.send_text(
-            json.dumps({"type": "auth_error", "message": "Auth timeout"})
-        )
+        await websocket.send_text(json.dumps({"type": "auth_error", "message": "Auth timeout"}))
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     except json.JSONDecodeError:
-        await websocket.send_text(
-            json.dumps({"type": "auth_error", "message": "Invalid JSON"})
-        )
+        await websocket.send_text(json.dumps({"type": "auth_error", "message": "Invalid JSON"}))
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
     await connection_manager.connect(websocket, user_id)
     subscriptions: set[str] = set()
+
+    # Spawn a background task that re-validates the access token every
+    # _REAUTH_INTERVAL_SECONDS and closes the socket if it becomes invalid.
+    reauth_task = asyncio.create_task(_reauth_loop(websocket, token, user_id))
 
     try:
         while True:
@@ -434,3 +510,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         connection_manager.disconnect(websocket, user_id)
     except Exception:
         connection_manager.disconnect(websocket, user_id)
+    finally:
+        reauth_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await reauth_task

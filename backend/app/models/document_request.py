@@ -88,6 +88,4 @@ class DocumentRequest(Base, TimestampMixin):
     fulfilled_document = relationship("Document", foreign_keys=[fulfilled_document_id])
 
     def __repr__(self) -> str:
-        return (
-            f"<DocumentRequest(id={self.id}, title={self.title!r}, status={self.status})>"
-        )
+        return f"<DocumentRequest(id={self.id}, title={self.title!r}, status={self.status})>"

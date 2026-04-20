@@ -71,9 +71,7 @@ async def _get_unread_messages_since(
 ) -> list[DigestMessageSummary]:
     """Fetch unread conversation messages for user_id after `since`."""
     # Get all conversations the user participates in
-    conv_query = select(Conversation).where(
-        Conversation.participant_ids.contains([user_id])
-    )
+    conv_query = select(Conversation).where(Conversation.participant_ids.contains([user_id]))
     conv_result = await db.execute(conv_query)
     conversations = {c.id: c for c in conv_result.scalars().all()}
 

@@ -243,9 +243,7 @@ async def close_open_sla_for_entity(
     for tracker in trackers:
         await db.refresh(tracker)
 
-    logger.info(
-        f"Closed {len(trackers)} SLA tracker(s) for {entity_type}:{entity_id}"
-    )
+    logger.info(f"Closed {len(trackers)} SLA tracker(s) for {entity_type}:{entity_id}")
     return trackers
 
 

@@ -56,15 +56,17 @@ async def list_notifications(
 
     # If grouping is requested, compute groups
     if group_mode:
-        groups, total_groups, total_notifications = (
-            await notification_service.get_grouped_notifications(
-                db,
-                user_id=current_user.id,
-                group_mode=group_mode,
-                unread_only=unread_only,
-                skip=skip,
-                limit=limit,
-            )
+        (
+            groups,
+            total_groups,
+            total_notifications,
+        ) = await notification_service.get_grouped_notifications(
+            db,
+            user_id=current_user.id,
+            group_mode=group_mode,
+            unread_only=unread_only,
+            skip=skip,
+            limit=limit,
         )
         response.groups = groups
         response.total = total_notifications
@@ -82,15 +84,17 @@ async def list_grouped_notifications(
     limit: int = Query(50, ge=1, le=100),
 ) -> GroupedNotificationsResponse:
     """List notifications grouped by the specified mode."""
-    groups, total_groups, total_notifications = (
-        await notification_service.get_grouped_notifications(
-            db,
-            user_id=current_user.id,
-            group_mode=group_mode,
-            unread_only=unread_only,
-            skip=skip,
-            limit=limit,
-        )
+    (
+        groups,
+        total_groups,
+        total_notifications,
+    ) = await notification_service.get_grouped_notifications(
+        db,
+        user_id=current_user.id,
+        group_mode=group_mode,
+        unread_only=unread_only,
+        skip=skip,
+        limit=limit,
     )
     return GroupedNotificationsResponse(
         groups=groups,
@@ -133,9 +137,7 @@ async def mark_notification_read(
     current_user: CurrentUser,
 ) -> NotificationResponse:
     """Mark a specific notification as read."""
-    notification = await notification_service.mark_read(
-        db, notification_id, current_user.id
-    )
+    notification = await notification_service.mark_read(db, notification_id, current_user.id)
     if not notification:
         raise NotFoundException("Notification not found")
     return notification  # type: ignore[return-value]
@@ -154,9 +156,7 @@ async def get_unread_count(
     This is useful for badge counts that should reflect grouped notifications.
     """
     if grouped:
-        count = await notification_service.get_unique_group_count(
-            db, current_user.id, group_mode
-        )
+        count = await notification_service.get_unique_group_count(db, current_user.id, group_mode)
     else:
         count = await notification_service.get_unread_count(db, current_user.id)
     return {"unread_count": count}
@@ -179,9 +179,7 @@ async def update_preferences(
     current_user: CurrentUser,
 ) -> NotificationPreferenceResponse:
     """Update notification preferences for current user."""
-    prefs = await notification_service.update_preferences(
-        db, current_user.id, update_data=data
-    )
+    prefs = await notification_service.update_preferences(db, current_user.id, update_data=data)
     return prefs  # type: ignore[return-value]
 
 

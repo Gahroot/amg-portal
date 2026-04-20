@@ -27,8 +27,7 @@ def upgrade() -> None:
         "ON programs USING GIN (title gin_trgm_ops)"
     )
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_clients_name_trgm "
-        "ON clients USING GIN (name gin_trgm_ops)"
+        "CREATE INDEX IF NOT EXISTS ix_clients_name_trgm ON clients USING GIN (name gin_trgm_ops)"
     )
     op.execute(
         "CREATE INDEX IF NOT EXISTS ix_partner_profiles_firm_name_trgm "
@@ -39,8 +38,7 @@ def upgrade() -> None:
         "ON documents USING GIN (file_name gin_trgm_ops)"
     )
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_tasks_title_trgm "
-        "ON tasks USING GIN (title gin_trgm_ops)"
+        "CREATE INDEX IF NOT EXISTS ix_tasks_title_trgm ON tasks USING GIN (title gin_trgm_ops)"
     )
 
 

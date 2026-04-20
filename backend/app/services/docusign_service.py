@@ -43,9 +43,7 @@ def _get_api_client() -> ApiClient:
         expires_in=3600,
         scopes=["signature", "impersonation"],
     )
-    api_client.set_default_header(
-        "Authorization", f"Bearer {token_response.access_token}"
-    )
+    api_client.set_default_header("Authorization", f"Bearer {token_response.access_token}")
     return api_client
 
 

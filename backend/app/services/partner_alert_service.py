@@ -88,9 +88,7 @@ def _suggestion_for(metric: str, trend: str) -> str:
         ),
     }
     trend_suffix: dict[str, str] = {
-        "declining": (
-            " Your score has been declining — prioritise this metric immediately."
-        ),
+        "declining": (" Your score has been declining — prioritise this metric immediately."),
         "improving": " You are trending in the right direction — keep it up.",
     }
     msg = base.get(metric, "Review your performance metrics and take corrective action.")
@@ -109,15 +107,13 @@ def _detect_trend(
     Returns "improving" | "declining" | "stable" | "insufficient_data".
     """
     values = [
-        getattr(dp, metric_attr)
-        for dp in data_points
-        if getattr(dp, metric_attr) is not None
+        getattr(dp, metric_attr) for dp in data_points if getattr(dp, metric_attr) is not None
     ]
 
     if len(values) < 2:
         return "insufficient_data"
 
-    recent = values[-min(window, len(values)):]
+    recent = values[-min(window, len(values)) :]
     if len(recent) < 2:
         return "insufficient_data"
 
@@ -188,9 +184,7 @@ async def get_partner_performance_status(
     Returns None if partner does not exist.
     """
     # Fetch partner
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         return None
@@ -209,9 +203,9 @@ async def get_partner_performance_status(
         sla_result = await db.execute(
             select(
                 func.count(SLATracker.id).label("total"),
-                func.count(
-                    func.nullif(SLATracker.breach_status != "breached", False)
-                ).label("breached"),
+                func.count(func.nullif(SLATracker.breach_status != "breached", False)).label(
+                    "breached"
+                ),
             ).where(SLATracker.assigned_to == partner.user_id)
         )
         row = sla_result.one()
@@ -326,9 +320,7 @@ def _build_alert_email(
         status_color = {"good": "#16a34a", "warning": "#d97706", "critical": "#dc2626"}.get(
             a.status, "#6b7280"
         )
-        trend_icon = {"improving": "↑", "declining": "↓", "stable": "→"}.get(
-            a.trend, "–"
-        )
+        trend_icon = {"improving": "↑", "declining": "↓", "stable": "→"}.get(a.trend, "–")
         rows += (
             f"<tr>"
             f"<td style='padding:8px;border-bottom:1px solid #e5e7eb'>{a.label}</td>"
@@ -414,11 +406,13 @@ async def run_partner_performance_alerts(db: AsyncSession) -> dict[str, Any]:
                 priority = "urgent" if worst_status == "critical" else "high"
 
                 alert_names = ", ".join(a.label for a in status.alerts[:3])
-                body_lines = [f"• {a.label}: {a.current_value:.1f} (threshold {a.threshold:.1f})"
-                              for a in status.alerts if a.current_value is not None]
-                body = (
-                    f"The following metrics require your attention: {alert_names}. "
-                    + " ".join(body_lines)
+                body_lines = [
+                    f"• {a.label}: {a.current_value:.1f} (threshold {a.threshold:.1f})"
+                    for a in status.alerts
+                    if a.current_value is not None
+                ]
+                body = f"The following metrics require your attention: {alert_names}. " + " ".join(
+                    body_lines
                 )
 
                 await notification_service.create_notification(
@@ -464,9 +458,8 @@ async def run_partner_performance_alerts(db: AsyncSession) -> dict[str, Any]:
                     for a in below_threshold_alerts
                     if a.current_value is not None
                 ]
-                md_body = (
-                    f"Partner {status.firm_name} has metrics below threshold:\n"
-                    + "\n".join(summary_lines)
+                md_body = f"Partner {status.firm_name} has metrics below threshold:\n" + "\n".join(
+                    summary_lines
                 )
                 for md in md_users:
                     await notification_service.create_notification(

@@ -122,9 +122,7 @@ async def get_table_view(
     return _build_view_response(view, current_user.id)
 
 
-@router.post(
-    "/table-views", response_model=TableViewResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/table-views", response_model=TableViewResponse, status_code=status.HTTP_201_CREATED)
 async def create_table_view(
     data: TableViewCreate,
     current_user: CurrentUser,
@@ -273,9 +271,7 @@ async def set_default_view(
     return _build_view_response(view, current_user.id)
 
 
-@router.get(
-    "/table-views/default/{table_id}", response_model=TableViewResponse | None
-)
+@router.get("/table-views/default/{table_id}", response_model=TableViewResponse | None)
 async def get_default_view(
     table_id: str,
     current_user: CurrentUser,

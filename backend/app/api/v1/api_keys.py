@@ -7,7 +7,7 @@ API keys are used for programmatic access to the API.
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 
 from app.api.deps import DB, CurrentUser
 from app.core.api_auth import require_api_key_scope
@@ -37,9 +37,7 @@ def _enforce_role_scopes(role: str, requested: list[str]) -> list[str]:
         return requested
     for scope in requested:
         if scope not in allowed:
-            raise ForbiddenException(
-                f"Requested scope not permitted for your role: {scope}"
-            )
+            raise ForbiddenException(f"Requested scope not permitted for your role: {scope}")
     return requested
 
 
@@ -57,10 +55,7 @@ def _validate_scopes(scopes: list[str]) -> None:
 async def list_scopes() -> ScopesResponse:
     """List all available API key scopes with descriptions."""
     return ScopesResponse(
-        scopes=[
-            ScopeInfo(name=name, description=desc)
-            for name, desc in API_KEY_SCOPES.items()
-        ]
+        scopes=[ScopeInfo(name=name, description=desc) for name, desc in API_KEY_SCOPES.items()]
     )
 
 
@@ -78,12 +73,11 @@ async def list_api_keys(
     if not include_inactive:
         query = query.where(APIKey.is_active == True)  # noqa: E712
 
-    # Get total count
-    count_query = select(APIKey).where(APIKey.user_id == current_user.id)
+    # Get total count (aggregate in the database rather than loading rows)
+    count_query = select(func.count()).select_from(APIKey).where(APIKey.user_id == current_user.id)
     if not include_inactive:
         count_query = count_query.where(APIKey.is_active == True)  # noqa: E712
-    total_result = await db.execute(count_query)
-    total = len(total_result.all())
+    total = (await db.execute(count_query)).scalar_one()
 
     # Get paginated results
     query = query.order_by(desc(APIKey.created_at)).offset(offset).limit(limit)

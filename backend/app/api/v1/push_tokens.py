@@ -1,4 +1,5 @@
 """Push token management endpoints."""
+
 from typing import Any
 
 from fastapi import APIRouter

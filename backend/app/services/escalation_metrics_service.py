@@ -55,9 +55,7 @@ async def _compute_summary(
     def f(q: Any) -> Any:
         return _base_q(q, date_from, date_to, level, status, owner_id)
 
-    total: int = (
-        await db.execute(f(select(func.count(Escalation.id))))
-    ).scalar_one() or 0
+    total: int = (await db.execute(f(select(func.count(Escalation.id))))).scalar_one() or 0
 
     open_count: int = (
         await db.execute(
@@ -75,16 +73,12 @@ async def _compute_summary(
 
     res_diff = Escalation.resolved_at - Escalation.triggered_at
     res_guard = Escalation.resolved_at.isnot(None)
-    res_secs = (
-        await db.execute(f(select(_epoch_avg(res_diff)).where(res_guard)))
-    ).scalar_one()
+    res_secs = (await db.execute(f(select(_epoch_avg(res_diff)).where(res_guard)))).scalar_one()
     avg_resolution_hours: float | None = round(res_secs / 3600, 1) if res_secs else None
 
     ttfr_diff = Escalation.acknowledged_at - Escalation.triggered_at
     ttfr_guard = Escalation.acknowledged_at.isnot(None)
-    ttfr_secs = (
-        await db.execute(f(select(_epoch_avg(ttfr_diff)).where(ttfr_guard)))
-    ).scalar_one()
+    ttfr_secs = (await db.execute(f(select(_epoch_avg(ttfr_diff)).where(ttfr_guard)))).scalar_one()
     avg_ttfr_hours: float | None = round(ttfr_secs / 3600, 1) if ttfr_secs else None
 
     return {
@@ -112,21 +106,14 @@ async def _compute_breakdowns(
     cnt = func.count(Escalation.id).label("count")
 
     level_q = f(select(Escalation.level, cnt).group_by(Escalation.level))
-    by_level = [
-        {"level": r.level, "count": r.count}
-        for r in (await db.execute(level_q)).all()
-    ]
+    by_level = [{"level": r.level, "count": r.count} for r in (await db.execute(level_q)).all()]
 
     status_q = f(select(Escalation.status, cnt).group_by(Escalation.status))
-    by_status = [
-        {"status": r.status, "count": r.count}
-        for r in (await db.execute(status_q)).all()
-    ]
+    by_status = [{"status": r.status, "count": r.count} for r in (await db.execute(status_q)).all()]
 
     entity_q = f(select(Escalation.entity_type, cnt).group_by(Escalation.entity_type))
     by_entity_type = [
-        {"entity_type": r.entity_type, "count": r.count}
-        for r in (await db.execute(entity_q)).all()
+        {"entity_type": r.entity_type, "count": r.count} for r in (await db.execute(entity_q)).all()
     ]
 
     assignee_q = f(
@@ -244,9 +231,7 @@ def _build_insights(
             "Consider reviewing the backlog and assigning resources."
         )
     elif resolution_rate >= 80:
-        insights.append(
-            f"{resolution_rate}% resolution rate — strong performance in this period."
-        )
+        insights.append(f"{resolution_rate}% resolution rate — strong performance in this period.")
 
     avg_res = summary["avg_resolution_hours"]
     if avg_res is not None and avg_res > 72:
@@ -262,9 +247,7 @@ def _build_insights(
             "Owners may need to improve acknowledgement speed."
         )
 
-    client_impact = next(
-        (b["count"] for b in by_level if b["level"] == "client_impact"), 0
-    )
+    client_impact = next((b["count"] for b in by_level if b["level"] == "client_impact"), 0)
     if client_impact > 0:
         insights.append(
             f"{client_impact} client-impact escalation(s) detected — "

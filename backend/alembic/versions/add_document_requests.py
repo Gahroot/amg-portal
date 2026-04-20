@@ -37,9 +37,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(500), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("message", sa.Text, nullable=True),
-        sa.Column(
-            "status", sa.String(20), nullable=False, server_default="pending", index=True
-        ),
+        sa.Column("status", sa.String(20), nullable=False, server_default="pending", index=True),
         sa.Column("deadline", sa.DateTime(timezone=True), nullable=True),
         sa.Column("requested_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("received_at", sa.DateTime(timezone=True), nullable=True),

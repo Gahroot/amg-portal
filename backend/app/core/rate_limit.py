@@ -57,7 +57,9 @@ def _fallback_check(key: str, max_requests: int) -> tuple[bool, int, int]:
 
 
 async def _check_rate_limit(
-    key: str, max_requests: int, window_seconds: int = 60,
+    key: str,
+    max_requests: int,
+    window_seconds: int = 60,
 ) -> tuple[bool, int, int]:
     """Check whether *key* has exceeded *max_requests* in the last *window_seconds*.
 
@@ -112,7 +114,9 @@ class RateLimiter:
 
         try:
             allowed, remaining, retry_after = await _check_rate_limit(
-                key, self.max_requests, self.window_seconds,
+                key,
+                self.max_requests,
+                self.window_seconds,
             )
         except RedisError as exc:
             # Redis is unavailable — switch to the in-process fallback cache
@@ -126,7 +130,10 @@ class RateLimiter:
         if not allowed:
             logger.warning(
                 "Rate limit exceeded: action=%s ip=%s limit=%d/%ds",
-                self.action, ip, self.max_requests, self.window_seconds,
+                self.action,
+                ip,
+                self.max_requests,
+                self.window_seconds,
             )
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

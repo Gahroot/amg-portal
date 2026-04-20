@@ -66,59 +66,56 @@ class ComplianceAuditMixin:
         # ------------------------------------------------------------------
         # 1b. KYC document counts aggregated in SQL — one row per client.
         # ------------------------------------------------------------------
-        kyc_agg_query = (
-            select(
-                KYCDocument.client_id,
-                func.count().label("total"),
-                func.count(
-                    case(
-                        (
-                            and_(
-                                KYCDocument.status == "verified",
-                                (KYCDocument.expiry_date.is_(None))
-                                | (KYCDocument.expiry_date > expiry_threshold),
-                            ),
-                            KYCDocument.id,
-                        )
+        kyc_agg_query = select(
+            KYCDocument.client_id,
+            func.count().label("total"),
+            func.count(
+                case(
+                    (
+                        and_(
+                            KYCDocument.status == "verified",
+                            (KYCDocument.expiry_date.is_(None))
+                            | (KYCDocument.expiry_date > expiry_threshold),
+                        ),
+                        KYCDocument.id,
                     )
-                ).label("current"),
-                func.count(
-                    case(
-                        (
-                            and_(
-                                KYCDocument.status == "verified",
-                                KYCDocument.expiry_date.isnot(None),
-                                KYCDocument.expiry_date > today,
-                                KYCDocument.expiry_date <= expiry_threshold,
-                            ),
-                            KYCDocument.id,
-                        )
+                )
+            ).label("current"),
+            func.count(
+                case(
+                    (
+                        and_(
+                            KYCDocument.status == "verified",
+                            KYCDocument.expiry_date.isnot(None),
+                            KYCDocument.expiry_date > today,
+                            KYCDocument.expiry_date <= expiry_threshold,
+                        ),
+                        KYCDocument.id,
                     )
-                ).label("expiring_30d"),
-                func.count(
-                    case(
-                        (
-                            (KYCDocument.status == "expired")
-                            | and_(
-                                KYCDocument.status == "verified",
-                                KYCDocument.expiry_date.isnot(None),
-                                KYCDocument.expiry_date < today,
-                            ),
-                            KYCDocument.id,
-                        )
+                )
+            ).label("expiring_30d"),
+            func.count(
+                case(
+                    (
+                        (KYCDocument.status == "expired")
+                        | and_(
+                            KYCDocument.status == "verified",
+                            KYCDocument.expiry_date.isnot(None),
+                            KYCDocument.expiry_date < today,
+                        ),
+                        KYCDocument.id,
                     )
-                ).label("expired"),
-                func.count(
-                    case(
-                        (
-                            KYCDocument.status.in_(["pending", "uploaded"]),
-                            KYCDocument.id,
-                        )
+                )
+            ).label("expired"),
+            func.count(
+                case(
+                    (
+                        KYCDocument.status.in_(["pending", "uploaded"]),
+                        KYCDocument.id,
                     )
-                ).label("pending"),
-            )
-            .group_by(KYCDocument.client_id)
-        )
+                )
+            ).label("pending"),
+        ).group_by(KYCDocument.client_id)
         if ts_start is not None:
             kyc_agg_query = kyc_agg_query.where(KYCDocument.created_at >= ts_start)
         if ts_end is not None:
@@ -206,9 +203,8 @@ class ComplianceAuditMixin:
         # ------------------------------------------------------------------
         # 3. User account statuses
         # ------------------------------------------------------------------
-        user_counts_query = (
-            select(User.status, func.count(User.id).label("cnt"))
-            .group_by(User.status)
+        user_counts_query = select(User.status, func.count(User.id).label("cnt")).group_by(
+            User.status
         )
         if ts_start is not None:
             user_counts_query = user_counts_query.where(User.created_at >= ts_start)
@@ -227,17 +223,14 @@ class ComplianceAuditMixin:
             else:
                 inactive_users += status_row.cnt
 
-        user_detail_query = (
-            select(
-                User.id,
-                User.full_name,
-                User.email,
-                User.role,
-                User.status,
-                User.created_at,
-            )
-            .order_by(User.full_name)
-        )
+        user_detail_query = select(
+            User.id,
+            User.full_name,
+            User.email,
+            User.role,
+            User.status,
+            User.created_at,
+        ).order_by(User.full_name)
         if ts_start is not None:
             user_detail_query = user_detail_query.where(User.created_at >= ts_start)
         if ts_end is not None:

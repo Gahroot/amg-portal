@@ -6,9 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-GovernanceActionType = Literal[
-    "warning", "probation", "suspension", "termination", "reinstatement"
-]
+GovernanceActionType = Literal["warning", "probation", "suspension", "termination", "reinstatement"]
 
 
 class GovernanceActionCreate(BaseModel):

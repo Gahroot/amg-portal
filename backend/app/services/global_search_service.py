@@ -110,9 +110,7 @@ class QueryParser:
             try:
                 entity_type = SearchEntityType(type_match.lower())
                 entity_types.append(entity_type)
-                operators.append(
-                    SearchOperator("type", type_match, f"type:{type_match}")
-                )
+                operators.append(SearchOperator("type", type_match, f"type:{type_match}"))
             except ValueError:
                 pass  # Invalid type, ignore
         query = cls.TYPE_PATTERN.sub("", query)
@@ -237,9 +235,7 @@ class GlobalSearchService:
 
         # Determine which types to search
         types_to_search = (
-            parsed.entity_types
-            if parsed.entity_types
-            else (entity_types or list(SearchEntityType))
+            parsed.entity_types if parsed.entity_types else (entity_types or list(SearchEntityType))
         )
 
         per_type_limit = min(limit, self.PER_TYPE_LIMIT)
@@ -253,9 +249,7 @@ class GlobalSearchService:
                 )
             )
         if SearchEntityType.client in types_to_search:
-            coros.append(
-                self._search_clients(parsed, per_type_limit, date_from, date_to, statuses)
-            )
+            coros.append(self._search_clients(parsed, per_type_limit, date_from, date_to, statuses))
         if SearchEntityType.partner in types_to_search:
             coros.append(
                 self._search_partners(parsed, per_type_limit, date_from, date_to, statuses)
@@ -267,8 +261,14 @@ class GlobalSearchService:
         if SearchEntityType.task in types_to_search:
             coros.append(
                 self._search_tasks(
-                    parsed, per_type_limit, date_from, date_to,
-                    statuses, priorities, assigned_to, program_id,
+                    parsed,
+                    per_type_limit,
+                    date_from,
+                    date_to,
+                    statuses,
+                    priorities,
+                    assigned_to,
+                    program_id,
                 )
             )
 
@@ -277,9 +277,7 @@ class GlobalSearchService:
 
         # Calculate relevance scores
         for result in all_results:
-            result.relevance_score = self.scorer.score(
-                result, parsed.terms, parsed.exact_match
-            )
+            result.relevance_score = self.scorer.score(result, parsed.terms, parsed.exact_match)
 
         # Group results by type
         groups: dict[str, list[SearchResult]] = {}

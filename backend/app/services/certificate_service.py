@@ -138,9 +138,7 @@ class CertificateService:
         """Extract program data for certificate auto-population."""
         # Get program with client
         result = await db.execute(
-            select(Program)
-            .options(selectinload(Program.client))
-            .where(Program.id == program_id)
+            select(Program).options(selectinload(Program.client)).where(Program.id == program_id)
         )
         program = result.scalar_one_or_none()
         if not program:
@@ -152,9 +150,7 @@ class CertificateService:
         )
         milestones = milestone_result.scalars().all()
         total_milestones = len(milestones)
-        completed_milestones = sum(
-            1 for m in milestones if m.status == "completed"
-        )
+        completed_milestones = sum(1 for m in milestones if m.status == "completed")
 
         # Get partner assignments
         assignment_result = await db.execute(
@@ -174,15 +170,18 @@ class CertificateService:
 
         # Get deliverable counts (via partner assignments)
         from app.models.deliverable import Deliverable
+
         deliv_result = await db.execute(
-            select(func.count()).select_from(Deliverable)
+            select(func.count())
+            .select_from(Deliverable)
             .join(PartnerAssignment, Deliverable.assignment_id == PartnerAssignment.id)
             .where(PartnerAssignment.program_id == program_id)
         )
         total_deliverables = deliv_result.scalar() or 0
 
         approved_result = await db.execute(
-            select(func.count()).select_from(Deliverable)
+            select(func.count())
+            .select_from(Deliverable)
             .join(PartnerAssignment, Deliverable.assignment_id == PartnerAssignment.id)
             .where(
                 PartnerAssignment.program_id == program_id,
@@ -218,15 +217,14 @@ class CertificateService:
         self, db: AsyncSession, client_id: UUID
     ) -> dict[str, Any]:
         """Extract client data for certificate auto-population."""
-        result = await db.execute(
-            select(Client).where(Client.id == client_id)
-        )
+        result = await db.execute(select(Client).where(Client.id == client_id))
         client = result.scalar_one_or_none()
         if not client:
             raise ValueError("Client not found")
 
         # Get client profile
         from app.models.client_profile import ClientProfile
+
         profile_result = await db.execute(
             select(ClientProfile).where(ClientProfile.client_id == client_id)  # type: ignore[attr-defined]
         )
@@ -234,17 +232,14 @@ class CertificateService:
 
         # Get program counts
         program_result = await db.execute(
-            select(func.count()).select_from(Program).where(
-                Program.client_id == client_id
-            )
+            select(func.count()).select_from(Program).where(Program.client_id == client_id)
         )
         total_programs = program_result.scalar() or 0
 
         completed_result = await db.execute(
-            select(func.count()).select_from(Program).where(
-                Program.client_id == client_id,
-                Program.status == "completed"
-            )
+            select(func.count())
+            .select_from(Program)
+            .where(Program.client_id == client_id, Program.status == "completed")
         )
         completed_programs = completed_result.scalar() or 0
 
@@ -305,21 +300,20 @@ class CertificateService:
         """Generate PDF for a certificate."""
         # Build data for template
         data = certificate.populated_data or {}
-        data.update({
-            "certificate_number": certificate.certificate_number,
-            "issue_date": certificate.issue_date or datetime.now(UTC).date(),
-            "expiry_date": certificate.expiry_date,
-            "certificate_type": certificate.certificate_type,
-            "title": certificate.title,
-            "issued_by": issued_by_name,
-            "generated_at": datetime.now(UTC).isoformat(),
-        })
+        data.update(
+            {
+                "certificate_number": certificate.certificate_number,
+                "issue_date": certificate.issue_date or datetime.now(UTC).date(),
+                "expiry_date": certificate.expiry_date,
+                "certificate_type": certificate.certificate_type,
+                "title": certificate.title,
+                "issued_by": issued_by_name,
+                "generated_at": datetime.now(UTC).isoformat(),
+            }
+        )
 
         # Render HTML content
-        html_content = self.render_certificate_content(
-            certificate.content,
-            data
-        )
+        html_content = self.render_certificate_content(certificate.content, data)
 
         # Wrap with base template styling
         full_html = f"""
@@ -402,9 +396,7 @@ class CertificateService:
         template_content = DEFAULT_TEMPLATE
         if data.get("template_id"):
             result = await db.execute(
-                select(CertificateTemplate).where(
-                    CertificateTemplate.id == data["template_id"]
-                )
+                select(CertificateTemplate).where(CertificateTemplate.id == data["template_id"])
             )
             template = result.scalar_one_or_none()
             if template:
@@ -413,13 +405,9 @@ class CertificateService:
         # Get populated data
         populated_data: dict[str, Any] = {}
         if data.get("program_id"):
-            populated_data = await self.get_program_data_for_certificate(
-                db, data["program_id"]
-            )
+            populated_data = await self.get_program_data_for_certificate(db, data["program_id"])
         elif data.get("client_id"):
-            populated_data = await self.get_client_data_for_certificate(
-                db, data["client_id"]
-            )
+            populated_data = await self.get_client_data_for_certificate(db, data["client_id"])
 
         # Render content
         content = data.get("content")
@@ -581,9 +569,7 @@ class CertificateService:
             The created and issued ClearanceCertificate, or None if client not found
         """
         # Verify client exists
-        result = await db.execute(
-            select(Client).where(Client.id == client_id)
-        )
+        result = await db.execute(select(Client).where(Client.id == client_id))
         client = result.scalar_one_or_none()
         if not client:
             logger.warning(

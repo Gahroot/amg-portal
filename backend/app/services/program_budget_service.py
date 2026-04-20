@@ -58,10 +58,7 @@ async def find_matching_threshold(
         select(ApprovalThreshold)
         .where(ApprovalThreshold.is_active.is_(True))
         .where(ApprovalThreshold.min_amount <= amount)
-        .where(
-            (ApprovalThreshold.max_amount.is_(None))
-            | (ApprovalThreshold.max_amount >= amount)
-        )
+        .where((ApprovalThreshold.max_amount.is_(None)) | (ApprovalThreshold.max_amount >= amount))
         .order_by(ApprovalThreshold.priority, ApprovalThreshold.min_amount.desc())
         .limit(1)
     )
@@ -211,9 +208,7 @@ async def notify_approval_chain(
         if step.specific_user_id:
             notified.add(uuid.UUID(str(step.specific_user_id)))
         else:
-            role_result = await db.execute(
-                select(User).where(User.role == step.required_role)
-            )
+            role_result = await db.execute(select(User).where(User.role == step.required_role))
             for user in role_result.scalars().all():
                 notified.add(uuid.UUID(str(user.id)))
 

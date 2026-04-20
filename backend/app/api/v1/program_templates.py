@@ -59,9 +59,7 @@ async def get_program_template(
     _rls: RLSContext,
 ) -> ProgramTemplateResponse:
     """Get a single program template by ID."""
-    result = await db.execute(
-        select(ProgramTemplate).where(ProgramTemplate.id == template_id)
-    )
+    result = await db.execute(select(ProgramTemplate).where(ProgramTemplate.id == template_id))
     template = result.scalar_one_or_none()
     if not template:
         raise NotFoundException("Program template not found")
@@ -104,9 +102,7 @@ async def update_program_template(
     """Update a program template. Admins can update any; others can only update their own."""
     from app.models.enums import UserRole
 
-    result = await db.execute(
-        select(ProgramTemplate).where(ProgramTemplate.id == template_id)
-    )
+    result = await db.execute(select(ProgramTemplate).where(ProgramTemplate.id == template_id))
     template = result.scalar_one_or_none()
     if not template:
         raise NotFoundException("Program template not found")
@@ -142,9 +138,7 @@ async def delete_program_template(
     _rls: RLSContext,
 ) -> None:
     """Delete a custom program template. System templates cannot be deleted."""
-    result = await db.execute(
-        select(ProgramTemplate).where(ProgramTemplate.id == template_id)
-    )
+    result = await db.execute(select(ProgramTemplate).where(ProgramTemplate.id == template_id))
     template = result.scalar_one_or_none()
     if not template:
         raise NotFoundException("Program template not found")

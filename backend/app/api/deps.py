@@ -40,10 +40,15 @@ def _extract_token(
     bearer_token: str | None,
     request: Request,
 ) -> str | None:
-    """Return a JWT from the Authorization header or the access_token cookie."""
+    """Return a JWT from the Authorization header or the access-token cookie.
+
+    The cookie name is the ``__Host-`` prefixed variant in HTTPS deployments;
+    the legacy un-prefixed name is read as a fallback for rollout and for
+    local plain-HTTP development where ``__Host-`` cannot be set.
+    """
     if bearer_token:
         return bearer_token
-    return request.cookies.get("access_token")
+    return request.cookies.get("__Host-access_token") or request.cookies.get("access_token")
 
 
 async def get_current_user(
@@ -100,7 +105,11 @@ async def get_mfa_setup_user(
     received an ``mfa_setup_token`` (no real access token yet) can
     still call /mfa/setup and /mfa/verify-setup.
     """
-    token = _extract_token(bearer_token, request) or request.cookies.get("mfa_setup_token")
+    token = (
+        _extract_token(bearer_token, request)
+        or request.cookies.get("__Host-mfa-setup-token")
+        or request.cookies.get("mfa_setup_token")
+    )
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

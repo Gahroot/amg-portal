@@ -108,9 +108,7 @@ async def threshold(
 
 
 class TestApprovalChains:
-    async def test_md_creates_chain(
-        self, md_client: AsyncClient
-    ) -> None:
+    async def test_md_creates_chain(self, md_client: AsyncClient) -> None:
         resp = await md_client.post(
             f"{BASE}/chains",
             json={
@@ -147,9 +145,7 @@ class TestApprovalChains:
         data = resp.json()
         assert data["id"] == str(approval_chain.id)
 
-    async def test_client_cannot_create_chain(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_create_chain(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.post(
             f"{BASE}/chains",
             json={
@@ -352,9 +348,7 @@ class TestBudgetImpact:
 
 
 class TestApprovalStepDecision:
-    async def test_unauthenticated_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_returns_401(self, anon_client: AsyncClient) -> None:
         fake_id = str(uuid.uuid4())
         resp = await anon_client.post(
             f"{BASE}/steps/{fake_id}/decide",

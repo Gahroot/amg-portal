@@ -34,9 +34,7 @@ async def _load_open_escalation_set(
     return {(row.entity_type, row.entity_id) for row in result.all()}
 
 
-async def _has_open_escalation(
-    db: AsyncSession, entity_type: str, entity_id: str
-) -> bool:
+async def _has_open_escalation(db: AsyncSession, entity_type: str, entity_id: str) -> bool:
     """Check if an open/acknowledged escalation already exists for an entity."""
     result = await db.execute(
         select(func.count(Escalation.id)).where(

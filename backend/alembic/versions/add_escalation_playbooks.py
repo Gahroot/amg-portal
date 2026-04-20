@@ -29,9 +29,21 @@ def upgrade() -> None:
         sa.Column("escalation_type", sa.String(50), nullable=False),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
-        sa.Column("steps", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"),  # noqa: E501
-        sa.Column("success_criteria", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"),  # noqa: E501
-        sa.Column("escalation_paths", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"),  # noqa: E501
+        sa.Column(
+            "steps", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"
+        ),  # noqa: E501
+        sa.Column(
+            "success_criteria",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="[]",
+        ),  # noqa: E501
+        sa.Column(
+            "escalation_paths",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="[]",
+        ),  # noqa: E501
         sa.Column("is_active", sa.Boolean, nullable=False, server_default="true"),
         sa.Column(
             "created_at",
@@ -69,7 +81,12 @@ def upgrade() -> None:
             unique=True,
         ),
         sa.Column("status", sa.String(20), nullable=False, server_default="in_progress"),
-        sa.Column("step_states", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="[]"),  # noqa: E501
+        sa.Column(
+            "step_states",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+            server_default="[]",
+        ),  # noqa: E501
         sa.Column(
             "started_by",
             postgresql.UUID(as_uuid=True),

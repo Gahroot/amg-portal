@@ -195,17 +195,14 @@ async def get_portfolio_summary(
         .subquery()
     )
 
-    rag_prog_query = (
-        select(
-            Program.id,
-            case(
-                (ms_agg.c.has_overdue.is_(True), literal("red")),
-                (ms_agg.c.has_amber.is_(True), literal("amber")),
-                else_=literal("green"),
-            ).label("rag"),
-        )
-        .outerjoin(ms_agg, Program.id == ms_agg.c.program_id)
-    )
+    rag_prog_query = select(
+        Program.id,
+        case(
+            (ms_agg.c.has_overdue.is_(True), literal("red")),
+            (ms_agg.c.has_amber.is_(True), literal("amber")),
+            else_=literal("green"),
+        ).label("rag"),
+    ).outerjoin(ms_agg, Program.id == ms_agg.c.program_id)
     if rm_client_ids is not None:
         rag_prog_query = rag_prog_query.where(Program.client_id.in_(rm_client_ids))
 
@@ -262,15 +259,12 @@ async def get_portfolio_summary(
     )
 
 
-
 @router.get(
     "/real-time-stats",
     response_model=RealTimeStats,
     dependencies=[Depends(require_internal)],
 )
-async def get_realtime_stats(
-    db: DB, current_user: CurrentUser, _rls: RLSContext
-) -> RealTimeStats:
+async def get_realtime_stats(db: DB, current_user: CurrentUser, _rls: RLSContext) -> RealTimeStats:
     """Return live dashboard counts for the current user."""
     return await get_real_time_stats(db, current_user.id)
 
@@ -318,9 +312,7 @@ async def get_at_risk_programs(
     all_items = await _build_program_health_items(db, rm_client_ids=rm_client_ids)
 
     at_risk = [
-        item
-        for item in all_items
-        if item.rag_status == "red" or item.active_escalation_count > 0
+        item for item in all_items if item.rag_status == "red" or item.active_escalation_count > 0
     ]
 
     return ProgramHealthResponse(programs=at_risk, total=len(at_risk))

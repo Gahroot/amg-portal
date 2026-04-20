@@ -388,9 +388,7 @@ class PortfolioReportsMixin:
         rm_avg_nps: float | None = None
         if cp_ids:
             nps_avg_result = await db.execute(
-                select(func.avg(NPSResponse.score)).where(
-                    NPSResponse.client_profile_id.in_(cp_ids)
-                )
+                select(func.avg(NPSResponse.score)).where(NPSResponse.client_profile_id.in_(cp_ids))
             )
             avg_raw = nps_avg_result.scalar_one_or_none()
             if avg_raw is not None:
@@ -433,9 +431,7 @@ class PortfolioReportsMixin:
                         "rag_status": rag,
                         "start_date": p.start_date,
                         "end_date": p.end_date,
-                        "budget_envelope": float(p.budget_envelope)
-                        if p.budget_envelope
-                        else None,
+                        "budget_envelope": float(p.budget_envelope) if p.budget_envelope else None,
                         "milestone_count": m_count,
                         "completed_milestone_count": m_done,
                         "milestone_progress": progress,

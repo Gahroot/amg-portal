@@ -49,7 +49,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_document_acknowledgments_user_id", table_name="document_acknowledgments")
-    op.drop_index(
-        "ix_document_acknowledgments_document_id", table_name="document_acknowledgments"
-    )
+    op.drop_index("ix_document_acknowledgments_document_id", table_name="document_acknowledgments")
     op.drop_table("document_acknowledgments")

@@ -106,8 +106,7 @@ async def create_assignment(
             )
         )
         blocking = [
-            b for b in blocker_result.scalars().all()
-            if _is_due_date_blocked(b, data.due_date)
+            b for b in blocker_result.scalars().all() if _is_due_date_blocked(b, data.due_date)
         ]
         if blocking:
             first = blocking[0]

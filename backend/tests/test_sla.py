@@ -86,9 +86,7 @@ class TestListSLATrackers:
         rm_client: AsyncClient,
         sla_trackers: list[SLATracker],
     ) -> None:
-        resp = await rm_client.get(
-            BASE + "/", params={"breach_status": "breached"}
-        )
+        resp = await rm_client.get(BASE + "/", params={"breach_status": "breached"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] >= 1

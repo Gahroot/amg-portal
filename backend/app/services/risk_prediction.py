@@ -42,8 +42,8 @@ RISK_LOW = 30
 RISK_MEDIUM = 55
 RISK_HIGH = 75  # matches predictive_service.RISK_SCORE_HIGH
 
-Z_SCORE_ANOMALY_THRESHOLD = 2.0   # std-deviations before we flag an anomaly
-MOVING_WINDOW_SIZE = 5             # milestones in the velocity sliding window
+Z_SCORE_ANOMALY_THRESHOLD = 2.0  # std-deviations before we flag an anomaly
+MOVING_WINDOW_SIZE = 5  # milestones in the velocity sliding window
 
 
 # ─── Pure-Python statistical helpers (no numpy/pandas dependency) ──────────────
@@ -173,7 +173,8 @@ def _compute_task_completion(tasks: list[Task], today: date) -> dict[str, Any]:
     completed = sum(1 for t in tasks if t.status == "done")
     blocked = sum(1 for t in tasks if t.status == "blocked")
     overdue = sum(
-        1 for t in tasks
+        1
+        for t in tasks
         if t.due_date and t.due_date < today and t.status not in ("done", "cancelled")
     )
     rate = (completed / total * 100.0) if total > 0 else 0.0
@@ -415,8 +416,8 @@ def _build_summary(
         parts.append(f"{scope} is LOW risk (score {score}/100).")
 
     rate = task_metrics["rate"]
-    done = task_metrics['completed']
-    tot = task_metrics['total']
+    done = task_metrics["completed"]
+    tot = task_metrics["total"]
     parts.append(f"Task completion rate: {rate:.1f}% ({done}/{tot} tasks done).")
 
     if task_metrics["blocked"] > 0:
@@ -426,7 +427,7 @@ def _build_summary(
 
     vel = velocity_metrics.get("velocity")
     if vel is not None:
-        trend = velocity_metrics['trend']
+        trend = velocity_metrics["trend"]
         parts.append(f"Milestone velocity: {vel:.1f} days/milestone (trend: {trend}).")
     if velocity_metrics["anomaly"]:
         parts.append(

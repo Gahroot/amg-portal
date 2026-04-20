@@ -155,6 +155,15 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512."
             )
+        # MFA_EXEMPT_EMAILS is a demo-only bypass that MUST never be populated
+        # in a production deployment.  Fail closed: refuse to boot rather than
+        # silently emptying the list, so a misconfigured deploy is visible.
+        if not self.DEBUG and self.MFA_EXEMPT_EMAILS:
+            raise ValueError(
+                "MFA_EXEMPT_EMAILS must be empty in production. "
+                "This list is a demo-only bypass of the MFA requirement and "
+                "must not be set when DEBUG=False."
+            )
         # Derive MFA encryption key from SECRET_KEY when not explicitly set
         if not self.MFA_ENCRYPTION_KEY:
             if not self.DEBUG:

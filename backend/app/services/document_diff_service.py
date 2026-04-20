@@ -64,9 +64,7 @@ def _added_lines(lines_b: list[str], bi1: int, bi2: int) -> tuple[list[DiffLine]
     return result, len(result)
 
 
-def _context_lines(
-    lines_a: list[str], ai1: int, ai2: int, bi1: int
-) -> list[DiffLine]:
+def _context_lines(lines_a: list[str], ai1: int, ai2: int, bi1: int) -> list[DiffLine]:
     return [
         DiffLine(
             line_number_a=ai1 + i + 1,

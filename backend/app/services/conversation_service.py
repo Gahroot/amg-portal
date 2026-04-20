@@ -264,9 +264,7 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
             return
 
         if conversation.partner_assignment_id is None:
-            raise MessageScopeError(
-                "Partner conversation missing assignment reference"
-            )
+            raise MessageScopeError("Partner conversation missing assignment reference")
 
         # Get the assignment to find the assigning RM / coordinator
         assignment_result = await db.execute(
@@ -284,14 +282,10 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
         )
         partner_profile = partner_result.scalar_one_or_none()
         if partner_profile is None or partner_profile.id != assignment.partner_id:
-            raise MessageScopeError(
-                "Partner is not assigned to this conversation's assignment"
-            )
+            raise MessageScopeError("Partner is not assigned to this conversation's assignment")
 
         # Ensure only the partner and internal users (no clients, no other partners)
-        other_participant_ids = [
-            pid for pid in conversation.participant_ids if pid != sender.id
-        ]
+        other_participant_ids = [pid for pid in conversation.participant_ids if pid != sender.id]
         if other_participant_ids:
             others_result = await db.execute(
                 select(User.id, User.role).where(User.id.in_(other_participant_ids))
@@ -299,13 +293,9 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
             for row in others_result.all():
                 other_role = row.role
                 if other_role == UserRole.client:
-                    raise MessageScopeError(
-                        "Partners cannot directly message clients"
-                    )
+                    raise MessageScopeError("Partners cannot directly message clients")
                 if other_role == UserRole.partner:
-                    raise MessageScopeError(
-                        "Partners cannot directly message other partners"
-                    )
+                    raise MessageScopeError("Partners cannot directly message other partners")
 
     async def _enforce_client_scope(
         self,
@@ -315,9 +305,7 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
     ) -> None:
         """For client conversations, only assigned RM and internal users participate."""
         if sender.role == UserRole.partner:
-            raise MessageScopeError(
-                "Partners cannot send messages in client conversations"
-            )
+            raise MessageScopeError("Partners cannot send messages in client conversations")
 
         if sender.role in INTERNAL_ROLES:
             # Internal users are allowed
@@ -326,9 +314,7 @@ class ConversationService(CRUDBase[Conversation, ConversationCreate, Conversatio
         # For clients: verify they are the client associated with this conversation
         if sender.role == UserRole.client:
             if conversation.client_id is None:
-                raise MessageScopeError(
-                    "Client conversation missing client reference"
-                )
+                raise MessageScopeError("Client conversation missing client reference")
             # The client is allowed if they are a participant (already checked above)
             return
 

@@ -23,32 +23,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "max-age=31536000; includeSubDomains; preload"
             )
 
-        # Content Security Policy
-        # In development, allow unsafe-eval for Next.js dev server
-        if settings.DEBUG:
-            csp = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-eval' 'unsafe-inline'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data: https:; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'; "
-                "base-uri 'self'; "
-                "form-action 'self';"
-            )
-        else:
-            csp = (
-                "default-src 'self'; "
-                "script-src 'self'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data: https:; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'; "
-                "base-uri 'self'; "
-                "form-action 'self';"
-            )
-        response.headers["Content-Security-Policy"] = csp
+        # Content Security Policy — API-only.
+        # The backend serves JSON to an SPA; browsers never render backend
+        # responses as HTML documents, so the only CSP that meaningfully
+        # protects the user is the one emitted by the Next.js frontend
+        # (``frontend/src/middleware.ts``).  We still send a minimal CSP
+        # here as defence-in-depth: it denies all resource loads and
+        # forbids framing, so an attacker who somehow coerces the browser
+        # to treat an API response as a document still gets nothing.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'"
+        )
 
         return response

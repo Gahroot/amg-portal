@@ -112,9 +112,7 @@ async def list_expiring_documents(
         # so "valid" returns nothing — leave as-is.
 
     # Total count before pagination
-    count_result = await db.execute(
-        select(func.count()).select_from(base_query.subquery())
-    )
+    count_result = await db.execute(select(func.count()).select_from(base_query.subquery()))
     total = count_result.scalar_one()
 
     # Fetch only the requested page

@@ -40,9 +40,9 @@ async def _enrich(db: DB, survey: PulseSurvey) -> PulseSurveyDetail:
     from app.models.pulse_survey import PulseSurveyResponse
 
     result = await db.execute(
-        select(func.count()).select_from(PulseSurveyResponse).where(
-            PulseSurveyResponse.survey_id == survey.id
-        )
+        select(func.count())
+        .select_from(PulseSurveyResponse)
+        .where(PulseSurveyResponse.survey_id == survey.id)
     )
     count = result.scalar_one()
     detail = PulseSurveyDetail.model_validate(survey)
@@ -65,9 +65,7 @@ async def create_pulse_survey(
     current_user: CurrentUser,
 ) -> PulseSurveyDetail:
     """Create a new pulse survey."""
-    survey = await pulse_survey_service.create_survey(
-        db, data=data, created_by_id=current_user.id
-    )
+    survey = await pulse_survey_service.create_survey(db, data=data, created_by_id=current_user.id)
     return await _enrich(db, survey)
 
 
@@ -222,9 +220,7 @@ async def get_active_pulse_for_client(
     """
     from app.models.client_profile import ClientProfile
 
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == current_user.id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == current_user.id))
     client_profile = result.scalar_one_or_none()
     if not client_profile:
         return None
@@ -247,9 +243,7 @@ async def get_my_pulse_status(
     """Check whether the current client has responded to a specific pulse survey."""
     from app.models.client_profile import ClientProfile
 
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == current_user.id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == current_user.id))
     client_profile = result.scalar_one_or_none()
     if not client_profile:
         raise ForbiddenException("Client profile not found")
@@ -291,9 +285,7 @@ async def submit_pulse_response(
             f"Valid values: {sorted(valid)}"
         )
 
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == current_user.id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == current_user.id))
     client_profile = result.scalar_one_or_none()
     if not client_profile:
         raise ForbiddenException("Client profile not found")

@@ -150,9 +150,7 @@ class TestPartnerAssignments:
         partner_http: AsyncClient,
         partner_assignment: PartnerAssignment,
     ) -> None:
-        resp = await partner_http.post(
-            f"{BASE}/assignments/{partner_assignment.id}/accept"
-        )
+        resp = await partner_http.post(f"{BASE}/assignments/{partner_assignment.id}/accept")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "accepted"

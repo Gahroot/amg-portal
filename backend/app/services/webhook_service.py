@@ -350,9 +350,7 @@ class WebhookService:
         if success:
             logger.info(f"Webhook {webhook.id} delivered successfully for event {event_type}")
         else:
-            logger.warning(
-                f"Webhook {webhook.id} failed for event {event_type}: {error_message}"
-            )
+            logger.warning(f"Webhook {webhook.id} failed for event {event_type}: {error_message}")
 
         return delivery
 

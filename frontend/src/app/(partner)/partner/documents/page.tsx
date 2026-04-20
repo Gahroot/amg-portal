@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { usePartnerAssignments, useDownloadDocument } from "@/hooks/use-partner-portal";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,14 +51,11 @@ export default function PartnerDocumentsPage() {
       const results: DocumentEntry[] = [];
       for (const assignment of assignmentsData.assignments) {
         try {
-          const response = await fetch("/api/v1/partner-portal/assignments/" + assignment.id + "/documents", {
-            credentials: "include",
-          });
-          if (response.ok) {
-            const data = await response.json();
-            for (const doc of data.documents || []) {
-              results.push({ doc, assignment: { id: assignment.id, title: assignment.title } });
-            }
+          const response = await api.get(
+            `/api/v1/partner-portal/assignments/${assignment.id}/documents`,
+          );
+          for (const doc of response.data.documents || []) {
+            results.push({ doc, assignment: { id: assignment.id, title: assignment.title } });
           }
         } catch { /* skip */ }
       }

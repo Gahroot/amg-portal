@@ -31,9 +31,7 @@ async def evaluate_auto_triggers(db: AsyncSession) -> list[Escalation]:
     created: list[Escalation] = []
 
     # Load active rules
-    result = await db.execute(
-        select(EscalationRule).where(EscalationRule.is_active.is_(True))
-    )
+    result = await db.execute(select(EscalationRule).where(EscalationRule.is_active.is_(True)))
     rules = list(result.scalars().all())
     if not rules:
         logger.info("No active escalation rules found")
@@ -58,22 +56,16 @@ async def evaluate_auto_triggers(db: AsyncSession) -> list[Escalation]:
             conditions = rule.trigger_conditions or {}
 
             if rule.trigger_type == "sla_breach":
-                created.extend(
-                    await _evaluate_sla_breach_rule(db, rule, conditions, system_user)
-                )
+                created.extend(await _evaluate_sla_breach_rule(db, rule, conditions, system_user))
 
             elif rule.trigger_type == "milestone_overdue":
                 created.extend(
-                    await _evaluate_milestone_overdue_rule(
-                        db, rule, conditions, system_user, today
-                    )
+                    await _evaluate_milestone_overdue_rule(db, rule, conditions, system_user, today)
                 )
 
             elif rule.trigger_type == "task_overdue":
                 created.extend(
-                    await _evaluate_task_overdue_rule(
-                        db, rule, conditions, system_user, today
-                    )
+                    await _evaluate_task_overdue_rule(db, rule, conditions, system_user, today)
                 )
 
         except Exception:
@@ -96,9 +88,7 @@ async def _evaluate_sla_breach_rule(
     sla_hours_exceeded = int(str(conditions.get("sla_hours_exceeded", 0)))
 
     # Find breached SLA trackers
-    result = await db.execute(
-        select(SLATracker).where(SLATracker.breach_status == "breached")
-    )
+    result = await db.execute(select(SLATracker).where(SLATracker.breach_status == "breached"))
     breached_trackers = list(result.scalars().all())
 
     if not breached_trackers:

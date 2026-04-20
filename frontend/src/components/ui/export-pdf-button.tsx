@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { api } from "@/lib/api";
 
 
 export interface PDFExportOptions {
@@ -379,13 +380,9 @@ export async function exportTableAsPDF(
   options?: Partial<PDFExportOptions>,
   filters?: Record<string, string>,
 ): Promise<void> {
-  const response = await fetch("/api/v1/export/pdf/table", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const response = await api.post<Blob>(
+    "/api/v1/export/pdf/table",
+    {
       title,
       headers,
       rows,
@@ -396,14 +393,11 @@ export async function exportTableAsPDF(
       include_filters: options?.includeFilters ?? false,
       page_size: options?.pageSize ?? "A4",
       filters,
-    }),
-  });
+    },
+    { responseType: "blob" },
+  );
 
-  if (!response.ok) {
-    throw new Error(`Export failed: ${response.statusText}`);
-  }
-
-  const blob = await response.blob();
+  const blob = response.data;
   const objectUrl = URL.createObjectURL(blob);
   const filename = `${title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
 

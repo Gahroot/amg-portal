@@ -42,9 +42,7 @@ async def get_partner_scorecard(  # noqa: PLR0912, PLR0915
 
     period must be one of: "30d", "90d", "ytd".
     """
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = partner_result.scalar_one_or_none()
     if not partner:
         return None
@@ -60,9 +58,9 @@ async def get_partner_scorecard(  # noqa: PLR0912, PLR0915
         sla_result = await db.execute(
             select(
                 func.count(SLATracker.id).label("total"),
-                func.count(
-                    case((SLATracker.breach_status == "breached", SLATracker.id))
-                ).label("breached"),
+                func.count(case((SLATracker.breach_status == "breached", SLATracker.id))).label(
+                    "breached"
+                ),
             ).where(
                 SLATracker.assigned_to == partner.user_id,
                 SLATracker.started_at >= since,
@@ -148,9 +146,7 @@ async def get_partner_scorecard(  # noqa: PLR0912, PLR0915
 
     deliveries_with_due = on_time_count + late_count
     on_time_delivery_rate: float | None = (
-        round(on_time_count / deliveries_with_due * 100, 1)
-        if deliveries_with_due > 0
-        else None
+        round(on_time_count / deliveries_with_due * 100, 1) if deliveries_with_due > 0 else None
     )
 
     # ── Composite score (60% rating + 40% SLA) ───────────────────────────────
@@ -164,9 +160,7 @@ async def get_partner_scorecard(  # noqa: PLR0912, PLR0915
         composite_score = round(sla_compliance_pct, 1)
 
     # ── Weekly trend data ─────────────────────────────────────────────────────
-    data_points = await _build_weekly_trends(
-        db, partner_id, partner, since
-    )
+    data_points = await _build_weekly_trends(db, partner_id, partner, since)
 
     # ── Platform-wide averages for comparison ─────────────────────────────────
     averages = await _get_platform_averages(db, since)
@@ -282,19 +276,13 @@ async def _build_weekly_trends(
     for week_monday in weeks:
         wk = week_monday.isoformat()
         sla_total, sla_breached = sla_by_week.get(wk, (0, 0))
-        sla_pct = (
-            round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
-        )
+        sla_pct = round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
         accum = ratings_by_week.get(wk)
         avg_q = (
-            round(sum(accum.quality) / len(accum.quality), 2)
-            if accum and accum.quality
-            else None
+            round(sum(accum.quality) / len(accum.quality), 2) if accum and accum.quality else None
         )
         avg_o = (
-            round(sum(accum.overall) / len(accum.overall), 2)
-            if accum and accum.overall
-            else None
+            round(sum(accum.overall) / len(accum.overall), 2) if accum and accum.overall else None
         )
         data_points.append(
             {
@@ -318,17 +306,15 @@ async def _get_platform_averages(
     sla_result = await db.execute(
         select(
             func.count(SLATracker.id).label("total"),
-            func.count(
-                case((SLATracker.breach_status == "breached", SLATracker.id))
-            ).label("breached"),
+            func.count(case((SLATracker.breach_status == "breached", SLATracker.id))).label(
+                "breached"
+            ),
         ).where(SLATracker.started_at >= since)
     )
     sla_row = sla_result.one()
     sla_total = sla_row.total or 0
     sla_breached = sla_row.breached or 0
-    avg_sla = (
-        round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
-    )
+    avg_sla = round((1 - sla_breached / sla_total) * 100, 1) if sla_total > 0 else None
 
     # Rating averages across all partners
     rating_result = await db.execute(

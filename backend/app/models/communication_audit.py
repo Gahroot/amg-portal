@@ -45,6 +45,4 @@ class CommunicationAudit(Base):
     conversation = relationship("Conversation", foreign_keys=[conversation_id])
     actor = relationship("User", foreign_keys=[actor_id])
 
-    __table_args__ = (
-        Index("ix_communication_audits_created_at", "created_at"),
-    )
+    __table_args__ = (Index("ix_communication_audits_created_at", "created_at"),)

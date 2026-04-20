@@ -271,9 +271,7 @@ class TestGetKYCDocument:
         rm_client: AsyncClient,
         db_client: Client,
     ) -> None:
-        resp = await rm_client.get(
-            f"{BASE}/clients/{db_client.id}/kyc-documents/{uuid.uuid4()}"
-        )
+        resp = await rm_client.get(f"{BASE}/clients/{db_client.id}/kyc-documents/{uuid.uuid4()}")
         assert resp.status_code == 404
 
     async def test_wrong_client_returns_404(
@@ -391,7 +389,7 @@ class TestUploadKYCDocument:
         resp = await md_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "national_id"},
-            files={"file": ("national_id.pdf", b"content", "application/pdf")},
+            files={"file": ("national_id.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 201
         assert resp.json()["document_type"] == "national_id"
@@ -404,7 +402,7 @@ class TestUploadKYCDocument:
         resp = await coordinator_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "proof_of_address"},
-            files={"file": ("address.pdf", b"content", "application/pdf")},
+            files={"file": ("address.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 201
 
@@ -416,7 +414,7 @@ class TestUploadKYCDocument:
         resp = await rm_client.post(
             f"{BASE}/clients/{fake_client_id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 404
 
@@ -438,7 +436,7 @@ class TestUploadKYCDocument:
     ) -> None:
         resp = await rm_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 422
 
@@ -450,7 +448,7 @@ class TestUploadKYCDocument:
         resp = await anon_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 401
 
@@ -462,7 +460,7 @@ class TestUploadKYCDocument:
         resp = await client_user_http.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 
@@ -474,7 +472,7 @@ class TestUploadKYCDocument:
         resp = await partner_http.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 
@@ -732,7 +730,7 @@ class TestKYCRBAC:
         resp = await md_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "tax_id"},
-            files={"file": ("tax.pdf", b"content", "application/pdf")},
+            files={"file": ("tax.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 201
 
@@ -764,7 +762,7 @@ class TestKYCRBAC:
         resp = await compliance_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "bank_statement"},
-            files={"file": ("bank.pdf", b"content", "application/pdf")},
+            files={"file": ("bank.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 201
 
@@ -796,7 +794,7 @@ class TestKYCRBAC:
         resp = await coordinator_client.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "source_of_wealth"},
-            files={"file": ("wealth.pdf", b"content", "application/pdf")},
+            files={"file": ("wealth.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 201
 
@@ -821,7 +819,7 @@ class TestKYCRBAC:
         resp = await client_user_http.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 
@@ -857,7 +855,7 @@ class TestKYCRBAC:
         resp = await partner_http.post(
             f"{BASE}/clients/{db_client.id}/kyc-documents",
             data={"document_type": "passport"},
-            files={"file": ("test.pdf", b"content", "application/pdf")},
+            files={"file": ("test.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 

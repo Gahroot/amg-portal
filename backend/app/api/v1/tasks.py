@@ -1,4 +1,5 @@
 """Task board API for drag-and-drop task management."""
+
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -166,7 +167,7 @@ async def list_tasks(
     # Build blocked_by map: for each task, find which tasks depend on it
     blocked_by_map: dict[uuid.UUID, list[uuid.UUID]] = {}
     for task in tasks:
-        for dep_id in (task.depends_on or []):
+        for dep_id in task.depends_on or []:
             blocked_by_map.setdefault(dep_id, []).append(task.id)
 
     task_responses = []
@@ -209,9 +210,7 @@ async def create_task(
         raise NotFoundException("Milestone not found")
 
     # Get max position for this status (default to 'todo')
-    max_pos_result = await db.execute(
-        select(func.max(Task.position)).where(Task.status == "todo")
-    )
+    max_pos_result = await db.execute(select(func.max(Task.position)).where(Task.status == "todo"))
     max_pos = max_pos_result.scalar() or 0
 
     task = Task(
@@ -253,10 +252,47 @@ async def create_task(
 
     return TaskBoardResponse(
         **build_task_response(
-            loaded_task, loaded_task.assignee,
-            loaded_task.milestone.program, loaded_task.milestone,
+            loaded_task,
+            loaded_task.assignee,
+            loaded_task.milestone.program,
+            loaded_task.milestone,
         )
     )
+
+
+@router.get("/programs", response_model=list[ProgramInfo])
+async def list_programs_for_filter(
+    db: DB,
+    _rls: RLSContext,
+    _: None = Depends(require_internal),
+) -> Any:
+    """List all programs for the filter dropdown."""
+    result = await db.execute(
+        select(Program)
+        .where(Program.status.in_(["intake", "design", "active", "on_hold"]))
+        .order_by(Program.title)
+    )
+    programs = result.scalars().all()
+    return [ProgramInfo(id=p.id, title=p.title, status=p.status) for p in programs]
+
+
+@router.get("/assignees", response_model=list[AssigneeInfo])
+async def list_assignees_for_filter(
+    db: DB,
+    _rls: RLSContext,
+    _: None = Depends(require_internal),
+) -> Any:
+    """List all internal users for the assignee filter dropdown."""
+    from app.models.enums import INTERNAL_ROLES
+
+    result = await db.execute(
+        select(User)
+        .where(User.role.in_([r.value for r in INTERNAL_ROLES]))
+        .where(User.status == "active")
+        .order_by(User.full_name)
+    )
+    users = result.scalars().all()
+    return [AssigneeInfo(id=u.id, name=u.full_name, email=u.email) for u in users]
 
 
 @router.get("/{task_id}", response_model=TaskBoardResponse)
@@ -368,9 +404,7 @@ async def reorder_tasks(
 
     # Get all tasks in the target column, ordered by position
     tasks_result = await db.execute(
-        select(Task)
-        .where(Task.status == data.new_status)
-        .order_by(Task.position)
+        select(Task).where(Task.status == data.new_status).order_by(Task.position)
     )
     column_tasks = list(tasks_result.scalars().all())
 
@@ -435,9 +469,7 @@ async def batch_reorder_tasks(
 
         # Get all tasks in the target column
         tasks_result = await db.execute(
-            select(Task)
-            .where(Task.status == update.new_status)
-            .order_by(Task.position)
+            select(Task).where(Task.status == update.new_status).order_by(Task.position)
         )
         column_tasks = list(tasks_result.scalars().all())
 
@@ -551,9 +583,7 @@ async def update_task_dependencies(
         raise BadRequestException("A task cannot depend on itself")
 
     if new_deps:
-        dep_result = await db.execute(
-            select(Task.id).where(Task.id.in_(new_deps))
-        )
+        dep_result = await db.execute(select(Task.id).where(Task.id.in_(new_deps)))
         found_ids = {row[0] for row in dep_result.all()}
         missing = [str(d) for d in new_deps if d not in found_ids]
         if missing:
@@ -573,9 +603,7 @@ async def update_task_dependencies(
     await db.refresh(task)
 
     # Compute blocked_by for this task from all tasks
-    blocked_by_result = await db.execute(
-        select(Task.id).where(Task.depends_on.contains([task_id]))
-    )
+    blocked_by_result = await db.execute(select(Task.id).where(Task.depends_on.contains([task_id])))
     blocked_by = [row[0] for row in blocked_by_result.all()]
 
     return TaskBoardResponse(
@@ -587,44 +615,3 @@ async def update_task_dependencies(
             blocked_by=blocked_by,
         )
     )
-
-
-@router.get("/programs", response_model=list[ProgramInfo])
-async def list_programs_for_filter(
-    db: DB,
-    _rls: RLSContext,
-    _: None = Depends(require_internal),
-) -> Any:
-    """List all programs for the filter dropdown."""
-    result = await db.execute(
-        select(Program)
-        .where(Program.status.in_(["intake", "design", "active", "on_hold"]))
-        .order_by(Program.title)
-    )
-    programs = result.scalars().all()
-    return [
-        ProgramInfo(id=p.id, title=p.title, status=p.status)
-        for p in programs
-    ]
-
-
-@router.get("/assignees", response_model=list[AssigneeInfo])
-async def list_assignees_for_filter(
-    db: DB,
-    _rls: RLSContext,
-    _: None = Depends(require_internal),
-) -> Any:
-    """List all internal users for the assignee filter dropdown."""
-    from app.models.enums import INTERNAL_ROLES
-
-    result = await db.execute(
-        select(User)
-        .where(User.role.in_([r.value for r in INTERNAL_ROLES]))
-        .where(User.status == "active")
-        .order_by(User.full_name)
-    )
-    users = result.scalars().all()
-    return [
-        AssigneeInfo(id=u.id, name=u.full_name, email=u.email)
-        for u in users
-    ]

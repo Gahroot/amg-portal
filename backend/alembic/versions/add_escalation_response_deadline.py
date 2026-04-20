@@ -50,8 +50,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_escalations_parent_escalation_id", "escalations", type_="foreignkey"
-    )
+    op.drop_constraint("fk_escalations_parent_escalation_id", "escalations", type_="foreignkey")
     op.drop_column("escalations", "parent_escalation_id")
     op.drop_column("escalations", "response_deadline")

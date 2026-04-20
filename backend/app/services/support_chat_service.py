@@ -80,9 +80,7 @@ class SupportChatService:
 
         # Update conversation with last message info
         conversation.last_message_at = datetime.now(UTC)
-        conversation.last_message_preview = (
-            data.message[:200] if data.message else None
-        )
+        conversation.last_message_preview = data.message[:200] if data.message else None
 
         await db.commit()
         await db.refresh(conversation)
@@ -93,9 +91,7 @@ class SupportChatService:
         self, db: AsyncSession, conversation_id: uuid.UUID, user_id: uuid.UUID | None = None
     ) -> SupportConversation | None:
         """Get a conversation by ID, optionally checking user ownership."""
-        query = select(SupportConversation).where(
-            SupportConversation.id == conversation_id
-        )
+        query = select(SupportConversation).where(SupportConversation.id == conversation_id)
         if user_id:
             query = query.where(SupportConversation.user_id == user_id)
 
@@ -111,9 +107,7 @@ class SupportChatService:
         limit: int = 50,
     ) -> tuple[list[SupportConversation], int]:
         """Get all conversations for a user."""
-        query = select(SupportConversation).where(
-            SupportConversation.user_id == user_id
-        )
+        query = select(SupportConversation).where(SupportConversation.user_id == user_id)
 
         if status:
             query = query.where(SupportConversation.status == status)
@@ -123,9 +117,7 @@ class SupportChatService:
         total = (await db.execute(count_query)).scalar() or 0
 
         # Get paginated results
-        query = query.order_by(desc(SupportConversation.last_message_at)).offset(
-            skip
-        ).limit(limit)
+        query = query.order_by(desc(SupportConversation.last_message_at)).offset(skip).limit(limit)
         result = await db.execute(query)
         conversations = list(result.scalars().all())
 
@@ -224,9 +216,7 @@ class SupportChatService:
         limit: int = 100,
     ) -> tuple[list[SupportMessage], int]:
         """Get messages for a conversation."""
-        query = select(SupportMessage).where(
-            SupportMessage.conversation_id == conversation_id
-        )
+        query = select(SupportMessage).where(SupportMessage.conversation_id == conversation_id)
 
         # Users can't see internal notes
         if user_type == "user":
@@ -303,9 +293,7 @@ class SupportChatService:
             raise NotFoundException("Conversation not found")
 
         # Verify agent exists and is a support agent
-        agent_result = await db.execute(
-            select(User).where(User.id == agent_id)
-        )
+        agent_result = await db.execute(select(User).where(User.id == agent_id))
         agent = agent_result.scalar_one_or_none()
         if not agent:
             raise NotFoundException("Agent not found")
@@ -340,9 +328,7 @@ class SupportChatService:
 
         # Update agent's active conversation count
         if conversation.assigned_agent_id:
-            await self._update_agent_conversation_count(
-                db, conversation.assigned_agent_id, -1
-            )
+            await self._update_agent_conversation_count(db, conversation.assigned_agent_id, -1)
 
         await db.commit()
         await db.refresh(conversation)
@@ -414,9 +400,7 @@ class SupportChatService:
         total = (await db.execute(count_query)).scalar() or 0
 
         # Get paginated results
-        query = query.order_by(desc(SupportOfflineMessage.created_at)).offset(
-            skip
-        ).limit(limit)
+        query = query.order_by(desc(SupportOfflineMessage.created_at)).offset(skip).limit(limit)
         result = await db.execute(query)
         messages = list(result.scalars().all())
 
@@ -477,8 +461,7 @@ class SupportChatService:
             .where(
                 SupportAgentStatus.is_online == True,  # noqa: E712
                 SupportAgentStatus.status == "online",
-                SupportAgentStatus.active_conversations
-                < SupportAgentStatus.max_conversations,
+                SupportAgentStatus.active_conversations < SupportAgentStatus.max_conversations,
             )
         )
         available_agents = result.scalar() or 0
@@ -531,9 +514,7 @@ class SupportChatService:
         )
         status = result.scalar_one_or_none()
         if status:
-            status.active_conversations = max(
-                0, status.active_conversations + delta
-            )
+            status.active_conversations = max(0, status.active_conversations + delta)
 
 
 support_chat_service = SupportChatService()

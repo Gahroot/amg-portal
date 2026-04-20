@@ -1,4 +1,5 @@
 """Conversation management endpoints."""
+
 import uuid
 from typing import Any
 
@@ -27,7 +28,8 @@ router = APIRouter()
 
 
 async def _resolve_participants(
-    db: AsyncSession, conversations: list[Conversation],
+    db: AsyncSession,
+    conversations: list[Conversation],
 ) -> dict[str, list[ParticipantInfo]]:
     """Resolve participant_ids to ParticipantInfo for a batch of conversations."""
     all_ids: set[uuid.UUID] = set()
@@ -42,14 +44,14 @@ async def _resolve_participants(
     user_map: dict[uuid.UUID, ParticipantInfo] = {}
     for row in result.all():
         user_map[row.id] = ParticipantInfo(
-            id=row.id, full_name=row.full_name, role=row.role,
+            id=row.id,
+            full_name=row.full_name,
+            role=row.role,
         )
 
     out: dict[str, list[ParticipantInfo]] = {}
     for conv in conversations:
-        out[str(conv.id)] = [
-            user_map[pid] for pid in conv.participant_ids if pid in user_map
-        ]
+        out[str(conv.id)] = [user_map[pid] for pid in conv.participant_ids if pid in user_map]
     return out
 
 
@@ -69,7 +71,9 @@ async def _build_response(
         resp.participants = resolved.get(str(conv.id), [])
     # Unread count
     unread_counts = await communication_service.get_unread_counts_for_conversations(
-        db, [conv.id], current_user_id,
+        db,
+        [conv.id],
+        current_user_id,
     )
     resp.unread_count = unread_counts.get(str(conv.id), 0)
     return resp

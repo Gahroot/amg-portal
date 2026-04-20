@@ -28,9 +28,7 @@ async def get_communication_preferences(
     current_user: CurrentUser,
 ) -> CommunicationPreferencesResponse:
     """Get communication preferences for a client."""
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == client_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == client_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Client profile not found")
@@ -59,9 +57,7 @@ async def update_communication_preferences(
     current_user: CurrentUser,
 ) -> CommunicationPreferencesResponse:
     """Update communication preferences for a client."""
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == client_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == client_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Client profile not found")

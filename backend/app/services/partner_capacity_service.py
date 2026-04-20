@@ -73,10 +73,7 @@ async def get_capacity_heatmap(
         )
     )
     blocked_rows = blocked_result.scalars().all()
-    blocked_map: dict[date, str | None] = {
-        row.blocked_date: row.reason
-        for row in blocked_rows
-    }
+    blocked_map: dict[date, str | None] = {row.blocked_date: row.reason for row in blocked_rows}
 
     # Build per-day counts
     day_counts: dict[date, int] = {}
@@ -170,9 +167,7 @@ async def get_all_partners_capacity_summary(
 
     # Fetch blocked partners for target_date
     blocked_result = await db.execute(
-        select(PartnerBlockedDate.partner_id).where(
-            PartnerBlockedDate.blocked_date == target_date
-        )
+        select(PartnerBlockedDate.partner_id).where(PartnerBlockedDate.blocked_date == target_date)
     )
     blocked_ids = {row[0] for row in blocked_result.all()}
 
@@ -192,16 +187,18 @@ async def get_all_partners_capacity_summary(
         else:
             status = "available"
 
-        summaries.append({
-            "partner_id": str(row.id),
-            "firm_name": row.firm_name,
-            "contact_name": row.contact_name,
-            "availability_status": row.availability_status,
-            "active_assignments": active,
-            "max_concurrent": max_c,
-            "is_blocked": is_blocked,
-            "utilisation": round(utilisation, 4),
-            "status": status,
-        })
+        summaries.append(
+            {
+                "partner_id": str(row.id),
+                "firm_name": row.firm_name,
+                "contact_name": row.contact_name,
+                "availability_status": row.availability_status,
+                "active_assignments": active,
+                "max_concurrent": max_c,
+                "is_blocked": is_blocked,
+                "utilisation": round(utilisation, 4),
+                "status": status,
+            }
+        )
 
     return summaries

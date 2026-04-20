@@ -1,5 +1,5 @@
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   updateProfile,
@@ -13,6 +13,7 @@ import {
   type ClientPreferencesUpdate,
 } from "@/lib/api/client-portal";
 import { queryKeys } from "@/lib/query-keys";
+import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
   ProfileUpdateRequest,
   UserNotificationPreferencesUpdate,
@@ -27,35 +28,21 @@ export function useNotificationPreferences() {
 }
 
 export function useUpdateNotificationPreferences() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: UserNotificationPreferencesUpdate) =>
       updateNotificationPreferences(data),
-    onSuccess: () => {
-      toast.success("Notification preferences updated");
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.notificationPreferences() });
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Failed to update preferences";
-      toast.error(message);
-    },
+    invalidateKeys: [queryKeys.settings.notificationPreferences()],
+    successMessage: "Notification preferences updated",
+    errorMessage: "Failed to update preferences",
   });
 }
 
 export function useUpdateProfile() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ProfileUpdateRequest) => updateProfile(data),
-    onSuccess: () => {
-      toast.success("Profile updated");
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Failed to update profile";
-      toast.error(message);
-    },
+    invalidateKeys: [queryKeys.users.current()],
+    successMessage: "Profile updated",
+    errorMessage: "Failed to update profile",
   });
 }
 
@@ -81,17 +68,10 @@ export function useClientPreferences() {
 }
 
 export function useUpdateClientPreferences() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (data: ClientPreferencesUpdate) => updateClientPreferences(data),
-    onSuccess: () => {
-      toast.success("Communication preferences updated");
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.clientPreferences() });
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Failed to update preferences";
-      toast.error(message);
-    },
+    invalidateKeys: [queryKeys.settings.clientPreferences()],
+    successMessage: "Communication preferences updated",
+    errorMessage: "Failed to update preferences",
   });
 }

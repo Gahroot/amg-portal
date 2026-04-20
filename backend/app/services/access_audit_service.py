@@ -198,9 +198,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         db.add(finding)
 
         # Update audit's anomalies_found count
-        result = await db.execute(
-            select(AccessAudit).where(AccessAudit.id == audit_id)
-        )
+        result = await db.execute(select(AccessAudit).where(AccessAudit.id == audit_id))
         audit = result.scalar_one()
         audit.anomalies_found = (audit.anomalies_found or 0) + 1
 
@@ -307,9 +305,7 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
         audit_id: uuid.UUID,
     ) -> AccessAudit | None:
         """Mark an audit as complete."""
-        result = await db.execute(
-            select(AccessAudit).where(AccessAudit.id == audit_id)
-        )
+        result = await db.execute(select(AccessAudit).where(AccessAudit.id == audit_id))
         audit = result.scalar_one_or_none()
         if not audit:
             return None
@@ -362,8 +358,9 @@ class AccessAuditService(CRUDBase[AccessAudit, CreateAccessAuditRequest, UpdateA
 
         # By severity
         severity_result = await db.execute(
-            select(AccessAuditFinding.severity, func.count().label("count"))
-            .group_by(AccessAuditFinding.severity)
+            select(AccessAuditFinding.severity, func.count().label("count")).group_by(
+                AccessAuditFinding.severity
+            )
         )
         by_severity = {row.severity: row.count for row in severity_result.all()}
 

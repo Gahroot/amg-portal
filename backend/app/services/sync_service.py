@@ -47,9 +47,7 @@ class SyncService:
         user_id: uuid.UUID,
     ) -> UserPreferences:
         """Get or create user preferences for a user."""
-        result = await db.execute(
-            select(UserPreferences).where(UserPreferences.user_id == user_id)
-        )
+        result = await db.execute(select(UserPreferences).where(UserPreferences.user_id == user_id))
         prefs = result.scalar_one_or_none()
 
         if prefs is None:
@@ -75,9 +73,7 @@ class SyncService:
 
         # Get notification preferences
         notif_result = await db.execute(
-            select(NotificationPreference).where(
-                NotificationPreference.user_id == user_id
-            )
+            select(NotificationPreference).where(NotificationPreference.user_id == user_id)
         )
         notif_prefs = notif_result.scalar_one_or_none()
 
@@ -123,7 +119,9 @@ class SyncService:
                 server_version=prefs.version,
                 client_version=update_data.version,
                 server_updated_at=prefs.updated_at,
-                conflict_fields=list(update_data.ui_preferences.model_dump(exclude_unset=True).keys())
+                conflict_fields=list(
+                    update_data.ui_preferences.model_dump(exclude_unset=True).keys()
+                )
                 if update_data.ui_preferences
                 else [],
                 resolution_strategy="server_wins",
@@ -208,13 +206,9 @@ class SyncService:
     ) -> None:
         """Process a single sync change."""
         if change.action in ("mark_read", "mark_unread"):
-            await self._process_read_status_change(
-                db, user_id, device_id, change
-            )
+            await self._process_read_status_change(db, user_id, device_id, change)
         elif change.action in ("update_preference", "update_ui_preference"):
-            await self._process_preference_change(
-                db, user_id, device_id, change
-            )
+            await self._process_preference_change(db, user_id, device_id, change)
         else:
             raise ValueError(f"Unknown sync action: {change.action}")
 
@@ -543,9 +537,7 @@ class SyncService:
         older_than_days: int = 30,
     ) -> int:
         """Clean up old synced items from the queue."""
-        cutoff = datetime.now(UTC).replace(
-            day=datetime.now(UTC).day - older_than_days
-        )
+        cutoff = datetime.now(UTC).replace(day=datetime.now(UTC).day - older_than_days)
         result = await db.execute(
             delete(SyncQueueItem)
             .where(

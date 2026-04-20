@@ -71,9 +71,7 @@ async def bulk_update(
             result = await db.execute(select(Task).where(Task.id == task_id))
             task = result.scalar_one_or_none()
             if not task:
-                failures.append(
-                    BulkUpdateFailure(task_id=str(task_id), error="Task not found")
-                )
+                failures.append(BulkUpdateFailure(task_id=str(task_id), error="Task not found"))
                 continue
 
             if data.delete:

@@ -79,9 +79,7 @@ async def get_security_brief(
     _rls: RLSContext,
 ) -> SecurityBriefResponse:
     # --- Fetch and authorise the profile ---
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Profile not found")
@@ -96,9 +94,9 @@ async def get_security_brief(
     # Only executive-level (or elevated) clients have security briefs
     if profile.security_profile_level == SecurityProfileLevel.standard:
         raise ForbiddenException(
-                "Security brief is not available for standard-level profiles. "
-                "Upgrade the client's security profile level to 'elevated' or 'executive'."
-            )
+            "Security brief is not available for standard-level profiles. "
+            "Upgrade the client's security profile level to 'elevated' or 'executive'."
+        )
 
     # --- Audit log — every access is recorded ---
     ip_address = request.client.host if request.client else None
@@ -188,9 +186,7 @@ async def update_security_profile_level(
     current_user: CurrentUser,
     _rls: RLSContext,
 ) -> SecurityProfileLevelUpdateResponse:
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Profile not found")

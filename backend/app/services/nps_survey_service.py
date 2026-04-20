@@ -181,9 +181,9 @@ class NPSSurveyService(CRUDBase[NPSSurvey, NPSSurveyCreate, dict[str, Any]]):
         # Get follow-up counts
         follow_up_result = await db.execute(
             select(
-                func.sum(
-                    case((NPSFollowUp.status == NPSFollowUpStatus.pending, 1), else_=0)
-                ).label("pending"),
+                func.sum(case((NPSFollowUp.status == NPSFollowUpStatus.pending, 1), else_=0)).label(
+                    "pending"
+                ),
                 func.sum(
                     case((NPSFollowUp.status == NPSFollowUpStatus.completed, 1), else_=0)
                 ).label("completed"),
@@ -197,8 +197,10 @@ class NPSSurveyService(CRUDBase[NPSSurvey, NPSSurveyCreate, dict[str, Any]]):
             total_sent = len(survey.target_client_ids)
         else:
             # Count clients matching criteria
-            client_query = select(func.count()).select_from(ClientProfile).where(
-                ClientProfile.approval_status == "approved"
+            client_query = (
+                select(func.count())
+                .select_from(ClientProfile)
+                .where(ClientProfile.approval_status == "approved")
             )
             if survey.target_client_types:
                 client_query = client_query.where(
@@ -253,15 +255,15 @@ class NPSSurveyService(CRUDBase[NPSSurvey, NPSSurveyCreate, dict[str, Any]]):
             response_query = (
                 select(
                     func.count().label("total"),
-                    func.sum(
-                        case((NPSResponse.score_category == "promoter", 1), else_=0)
-                    ).label("promoters"),
-                    func.sum(
-                        case((NPSResponse.score_category == "passive", 1), else_=0)
-                    ).label("passives"),
-                    func.sum(
-                        case((NPSResponse.score_category == "detractor", 1), else_=0)
-                    ).label("detractors"),
+                    func.sum(case((NPSResponse.score_category == "promoter", 1), else_=0)).label(
+                        "promoters"
+                    ),
+                    func.sum(case((NPSResponse.score_category == "passive", 1), else_=0)).label(
+                        "passives"
+                    ),
+                    func.sum(case((NPSResponse.score_category == "detractor", 1), else_=0)).label(
+                        "detractors"
+                    ),
                 )
                 .select_from(NPSResponse)
                 .where(NPSResponse.survey_id == survey.id)
@@ -381,9 +383,7 @@ class NPSResponseService(CRUDBase[NPSResponse, NPSResponseCreate, NPSResponseUpd
 
         return response
 
-    async def _create_auto_follow_up(
-        self, db: AsyncSession, response: NPSResponse
-    ) -> NPSFollowUp:
+    async def _create_auto_follow_up(self, db: AsyncSession, response: NPSResponse) -> NPSFollowUp:
         """Create automatic follow-up for detractor response."""
         # Get the client's RM
         result = await db.execute(
@@ -495,12 +495,10 @@ class NPSFollowUpService(CRUDBase[NPSFollowUp, NPSFollowUpCreate, NPSFollowUpUpd
                 follow_up.resolution_notes = resolution_notes
 
             # Mark the response follow-up as completed
-            await db.execute(
-                select(NPSResponse).where(NPSResponse.id == follow_up.response_id)
-            )
-            response = (await db.execute(
-                select(NPSResponse).where(NPSResponse.id == follow_up.response_id)
-            )).scalar_one_or_none()
+            await db.execute(select(NPSResponse).where(NPSResponse.id == follow_up.response_id))
+            response = (
+                await db.execute(select(NPSResponse).where(NPSResponse.id == follow_up.response_id))
+            ).scalar_one_or_none()
             if response:
                 response.follow_up_completed = True
 

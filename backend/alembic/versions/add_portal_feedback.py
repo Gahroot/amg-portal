@@ -91,9 +91,7 @@ def upgrade() -> None:
     op.create_index("ix_portal_feedback_status", "portal_feedback", ["status"])
     op.create_index("ix_portal_feedback_type", "portal_feedback", ["feedback_type"])
     op.create_index("ix_portal_feedback_created_at", "portal_feedback", ["created_at"])
-    op.create_index(
-        "ix_portal_feedback_assigned_to", "portal_feedback", ["assigned_to"]
-    )
+    op.create_index("ix_portal_feedback_assigned_to", "portal_feedback", ["assigned_to"])
 
 
 def downgrade() -> None:

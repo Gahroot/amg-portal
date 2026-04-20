@@ -72,6 +72,7 @@ def _compute_expiry_status(doc: Document) -> str | None:
     from datetime import date as _date
 
     from app.services.document_expiry_service import compute_expiry_status
+
     expiry: _date = doc.expiry_date
     return compute_expiry_status(expiry).value
 
@@ -237,11 +238,7 @@ async def list_documents(
         & (Document.version == latest_subq.c.max_version)
     )
 
-    query = (
-        select(Document)
-        .join(latest_subq, join_condition)
-        .order_by(Document.created_at.desc())
-    )
+    query = select(Document).join(latest_subq, join_condition).order_by(Document.created_at.desc())
     documents, total = await paginate(db, query, skip=skip, limit=limit)
 
     return DocumentListResponse(
@@ -315,9 +312,7 @@ async def list_vault_documents(
     limit: int = Query(50, ge=1, le=100),
 ) -> VaultDocumentListResponse:
     """List documents in the evidence vault (sealed/archived)."""
-    docs, total = await document_vault_service.get_vault_documents(
-        db, vault_status, skip, limit
-    )
+    docs, total = await document_vault_service.get_vault_documents(db, vault_status, skip, limit)
     return VaultDocumentListResponse(
         documents=[_build_vault_response(d) for d in docs],
         total=total,
@@ -677,7 +672,7 @@ async def create_document_share(
     <p><a href="{access_url}">Access Document</a></p>
     <p>Your one-time verification code is: <strong>{otp}</strong></p>
     <p>This code expires in {_OTP_EXPIRE_MINUTES} minutes. The document access link expires on
-    {expires_at.strftime('%B %d, %Y at %H:%M UTC')}.</p>
+    {expires_at.strftime("%B %d, %Y at %H:%M UTC")}.</p>
     <p>If you did not expect this, you can safely ignore this email.</p>
     """
     try:
@@ -776,9 +771,7 @@ async def request_share_verification_code(
     await db.commit()
 
     # Fetch the document for the email
-    doc_result = await db.execute(
-        select(Document).where(Document.id == share.document_id)
-    )
+    doc_result = await db.execute(select(Document).where(Document.id == share.document_id))
     doc = doc_result.scalar_one_or_none()
     file_name = doc.file_name if doc else "Document"
 
@@ -828,9 +821,7 @@ async def access_shared_document(
         raise BadRequestException("Invalid verification code")
 
     # Fetch document
-    doc_result = await db.execute(
-        select(Document).where(Document.id == share.document_id)
-    )
+    doc_result = await db.execute(select(Document).where(Document.id == share.document_id))
     doc = doc_result.scalar_one_or_none()
     if not doc:
         raise NotFoundException("Document not found")
@@ -868,9 +859,7 @@ async def get_shared_document_info(
     """
     share = await _resolve_share(token, db)
 
-    doc_result = await db.execute(
-        select(Document).where(Document.id == share.document_id)
-    )
+    doc_result = await db.execute(select(Document).where(Document.id == share.document_id))
     doc = doc_result.scalar_one_or_none()
 
     return {

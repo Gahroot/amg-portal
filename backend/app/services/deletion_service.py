@@ -87,14 +87,10 @@ class DeletionService:
         model_class = _load_model_class(data.entity_type)
 
         # Verify the entity actually exists
-        result = await db.execute(
-            select(model_class).where(model_class.id == data.entity_id)
-        )
+        result = await db.execute(select(model_class).where(model_class.id == data.entity_id))
         entity = result.scalar_one_or_none()
         if entity is None:
-            raise NotFoundException(
-                f"{data.entity_type} with id '{data.entity_id}' not found"
-            )
+            raise NotFoundException(f"{data.entity_type} with id '{data.entity_id}' not found")
 
         # Guard against duplicate pending requests for the same entity
         existing = await db.execute(
@@ -152,9 +148,7 @@ class DeletionService:
         # Soft-delete the target entity
         model_class = _load_model_class(deletion_req.entity_type)
         result = await db.execute(
-            select(model_class).where(
-                model_class.id == deletion_req.entity_id
-            )
+            select(model_class).where(model_class.id == deletion_req.entity_id)
         )
         entity = result.scalar_one_or_none()
         if entity is None:
@@ -255,18 +249,14 @@ class DeletionService:
 
     async def get(self, db: AsyncSession, request_id: uuid.UUID) -> DeletionRequest | None:
         """Fetch a single deletion request by ID."""
-        result = await db.execute(
-            select(DeletionRequest).where(DeletionRequest.id == request_id)
-        )
+        result = await db.execute(select(DeletionRequest).where(DeletionRequest.id == request_id))
         return result.scalar_one_or_none()
 
     # ---------------------------------------------------------------------- #
     # Helpers
     # ---------------------------------------------------------------------- #
 
-    async def _get_pending_or_404(
-        self, db: AsyncSession, request_id: uuid.UUID
-    ) -> DeletionRequest:
+    async def _get_pending_or_404(self, db: AsyncSession, request_id: uuid.UUID) -> DeletionRequest:
         deletion_req = await self.get(db, request_id)
         if deletion_req is None:
             raise NotFoundException("Deletion request not found")

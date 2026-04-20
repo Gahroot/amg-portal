@@ -17,7 +17,10 @@ class RefreshToken(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True,
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     jti: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
@@ -25,9 +28,7 @@ class RefreshToken(Base, TimestampMixin):
     is_revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("ix_refresh_tokens_family_revoked", "family_id", "is_revoked"),
-    )
+    __table_args__ = (Index("ix_refresh_tokens_family_revoked", "family_id", "is_revoked"),)
 
     def __repr__(self) -> str:
         return f"<RefreshToken(id={self.id}, user_id={self.user_id}, revoked={self.is_revoked})>"

@@ -11,6 +11,7 @@ import {
   markConversationRead,
   addParticipant,
 } from "@/lib/api/conversations";
+import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useCrudMutation } from "@/hooks/use-crud-mutations";
 import type {
@@ -109,13 +110,8 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: queryKeys.conversations.unreadCount(),
     queryFn: async () => {
-      const response = await fetch("/api/v1/communications/unread-count", {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch unread count");
-      }
-      return response.json();
+      const response = await api.get("/api/v1/communications/unread-count");
+      return response.data;
     },
     refetchInterval: 30000, // Poll every 30 seconds
     staleTime: 10000, // Consider data fresh for 10 seconds

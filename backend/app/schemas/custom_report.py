@@ -12,8 +12,18 @@ from pydantic import BaseModel, Field
 
 FieldType = Literal["text", "number", "date", "status", "rag", "boolean", "calculated"]
 FilterOperator = Literal[
-    "eq", "neq", "gt", "gte", "lt", "lte", "contains", "not_contains", "in", "not_in",
-    "is_null", "is_not_null"
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "contains",
+    "not_contains",
+    "in",
+    "not_in",
+    "is_null",
+    "is_not_null",
 ]
 SortDirection = Literal["asc", "desc"]
 DataSource = Literal[

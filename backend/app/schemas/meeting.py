@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ─── Meeting Types ─────────────────────────────────────────────────────────────
 
+
 class MeetingTypeResponse(BaseModel):
     id: UUID
     slug: str
@@ -20,6 +21,7 @@ class MeetingTypeResponse(BaseModel):
 
 
 # ─── RM Availability ──────────────────────────────────────────────────────────
+
 
 class RMAvailabilityCreate(BaseModel):
     day_of_week: int = Field(..., ge=0, le=6)
@@ -52,6 +54,7 @@ class RMAvailabilityResponse(BaseModel):
 
 # ─── Blackouts ────────────────────────────────────────────────────────────────
 
+
 class RMBlackoutCreate(BaseModel):
     blackout_date: date
     reason: str | None = None
@@ -70,6 +73,7 @@ class RMBlackoutResponse(BaseModel):
 
 # ─── Available Slots (computed, not stored) ───────────────────────────────────
 
+
 class AvailableSlot(BaseModel):
     """A computed time slot available for booking."""
 
@@ -87,6 +91,7 @@ class AvailableSlotsResponse(BaseModel):
 
 
 # ─── Meetings ─────────────────────────────────────────────────────────────────
+
 
 class MeetingBook(BaseModel):
     """Payload sent by a client to book a meeting."""

@@ -35,27 +35,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-async def _build_response(
-    db: DB, template: RecurringTaskTemplate
-) -> RecurringTaskTemplateResponse:
+async def _build_response(db: DB, template: RecurringTaskTemplate) -> RecurringTaskTemplateResponse:
     """Enrich a template record with denormalized milestone title and assignee name."""
     milestone_title: str | None = None
     assignee_name: str | None = None
 
     if template.milestone_id:
         row = (
-            await db.execute(
-                select(Milestone.title).where(Milestone.id == template.milestone_id)
-            )
+            await db.execute(select(Milestone.title).where(Milestone.id == template.milestone_id))
         ).first()
         if row:
             milestone_title = row.title
 
     if template.assignee_id:
         row = (
-            await db.execute(
-                select(User.full_name).where(User.id == template.assignee_id)
-            )
+            await db.execute(select(User.full_name).where(User.id == template.assignee_id))
         ).first()
         if row:
             assignee_name = row.full_name

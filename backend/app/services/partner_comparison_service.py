@@ -50,18 +50,16 @@ async def _get_partner_comparison_item(
         sla_result = await db.execute(
             select(
                 func.count(SLATracker.id).label("total"),
-                func.count(
-                    case((SLATracker.breach_status == "breached", SLATracker.id))
-                ).label("breached"),
+                func.count(case((SLATracker.breach_status == "breached", SLATracker.id))).label(
+                    "breached"
+                ),
             ).where(SLATracker.assigned_to == user_id)
         )
         srow = sla_result.one()
         total_sla_tracked = srow.total or 0
         total_sla_breached = srow.breached or 0
         if total_sla_tracked > 0:
-            sla_compliance_rate = round(
-                (1 - total_sla_breached / total_sla_tracked) * 100, 2
-            )
+            sla_compliance_rate = round((1 - total_sla_breached / total_sla_tracked) * 100, 2)
         else:
             sla_compliance_rate = 100.0
 
@@ -69,15 +67,13 @@ async def _get_partner_comparison_item(
     assign_result = await db.execute(
         select(
             func.count(PartnerAssignment.id).label("total"),
-            func.count(
-                case((PartnerAssignment.status == "completed", PartnerAssignment.id))
-            ).label("completed"),
+            func.count(case((PartnerAssignment.status == "completed", PartnerAssignment.id))).label(
+                "completed"
+            ),
             func.count(
                 case(
                     (
-                        PartnerAssignment.status.in_(
-                            ["accepted", "in_progress", "dispatched"]
-                        ),
+                        PartnerAssignment.status.in_(["accepted", "in_progress", "dispatched"]),
                         PartnerAssignment.id,
                     )
                 )
@@ -164,19 +160,13 @@ async def get_partner_comparison_data(
 ) -> PartnerComparisonResponse:
     """Aggregate comparison metrics for the given list of partners."""
     # Fetch all partners in one query
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id.in_(partner_ids))
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id.in_(partner_ids)))
     partners = result.scalars().all()
 
     # Preserve request order
     partner_map = {str(p.id): p for p in partners}
-    ordered_partners = [
-        partner_map[str(pid)] for pid in partner_ids if str(pid) in partner_map
-    ]
+    ordered_partners = [partner_map[str(pid)] for pid in partner_ids if str(pid) in partner_map]
 
-    items = [
-        await _get_partner_comparison_item(db, p) for p in ordered_partners
-    ]
+    items = [await _get_partner_comparison_item(db, p) for p in ordered_partners]
 
     return PartnerComparisonResponse(partners=items)

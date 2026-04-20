@@ -122,9 +122,7 @@ class CapabilityReviewService(
     ) -> list[CapabilityReview]:
         """Create capability reviews for all active partners for a given year."""
         # Get all active partners
-        result = await db.execute(
-            select(PartnerProfile).where(PartnerProfile.status == "active")
-        )
+        result = await db.execute(select(PartnerProfile).where(PartnerProfile.status == "active"))
         partners = result.scalars().all()
 
         # Batch-load all existing reviews for this year to avoid N+1
@@ -166,9 +164,7 @@ class CapabilityReviewService(
         notes: str | None = None,
     ) -> CapabilityReview | None:
         """Mark a capability review as complete."""
-        result = await db.execute(
-            select(CapabilityReview).where(CapabilityReview.id == review_id)
-        )
+        result = await db.execute(select(CapabilityReview).where(CapabilityReview.id == review_id))
         review = result.scalar_one_or_none()
         if not review:
             return None
@@ -193,9 +189,7 @@ class CapabilityReviewService(
         status: str,
     ) -> CapabilityReview | None:
         """Update the status of a capability review."""
-        result = await db.execute(
-            select(CapabilityReview).where(CapabilityReview.id == review_id)
-        )
+        result = await db.execute(select(CapabilityReview).where(CapabilityReview.id == review_id))
         review = result.scalar_one_or_none()
         if not review:
             return None
@@ -215,9 +209,7 @@ class CapabilityReviewService(
         review_id: uuid.UUID,
     ) -> None:
         """Mark that a reminder was sent for this review."""
-        result = await db.execute(
-            select(CapabilityReview).where(CapabilityReview.id == review_id)
-        )
+        result = await db.execute(select(CapabilityReview).where(CapabilityReview.id == review_id))
         review = result.scalar_one_or_none()
         if review:
             review.reminder_sent_at = datetime.now(UTC)

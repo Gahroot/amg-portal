@@ -14,9 +14,7 @@ from app.models.portal_feedback import FeedbackType
 class PortalFeedbackCreate(BaseModel):
     """Schema for submitting new feedback."""
 
-    feedback_type: str = Field(
-        ..., min_length=1, max_length=50, description="Type of feedback"
-    )
+    feedback_type: str = Field(..., min_length=1, max_length=50, description="Type of feedback")
     description: str = Field(
         ..., min_length=10, max_length=10000, description="Feedback description"
     )
@@ -27,9 +25,7 @@ class PortalFeedbackCreate(BaseModel):
         None, max_length=500, description="URL to attached screenshot"
     )
     email: str | None = Field(None, max_length=255, description="Email for follow-up")
-    user_agent: str | None = Field(
-        None, max_length=500, description="Browser user agent"
-    )
+    user_agent: str | None = Field(None, max_length=500, description="Browser user agent")
     extra_data: dict[str, Any] | None = Field(None, description="Additional metadata")
 
     def validate_feedback_type(self) -> None:
@@ -41,9 +37,7 @@ class PortalFeedbackCreate(BaseModel):
             FeedbackType.QUESTION,
         }
         if self.feedback_type not in valid_types:
-            raise ValueError(
-                f"Invalid feedback type. Must be one of: {', '.join(valid_types)}"
-            )
+            raise ValueError(f"Invalid feedback type. Must be one of: {', '.join(valid_types)}")
 
 
 class PortalFeedbackUpdate(BaseModel):

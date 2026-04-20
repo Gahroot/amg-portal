@@ -18,6 +18,7 @@ import {
   DEFAULT_CHECKLIST_ITEMS,
 } from "@/types/partner-capability";
 import { getPartnerOnboarding, completeOnboardingStage } from "@/lib/api/partner-capabilities";
+import { api } from "@/lib/api";
 
 // Stage icons
 const STAGE_ICONS: Record<OnboardingStage, ReactNode> = {
@@ -38,12 +39,14 @@ export default function PartnerOnboardingPage() {
   const loadOnboarding = useCallback(async () => {
     try {
       // Get partner ID from the current user's profile
-      const profileResponse = await fetch("/api/v1/partner-portal/profile");
-      if (!profileResponse.ok) {
+      let profile;
+      try {
+        const profileResponse = await api.get("/api/v1/partner-portal/profile");
+        profile = profileResponse.data;
+      } catch {
         router.push("/login");
         return;
       }
-      const profile = await profileResponse.json();
 
       const data = await getPartnerOnboarding(profile.id);
       setOnboarding(data);
@@ -103,9 +106,9 @@ export default function PartnerOnboardingPage() {
   const [profile, setProfile] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/v1/partner-portal/profile")
-      .then((res) => res.json())
-      .then(setProfile)
+    api
+      .get("/api/v1/partner-portal/profile")
+      .then((res) => setProfile(res.data))
       .catch(() => {
         // Profile fetch is non-critical; error is handled elsewhere
       });

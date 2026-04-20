@@ -19,9 +19,7 @@ class RecentItem(Base, TimestampMixin):
         Index("ix_recent_items_user_viewed", "user_id", "viewed_at"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -29,24 +27,17 @@ class RecentItem(Base, TimestampMixin):
     )
     # program, client, partner, document
     item_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    item_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
-    )
+    item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     # Denormalized for quick display
     item_title: Mapped[str] = mapped_column(String(255), nullable=False)
     # Optional secondary info
-    item_subtitle: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
-    viewed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    item_subtitle: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    viewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Relationship
     user = relationship("User", backref="recent_items")
 
     def __repr__(self) -> str:
         return (
-            f"<RecentItem(user_id={self.user_id}, "
-            f"type={self.item_type}, item_id={self.item_id})>"
+            f"<RecentItem(user_id={self.user_id}, type={self.item_type}, item_id={self.item_id})>"
         )

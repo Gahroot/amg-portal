@@ -55,9 +55,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
             ComplianceStatus.pending_review.value,
             ComplianceStatus.under_review.value,
         ):
-            raise BadRequestException(
-                f"Cannot review profile in {profile.compliance_status} state"
-            )
+            raise BadRequestException(f"Cannot review profile in {profile.compliance_status} state")
 
         update_data = {
             "compliance_status": review.status.value,
@@ -109,9 +107,7 @@ class ClientService(CRUDBase[ClientProfile, ClientProfileCreate, ClientProfileUp
             return profile
         # Only allow transitions from pending_md_approval
         if current != ApprovalStatus.pending_md_approval.value:
-            raise BadRequestException(
-                f"Cannot approve profile in {current} state"
-            )
+            raise BadRequestException(f"Cannot approve profile in {current} state")
 
         update_data: dict[str, Any] = {
             "approved_by": approver_id,

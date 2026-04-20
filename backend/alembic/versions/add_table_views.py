@@ -30,12 +30,8 @@ def upgrade() -> None:
         sa.Column("filters", postgresql.JSONB(), nullable=False, server_default="{}"),
         sa.Column("sort", postgresql.JSONB(), nullable=False, server_default="[]"),
         sa.Column("columns", postgresql.JSONB(), nullable=False, server_default="{}"),
-        sa.Column(
-            "column_order", postgresql.JSONB(), nullable=False, server_default="[]"
-        ),
-        sa.Column(
-            "column_sizes", postgresql.JSONB(), nullable=False, server_default="{}"
-        ),
+        sa.Column("column_order", postgresql.JSONB(), nullable=False, server_default="[]"),
+        sa.Column("column_sizes", postgresql.JSONB(), nullable=False, server_default="{}"),
         sa.Column("is_shared", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("is_default", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
@@ -61,14 +57,10 @@ def upgrade() -> None:
     op.create_index("ix_table_views_is_default", "table_views", ["is_default"])
 
     # Composite index for user + table queries
-    op.create_index(
-        "ix_table_views_user_table", "table_views", ["user_id", "table_id"]
-    )
+    op.create_index("ix_table_views_user_table", "table_views", ["user_id", "table_id"])
 
     # Composite index for shared views by table
-    op.create_index(
-        "ix_table_views_shared_table", "table_views", ["is_shared", "table_id"]
-    )
+    op.create_index("ix_table_views_shared_table", "table_views", ["is_shared", "table_id"])
 
 
 def downgrade() -> None:

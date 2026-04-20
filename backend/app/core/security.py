@@ -40,12 +40,14 @@ def create_refresh_token(
     expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     token_jti = jti or str(uuid_mod.uuid4())
     token_family = family or str(uuid_mod.uuid4())
-    to_encode.update({
-        "exp": expire,
-        "type": "refresh",
-        "jti": token_jti,
-        "family": token_family,
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "type": "refresh",
+            "jti": token_jti,
+            "family": token_family,
+        }
+    )
     algorithm = _validate_algorithm()
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=algorithm)
 

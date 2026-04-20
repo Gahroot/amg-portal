@@ -33,9 +33,7 @@ async def create_event(
 
     # Notify attendees
     if event.attendee_ids:
-        organizer_result = await db.execute(
-            select(User.full_name).where(User.id == organizer_id)
-        )
+        organizer_result = await db.execute(select(User.full_name).where(User.id == organizer_id))
         organizer_name = organizer_result.scalar_one_or_none() or "Someone"
 
         for attendee_id in event.attendee_ids:
@@ -107,9 +105,7 @@ async def send_reminders(db: AsyncSession) -> int:
         minutes_until = (event.start_time - now).total_seconds() / 60
         # Only send if within the event's reminder window
         # Add a 5-minute buffer so we don't re-send every cycle
-        if minutes_until <= event.reminder_minutes and minutes_until > (
-            event.reminder_minutes - 6
-        ):
+        if minutes_until <= event.reminder_minutes and minutes_until > (event.reminder_minutes - 6):
             # Collect all relevant user IDs
             notify_ids: set[uuid.UUID] = {event.organizer_id}
             if event.attendee_ids:
@@ -122,10 +118,7 @@ async def send_reminders(db: AsyncSession) -> int:
                         user_id=uid,
                         notification_type="system",
                         title=f"Reminder: {event.title}",
-                        body=(
-                            f"'{event.title}' starts in "
-                            f"{int(minutes_until)} minutes."
-                        ),
+                        body=(f"'{event.title}' starts in {int(minutes_until)} minutes."),
                         priority="normal",
                         entity_type="scheduled_event",
                         entity_id=event.id,
@@ -148,9 +141,7 @@ async def update_event_status(
     """Update event status and notify attendees."""
     from app.services.notification_service import notification_service
 
-    result = await db.execute(
-        select(ScheduledEvent).where(ScheduledEvent.id == event_id)
-    )
+    result = await db.execute(select(ScheduledEvent).where(ScheduledEvent.id == event_id))
     event = result.scalar_one_or_none()
     if not event:
         return None
@@ -165,9 +156,7 @@ async def update_event_status(
         notify_ids.update(event.attendee_ids)
     notify_ids.discard(actor_id)  # Don't notify the person who changed it
 
-    actor_result = await db.execute(
-        select(User.full_name).where(User.id == actor_id)
-    )
+    actor_result = await db.execute(select(User.full_name).where(User.id == actor_id))
     actor_name = actor_result.scalar_one_or_none() or "Someone"
 
     for uid in notify_ids:
@@ -177,10 +166,7 @@ async def update_event_status(
                 user_id=uid,
                 notification_type="system",
                 title=f"Event {new_status}: {event.title}",
-                body=(
-                    f"{actor_name} changed '{event.title}' "
-                    f"from {old_status} to {new_status}."
-                ),
+                body=(f"{actor_name} changed '{event.title}' from {old_status} to {new_status}."),
                 priority="normal",
                 entity_type="scheduled_event",
                 entity_id=event.id,
@@ -219,9 +205,7 @@ async def get_event(
     event_id: uuid.UUID,
 ) -> ScheduledEvent | None:
     """Get a single event by ID."""
-    result = await db.execute(
-        select(ScheduledEvent).where(ScheduledEvent.id == event_id)
-    )
+    result = await db.execute(select(ScheduledEvent).where(ScheduledEvent.id == event_id))
     return result.scalar_one_or_none()
 
 
@@ -231,9 +215,7 @@ async def update_event(
     update_data: dict[str, Any],
 ) -> ScheduledEvent | None:
     """Update an event's fields."""
-    result = await db.execute(
-        select(ScheduledEvent).where(ScheduledEvent.id == event_id)
-    )
+    result = await db.execute(select(ScheduledEvent).where(ScheduledEvent.id == event_id))
     event = result.scalar_one_or_none()
     if not event:
         return None
@@ -253,9 +235,7 @@ async def delete_event(
     event_id: uuid.UUID,
 ) -> bool:
     """Delete an event."""
-    result = await db.execute(
-        select(ScheduledEvent).where(ScheduledEvent.id == event_id)
-    )
+    result = await db.execute(select(ScheduledEvent).where(ScheduledEvent.id == event_id))
     event = result.scalar_one_or_none()
     if not event:
         return False
@@ -281,9 +261,7 @@ async def list_events(
         count_query = count_query.where(ScheduledEvent.status == status)
     if event_type:
         query = query.where(ScheduledEvent.event_type == event_type)
-        count_query = count_query.where(
-            ScheduledEvent.event_type == event_type
-        )
+        count_query = count_query.where(ScheduledEvent.event_type == event_type)
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0

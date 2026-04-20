@@ -154,9 +154,7 @@ async def list_blockers(
         filters.append(PartnerBlocker.start_date <= end_date)
 
     result = await db.execute(
-        select(PartnerBlocker)
-        .where(and_(*filters))
-        .order_by(PartnerBlocker.start_date)
+        select(PartnerBlocker).where(and_(*filters)).order_by(PartnerBlocker.start_date)
     )
     rows = result.scalars().all()
     return [PartnerBlockerResponse.model_validate(r) for r in rows]

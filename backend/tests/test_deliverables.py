@@ -179,9 +179,7 @@ class TestCreateDeliverable:
         )
         assert resp.status_code == 403
 
-    async def test_invalid_assignment_returns_404(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_invalid_assignment_returns_404(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.post(
             BASE + "/",
             json={
@@ -199,16 +197,12 @@ class TestCreateDeliverable:
 
 
 class TestListDeliverables:
-    async def test_internal_staff_can_list(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(BASE + "/")
         assert resp.status_code == 200
         assert "deliverables" in resp.json()
 
-    async def test_client_user_cannot_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_list(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 
@@ -252,9 +246,7 @@ class TestGetDeliverable:
         resp = await client_user_http.get(f"{BASE}/{pending_deliverable.id}")
         assert resp.status_code == 403
 
-    async def test_nonexistent_returns_404(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_nonexistent_returns_404(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.get(f"{BASE}/{uuid.uuid4()}")
         assert resp.status_code == 404
 

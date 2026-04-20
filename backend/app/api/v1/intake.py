@@ -138,9 +138,7 @@ async def submit_intake_form(
     # Create family members if provided
     family_members = []
     if data.family_members:
-        family_members = await _create_family_members(
-            db, profile.id, data.family_members
-        )
+        family_members = await _create_family_members(db, profile.id, data.family_members)
 
     await db.commit()
     await db.refresh(profile)
@@ -183,9 +181,7 @@ async def get_draft_intake(
     db: DB,
 ) -> Any:
     """Get draft intake data for a client profile."""
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Client profile not found")
@@ -237,9 +233,7 @@ async def save_intake_step(
     if step < 1 or step > 5:
         raise BadRequestException("Step must be between 1 and 5")
 
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Client profile not found")
@@ -258,9 +252,7 @@ async def save_intake_step(
         if data.interests is not None:
             interests_raw = data.interests
             lifestyle["interests"] = (
-                [i.strip() for i in interests_raw.split(",") if i.strip()]
-                if interests_raw
-                else []
+                [i.strip() for i in interests_raw.split(",") if i.strip()] if interests_raw else []
             )
         if data.preferred_destinations is not None:
             lifestyle["preferred_destinations"] = data.preferred_destinations
@@ -270,8 +262,13 @@ async def save_intake_step(
         intel["lifestyle_profile"] = lifestyle
         profile.intelligence_file = intel
         # Remove lifestyle fields from update_data to avoid direct assignment
-        for field in ["travel_preferences", "dietary_restrictions", "interests",
-                       "preferred_destinations", "language_preference"]:
+        for field in [
+            "travel_preferences",
+            "dietary_restrictions",
+            "interests",
+            "preferred_destinations",
+            "language_preference",
+        ]:
             update_data.pop(field, None)
 
     # Update profile fields
@@ -335,9 +332,7 @@ async def submit_completed_intake(
     db: DB,
 ) -> Any:
     """Submit a completed intake form for compliance review."""
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     profile = result.scalar_one_or_none()
     if not profile:
         raise NotFoundException("Client profile not found")

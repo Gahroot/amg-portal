@@ -70,13 +70,9 @@ class BudgetApprovalService:
         )
         return result.scalar_one_or_none()
 
-    async def list_thresholds(
-        self, is_active: bool | None = None
-    ) -> list[ApprovalThreshold]:
+    async def list_thresholds(self, is_active: bool | None = None) -> list[ApprovalThreshold]:
         """List all approval thresholds."""
-        query = select(ApprovalThreshold).options(
-            selectinload(ApprovalThreshold.approval_chain)
-        )
+        query = select(ApprovalThreshold).options(selectinload(ApprovalThreshold.approval_chain))
         if is_active is not None:
             query = query.where(ApprovalThreshold.is_active == is_active)
         query = query.order_by(ApprovalThreshold.priority, ApprovalThreshold.min_amount)
@@ -147,7 +143,9 @@ class BudgetApprovalService:
         """Get an approval chain by ID with steps."""
         result = await self.db.execute(
             select(ApprovalChain)
-            .options(selectinload(ApprovalChain.steps).selectinload(ApprovalChainStep.specific_user))
+            .options(
+                selectinload(ApprovalChain.steps).selectinload(ApprovalChainStep.specific_user)
+            )
             .options(selectinload(ApprovalChain.creator))
             .where(ApprovalChain.id == chain_id)
         )
@@ -232,9 +230,7 @@ class BudgetApprovalService:
         self, program_id: uuid.UUID, requested_amount: Decimal
     ) -> dict[str, Any]:
         """Calculate budget impact and determine required approval chain."""
-        result = await self.db.execute(
-            select(Program).where(Program.id == program_id)
-        )
+        result = await self.db.execute(select(Program).where(Program.id == program_id))
         program = result.scalar_one_or_none()
         if not program:
             raise ValueError("Program not found")
@@ -274,17 +270,14 @@ class BudgetApprovalService:
             "requires_approval": requires_approval,
         }
 
-    async def _find_matching_threshold(
-        self, amount: Decimal
-    ) -> ApprovalThreshold | None:
+    async def _find_matching_threshold(self, amount: Decimal) -> ApprovalThreshold | None:
         """Find the threshold matching the given amount."""
         result = await self.db.execute(
             select(ApprovalThreshold)
             .where(ApprovalThreshold.is_active.is_(True))
             .where(ApprovalThreshold.min_amount <= amount)
             .where(
-                (ApprovalThreshold.max_amount.is_(None))
-                | (ApprovalThreshold.max_amount >= amount)
+                (ApprovalThreshold.max_amount.is_(None)) | (ApprovalThreshold.max_amount >= amount)
             )
             .order_by(ApprovalThreshold.priority, ApprovalThreshold.min_amount.desc())
             .limit(1)
@@ -369,12 +362,13 @@ class BudgetApprovalService:
                 selectinload(BudgetApprovalRequest.approval_chain),
                 selectinload(BudgetApprovalRequest.requester),
                 selectinload(BudgetApprovalRequest.final_approver),
-                selectinload(BudgetApprovalRequest.steps)
-                .selectinload(BudgetApprovalStep.assigned_user),
-                selectinload(BudgetApprovalRequest.steps)
-                .selectinload(BudgetApprovalStep.decider),
-                selectinload(BudgetApprovalRequest.steps)
-                .selectinload(BudgetApprovalStep.chain_step),
+                selectinload(BudgetApprovalRequest.steps).selectinload(
+                    BudgetApprovalStep.assigned_user
+                ),
+                selectinload(BudgetApprovalRequest.steps).selectinload(BudgetApprovalStep.decider),
+                selectinload(BudgetApprovalRequest.steps).selectinload(
+                    BudgetApprovalStep.chain_step
+                ),
                 selectinload(BudgetApprovalRequest.history),
             )
             .where(BudgetApprovalRequest.id == request_id)
@@ -523,9 +517,7 @@ class BudgetApprovalService:
         await self.db.refresh(step)
         return step
 
-    async def _advance_request(
-        self, request: BudgetApprovalRequest, approver: User
-    ) -> None:
+    async def _advance_request(self, request: BudgetApprovalRequest, approver: User) -> None:
         """Advance the request to the next step or complete it."""
         # Get all steps for this request
         result = await self.db.execute(
@@ -543,9 +535,7 @@ class BudgetApprovalService:
         chain_steps = await self._get_chain_steps(request.approval_chain_id)
 
         is_parallel = any(
-            cs.is_parallel
-            for cs in chain_steps
-            if cs.step_number == current_step_num
+            cs.is_parallel for cs in chain_steps if cs.step_number == current_step_num
         )
 
         if is_parallel:
@@ -672,9 +662,7 @@ class BudgetApprovalService:
         await self.db.flush()
         return history
 
-    async def get_request_history(
-        self, request_id: uuid.UUID
-    ) -> list[BudgetApprovalHistory]:
+    async def get_request_history(self, request_id: uuid.UUID) -> list[BudgetApprovalHistory]:
         """Get the full history for a request."""
         result = await self.db.execute(
             select(BudgetApprovalHistory)

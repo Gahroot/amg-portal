@@ -46,9 +46,7 @@ class PDFExportService:
     def env(self) -> Environment:
         if self._env is None:
             self._env = Environment(
-                loader=FileSystemLoader(
-                    [str(TEMPLATE_DIR), str(TEMPLATE_DIR / "exports")]
-                ),
+                loader=FileSystemLoader([str(TEMPLATE_DIR), str(TEMPLATE_DIR / "exports")]),
                 autoescape=True,
             )
         return self._env

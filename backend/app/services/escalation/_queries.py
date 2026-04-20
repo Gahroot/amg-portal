@@ -182,8 +182,7 @@ async def get_simple_escalation_metrics(db: AsyncSession) -> dict[str, object]:
     avg_resolution_hours: float | None = None
     if resolved_rows:
         total_hours = sum(
-            (row.resolved_at - row.triggered_at).total_seconds() / 3600
-            for row in resolved_rows
+            (row.resolved_at - row.triggered_at).total_seconds() / 3600 for row in resolved_rows
         )
         avg_resolution_hours = round(total_hours / len(resolved_rows), 1)
 
@@ -273,9 +272,7 @@ async def get_overdue_escalations(
     overdue_user_ids |= {esc.triggered_by for esc in escalations if esc.triggered_by}
     overdue_users_map: dict[object, User] = {}
     if overdue_user_ids:
-        overdue_users_result = await db.execute(
-            select(User).where(User.id.in_(overdue_user_ids))
-        )
+        overdue_users_result = await db.execute(select(User).where(User.id.in_(overdue_user_ids)))
         overdue_users_map = {u.id: u for u in overdue_users_result.scalars().all()}
 
     escalation_data = []

@@ -305,9 +305,7 @@ async def submit_deliverable(
             },
         )
     except Exception:
-        logger.exception(
-            "Failed to trigger webhook for deliverable_submitted %s", deliverable.id
-        )
+        logger.exception("Failed to trigger webhook for deliverable_submitted %s", deliverable.id)
 
     return build_deliverable_response(deliverable)
 
@@ -359,9 +357,7 @@ async def review_deliverable(
             from app.services.webhook_service import trigger_partner_webhooks
 
             assignment_result = await db.execute(
-                select(PartnerAssignment).where(
-                    PartnerAssignment.id == deliverable.assignment_id
-                )
+                select(PartnerAssignment).where(PartnerAssignment.id == deliverable.assignment_id)
             )
             assignment = assignment_result.scalar_one_or_none()
             if assignment:
@@ -380,9 +376,7 @@ async def review_deliverable(
                     },
                 )
         except Exception:
-            logger.exception(
-                "Failed to trigger webhook for deliverable review %s", deliverable.id
-            )
+            logger.exception("Failed to trigger webhook for deliverable review %s", deliverable.id)
 
     return build_deliverable_response(deliverable)
 

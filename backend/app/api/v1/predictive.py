@@ -82,13 +82,15 @@ async def get_predicted_risks(
 
         item = programs_map[risk.program_id]
         item.at_risk_milestone_count += 1
-        item.at_risk_milestones.append({
-            "milestone_id": str(risk.milestone_id),
-            "milestone_title": risk.milestone_title,
-            "risk_score": risk.risk_score,
-            "days_remaining": risk.days_remaining,
-            "task_completion_rate": risk.task_completion_rate,
-        })
+        item.at_risk_milestones.append(
+            {
+                "milestone_id": str(risk.milestone_id),
+                "milestone_title": risk.milestone_title,
+                "risk_score": risk.risk_score,
+                "days_remaining": risk.days_remaining,
+                "task_completion_rate": risk.task_completion_rate,
+            }
+        )
         if risk.risk_score > item.highest_risk_score:
             item.highest_risk_score = risk.risk_score
             level = "critical" if risk.risk_score >= 85 else "high"

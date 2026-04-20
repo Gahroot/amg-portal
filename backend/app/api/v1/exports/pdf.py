@@ -114,9 +114,7 @@ async def export_program_summary_pdf(
         .options(
             selectinload(Program.client),
             selectinload(Program.milestones),
-            selectinload(Program.partner_assignments).selectinload(
-                PartnerAssignment.partner
-            ),
+            selectinload(Program.partner_assignments).selectinload(PartnerAssignment.partner),
         )
         .where(Program.id == program_id)
     )
@@ -128,9 +126,7 @@ async def export_program_summary_pdf(
     # Get RM name
     rm_name = None
     if program.client and program.client.rm_id:
-        rm_result = await db.execute(
-            select(User).where(User.id == program.client.rm_id)
-        )
+        rm_result = await db.execute(select(User).where(User.id == program.client.rm_id))
         rm = rm_result.scalar_one_or_none()
         rm_name = rm.full_name if rm else None
 
@@ -159,9 +155,7 @@ async def export_program_summary_pdf(
     total_milestones = len(milestones)
     completed_milestones = sum(1 for m in milestones if m["status"] == "completed")
     milestone_progress = (
-        round((completed_milestones / total_milestones) * 100)
-        if total_milestones > 0
-        else 0
+        round((completed_milestones / total_milestones) * 100) if total_milestones > 0 else 0
     )
 
     program_data = {
@@ -222,10 +216,7 @@ async def export_client_profile_pdf(
     program summary, and communication preferences.
     """
     # Fetch client profile
-    result = await db.execute(
-        select(ClientProfile)
-        .where(ClientProfile.id == client_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == client_id))
     profile = result.scalar_one_or_none()
 
     if not profile:
@@ -234,9 +225,7 @@ async def export_client_profile_pdf(
     # Get RM name
     rm_name = None
     if profile.assigned_rm_id:
-        rm_result = await db.execute(
-            select(User).where(User.id == profile.assigned_rm_id)
-        )
+        rm_result = await db.execute(select(User).where(User.id == profile.assigned_rm_id))
         rm = rm_result.scalar_one_or_none()
         rm_name = rm.full_name if rm else None
 
@@ -387,14 +376,16 @@ async def export_financial_report_pdf(
         # In a real implementation, this would come from actuals
         spent = 0.0  # Would be calculated from actual expenses
 
-        program_costs.append({
-            "program_title": p.title,
-            "client_name": p.client.legal_name if p.client else "Unknown",
-            "budget": budget,
-            "spent": spent,
-            "remaining": budget - spent,
-            "progress": 0,  # Would be calculated from actuals
-        })
+        program_costs.append(
+            {
+                "program_title": p.title,
+                "client_name": p.client.legal_name if p.client else "Unknown",
+                "budget": budget,
+                "spent": spent,
+                "remaining": budget - spent,
+                "progress": 0,  # Would be calculated from actuals
+            }
+        )
 
         total_budget += budget
         total_spent += spent
@@ -440,9 +431,7 @@ async def export_partner_performance_pdf(
     Export a partner performance report as a professional PDF.
     """
     # Fetch partner profile
-    result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     partner = result.scalar_one_or_none()
 
     if not partner:
@@ -462,14 +451,10 @@ async def export_partner_performance_pdf(
         "summary": {
             "Status": partner.status.title(),
             "Availability": (
-                partner.availability_status.title()
-                if partner.availability_status
-                else "Unknown"
+                partner.availability_status.title() if partner.availability_status else "Unknown"
             ),
             "Rating": (
-                f"{partner.performance_rating:.1f}"
-                if partner.performance_rating
-                else "N/A"
+                f"{partner.performance_rating:.1f}" if partner.performance_rating else "N/A"
             ),
             "Total Assignments": partner.total_assignments,
         },
@@ -487,21 +472,13 @@ async def export_partner_performance_pdf(
             ["Status", partner.status.title()],
             [
                 "Availability",
-                (
-                    partner.availability_status.title()
-                    if partner.availability_status
-                    else "Unknown"
-                ),
+                (partner.availability_status.title() if partner.availability_status else "Unknown"),
             ],
             ["Capabilities", ", ".join(partner.capabilities or [])],
             ["Geographies", ", ".join(partner.geographies or [])],
             [
                 "Performance Rating",
-                (
-                    f"{partner.performance_rating:.1f}"
-                    if partner.performance_rating
-                    else "N/A"
-                ),
+                (f"{partner.performance_rating:.1f}" if partner.performance_rating else "N/A"),
             ],
             ["Total Assignments", str(partner.total_assignments)],
         ],

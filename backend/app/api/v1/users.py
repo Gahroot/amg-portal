@@ -1,4 +1,5 @@
 """User management endpoints (admin only)."""
+
 import uuid
 from datetime import UTC, datetime
 from typing import Any

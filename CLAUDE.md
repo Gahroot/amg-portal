@@ -107,7 +107,7 @@ Frontend types in `frontend/src/types/` are being migrated to auto-generated typ
 
 Production is deployed on Railway (project: `amg-portal`, environment: `production`).
 
-**Architecture**: Frontend and backend are on separate Railway subdomains — this is a cross-origin setup. Auth cookies use `SameSite=none; Secure` (handled automatically by `_is_cross_origin()` in `auth.py`). CSP in `frontend/src/middleware.ts` uses `'unsafe-inline'` for `script-src` because nonce injection is not wired up.
+**Architecture**: Frontend and backend are on separate Railway subdomains — this is a cross-origin setup. Auth cookies use `SameSite=none; Secure` with the `__Host-` prefix and a CSRF double-submit cookie (`__Host-csrf`) + `X-CSRF-Token` header on state-changing requests. CSP in `frontend/src/middleware.ts` is nonce-strict for `script-src` (nonce consumed by `src/app/layout.tsx` reading `headers().get("x-nonce")`); `style-src` still uses `'unsafe-inline'` because Tailwind/Radix require it.
 
 **Services**: `backend`, `frontend`, `Postgres` (Railway-managed)
 

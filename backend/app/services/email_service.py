@@ -154,6 +154,46 @@ async def send_welcome_email(email: str, name: str, portal_url: str | None = Non
     await send_email(to=email, subject=subject, body_html=body_html)
 
 
+async def send_registration_account_exists_email(
+    email: str,
+    frontend_url: str,
+) -> None:
+    """Send an 'account already exists' email on duplicate registration attempts.
+
+    Paired with the ``/register`` endpoint's always-202 response so the API
+    itself never leaks whether an email is registered.  The differentiation
+    happens *only* in the inbox of the legitimate account owner.
+    """
+    subject = "A sign-up attempt was made with your email"
+    reset_link = f"{frontend_url}/forgot-password"
+
+    body_html = f"""
+    <html>
+        <body>
+            <h2>Account already exists</h2>
+            <p>Hello,</p>
+            <p>Someone (possibly you) just tried to sign up for AMG Portal using
+            this email address, but an account already exists.</p>
+            <p>If that was you and you have forgotten your password, you can
+            <a href="{reset_link}">reset it here</a>.</p>
+            <p>If it was not you, no action is required — no new account was
+            created, and your existing account is unaffected.</p>
+            <p>Best regards,<br>AMG Team</p>
+        </body>
+    </html>
+    """
+    body_text = (
+        "Account already exists\n\n"
+        "Someone just tried to sign up for AMG Portal using this email address, "
+        "but an account already exists.\n\n"
+        f"If that was you and you have forgotten your password, reset it here:\n{reset_link}\n\n"
+        "If it was not you, no action is required — no new account was created.\n\n"
+        "Best regards,\nAMG Team\n"
+    )
+
+    await send_email(to=email, subject=subject, body_html=body_html, body_text=body_text)
+
+
 async def send_password_reset_email(
     email: str,
     name: str,

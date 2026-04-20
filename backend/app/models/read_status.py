@@ -19,9 +19,7 @@ class ReadStatus(Base):
 
     __tablename__ = "read_statuses"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -35,9 +33,7 @@ class ReadStatus(Base):
     # Read status
     is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # When the entity was marked as read/unread
-    read_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Which device made the change (for sync tracking)
     device_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     # When this record was created/last updated

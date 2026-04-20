@@ -30,9 +30,7 @@ class PartnerCapability(Base, TimestampMixin):
     verified_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    verified_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -81,9 +79,7 @@ class PartnerQualification(Base, TimestampMixin):
     approved_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    approved_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -110,15 +106,11 @@ class PartnerCertification(Base, TimestampMixin):
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     document_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # pending, verified, expired, rejected
-    verification_status: Mapped[str | None] = mapped_column(
-        String(20), default="pending"
-    )
+    verification_status: Mapped[str | None] = mapped_column(String(20), default="pending")
     verified_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    verified_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -138,9 +130,7 @@ class PartnerOnboarding(Base, TimestampMixin):
         nullable=False,
         unique=True,
     )
-    current_stage: Mapped[str | None] = mapped_column(
-        String(30), default="profile_setup"
-    )
+    current_stage: Mapped[str | None] = mapped_column(String(30), default="profile_setup")
     # Stages: profile_setup, capability_matrix, compliance_docs,
     # certification_upload, review, completed
     # {stage: {item: bool}}
@@ -153,9 +143,7 @@ class PartnerOnboarding(Base, TimestampMixin):
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     partner = relationship("PartnerProfile", back_populates="onboarding_detail")

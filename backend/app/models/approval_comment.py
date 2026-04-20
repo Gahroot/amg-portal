@@ -19,16 +19,12 @@ class ApprovalComment(Base):
 
     __tablename__ = "approval_comments"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Generic entity reference
     entity_type: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True
     )  # e.g. "program_approval", "client_profile"
-    entity_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
+    entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Threading: parent_id points to another ApprovalComment for replies
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -44,9 +40,7 @@ class ApprovalComment(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Visibility: internal comments are only shown to internal staff
-    is_internal: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
+    is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     # @mention tracking — list of user IDs mentioned in the comment body
     mentioned_user_ids: Mapped[list[str]] = mapped_column(

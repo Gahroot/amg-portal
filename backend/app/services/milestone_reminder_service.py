@@ -111,18 +111,14 @@ async def send_milestone_reminders_scoped(db: AsyncSession) -> int:
             continue
 
         # Fetch user email for email reminders
-        user_result = await db.execute(
-            select(User).where(User.id == cp.user_id)
-        )
+        user_result = await db.execute(select(User).where(User.id == cp.user_id))
         user = user_result.scalar_one_or_none()
         if not user:
             continue
 
         # Fetch notification preferences (or use defaults)
         pref_result = await db.execute(
-            select(NotificationPreference).where(
-                NotificationPreference.user_id == cp.user_id
-            )
+            select(NotificationPreference).where(NotificationPreference.user_id == cp.user_id)
         )
         prefs = pref_result.scalar_one_or_none()
         if prefs is None:
@@ -155,9 +151,7 @@ async def send_milestone_reminders_scoped(db: AsyncSession) -> int:
                 if milestone.program_id not in accessible_program_ids:
                     continue
 
-                reminder_days, reminder_channels = _get_reminder_config(
-                    prefs, milestone.program_id
-                )
+                reminder_days, reminder_channels = _get_reminder_config(prefs, milestone.program_id)
 
                 if days_until not in reminder_days:
                     continue

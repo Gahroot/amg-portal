@@ -39,9 +39,7 @@ async def update_digest_preferences_endpoint(
     _rls: RLSContext,
 ) -> Any:
     """Update the current user's message digest frequency."""
-    pref = await update_digest_preference(
-        db, current_user.id, data.digest_frequency
-    )
+    pref = await update_digest_preference(db, current_user.id, data.digest_frequency)
     return pref
 
 

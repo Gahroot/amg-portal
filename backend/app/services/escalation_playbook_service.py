@@ -120,8 +120,10 @@ def _build_suggested_actions(
     # Playbook progress hint
     if execution and execution.status == "in_progress":
         progress = execution.compute_progress()
-        remaining = int(str(progress["total"])) - int(str(progress["completed"])) - int(
-            str(progress["skipped"])
+        remaining = (
+            int(str(progress["total"]))
+            - int(str(progress["completed"]))
+            - int(str(progress["skipped"]))
         )
         if remaining > 0:
             actions.append(
@@ -180,9 +182,7 @@ async def get_or_create_execution(
 ) -> PlaybookExecution:
     """Return existing execution for the escalation or create a new one."""
     result = await db.execute(
-        select(PlaybookExecution).where(
-            PlaybookExecution.escalation_id == escalation.id
-        )
+        select(PlaybookExecution).where(PlaybookExecution.escalation_id == escalation.id)
     )
     execution = result.scalar_one_or_none()
     if execution:
@@ -214,9 +214,7 @@ async def get_or_create_execution(
     db.add(execution)
     await db.commit()
     await db.refresh(execution)
-    logger.info(
-        "PlaybookExecution created: %s for escalation %s", execution.id, escalation.id
-    )
+    logger.info("PlaybookExecution created: %s for escalation %s", execution.id, escalation.id)
     return execution
 
 
@@ -226,9 +224,7 @@ async def get_playbook_view(
     user: User,
 ) -> PlaybookWithExecutionResponse | None:
     """Return playbook + execution for the given escalation, or None if no playbook applies."""
-    esc_result = await db.execute(
-        select(Escalation).where(Escalation.id == escalation_id)
-    )
+    esc_result = await db.execute(select(Escalation).where(Escalation.id == escalation_id))
     escalation = esc_result.scalar_one_or_none()
     if not escalation:
         raise ValueError(f"Escalation {escalation_id} not found")
@@ -657,9 +653,7 @@ async def seed_default_playbooks(db: AsyncSession) -> None:
     for data in DEFAULT_PLAYBOOKS:
         etype = str(data["escalation_type"])
         existing = await db.execute(
-            select(EscalationPlaybook).where(
-                EscalationPlaybook.escalation_type == etype
-            ).limit(1)
+            select(EscalationPlaybook).where(EscalationPlaybook.escalation_type == etype).limit(1)
         )
         if existing.scalar_one_or_none() is None:
             playbook = EscalationPlaybook(**data)

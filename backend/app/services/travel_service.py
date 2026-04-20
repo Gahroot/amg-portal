@@ -102,9 +102,7 @@ class TravelService:
         Returns:
             TravelBooking instance or None
         """
-        result = await db.execute(
-            select(TravelBooking).where(TravelBooking.id == booking_id)
-        )
+        result = await db.execute(select(TravelBooking).where(TravelBooking.id == booking_id))
         return result.scalar_one_or_none()
 
     async def update_booking(

@@ -32,10 +32,7 @@ def _checklist(overrides: dict[str, bool] | None = None) -> list[dict[str, Any]]
         ("financials_reconciled", "Financials reconciled"),
     ]
     flags = overrides or {}
-    return [
-        {"key": k, "label": lbl, "completed": flags.get(k, False)}
-        for k, lbl in items
-    ]
+    return [{"key": k, "label": lbl, "completed": flags.get(k, False)} for k, lbl in items]
 
 
 # ---------------------------------------------------------------------------
@@ -191,9 +188,7 @@ class TestGetClosure:
         completed_program: Program,
         closure: ProgramClosure,
     ) -> None:
-        resp = await rm_client.get(
-            f"{BASE}/{completed_program.id}/closure"
-        )
+        resp = await rm_client.get(f"{BASE}/{completed_program.id}/closure")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "initiated"
@@ -270,9 +265,7 @@ class TestPartnerRatings:
         completed_program: Program,
         closure: ProgramClosure,
     ) -> None:
-        resp = await rm_client.get(
-            f"{BASE}/{completed_program.id}/closure/partner-ratings"
-        )
+        resp = await rm_client.get(f"{BASE}/{completed_program.id}/closure/partner-ratings")
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
 
@@ -311,22 +304,22 @@ class TestCompleteClosure:
         closure: ProgramClosure,
     ) -> None:
         # First mark all checklist items as completed
-        all_done = _checklist({
-            "deliverables_approved": True,
-            "partner_ratings_submitted": True,
-            "final_report_generated": True,
-            "client_signoff": True,
-            "financials_reconciled": True,
-        })
+        all_done = _checklist(
+            {
+                "deliverables_approved": True,
+                "partner_ratings_submitted": True,
+                "final_report_generated": True,
+                "client_signoff": True,
+                "financials_reconciled": True,
+            }
+        )
         checklist_resp = await rm_client.patch(
             f"{BASE}/{completed_program.id}/closure/checklist",
             json={"items": all_done},
         )
         assert checklist_resp.status_code == 200
 
-        resp = await rm_client.post(
-            f"{BASE}/{completed_program.id}/closure/complete"
-        )
+        resp = await rm_client.post(f"{BASE}/{completed_program.id}/closure/complete")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "completed"

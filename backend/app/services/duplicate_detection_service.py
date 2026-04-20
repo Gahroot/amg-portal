@@ -408,8 +408,7 @@ async def log_duplicate_warning(
         notes: Optional notes about the decision
     """
     logger.info(
-        "Duplicate warning: entity_type=%s action=%s user=%s duplicates=%d "
-        "entity_id=%s notes=%s",
+        "Duplicate warning: entity_type=%s action=%s user=%s duplicates=%d entity_id=%s notes=%s",
         entity_type.value,
         action_taken,
         str(user_id),

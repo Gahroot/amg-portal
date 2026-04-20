@@ -40,6 +40,5 @@ class MessageDigestPreference(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<MessageDigestPreference(user_id={self.user_id}, "
-            f"frequency={self.digest_frequency})>"
+            f"<MessageDigestPreference(user_id={self.user_id}, frequency={self.digest_frequency})>"
         )

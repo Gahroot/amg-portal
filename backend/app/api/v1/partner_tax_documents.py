@@ -136,9 +136,7 @@ async def create_tax_document(
 ) -> TaxDocumentResponse:
     """Create a new tax document record (no file yet — upload separately)."""
     if payload.document_type not in VALID_DOCUMENT_TYPES:
-        raise BadRequestException(
-            f"document_type must be one of {sorted(VALID_DOCUMENT_TYPES)}"
-        )
+        raise BadRequestException(f"document_type must be one of {sorted(VALID_DOCUMENT_TYPES)}")
 
     # Verify partner exists
     partner_result = await db.execute(

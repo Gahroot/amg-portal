@@ -75,12 +75,8 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["approval_chain_id"], ["approval_chains.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["specific_user_id"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["approval_chain_id"], ["approval_chains.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["specific_user_id"], ["users.id"], ondelete="SET NULL"),
     )
     op.create_index(
         "ix_approval_chain_steps_chain",
@@ -112,9 +108,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["approval_chain_id"], ["approval_chains.id"], ondelete="RESTRICT"
-        ),
+        sa.ForeignKeyConstraint(["approval_chain_id"], ["approval_chains.id"], ondelete="RESTRICT"),
     )
     op.create_index(
         "ix_approval_thresholds_amount",
@@ -157,25 +151,15 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["program_id"], ["programs.id"], ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(
-            ["threshold_id"], ["approval_thresholds.id"], ondelete="RESTRICT"
-        ),
-        sa.ForeignKeyConstraint(
-            ["approval_chain_id"], ["approval_chains.id"], ondelete="RESTRICT"
-        ),
-        sa.ForeignKeyConstraint(
-            ["requested_by"], ["users.id"], ondelete="RESTRICT"
-        ),
-        sa.ForeignKeyConstraint(
-            ["approved_by"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["threshold_id"], ["approval_thresholds.id"], ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(["approval_chain_id"], ["approval_chains.id"], ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(["requested_by"], ["users.id"], ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(["approved_by"], ["users.id"], ondelete="SET NULL"),
     )
     op.create_index(
         "ix_budget_approval_requests_program", "budget_approval_requests", ["program_id"]
     )
-    op.create_index(
-        "ix_budget_approval_requests_status", "budget_approval_requests", ["status"]
-    )
+    op.create_index("ix_budget_approval_requests_status", "budget_approval_requests", ["status"])
 
     # Create budget_approval_steps table
     op.create_table(
@@ -211,16 +195,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["chain_step_id"], ["approval_chain_steps.id"], ondelete="RESTRICT"
         ),
-        sa.ForeignKeyConstraint(
-            ["assigned_user_id"], ["users.id"], ondelete="SET NULL"
-        ),
-        sa.ForeignKeyConstraint(
-            ["decided_by"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["assigned_user_id"], ["users.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(["decided_by"], ["users.id"], ondelete="SET NULL"),
     )
-    op.create_index(
-        "ix_budget_approval_steps_request", "budget_approval_steps", ["request_id"]
-    )
+    op.create_index("ix_budget_approval_steps_request", "budget_approval_steps", ["request_id"])
 
     # Create budget_approval_history table
     op.create_table(
@@ -246,16 +224,10 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["request_id"], ["budget_approval_requests.id"], ondelete="CASCADE"
         ),
-        sa.ForeignKeyConstraint(
-            ["actor_id"], ["users.id"], ondelete="RESTRICT"
-        ),
+        sa.ForeignKeyConstraint(["actor_id"], ["users.id"], ondelete="RESTRICT"),
     )
-    op.create_index(
-        "ix_budget_approval_history_request", "budget_approval_history", ["request_id"]
-    )
-    op.create_index(
-        "ix_budget_approval_history_created", "budget_approval_history", ["created_at"]
-    )
+    op.create_index("ix_budget_approval_history_request", "budget_approval_history", ["request_id"])
+    op.create_index("ix_budget_approval_history_created", "budget_approval_history", ["created_at"])
 
 
 def downgrade() -> None:

@@ -8,6 +8,7 @@ Adds:
 - snoozed_until column to notifications table (datetime, nullable)
 - snooze_count column to notifications table (integer, default 0)
 """
+
 import sqlalchemy as sa
 
 from alembic import op

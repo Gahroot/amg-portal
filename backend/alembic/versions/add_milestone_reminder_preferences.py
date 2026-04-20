@@ -9,6 +9,7 @@ Adds:
 - milestone_reminder_channels: JSONB array of channels to use (default ["email", "in_app"])
 - milestone_reminder_program_overrides: JSONB dict for per-program overrides
 """
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 

@@ -22,17 +22,13 @@ def upgrade() -> None:
     # Add vault fields to documents table
     op.add_column(
         "documents",
-        sa.Column(
-            "vault_status", sa.String(20), nullable=False, server_default="active"
-        ),
+        sa.Column("vault_status", sa.String(20), nullable=False, server_default="active"),
     )
     op.add_column(
         "documents",
         sa.Column("sealed_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.add_column(
-        "documents", sa.Column("sealed_by", sa.UUID(), nullable=True)
-    )
+    op.add_column("documents", sa.Column("sealed_by", sa.UUID(), nullable=True))
     op.add_column(
         "documents",
         sa.Column("retention_policy", sa.String(50), nullable=True),

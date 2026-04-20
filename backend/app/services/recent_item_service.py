@@ -110,9 +110,7 @@ class RecentItemService:
     async def clear_all_recent_items(self, user_id: uuid.UUID) -> int:
         """Clear all recent items for a user."""
         result = await self.db.execute(
-            delete(RecentItem)
-            .where(RecentItem.user_id == user_id)
-            .returning(RecentItem.id)
+            delete(RecentItem).where(RecentItem.user_id == user_id).returning(RecentItem.id)
         )
         await self.db.commit()
         items = result.scalars().all()

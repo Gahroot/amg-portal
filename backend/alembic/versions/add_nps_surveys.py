@@ -21,7 +21,12 @@ def upgrade() -> None:
     # Create nps_surveys table
     op.create_table(
         "nps_surveys",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text("gen_random_uuid()")),  # noqa: E501
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            default=sa.text("gen_random_uuid()"),
+        ),  # noqa: E501
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("quarter", sa.Integer, nullable=False),
@@ -36,22 +41,45 @@ def upgrade() -> None:
         sa.Column("closes_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("target_client_types", postgresql.JSON, nullable=True),
         sa.Column("target_client_ids", postgresql.JSON, nullable=True),
-        sa.Column("created_by", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),  # noqa: E501
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")),  # noqa: E501
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")),  # noqa: E501
+        sa.Column(
+            "created_by", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
+        ),  # noqa: E501
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")
+        ),  # noqa: E501
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")
+        ),  # noqa: E501
     )
 
     # Create nps_responses table
     op.create_table(
         "nps_responses",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text("gen_random_uuid()")),  # noqa: E501
-        sa.Column("survey_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("nps_surveys.id", ondelete="CASCADE"), nullable=False),  # noqa: E501
-        sa.Column("client_profile_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("client_profiles.id"), nullable=False),  # noqa: E501
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            default=sa.text("gen_random_uuid()"),
+        ),  # noqa: E501
+        sa.Column(
+            "survey_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("nps_surveys.id", ondelete="CASCADE"),
+            nullable=False,
+        ),  # noqa: E501
+        sa.Column(
+            "client_profile_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("client_profiles.id"),
+            nullable=False,
+        ),  # noqa: E501
         sa.Column("score", sa.Integer, nullable=False),
         sa.Column("score_category", sa.String(20), nullable=False),
         sa.Column("comment", sa.Text, nullable=True),
         sa.Column("custom_responses", postgresql.JSON, nullable=True),
-        sa.Column("responded_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")),  # noqa: E501
+        sa.Column(
+            "responded_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")
+        ),  # noqa: E501
         sa.Column("response_channel", sa.String(20), nullable=False, default="portal"),
         sa.Column("follow_up_required", sa.Boolean, nullable=False, default=False),
         sa.Column("follow_up_completed", sa.Boolean, nullable=False, default=False),
@@ -60,11 +88,33 @@ def upgrade() -> None:
     # Create nps_follow_ups table
     op.create_table(
         "nps_follow_ups",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text("gen_random_uuid()")),  # noqa: E501
-        sa.Column("survey_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("nps_surveys.id", ondelete="CASCADE"), nullable=False),  # noqa: E501
-        sa.Column("response_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("nps_responses.id", ondelete="CASCADE"), nullable=False),  # noqa: E501
-        sa.Column("client_profile_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("client_profiles.id"), nullable=False),  # noqa: E501
-        sa.Column("assigned_to", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),  # noqa: E501
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            default=sa.text("gen_random_uuid()"),
+        ),  # noqa: E501
+        sa.Column(
+            "survey_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("nps_surveys.id", ondelete="CASCADE"),
+            nullable=False,
+        ),  # noqa: E501
+        sa.Column(
+            "response_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("nps_responses.id", ondelete="CASCADE"),
+            nullable=False,
+        ),  # noqa: E501
+        sa.Column(
+            "client_profile_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("client_profiles.id"),
+            nullable=False,
+        ),  # noqa: E501
+        sa.Column(
+            "assigned_to", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
+        ),  # noqa: E501
         sa.Column("priority", sa.String(20), nullable=False, default="medium"),
         sa.Column("status", sa.String(20), nullable=False, default="pending"),
         sa.Column("action_type", sa.String(50), nullable=False, default="personal_reach_out"),
@@ -72,8 +122,12 @@ def upgrade() -> None:
         sa.Column("resolution_notes", sa.Text, nullable=True),
         sa.Column("due_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")),  # noqa: E501
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")),  # noqa: E501
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")
+        ),  # noqa: E501
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, default=sa.text("now()")
+        ),  # noqa: E501
     )
 
     # Create indexes

@@ -46,7 +46,7 @@ def build_booking_response(booking: TravelBooking) -> dict[str, Any]:
 
 
 @router.get(
-    "/programs/{program_id}/travel",
+    "/{program_id}/travel",
     response_model=TravelBookingListResponse,
 )
 async def get_program_travel(
@@ -77,7 +77,7 @@ async def get_program_travel(
 
 
 @router.post(
-    "/programs/{program_id}/travel",
+    "/{program_id}/travel",
     response_model=TravelBookingResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -113,7 +113,7 @@ async def create_travel_booking(
 
 
 @router.patch(
-    "/programs/{program_id}/travel/{booking_id}",
+    "/{program_id}/travel/{booking_id}",
     response_model=TravelBookingResponse,
 )
 async def update_travel_booking(
@@ -151,7 +151,7 @@ async def update_travel_booking(
 
 
 @router.delete(
-    "/programs/{program_id}/travel/{booking_id}",
+    "/{program_id}/travel/{booking_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_travel_booking(

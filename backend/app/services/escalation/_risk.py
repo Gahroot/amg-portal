@@ -213,18 +213,14 @@ async def check_and_escalate_milestone_risk(
         level=escalation_level,
         triggered_by=system_user,
         title=f"Milestone {level_label}: {milestone.title}",
-        description=(
-            f"Milestone has the following risk factors: {', '.join(risk_factors.keys())}"
-        ),
+        description=(f"Milestone has the following risk factors: {', '.join(risk_factors.keys())}"),
         risk_factors=risk_factors,
         program_id=milestone.program_id,
     )
 
     # For overdue milestones: notify the program RM and coordinator
     if is_overdue:
-        program_result = await db.execute(
-            select(Program).where(Program.id == milestone.program_id)
-        )
+        program_result = await db.execute(select(Program).where(Program.id == milestone.program_id))
         program = program_result.scalar_one_or_none()
         if program:
             await _notify_overdue_milestone(db, milestone, program, escalation)

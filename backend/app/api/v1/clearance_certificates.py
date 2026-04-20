@@ -43,6 +43,7 @@ router = APIRouter()
 # Certificate Templates
 # ============================================================================
 
+
 @router.post("/templates", response_model=CertificateTemplateResponse, status_code=201)
 async def create_template(
     data: CertificateTemplateCreate,
@@ -158,6 +159,7 @@ async def delete_template(
 # Certificate Preview
 # ============================================================================
 
+
 @router.post("/preview", response_model=CertificatePreviewResponse)
 async def preview_certificate(
     data: CertificatePreviewRequest,
@@ -168,6 +170,7 @@ async def preview_certificate(
     """Preview certificate content with auto-populated data."""
     # Get template content
     from app.services.certificate_service import DEFAULT_TEMPLATE
+
     template_content = DEFAULT_TEMPLATE
     if data.template_id:
         result = await db.execute(
@@ -218,6 +221,7 @@ async def preview_certificate(
 # ============================================================================
 # Clearance Certificates
 # ============================================================================
+
 
 def build_certificate_response(
     cert: ClearanceCertificate,
@@ -327,14 +331,11 @@ async def list_certificates(
     limit: int = Query(50, ge=1, le=100),
 ) -> ClearanceCertificateListResponse:
     """List clearance certificates."""
-    query = (
-        select(ClearanceCertificate)
-        .options(
-            selectinload(ClearanceCertificate.client),
-            selectinload(ClearanceCertificate.program),
-            selectinload(ClearanceCertificate.template),
-            selectinload(ClearanceCertificate.creator),
-        )
+    query = select(ClearanceCertificate).options(
+        selectinload(ClearanceCertificate.client),
+        selectinload(ClearanceCertificate.program),
+        selectinload(ClearanceCertificate.template),
+        selectinload(ClearanceCertificate.creator),
     )
 
     if client_id:

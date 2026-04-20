@@ -42,21 +42,15 @@ async def _get_cached(key: str) -> Any | None:
     return None
 
 
-async def _set_cached(
-    key: str, data: dict[str, Any] | list[Any], ttl: int = CACHE_TTL
-) -> None:
+async def _set_cached(key: str, data: dict[str, Any] | list[Any], ttl: int = CACHE_TTL) -> None:
     """Try to cache data in Redis."""
     try:
-        await redis_client.set(
-            key, json.dumps(data, default=str), ex=ttl
-        )
+        await redis_client.set(key, json.dumps(data, default=str), ex=ttl)
     except Exception:
         logger.debug("Redis cache write failed for key=%s", key)
 
 
-async def get_real_time_stats(
-    db: AsyncSession, user_id: uuid.UUID
-) -> RealTimeStats:
+async def get_real_time_stats(db: AsyncSession, user_id: uuid.UUID) -> RealTimeStats:
     """Get live dashboard counts."""
     cache_key = f"dashboard:realtime:{user_id}"
     cached = await _get_cached(cache_key)
@@ -76,17 +70,13 @@ async def get_real_time_stats(
 
     # Pending approvals
     approvals_result = await db.execute(
-        select(func.count(ProgramApproval.id)).where(
-            ProgramApproval.status == "pending"
-        )
+        select(func.count(ProgramApproval.id)).where(ProgramApproval.status == "pending")
     )
     pending_approvals = approvals_result.scalar_one()
 
     # Open escalations
     esc_result = await db.execute(
-        select(func.count(Escalation.id)).where(
-            Escalation.status.in_(["open", "acknowledged"])
-        )
+        select(func.count(Escalation.id)).where(Escalation.status.in_(["open", "acknowledged"]))
     )
     open_escalations = esc_result.scalar_one()
 
@@ -151,8 +141,7 @@ async def get_activity_feed(
             cast(Communication.id, String).label("id"),
             literal("communication").label("activity_type"),
             (
-                literal("Communication sent: ")
-                + func.coalesce(Communication.subject, "No subject")
+                literal("Communication sent: ") + func.coalesce(Communication.subject, "No subject")
             ).label("title"),
             (literal("Sent via ") + cast(Communication.channel, String)).label("description"),
             literal("communication").label("entity_type"),
@@ -165,25 +154,22 @@ async def get_activity_feed(
         .where(Communication.status == "sent")
     )
 
-    esc_sel = (
-        select(
-            cast(Escalation.id, String).label("id"),
-            literal("escalation").label("activity_type"),
-            (literal("Escalation: ") + Escalation.title).label("title"),
-            (
-                literal("Status: ")
-                + cast(Escalation.status, String)
-                + literal(" | Level: ")
-                + cast(Escalation.level, String)
-            ).label("description"),
-            literal("escalation").label("entity_type"),
-            cast(Escalation.id, String).label("entity_id"),
-            Escalation.triggered_at.label("timestamp"),
-            user_alias_esc.c.full_name.label("actor_name"),
-            (literal("/escalations/") + cast(Escalation.id, String)).label("link"),
-        )
-        .outerjoin(user_alias_esc, Escalation.triggered_by == user_alias_esc.c.id)
-    )
+    esc_sel = select(
+        cast(Escalation.id, String).label("id"),
+        literal("escalation").label("activity_type"),
+        (literal("Escalation: ") + Escalation.title).label("title"),
+        (
+            literal("Status: ")
+            + cast(Escalation.status, String)
+            + literal(" | Level: ")
+            + cast(Escalation.level, String)
+        ).label("description"),
+        literal("escalation").label("entity_type"),
+        cast(Escalation.id, String).label("entity_id"),
+        Escalation.triggered_at.label("timestamp"),
+        user_alias_esc.c.full_name.label("actor_name"),
+        (literal("/escalations/") + cast(Escalation.id, String)).label("link"),
+    ).outerjoin(user_alias_esc, Escalation.triggered_by == user_alias_esc.c.id)
 
     deliv_sel = (
         select(
@@ -209,10 +195,7 @@ async def get_activity_feed(
 
     # Fetch paginated, sorted page
     feed_result = await db.execute(
-        select(combined)
-        .order_by(combined.c.timestamp.desc())
-        .offset(skip)
-        .limit(limit)
+        select(combined).order_by(combined.c.timestamp.desc()).offset(skip).limit(limit)
     )
     items: list[ActivityFeedItem] = [
         ActivityFeedItem(
@@ -251,32 +234,27 @@ async def get_dashboard_alerts(
     # SLA breaches / approaching breach
     sla_result = await db.execute(
         select(SLATracker)
-        .where(
-            SLATracker.breach_status.in_(
-                ["breached", "approaching_breach"]
-            )
-        )
+        .where(SLATracker.breach_status.in_(["breached", "approaching_breach"]))
         .order_by(SLATracker.started_at.asc())
         .limit(50)
     )
     for sla in sla_result.scalars().all():
-        severity = (
-            "critical" if sla.breach_status == "breached" else "warning"
+        severity = "critical" if sla.breach_status == "breached" else "warning"
+        alerts.append(
+            DashboardAlert(
+                id=f"sla-{sla.id}",
+                severity=severity,
+                alert_type="sla_breach",
+                title=f"SLA {sla.breach_status.replace('_', ' ').title()}",
+                description=(
+                    f"{sla.entity_type} SLA ({sla.sla_hours}h) — {sla.communication_type}"
+                ),
+                entity_type=sla.entity_type,
+                entity_id=sla.entity_id,
+                link="/sla",
+                due_date=sla.started_at,
+            )
         )
-        alerts.append(DashboardAlert(
-            id=f"sla-{sla.id}",
-            severity=severity,
-            alert_type="sla_breach",
-            title=f"SLA {sla.breach_status.replace('_', ' ').title()}",
-            description=(
-                f"{sla.entity_type} SLA ({sla.sla_hours}h)"
-                f" — {sla.communication_type}"
-            ),
-            entity_type=sla.entity_type,
-            entity_id=sla.entity_id,
-            link="/sla",
-            due_date=sla.started_at,
-        ))
 
     # Overdue tasks
     task_result = await db.execute(
@@ -291,22 +269,20 @@ async def get_dashboard_alerts(
     )
     for task in task_result.scalars().all():
         due_str = task.due_date.isoformat() if task.due_date else "N/A"
-        due_dt = (
-            datetime.combine(task.due_date, datetime.min.time())
-            if task.due_date
-            else None
+        due_dt = datetime.combine(task.due_date, datetime.min.time()) if task.due_date else None
+        alerts.append(
+            DashboardAlert(
+                id=f"task-{task.id}",
+                severity="warning",
+                alert_type="overdue_task",
+                title=f"Overdue Task: {task.title}",
+                description=f"Due: {due_str}",
+                entity_type="task",
+                entity_id=str(task.id),
+                link=f"/tasks/{task.id}",
+                due_date=due_dt,
+            )
         )
-        alerts.append(DashboardAlert(
-            id=f"task-{task.id}",
-            severity="warning",
-            alert_type="overdue_task",
-            title=f"Overdue Task: {task.title}",
-            description=f"Due: {due_str}",
-            entity_type="task",
-            entity_id=str(task.id),
-            link=f"/tasks/{task.id}",
-            due_date=due_dt,
-        ))
 
     # Pending approval reviews
     approval_result = await db.execute(
@@ -316,17 +292,19 @@ async def get_dashboard_alerts(
         .limit(50)
     )
     for approval in approval_result.scalars().all():
-        alerts.append(DashboardAlert(
-            id=f"approval-{approval.id}",
-            severity="info",
-            alert_type="pending_review",
-            title=f"Pending Approval: {approval.approval_type}",
-            description="Program approval awaiting review",
-            entity_type="approval",
-            entity_id=str(approval.id),
-            link="/approvals",
-            due_date=approval.created_at,
-        ))
+        alerts.append(
+            DashboardAlert(
+                id=f"approval-{approval.id}",
+                severity="info",
+                alert_type="pending_review",
+                title=f"Pending Approval: {approval.approval_type}",
+                description="Program approval awaiting review",
+                entity_type="approval",
+                entity_id=str(approval.id),
+                link="/approvals",
+                due_date=approval.created_at,
+            )
+        )
 
     # Sort by severity (critical first)
     severity_order = {"critical": 0, "warning": 1, "info": 2}

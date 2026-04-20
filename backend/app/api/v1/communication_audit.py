@@ -31,9 +31,7 @@ async def get_audit_trail_for_communication(
     limit: int = Query(50, ge=1, le=200),
 ) -> CommunicationAuditListResponse:
     """Get the full audit trail for a specific communication."""
-    items, total = await get_communication_audit_trail(
-        db, communication_id, skip=skip, limit=limit
-    )
+    items, total = await get_communication_audit_trail(db, communication_id, skip=skip, limit=limit)
     return CommunicationAuditListResponse(
         audits=[CommunicationAuditResponse(**item) for item in items],
         total=total,

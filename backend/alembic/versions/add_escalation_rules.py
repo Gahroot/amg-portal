@@ -27,8 +27,12 @@ def upgrade() -> None:
         sa.Column("escalation_level", sa.String(20), nullable=False),
         sa.Column("auto_assign_to_role", sa.String(50), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),  # noqa: E501
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),  # noqa: E501
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),  # noqa: E501
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),  # noqa: E501
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_escalation_rules_trigger_type", "escalation_rules", ["trigger_type"])

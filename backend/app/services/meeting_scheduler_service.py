@@ -47,18 +47,18 @@ DEFAULT_MEETING_TYPES = [
 
 # ─── Seed helpers ─────────────────────────────────────────────────────────────
 
+
 async def seed_meeting_types(db: AsyncSession) -> None:
     """Ensure the three default meeting types exist in the database."""
     for data in DEFAULT_MEETING_TYPES:
-        result = await db.execute(
-            select(MeetingType).where(MeetingType.slug == data["slug"])
-        )
+        result = await db.execute(select(MeetingType).where(MeetingType.slug == data["slug"]))
         if result.scalar_one_or_none() is None:
             db.add(MeetingType(**data))
     await db.commit()
 
 
 # ─── Meeting Types ─────────────────────────────────────────────────────────────
+
 
 async def list_meeting_types(db: AsyncSession) -> list[MeetingType]:
     """Return all active meeting types ordered by display_order."""
@@ -71,13 +71,12 @@ async def list_meeting_types(db: AsyncSession) -> list[MeetingType]:
 
 
 async def get_meeting_type(db: AsyncSession, meeting_type_id: uuid.UUID) -> MeetingType | None:
-    result = await db.execute(
-        select(MeetingType).where(MeetingType.id == meeting_type_id)
-    )
+    result = await db.execute(select(MeetingType).where(MeetingType.id == meeting_type_id))
     return result.scalar_one_or_none()
 
 
 # ─── RM Availability ──────────────────────────────────────────────────────────
+
 
 async def create_availability(
     db: AsyncSession,
@@ -110,9 +109,7 @@ async def update_availability(
     data: dict[str, Any],
 ) -> RMAvailability | None:
     result = await db.execute(
-        select(RMAvailability).where(
-            RMAvailability.id == slot_id, RMAvailability.rm_id == rm_id
-        )
+        select(RMAvailability).where(RMAvailability.id == slot_id, RMAvailability.rm_id == rm_id)
     )
     avail = result.scalar_one_or_none()
     if not avail:
@@ -131,9 +128,7 @@ async def delete_availability(
     rm_id: uuid.UUID,
 ) -> bool:
     result = await db.execute(
-        select(RMAvailability).where(
-            RMAvailability.id == slot_id, RMAvailability.rm_id == rm_id
-        )
+        select(RMAvailability).where(RMAvailability.id == slot_id, RMAvailability.rm_id == rm_id)
     )
     avail = result.scalar_one_or_none()
     if not avail:
@@ -144,6 +139,7 @@ async def delete_availability(
 
 
 # ─── Blackouts ────────────────────────────────────────────────────────────────
+
 
 async def create_blackout(
     db: AsyncSession,
@@ -177,9 +173,7 @@ async def delete_blackout(
     rm_id: uuid.UUID,
 ) -> bool:
     result = await db.execute(
-        select(RMBlackout).where(
-            RMBlackout.id == blackout_id, RMBlackout.rm_id == rm_id
-        )
+        select(RMBlackout).where(RMBlackout.id == blackout_id, RMBlackout.rm_id == rm_id)
     )
     blackout = result.scalar_one_or_none()
     if not blackout:
@@ -190,6 +184,7 @@ async def delete_blackout(
 
 
 # ─── Available Slot Computation ───────────────────────────────────────────────
+
 
 async def get_available_slots(
     db: AsyncSession,
@@ -238,12 +233,8 @@ async def get_available_slots(
     blackout_dates: set[date] = set(blackout_result.scalars().all())
 
     # Load existing meetings for this RM in range (pending + confirmed)
-    range_start = datetime(
-        from_date.year, from_date.month, from_date.day, tzinfo=UTC
-    )
-    range_end = datetime(
-        to_date.year, to_date.month, to_date.day, 23, 59, 59, tzinfo=UTC
-    )
+    range_start = datetime(from_date.year, from_date.month, from_date.day, tzinfo=UTC)
+    range_end = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59, tzinfo=UTC)
     meetings_result = await db.execute(
         select(Meeting).where(
             Meeting.rm_id == rm_id,
@@ -320,6 +311,7 @@ def _has_conflict(
 
 
 # ─── Booking ──────────────────────────────────────────────────────────────────
+
 
 async def book_meeting(
     db: AsyncSession,
@@ -417,9 +409,7 @@ async def book_meeting(
 
     # Eagerly load meeting_type relationship
     result = await db.execute(
-        select(Meeting)
-        .options(selectinload(Meeting.meeting_type))
-        .where(Meeting.id == meeting.id)
+        select(Meeting).options(selectinload(Meeting.meeting_type)).where(Meeting.id == meeting.id)
     )
     return result.scalar_one()
 
@@ -497,9 +487,7 @@ async def cancel_meeting(
     from app.services.notification_service import notification_service
 
     result = await db.execute(
-        select(Meeting)
-        .options(selectinload(Meeting.meeting_type))
-        .where(Meeting.id == meeting_id)
+        select(Meeting).options(selectinload(Meeting.meeting_type)).where(Meeting.id == meeting_id)
     )
     meeting = result.scalar_one_or_none()
     if not meeting:
@@ -509,9 +497,7 @@ async def cancel_meeting(
     meeting.cancelled_by_id = cancelled_by_id
     meeting.cancellation_reason = reason
 
-    actor_result = await db.execute(
-        select(User.full_name).where(User.id == cancelled_by_id)
-    )
+    actor_result = await db.execute(select(User.full_name).where(User.id == cancelled_by_id))
     actor_name = actor_result.scalar_one_or_none() or "Someone"
 
     mt_label = meeting.meeting_type.label if meeting.meeting_type else "Meeting"
@@ -530,8 +516,7 @@ async def cancel_meeting(
                 title=f"Meeting Cancelled: {mt_label}",
                 body=(
                     f"{actor_name} has cancelled the {mt_label} scheduled for "
-                    f"{formatted_time}."
-                    + (f" Reason: {reason}" if reason else "")
+                    f"{formatted_time}." + (f" Reason: {reason}" if reason else "")
                 ),
                 priority="normal",
                 entity_type="meeting",
@@ -557,9 +542,7 @@ async def reschedule_meeting(
     from app.services.notification_service import notification_service
 
     result = await db.execute(
-        select(Meeting)
-        .options(selectinload(Meeting.meeting_type))
-        .where(Meeting.id == meeting_id)
+        select(Meeting).options(selectinload(Meeting.meeting_type)).where(Meeting.id == meeting_id)
     )
     old_meeting = result.scalar_one_or_none()
     if not old_meeting:
@@ -570,11 +553,7 @@ async def reschedule_meeting(
     old_meeting.cancelled_by_id = requested_by_id
     old_meeting.cancellation_reason = reason or "Rescheduled"
 
-    duration = (
-        old_meeting.meeting_type.duration_minutes
-        if old_meeting.meeting_type
-        else 30
-    )
+    duration = old_meeting.meeting_type.duration_minutes if old_meeting.meeting_type else 30
     new_end_time = new_start_time + timedelta(minutes=duration)
 
     new_meeting = Meeting(
@@ -592,9 +571,7 @@ async def reschedule_meeting(
     db.add(new_meeting)
     await db.flush()
 
-    actor_result = await db.execute(
-        select(User.full_name).where(User.id == requested_by_id)
-    )
+    actor_result = await db.execute(select(User.full_name).where(User.id == requested_by_id))
     actor_name = actor_result.scalar_one_or_none() or "Someone"
 
     mt_label = old_meeting.meeting_type.label if old_meeting.meeting_type else "Meeting"
@@ -610,9 +587,7 @@ async def reschedule_meeting(
                 user_id=uid,
                 notification_type="system",
                 title=f"Meeting Rescheduled: {mt_label}",
-                body=(
-                    f"{actor_name} has rescheduled the {mt_label} to {new_time_str}."
-                ),
+                body=(f"{actor_name} has rescheduled the {mt_label} to {new_time_str}."),
                 priority="normal",
                 entity_type="meeting",
                 entity_id=new_meeting.id,
@@ -632,6 +607,7 @@ async def reschedule_meeting(
 
 
 # ─── Listing ──────────────────────────────────────────────────────────────────
+
 
 async def list_meetings(
     db: AsyncSession,
@@ -670,9 +646,7 @@ async def get_meeting(
     meeting_id: uuid.UUID,
 ) -> Meeting | None:
     result = await db.execute(
-        select(Meeting)
-        .options(selectinload(Meeting.meeting_type))
-        .where(Meeting.id == meeting_id)
+        select(Meeting).options(selectinload(Meeting.meeting_type)).where(Meeting.id == meeting_id)
     )
     return result.scalar_one_or_none()
 
@@ -688,9 +662,7 @@ async def get_client_for_user(
     """
     from app.models.client_profile import ClientProfile
 
-    profile_result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == user_id)
-    )
+    profile_result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == user_id))
     profile = profile_result.scalar_one_or_none()
     if not profile:
         return None

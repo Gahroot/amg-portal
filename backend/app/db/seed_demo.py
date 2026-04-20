@@ -6,6 +6,7 @@ meetings, RM availability, vault documents, and richer document variety.
 Idempotent — checks before creating. Run with:
     cd backend && python3 -m app.db.seed_demo
 """
+
 import asyncio
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
@@ -524,36 +525,44 @@ async def seed_rm_availability(db: AsyncSession, ids: dict[str, Any]) -> Any:
     slots = []
     # Sarah: Mon-Fri 9am-12pm and 2pm-5pm
     for day in range(5):  # Mon=0 through Fri=4
-        slots.append(RMAvailability(
-            rm_id=rm_sarah,
-            day_of_week=day,
-            start_time=time(9, 0),
-            end_time=time(12, 0),
-            buffer_minutes=15,
-        ))
-        slots.append(RMAvailability(
-            rm_id=rm_sarah,
-            day_of_week=day,
-            start_time=time(14, 0),
-            end_time=time(17, 0),
-            buffer_minutes=15,
-        ))
+        slots.append(
+            RMAvailability(
+                rm_id=rm_sarah,
+                day_of_week=day,
+                start_time=time(9, 0),
+                end_time=time(12, 0),
+                buffer_minutes=15,
+            )
+        )
+        slots.append(
+            RMAvailability(
+                rm_id=rm_sarah,
+                day_of_week=day,
+                start_time=time(14, 0),
+                end_time=time(17, 0),
+                buffer_minutes=15,
+            )
+        )
     # James: Mon-Thu 10am-1pm and 3pm-6pm (later timezone)
     for day in range(4):  # Mon-Thu
-        slots.append(RMAvailability(
-            rm_id=rm_james,
-            day_of_week=day,
-            start_time=time(10, 0),
-            end_time=time(13, 0),
-            buffer_minutes=15,
-        ))
-        slots.append(RMAvailability(
-            rm_id=rm_james,
-            day_of_week=day,
-            start_time=time(15, 0),
-            end_time=time(18, 0),
-            buffer_minutes=15,
-        ))
+        slots.append(
+            RMAvailability(
+                rm_id=rm_james,
+                day_of_week=day,
+                start_time=time(10, 0),
+                end_time=time(13, 0),
+                buffer_minutes=15,
+            )
+        )
+        slots.append(
+            RMAvailability(
+                rm_id=rm_james,
+                day_of_week=day,
+                start_time=time(15, 0),
+                end_time=time(18, 0),
+                buffer_minutes=15,
+            )
+        )
 
     db.add_all(slots)
     print(f"  Created {len(slots)} RM availability slots.")
@@ -758,9 +767,21 @@ async def seed_additional_documents(db: AsyncSession, ids: dict[str, Any]) -> An
             sealed_by=admin_id,
             retention_policy="7_years",
             chain_of_custody=[
-                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=35)).isoformat()},  # noqa: E501
-                {"action": "reviewed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=32)).isoformat()},  # noqa: E501
-                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=30)).isoformat()},  # noqa: E501
+                {
+                    "action": "created",
+                    "user": "olivia.grant@amg.com",
+                    "at": (now - timedelta(days=35)).isoformat(),
+                },  # noqa: E501
+                {
+                    "action": "reviewed",
+                    "user": "admin@anchormillgroup.com",
+                    "at": (now - timedelta(days=32)).isoformat(),
+                },  # noqa: E501
+                {
+                    "action": "sealed",
+                    "user": "admin@anchormillgroup.com",
+                    "at": (now - timedelta(days=30)).isoformat(),
+                },  # noqa: E501
             ],
         ),
         Document(
@@ -778,8 +799,16 @@ async def seed_additional_documents(db: AsyncSession, ids: dict[str, Any]) -> An
             sealed_by=admin_id,
             retention_policy="7_years",
             chain_of_custody=[
-                {"action": "created", "user": "olivia.grant@amg.com", "at": (now - timedelta(days=20)).isoformat()},  # noqa: E501
-                {"action": "sealed", "user": "admin@anchormillgroup.com", "at": (now - timedelta(days=15)).isoformat()},  # noqa: E501
+                {
+                    "action": "created",
+                    "user": "olivia.grant@amg.com",
+                    "at": (now - timedelta(days=20)).isoformat(),
+                },  # noqa: E501
+                {
+                    "action": "sealed",
+                    "user": "admin@anchormillgroup.com",
+                    "at": (now - timedelta(days=15)).isoformat(),
+                },  # noqa: E501
             ],
         ),
         Document(
@@ -795,8 +824,16 @@ async def seed_additional_documents(db: AsyncSession, ids: dict[str, Any]) -> An
             vault_status=VaultStatus.archived,
             retention_policy="5_years",
             chain_of_custody=[
-                {"action": "created", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=10)).isoformat()},  # noqa: E501
-                {"action": "archived", "user": "elena.vasquez@amg.com", "at": (now - timedelta(days=5)).isoformat()},  # noqa: E501
+                {
+                    "action": "created",
+                    "user": "elena.vasquez@amg.com",
+                    "at": (now - timedelta(days=10)).isoformat(),
+                },  # noqa: E501
+                {
+                    "action": "archived",
+                    "user": "elena.vasquez@amg.com",
+                    "at": (now - timedelta(days=5)).isoformat(),
+                },  # noqa: E501
             ],
         ),
         # Correspondence
@@ -823,10 +860,12 @@ async def seed_additional_notifications(db: AsyncSession, ids: dict[str, Any]) -
     # Check if there are recent notifications (last 24h)
     now = datetime.now(UTC)
     r = await db.execute(
-        select(Notification).where(
+        select(Notification)
+        .where(
             Notification.created_at > now - timedelta(hours=24),
             Notification.user_id == ids["admin@anchormillgroup.com"],
-        ).limit(1)
+        )
+        .limit(1)
     )
     if r.scalar_one_or_none():
         print("  Recent notifications already exist, skipping.")
@@ -960,52 +999,56 @@ async def seed_additional_conversations(db: AsyncSession, ids: dict[str, Any]) -
 
     if beaumont_convo:
         # Add more messages to the Beaumont thread
-        messages.extend([
-            Communication(
-                conversation_id=beaumont_convo,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=client_philippe,
-                subject=None,
-                body="Sarah, I've been thinking about the Monaco option we discussed. My wife is quite keen on the lifestyle there, and I understand the tax advantages are significant. Could you include it in the jurisdictional analysis?",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(hours=12),
-            ),
-            Communication(
-                conversation_id=beaumont_convo,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=rm_sarah,
-                subject=None,
-                body="Absolutely, Philippe. Monaco is an excellent addition to the analysis. I'll have Elena coordinate with Fortress Legal to include Monaco in the trust structure evaluation. The residency requirements are quite specific, so we'll want to factor that into the timeline. I'll have an updated brief to you by end of week.",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(hours=11),
-            ),
-            Communication(
-                conversation_id=beaumont_convo,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.delivered,
-                sender_id=client_philippe,
-                subject=None,
-                body="Perfect. Also, I wanted to mention — I'll be travelling to Dubai next month. Perhaps worth considering as well? Let's discuss at our meeting this week.",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(hours=3),
-            ),
-        ])
+        messages.extend(
+            [
+                Communication(
+                    conversation_id=beaumont_convo,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=client_philippe,
+                    subject=None,
+                    body="Sarah, I've been thinking about the Monaco option we discussed. My wife is quite keen on the lifestyle there, and I understand the tax advantages are significant. Could you include it in the jurisdictional analysis?",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(hours=12),
+                ),
+                Communication(
+                    conversation_id=beaumont_convo,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=rm_sarah,
+                    subject=None,
+                    body="Absolutely, Philippe. Monaco is an excellent addition to the analysis. I'll have Elena coordinate with Fortress Legal to include Monaco in the trust structure evaluation. The residency requirements are quite specific, so we'll want to factor that into the timeline. I'll have an updated brief to you by end of week.",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(hours=11),
+                ),
+                Communication(
+                    conversation_id=beaumont_convo,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.delivered,
+                    sender_id=client_philippe,
+                    subject=None,
+                    body="Perfect. Also, I wanted to mention — I'll be travelling to Dubai next month. Perhaps worth considering as well? Let's discuss at our meeting this week.",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(hours=3),
+                ),
+            ]
+        )
 
     if tanaka_convo:
-        messages.extend([
-            Communication(
-                conversation_id=tanaka_convo,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=rm_james,
-                subject=None,
-                body="Robert, the final performance report is now available in your documents portal. We achieved a 12.3% return against the 9% benchmark. Very pleased with the results.",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(days=5),
-            ),
-        ])
+        messages.extend(
+            [
+                Communication(
+                    conversation_id=tanaka_convo,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=rm_james,
+                    subject=None,
+                    body="Robert, the final performance report is now available in your documents portal. We achieved a 12.3% return against the 9% benchmark. Very pleased with the results.",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(days=5),
+                ),
+            ]
+        )
 
     # Create a new conversation — Northcott relocation thread
     northcott_profile = ids.get("profile:Northcott Global Enterprises Ltd")
@@ -1020,48 +1063,50 @@ async def seed_additional_conversations(db: AsyncSession, ids: dict[str, Any]) -
         db.add(new_convo)
         await db.flush()
 
-        messages.extend([
-            Communication(
-                conversation_id=new_convo.id,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=rm_james,
-                subject=None,
-                body="Diana, welcome to the AMG Portal. I've set up this thread for our relocation planning discussions. Elena Vasquez will be coordinating the logistics side. First priority: we need passport copies for the EP application. I've sent a formal document request through the portal.",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(days=3),
-            ),
-            Communication(
-                conversation_id=new_convo.id,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=client_diana,
-                subject=None,
-                body="Thank you, James. I'll get the passport copies uploaded this week. Quick question — for the school enrollment, do we need to start that process now or can it wait until the EP is approved?",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(days=2, hours=18),
-            ),
-            Communication(
-                conversation_id=new_convo.id,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.read,
-                sender_id=coord_elena,
-                subject=None,
-                body="Diana, I'd recommend we start the school applications now. The top international schools in Singapore have wait lists. I've shortlisted three schools and arranged site visits for next week. I'll send you the details shortly.",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(days=2, hours=12),
-            ),
-            Communication(
-                conversation_id=new_convo.id,
-                channel=CommunicationChannel.in_portal,
-                status=MessageStatus.delivered,
-                sender_id=client_diana,
-                subject=None,
-                body="Brilliant, thank you Elena. The site visits sound great. My husband will want to join as well. Can you send calendar invites?",  # noqa: E501
-                approval_status=CommunicationApprovalStatus.sent,
-                sent_at=now - timedelta(hours=5),
-            ),
-        ])
+        messages.extend(
+            [
+                Communication(
+                    conversation_id=new_convo.id,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=rm_james,
+                    subject=None,
+                    body="Diana, welcome to the AMG Portal. I've set up this thread for our relocation planning discussions. Elena Vasquez will be coordinating the logistics side. First priority: we need passport copies for the EP application. I've sent a formal document request through the portal.",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(days=3),
+                ),
+                Communication(
+                    conversation_id=new_convo.id,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=client_diana,
+                    subject=None,
+                    body="Thank you, James. I'll get the passport copies uploaded this week. Quick question — for the school enrollment, do we need to start that process now or can it wait until the EP is approved?",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(days=2, hours=18),
+                ),
+                Communication(
+                    conversation_id=new_convo.id,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.read,
+                    sender_id=coord_elena,
+                    subject=None,
+                    body="Diana, I'd recommend we start the school applications now. The top international schools in Singapore have wait lists. I've shortlisted three schools and arranged site visits for next week. I'll send you the details shortly.",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(days=2, hours=12),
+                ),
+                Communication(
+                    conversation_id=new_convo.id,
+                    channel=CommunicationChannel.in_portal,
+                    status=MessageStatus.delivered,
+                    sender_id=client_diana,
+                    subject=None,
+                    body="Brilliant, thank you Elena. The site visits sound great. My husband will want to join as well. Can you send calendar invites?",  # noqa: E501
+                    approval_status=CommunicationApprovalStatus.sent,
+                    sent_at=now - timedelta(hours=5),
+                ),
+            ]
+        )
 
     if messages:
         db.add_all(messages)
@@ -1100,9 +1145,21 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
             prompt="Based on our jurisdictional analysis, we've narrowed the trust structure options to three jurisdictions. Each has distinct advantages regarding tax efficiency, regulatory oversight, and asset protection. Please select your preferred jurisdiction.",  # noqa: E501
             response_type=DecisionResponseType.choice,
             options=[
-                {"id": "ch", "label": "Switzerland (Zurich)", "description": "Strongest asset protection. Higher setup costs. Established banking relationships."},  # noqa: E501
-                {"id": "je", "label": "Jersey (Channel Islands)", "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families."},  # noqa: E501
-                {"id": "uk", "label": "United Kingdom", "description": "Familiar legal framework. Easier administration. Higher tax exposure."},  # noqa: E501
+                {
+                    "id": "ch",
+                    "label": "Switzerland (Zurich)",
+                    "description": "Strongest asset protection. Higher setup costs. Established banking relationships.",
+                },  # noqa: E501
+                {
+                    "id": "je",
+                    "label": "Jersey (Channel Islands)",
+                    "description": "Tax neutral. Lower ongoing costs. Excellent for multi-jurisdictional families.",
+                },  # noqa: E501
+                {
+                    "id": "uk",
+                    "label": "United Kingdom",
+                    "description": "Familiar legal framework. Easier administration. Higher tax exposure.",
+                },  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=7),
             consequence_text="If no selection is made, we will proceed with the recommended option (Jersey) to maintain the project timeline.",  # noqa: E501
@@ -1116,9 +1173,21 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
             prompt="We've interviewed three curators for the art collection acquisition program. Please confirm your preferred curator to proceed with the engagement.",  # noqa: E501
             response_type=DecisionResponseType.choice,
             options=[
-                {"id": "em", "label": "Dr. Elisabeth Moreau", "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris."},  # noqa: E501
-                {"id": "jw", "label": "Jonathan Wei", "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong."},  # noqa: E501
-                {"id": "ar", "label": "Anna Rossi", "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan."},  # noqa: E501
+                {
+                    "id": "em",
+                    "label": "Dr. Elisabeth Moreau",
+                    "description": "Former Sotheby's director. Specialises in Impressionist and Modern art. Based in Paris.",
+                },  # noqa: E501
+                {
+                    "id": "jw",
+                    "label": "Jonathan Wei",
+                    "description": "Contemporary art specialist. Strong Asian market connections. Based in Hong Kong.",
+                },  # noqa: E501
+                {
+                    "id": "ar",
+                    "label": "Anna Rossi",
+                    "description": "Old Masters and Renaissance specialist. Extensive private collection experience. Based in Milan.",
+                },  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=5),
             status=DecisionRequestStatus.pending,
@@ -1131,9 +1200,21 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
             prompt="We've shortlisted three international schools in Singapore for your children. Elena has arranged site visits. Based on the initial profiles, do you have an early preference?",  # noqa: E501
             response_type=DecisionResponseType.multi_choice,
             options=[
-                {"id": "uwcsea", "label": "UWCSEA (Dover)", "description": "IB curriculum. Strong community focus. Excellent facilities."},  # noqa: E501
-                {"id": "tanglin", "label": "Tanglin Trust School", "description": "British curriculum. Strong pastoral care. Central location."},  # noqa: E501
-                {"id": "sas", "label": "Singapore American School", "description": "AP curriculum. Large campus. Strong STEM program."},  # noqa: E501
+                {
+                    "id": "uwcsea",
+                    "label": "UWCSEA (Dover)",
+                    "description": "IB curriculum. Strong community focus. Excellent facilities.",
+                },  # noqa: E501
+                {
+                    "id": "tanglin",
+                    "label": "Tanglin Trust School",
+                    "description": "British curriculum. Strong pastoral care. Central location.",
+                },  # noqa: E501
+                {
+                    "id": "sas",
+                    "label": "Singapore American School",
+                    "description": "AP curriculum. Large campus. Strong STEM program.",
+                },  # noqa: E501
             ],
             deadline_date=date.today() + timedelta(days=14),
             status=DecisionRequestStatus.pending,
@@ -1147,7 +1228,10 @@ async def seed_decision_requests(db: AsyncSession, ids: dict[str, Any]) -> Any:
             prompt="Please review and approve the shortlist of potential trustees for the Beaumont Family Trust.",  # noqa: E501
             response_type=DecisionResponseType.yes_no,
             status=DecisionRequestStatus.responded,
-            response={"value": "yes", "text": "Approved. Please proceed with due diligence on all three candidates."},  # noqa: E501
+            response={
+                "value": "yes",
+                "text": "Approved. Please proceed with due diligence on all three candidates.",
+            },  # noqa: E501
             responded_at=now - timedelta(days=5),
             responded_by=client_philippe,
             created_by=rm_sarah,

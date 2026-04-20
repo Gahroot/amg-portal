@@ -54,9 +54,7 @@ def _check_rate_limit(key_hash: str, limit: int) -> bool:
         _rate_limit_cache[key_hash] = []
 
     # Remove timestamps outside the window
-    _rate_limit_cache[key_hash] = [
-        ts for ts in _rate_limit_cache[key_hash] if ts > window_start
-    ]
+    _rate_limit_cache[key_hash] = [ts for ts in _rate_limit_cache[key_hash] if ts > window_start]
 
     # Check if under limit
     if len(_rate_limit_cache[key_hash]) >= limit:
@@ -91,9 +89,7 @@ async def get_api_key_user(  # noqa: PLR0911
 
     This is used as an optional dependency - returns None if no API key is provided.
     """
-    api_key = await _get_api_key_from_request(
-        request, api_key_header_val, api_key_query_val
-    )
+    api_key = await _get_api_key_from_request(request, api_key_header_val, api_key_query_val)
     if not api_key:
         return None
 
@@ -175,9 +171,7 @@ def require_api_key_scope(
             return
 
         if scope not in api_key_scopes and "*" not in api_key_scopes:
-            raise UnauthorizedException(
-                f"API key does not have required scope: {scope}"
-            )
+            raise UnauthorizedException(f"API key does not have required scope: {scope}")
 
     return check_scope
 

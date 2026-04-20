@@ -33,8 +33,7 @@ def _build_group_key_expr(group_mode: str) -> ColumnElement[Any]:
         entity_id_text = func.cast(Notification.entity_id, String)
         return case(
             (
-                (Notification.entity_type.is_not(None))
-                & (Notification.entity_id.is_not(None)),
+                (Notification.entity_type.is_not(None)) & (Notification.entity_id.is_not(None)),
                 literal("entity:") + Notification.entity_type + literal(":") + entity_id_text,
             ),
             else_=literal("type:") + Notification.notification_type,

@@ -151,9 +151,7 @@ async def fulfill_document_request(
     _rls: RLSContext,
 ) -> DocumentRequestResponse:
     """Mark a document request as fulfilled with the given document ID."""
-    req = await document_request_service.fulfill_document_request(
-        db, request_id, body.document_id
-    )
+    req = await document_request_service.fulfill_document_request(db, request_id, body.document_id)
     if not req:
         raise NotFoundException("Document request not found")
     return DocumentRequestResponse.model_validate(req)
@@ -184,7 +182,5 @@ async def transition_document_request(
 
     req = await document_request_service.transition_document_request(db, request_id, data)
     if req is None:
-        raise BadRequestException(
-            "Invalid status transition or document request not found"
-        )
+        raise BadRequestException("Invalid status transition or document request not found")
     return DocumentRequestResponse.model_validate(req)

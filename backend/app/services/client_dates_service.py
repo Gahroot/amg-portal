@@ -215,6 +215,4 @@ async def send_date_reminders(db: AsyncSession, days_ahead: int = 7) -> None:  #
                 title,
             )
         except Exception:
-            logger.exception(
-                "Failed to send date reminder for client %s", item.client_id
-            )
+            logger.exception("Failed to send date reminder for client %s", item.client_id)

@@ -51,6 +51,8 @@ dependencies = [
     "filetype>=1.2.0",
     # Excel file parsing
     "openpyxl>=3.1.0",
+    # Body-size enforcement (ASGI middleware, pre-handler rejection)
+    "content-size-limit-asgi>=0.1.5",
 ]
 
 [project.optional-dependencies]

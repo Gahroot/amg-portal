@@ -110,9 +110,7 @@ class EscalationLogMixin:
             )
 
         avg_resolution_time = (
-            round(sum(resolution_times) / len(resolution_times), 1)
-            if resolution_times
-            else None
+            round(sum(resolution_times) / len(resolution_times), 1) if resolution_times else None
         )
 
         return {

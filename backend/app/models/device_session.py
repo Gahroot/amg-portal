@@ -19,9 +19,7 @@ class DeviceSession(Base, TimestampMixin):
 
     __tablename__ = "device_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -48,9 +46,7 @@ class DeviceSession(Base, TimestampMixin):
     app_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Composite index for user+device lookups
-    __table_args__ = (
-        Index("ix_device_sessions_user_device", "user_id", "device_id", unique=True),
-    )
+    __table_args__ = (Index("ix_device_sessions_user_device", "user_id", "device_id", unique=True),)
 
     def __repr__(self) -> str:
         return f"<DeviceSession({self.user_id}, {self.device_type}:{self.device_id})>"

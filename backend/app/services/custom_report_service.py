@@ -108,6 +108,7 @@ DATA_SOURCE_FIELDS: dict[str, list[dict[str, Any]]] = {
 # Model mapping helpers
 # ---------------------------------------------------------------------------
 
+
 def _model_for_source(data_source: str) -> type:
     mapping = {
         "programs": Program,
@@ -142,6 +143,7 @@ def _row_to_dict(row: Any, fields: list[ReportField], data_source: str) -> dict[
 # ---------------------------------------------------------------------------
 # Filter application (in-memory on fetched rows for simplicity)
 # ---------------------------------------------------------------------------
+
 
 def _apply_filter(value: Any, operator: str, filter_value: Any) -> bool:  # noqa: PLR0911, PLR0912
     if operator == "is_null":
@@ -209,6 +211,7 @@ def _sort_rows(
 # Core query execution
 # ---------------------------------------------------------------------------
 
+
 async def _execute_query(
     db: AsyncSession,
     data_source: str,
@@ -261,10 +264,7 @@ class CustomReportService:
 
     def _default_fields(self, data_source: str) -> list[ReportField]:
         catalogue = self.get_available_fields(data_source)
-        return [
-            ReportField(key=f["key"], label=f["label"], type=f["type"])
-            for f in catalogue
-        ]
+        return [ReportField(key=f["key"], label=f["label"], type=f["type"]) for f in catalogue]
 
     def get_all_data_sources(self) -> list[dict[str, Any]]:
         return [
@@ -312,6 +312,7 @@ class CustomReportService:
         stmt = select(CustomReport)
         if include_templates:
             from sqlalchemy import or_
+
             stmt = stmt.where(
                 or_(CustomReport.created_by == created_by, CustomReport.is_template.is_(True))
             )
@@ -322,9 +323,7 @@ class CustomReportService:
         return list(result.scalars().all())
 
     async def get(self, db: AsyncSession, report_id: uuid.UUID) -> CustomReport | None:
-        result = await db.execute(
-            select(CustomReport).where(CustomReport.id == report_id)
-        )
+        result = await db.execute(select(CustomReport).where(CustomReport.id == report_id))
         return result.scalar_one_or_none()
 
     async def update(

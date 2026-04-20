@@ -95,9 +95,7 @@ class PartnerReportService:
             assignment_query = assignment_query.where(PartnerAssignment.id == assignment_id)
 
         assignment_result = await db.execute(assignment_query)
-        assignment_map: dict[Any, str] = {
-            row[0]: row[1] for row in assignment_result.all()
-        }
+        assignment_map: dict[Any, str] = {row[0]: row[1] for row in assignment_result.all()}
 
         if not assignment_map:
             return {

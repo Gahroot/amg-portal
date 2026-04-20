@@ -27,6 +27,7 @@ class DuplicateMatchResponse(BaseModel):
     similarity_score: float
     match_reasons: list[str]
 
+
 # ---------------------------------------------------------------------------
 # Intelligence File structured schemas
 # ---------------------------------------------------------------------------

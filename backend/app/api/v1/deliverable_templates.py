@@ -193,13 +193,9 @@ async def get_template_download_url(
         raise NotFoundException("Template has no file attached")
 
     try:
-        url = storage_service.get_presigned_url(
-            str(t.file_path), expires=timedelta(minutes=15)
-        )
+        url = storage_service.get_presigned_url(str(t.file_path), expires=timedelta(minutes=15))
     except Exception as exc:
-        logger.error(
-            "Failed to generate presigned URL for template %s: %s", template_id, exc
-        )
+        logger.error("Failed to generate presigned URL for template %s: %s", template_id, exc)
         raise NotFoundException("Could not generate download URL") from exc
 
     return {

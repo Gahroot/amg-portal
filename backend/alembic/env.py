@@ -61,17 +61,10 @@ def do_run_migrations(connection) -> None:  # type: ignore[no-untyped-def]
     with context.begin_transaction():
         # Ensure version_num column is wide enough for long revision IDs
         connection.execute(
-            text(
-                "CREATE TABLE IF NOT EXISTS alembic_version ("
-                "version_num VARCHAR(128) NOT NULL"
-                ")"
-            )
+            text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(128) NOT NULL)")
         )
         connection.execute(
-            text(
-                "ALTER TABLE alembic_version "
-                "ALTER COLUMN version_num TYPE VARCHAR(128)"
-            )
+            text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(128)")
         )
         context.run_migrations()
 

@@ -41,9 +41,7 @@ def _build_response(notice: PerformanceNotice) -> PerformanceNoticeResponse:
         acknowledged_at=notice.acknowledged_at,
         program_title=notice.program.title if notice.program else None,
         issuer_name=(
-            f"{notice.issuer.first_name} {notice.issuer.last_name}"
-            if notice.issuer
-            else None
+            f"{notice.issuer.first_name} {notice.issuer.last_name}" if notice.issuer else None
         ),
         created_at=notice.created_at,
         updated_at=notice.updated_at,

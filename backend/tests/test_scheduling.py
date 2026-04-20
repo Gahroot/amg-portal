@@ -123,18 +123,14 @@ async def test_schedule_event_with_client(
 
 
 class TestListScheduleEvents:
-    async def test_internal_staff_can_list_events(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_internal_staff_can_list_events(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.get(f"{BASE}/events")
         assert resp.status_code == 200
         data = resp.json()
         assert "events" in data
         assert "total" in data
 
-    async def test_coordinator_can_list_events(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_can_list_events(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.get(f"{BASE}/events")
         assert resp.status_code == 200
 
@@ -142,15 +138,11 @@ class TestListScheduleEvents:
         resp = await md_client.get(f"{BASE}/events")
         assert resp.status_code == 200
 
-    async def test_client_user_cannot_list_events(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_list_events(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(f"{BASE}/events")
         assert resp.status_code == 403
 
-    async def test_partner_cannot_list_events(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_list_events(self, partner_http: AsyncClient) -> None:
         resp = await partner_http.get(f"{BASE}/events")
         assert resp.status_code == 403
 
@@ -178,9 +170,7 @@ class TestListScheduleEvents:
         data = resp.json()
         assert len(data["events"]) <= 10
 
-    async def test_unauthenticated_user_cannot_list(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_user_cannot_list(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.get(f"{BASE}/events")
         assert resp.status_code == 401
 
@@ -216,9 +206,7 @@ class TestGetScheduleEvent:
         data = resp.json()
         assert "organizer_id" in data
 
-    async def test_get_nonexistent_event_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_get_nonexistent_event_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = uuid.uuid4()
         resp = await rm_client.get(f"{BASE}/events/{fake_id}")
         assert resp.status_code == 404
@@ -236,9 +224,7 @@ class TestGetScheduleEvent:
 
 
 class TestCreateScheduleEvent:
-    async def test_rm_can_create_event(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_rm_can_create_event(self, rm_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=10)
         end = start + timedelta(hours=1)
         resp = await rm_client.post(
@@ -259,9 +245,7 @@ class TestCreateScheduleEvent:
         assert data["title"] == "New Planning Meeting"
         assert data["status"] == "scheduled"
 
-    async def test_md_can_create_event(
-        self, md_client: AsyncClient
-    ) -> None:
+    async def test_md_can_create_event(self, md_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=14)
         end = start + timedelta(hours=2)
         resp = await md_client.post(
@@ -275,9 +259,7 @@ class TestCreateScheduleEvent:
         )
         assert resp.status_code == 201
 
-    async def test_coordinator_can_create_event(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_can_create_event(self, coordinator_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=5)
         end = start + timedelta(minutes=30)
         resp = await coordinator_client.post(
@@ -310,9 +292,7 @@ class TestCreateScheduleEvent:
         data = resp.json()
         assert data["client_id"] == str(db_client.id)
 
-    async def test_create_event_with_virtual_link(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_create_event_with_virtual_link(self, rm_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=3)
         end = start + timedelta(hours=1)
         resp = await rm_client.post(
@@ -348,9 +328,7 @@ class TestCreateScheduleEvent:
         data = resp.json()
         assert str(coordinator_user.id) in [str(a) for a in data["attendee_ids"]]
 
-    async def test_client_user_cannot_create_event(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_create_event(self, client_user_http: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=5)
         end = start + timedelta(hours=1)
         resp = await client_user_http.post(
@@ -364,9 +342,7 @@ class TestCreateScheduleEvent:
         )
         assert resp.status_code == 403
 
-    async def test_partner_cannot_create_event(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_create_event(self, partner_http: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=5)
         end = start + timedelta(hours=1)
         resp = await partner_http.post(
@@ -380,9 +356,7 @@ class TestCreateScheduleEvent:
         )
         assert resp.status_code == 403
 
-    async def test_create_event_with_recurrence(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_create_event_with_recurrence(self, rm_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=1)
         end = start + timedelta(hours=1)
         resp = await rm_client.post(
@@ -453,9 +427,7 @@ class TestUpdateScheduleEvent:
         data = resp.json()
         assert data["notes"] == "Updated notes for the meeting"
 
-    async def test_update_nonexistent_event_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_update_nonexistent_event_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = uuid.uuid4()
         resp = await rm_client.patch(
             f"{BASE}/events/{fake_id}",
@@ -497,22 +469,16 @@ class TestDeleteScheduleEvent:
     async def test_md_can_delete_event(
         self, md_client: AsyncClient, test_schedule_event_confirmed: ScheduledEvent
     ) -> None:
-        resp = await md_client.delete(
-            f"{BASE}/events/{test_schedule_event_confirmed.id}"
-        )
+        resp = await md_client.delete(f"{BASE}/events/{test_schedule_event_confirmed.id}")
         assert resp.status_code == 204
 
     async def test_coordinator_can_delete_event(
         self, coordinator_client: AsyncClient, test_schedule_event: ScheduledEvent
     ) -> None:
-        resp = await coordinator_client.delete(
-            f"{BASE}/events/{test_schedule_event.id}"
-        )
+        resp = await coordinator_client.delete(f"{BASE}/events/{test_schedule_event.id}")
         assert resp.status_code == 204
 
-    async def test_delete_nonexistent_event_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_delete_nonexistent_event_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = uuid.uuid4()
         resp = await rm_client.delete(f"{BASE}/events/{fake_id}")
         assert resp.status_code == 404
@@ -520,9 +486,7 @@ class TestDeleteScheduleEvent:
     async def test_client_user_cannot_delete_event(
         self, client_user_http: AsyncClient, test_schedule_event: ScheduledEvent
     ) -> None:
-        resp = await client_user_http.delete(
-            f"{BASE}/events/{test_schedule_event.id}"
-        )
+        resp = await client_user_http.delete(f"{BASE}/events/{test_schedule_event.id}")
         assert resp.status_code == 403
 
     async def test_partner_cannot_delete_event(
@@ -535,9 +499,7 @@ class TestDeleteScheduleEvent:
         self, rm_client: AsyncClient, test_schedule_event: ScheduledEvent
     ) -> None:
         # Delete the event
-        del_resp = await rm_client.delete(
-            f"{BASE}/events/{test_schedule_event.id}"
-        )
+        del_resp = await rm_client.delete(f"{BASE}/events/{test_schedule_event.id}")
         assert del_resp.status_code == 204
 
         # Try to get it - should be 404
@@ -551,9 +513,7 @@ class TestDeleteScheduleEvent:
 
 
 class TestAvailability:
-    async def test_check_conflicts_no_conflicts(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_check_conflicts_no_conflicts(self, rm_client: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=30)
         end = start + timedelta(hours=1)
         resp = await rm_client.get(
@@ -620,9 +580,7 @@ class TestAvailability:
         )
         assert resp.status_code == 401
 
-    async def test_client_user_can_check_own_conflicts(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_can_check_own_conflicts(self, client_user_http: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=5)
         end = start + timedelta(hours=1)
         resp = await client_user_http.get(
@@ -631,9 +589,7 @@ class TestAvailability:
         # This endpoint is available to all authenticated users
         assert resp.status_code == 200
 
-    async def test_client_user_can_get_own_schedule(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_can_get_own_schedule(self, client_user_http: AsyncClient) -> None:
         start = datetime.utcnow() + timedelta(days=1)
         end = start + timedelta(hours=24)
         resp = await client_user_http.get(
@@ -652,9 +608,7 @@ class TestEventStatusTransitions:
     async def test_confirm_event(
         self, rm_client: AsyncClient, test_schedule_event: ScheduledEvent
     ) -> None:
-        resp = await rm_client.post(
-            f"{BASE}/events/{test_schedule_event.id}/confirm"
-        )
+        resp = await rm_client.post(f"{BASE}/events/{test_schedule_event.id}/confirm")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "confirmed"
@@ -662,23 +616,17 @@ class TestEventStatusTransitions:
     async def test_cancel_event(
         self, rm_client: AsyncClient, test_schedule_event: ScheduledEvent
     ) -> None:
-        resp = await rm_client.post(
-            f"{BASE}/events/{test_schedule_event.id}/cancel"
-        )
+        resp = await rm_client.post(f"{BASE}/events/{test_schedule_event.id}/cancel")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "cancelled"
 
-    async def test_confirm_nonexistent_event_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_confirm_nonexistent_event_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = uuid.uuid4()
         resp = await rm_client.post(f"{BASE}/events/{fake_id}/confirm")
         assert resp.status_code == 404
 
-    async def test_cancel_nonexistent_event_returns_404(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_cancel_nonexistent_event_returns_404(self, rm_client: AsyncClient) -> None:
         fake_id = uuid.uuid4()
         resp = await rm_client.post(f"{BASE}/events/{fake_id}/cancel")
         assert resp.status_code == 404
@@ -689,9 +637,7 @@ class TestEventStatusTransitions:
         test_schedule_event: ScheduledEvent,
     ) -> None:
         # All authenticated users can confirm events they're part of
-        resp = await client_user_http.post(
-            f"{BASE}/events/{test_schedule_event.id}/confirm"
-        )
+        resp = await client_user_http.post(f"{BASE}/events/{test_schedule_event.id}/confirm")
         assert resp.status_code == 200
 
     async def test_coordinator_can_cancel_event(
@@ -713,30 +659,22 @@ class TestEventStatusTransitions:
 class TestSchedulingRBAC:
     """Role-based access control tests for scheduling endpoints."""
 
-    async def test_client_cannot_access_internal_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_access_internal_list(self, client_user_http: AsyncClient) -> None:
         """Client users cannot list all internal events."""
         resp = await client_user_http.get(f"{BASE}/events")
         assert resp.status_code == 403
 
-    async def test_partner_cannot_access_internal_list(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_access_internal_list(self, partner_http: AsyncClient) -> None:
         """Partner users cannot list all internal events."""
         resp = await partner_http.get(f"{BASE}/events")
         assert resp.status_code == 403
 
-    async def test_compliance_can_list_events(
-        self, compliance_client: AsyncClient
-    ) -> None:
+    async def test_compliance_can_list_events(self, compliance_client: AsyncClient) -> None:
         """Finance/compliance staff can list events."""
         resp = await compliance_client.get(f"{BASE}/events")
         assert resp.status_code == 200
 
-    async def test_compliance_can_create_event(
-        self, compliance_client: AsyncClient
-    ) -> None:
+    async def test_compliance_can_create_event(self, compliance_client: AsyncClient) -> None:
         """Finance/compliance staff can create events."""
         start = datetime.utcnow() + timedelta(days=7)
         end = start + timedelta(hours=1)

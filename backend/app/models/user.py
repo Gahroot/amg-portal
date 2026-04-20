@@ -35,9 +35,7 @@ class User(Base, TimestampMixin):
         Boolean, nullable=False, default=False, server_default="false"
     )
     mfa_backup_codes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    last_login_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Calendar integration tokens (stored as JSON with access_token, refresh_token, etc.)
     google_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     outlook_calendar_token: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

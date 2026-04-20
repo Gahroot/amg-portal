@@ -38,9 +38,7 @@ async def list_saved_filters(
     )
 
 
-@router.post(
-    "/", response_model=SavedFilterResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=SavedFilterResponse, status_code=status.HTTP_201_CREATED)
 async def create_saved_filter(
     data: SavedFilterCreate,
     current_user: CurrentUser,

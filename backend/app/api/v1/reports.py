@@ -99,7 +99,6 @@ async def get_portfolio_report(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-
         raise NotFoundException("Client not found")
     return report
 
@@ -113,7 +112,6 @@ async def export_portfolio_report_csv(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-
         raise NotFoundException("Client not found")
 
     output = io.StringIO()
@@ -209,12 +207,10 @@ async def get_program_status_report_endpoint(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
     return report
 
@@ -236,12 +232,10 @@ async def export_program_status_report_csv(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
 
     output = io.StringIO()
@@ -331,12 +325,10 @@ async def get_completion_report_endpoint(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
     return report
 
@@ -358,12 +350,10 @@ async def export_completion_report_csv(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
 
     output = io.StringIO()
@@ -446,7 +436,6 @@ async def get_annual_review_endpoint(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-
         raise NotFoundException("Client not found")
     return report
 
@@ -461,7 +450,6 @@ async def export_annual_review_csv(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-
         raise NotFoundException("Client not found")
 
     output = io.StringIO()
@@ -554,7 +542,6 @@ async def export_portfolio_report_pdf(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_portfolio_overview(db, client_id)
     if not report:
-
         raise NotFoundException("Client not found")
 
     pdf_bytes = await pdf_service.generate_portfolio_pdf(report)
@@ -584,12 +571,10 @@ async def export_program_status_report_pdf(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_program_status_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
 
     pdf_bytes = await pdf_service.generate_program_status_pdf(report)
@@ -623,12 +608,10 @@ async def export_completion_report_pdf(
     )
     program = program_result.scalar_one_or_none()
     if not program:
-
         raise NotFoundException("Program not found")
 
     report = await report_service.get_completion_report(db, program_id)
     if not report:
-
         raise NotFoundException("Program not found")
 
     pdf_bytes = await pdf_service.generate_completion_pdf(report)
@@ -653,7 +636,6 @@ async def export_annual_review_pdf(
     client_id = await get_client_id_from_user(db, current_user)
     report = await report_service.get_annual_review(db, client_id, year)
     if not report:
-
         raise NotFoundException("Client not found")
 
     pdf_bytes = await pdf_service.generate_annual_review_pdf(report)
@@ -751,8 +733,8 @@ async def create_report_schedule(
     """Create a new report schedule."""
     if body.report_type not in VALID_REPORT_TYPES:
         raise ValidationException(
-                f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_REPORT_TYPES))}"
-            )
+            f"Invalid report_type. Must be one of: {', '.join(sorted(VALID_REPORT_TYPES))}"
+        )
     if body.frequency not in VALID_FREQUENCIES:
         raise ValidationException(
             f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
@@ -811,8 +793,8 @@ async def update_report_schedule(
     if body.frequency is not None:
         if body.frequency not in VALID_FREQUENCIES:
             raise ValidationException(
-                    f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
-                )
+                f"Invalid frequency. Must be one of: {', '.join(sorted(VALID_FREQUENCIES))}"
+            )
         schedule.frequency = body.frequency
         schedule.next_run = _calculate_initial_next_run(body.frequency)
     if body.recipients is not None:
@@ -892,10 +874,7 @@ async def execute_report_schedule(
         attachment_bytes = await _generate_attachment_bytes(schedule, report_data)
         ext = schedule.format or "pdf"
         content_type = "application/pdf" if ext == "pdf" else "text/csv"
-        subject = (
-            f"AMG Portal — Scheduled Report: "
-            f"{schedule.report_type.replace('_', ' ').title()}"
-        )
+        subject = f"AMG Portal — Scheduled Report: {schedule.report_type.replace('_', ' ').title()}"
         body_html = (
             "<html><body>"
             "<h2>Scheduled Report</h2>"

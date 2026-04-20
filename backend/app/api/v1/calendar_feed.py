@@ -16,7 +16,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import load_only
 
 from app.api.deps import DB, CurrentUser
@@ -196,69 +196,67 @@ async def generate_full_ical_feed(  # noqa: PLR0912, PLR0915
     # Add decision deadlines
     from app.models.client_profile import ClientProfile
 
-    # Get client profiles for this user
-    clients_result = await db.execute(
-        select(ClientProfile.id).where(ClientProfile.user_id == user_id)
-    )
-    client_ids: list[uuid.UUID] = [row[0] for row in clients_result.fetchall()]
+    # Match decision requests belonging to either:
+    #   - client profiles owned by this user, or
+    #   - clients where this user is the assigned RM
+    # Both lookups are expressed as subqueries so Postgres filters server-side
+    # instead of pulling every client id into Python.
+    user_client_profile_ids = select(ClientProfile.id).where(ClientProfile.user_id == user_id)
+    rm_client_ids = select(Client.id).where(Client.rm_id == user_id)
 
-    # Also get clients from programs where user is RM
-    from app.models.client import Client
-
-    rm_clients_result = await db.execute(select(Client.id).where(Client.rm_id == user_id))
-    client_ids.extend([row[0] for row in rm_clients_result.fetchall()])
-
-    if client_ids:
-        deadlines_result = await db.execute(
-            select(DecisionRequest)
-            .where(
-                DecisionRequest.client_id.in_(client_ids),
-                DecisionRequest.status == "pending",
-                DecisionRequest.deadline_date.is_not(None),
-            )
-            .order_by(DecisionRequest.deadline_date)
+    deadlines_result = await db.execute(
+        select(DecisionRequest)
+        .where(
+            or_(
+                DecisionRequest.client_id.in_(user_client_profile_ids),
+                DecisionRequest.client_id.in_(rm_client_ids),
+            ),
+            DecisionRequest.status == "pending",
+            DecisionRequest.deadline_date.is_not(None),
         )
-        deadlines = deadlines_result.scalars().all()
+        .order_by(DecisionRequest.deadline_date)
+    )
+    deadlines = deadlines_result.scalars().all()
 
-        for deadline in deadlines:
-            event_uid = f"deadline-{deadline.id}@amg-portal"
-            event_title = f"[DECISION] {deadline.title}"
+    for deadline in deadlines:
+        event_uid = f"deadline-{deadline.id}@amg-portal"
+        event_title = f"[DECISION] {deadline.title}"
 
-            description_parts = [
-                f"Decision Required: {deadline.title}",
-                f"Status: {deadline.status.replace('_', ' ').title()}",
-            ]
-            if deadline.consequence_text:
-                description_parts.append(f"Consequence: {deadline.consequence_text}")
-            description_parts.append("")
-            description_parts.append("---")
-            description_parts.append("From AMG Portal Calendar Feed")
+        description_parts = [
+            f"Decision Required: {deadline.title}",
+            f"Status: {deadline.status.replace('_', ' ').title()}",
+        ]
+        if deadline.consequence_text:
+            description_parts.append(f"Consequence: {deadline.consequence_text}")
+        description_parts.append("")
+        description_parts.append("---")
+        description_parts.append("From AMG Portal Calendar Feed")
 
-            description = "\\n".join(description_parts)
+        description = "\\n".join(description_parts)
 
-            lines.append("BEGIN:VEVENT")
-            lines.append(f"UID:{event_uid}")
-            lines.append(f"DTSTAMP:{now_str}")
+        lines.append("BEGIN:VEVENT")
+        lines.append(f"UID:{event_uid}")
+        lines.append(f"DTSTAMP:{now_str}")
 
-            if deadline.deadline_date:
-                if deadline.deadline_time:
-                    # Specific time
-                    dt = datetime.combine(deadline.deadline_date, deadline.deadline_time)
-                    lines.append(f"DTSTART:{dt.strftime('%Y%m%dT%H%M%SZ')}")
-                    end_dt = (dt + timedelta(hours=1)).strftime("%Y%m%dT%H%M%SZ")
-                    lines.append(f"DTEND:{end_dt}")
-                else:
-                    # All-day event
-                    start = deadline.deadline_date.strftime("%Y%m%d")
-                    end_date = deadline.deadline_date + timedelta(days=1)
-                    lines.append(f"DTSTART;VALUE=DATE:{start}")
-                    lines.append(f"DTEND;VALUE=DATE:{end_date.strftime('%Y%m%d')}")
+        if deadline.deadline_date:
+            if deadline.deadline_time:
+                # Specific time
+                dt = datetime.combine(deadline.deadline_date, deadline.deadline_time)
+                lines.append(f"DTSTART:{dt.strftime('%Y%m%dT%H%M%SZ')}")
+                end_dt = (dt + timedelta(hours=1)).strftime("%Y%m%dT%H%M%SZ")
+                lines.append(f"DTEND:{end_dt}")
+            else:
+                # All-day event
+                start = deadline.deadline_date.strftime("%Y%m%d")
+                end_date = deadline.deadline_date + timedelta(days=1)
+                lines.append(f"DTSTART;VALUE=DATE:{start}")
+                lines.append(f"DTEND;VALUE=DATE:{end_date.strftime('%Y%m%d')}")
 
-            lines.append(f"SUMMARY:{event_title}")
-            lines.append(f"DESCRIPTION:{description}")
-            lines.append("CATEGORIES:DEADLINE")
-            lines.append("STATUS:TENTATIVE")
-            lines.append("END:VEVENT")
+        lines.append(f"SUMMARY:{event_title}")
+        lines.append(f"DESCRIPTION:{description}")
+        lines.append("CATEGORIES:DEADLINE")
+        lines.append("STATUS:TENTATIVE")
+        lines.append("END:VEVENT")
 
     # Add scheduled meetings
     meetings_result = await db.execute(
@@ -312,9 +310,7 @@ async def get_calendar_feed_status(current_user: CurrentUser, db: DB) -> Calenda
     """Get calendar feed status for the current user."""
     result = await db.execute(
         select(CalendarFeedToken)
-        .where(
-            CalendarFeedToken.user_id == current_user.id, CalendarFeedToken.is_active.is_(True)
-        )
+        .where(CalendarFeedToken.user_id == current_user.id, CalendarFeedToken.is_active.is_(True))
         .order_by(CalendarFeedToken.created_at.desc())
         .limit(1)
     )

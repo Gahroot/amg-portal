@@ -59,11 +59,7 @@ async def get_communication_audit_trail(
     count_q = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
-    query = (
-        base.order_by(CommunicationAudit.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    query = base.order_by(CommunicationAudit.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     audits = result.scalars().all()
 
@@ -118,11 +114,7 @@ async def get_user_audit_trail(
     count_q = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
-    query = (
-        base.order_by(CommunicationAudit.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    query = base.order_by(CommunicationAudit.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     audits = result.scalars().all()
 
@@ -174,11 +166,7 @@ async def search_communication_audits(
     count_q = select(func.count()).select_from(base.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
-    query = (
-        base.order_by(CommunicationAudit.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    query = base.order_by(CommunicationAudit.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     audits = result.scalars().all()
 
@@ -221,9 +209,7 @@ async def enforce_client_preferences(
 
     Returns (allowed, reason_if_blocked).
     """
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == client_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == client_id))
     profile = result.scalar_one_or_none()
     if not profile:
         return False, "Client profile not found"

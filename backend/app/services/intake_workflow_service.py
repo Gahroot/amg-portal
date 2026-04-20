@@ -30,9 +30,7 @@ logger = logging.getLogger(__name__)
 
 async def _get_users_by_role(db: AsyncSession, role: UserRole) -> list[User]:
     """Return all active users with *role*."""
-    result = await db.execute(
-        select(User).where(User.role == role.value, User.status == "active")
-    )
+    result = await db.execute(select(User).where(User.role == role.value, User.status == "active"))
     return list(result.scalars().all())
 
 
@@ -237,10 +235,7 @@ async def _generate_clearance_certificate(
         # Find a Client record managed by the assigned RM (or profile creator)
         rm_id = profile.assigned_rm_id or profile.created_by
         client_result = await db.execute(
-            select(Client)
-            .where(Client.rm_id == rm_id)
-            .order_by(Client.created_at.desc())
-            .limit(1)
+            select(Client).where(Client.rm_id == rm_id).order_by(Client.created_at.desc()).limit(1)
         )
         client = client_result.scalar_one_or_none()
 
@@ -399,8 +394,7 @@ async def _send_welcome_email_with_certificate(
             pdf_bytes = await _fetch_pdf_from_storage(profile.compliance_certificate_path)
             if pdf_bytes:
                 subject = (
-                    "Welcome to AMG Portal — "
-                    f"Compliance Clearance Certificate for {client_name}"
+                    f"Welcome to AMG Portal — Compliance Clearance Certificate for {client_name}"
                 )
                 await send_email_with_attachment(
                     to=profile.primary_email,

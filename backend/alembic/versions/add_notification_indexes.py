@@ -20,10 +20,13 @@ depends_on: str | Sequence[str] | None = None
 
 
 def _column_exists(conn, table: str, column: str) -> bool:  # type: ignore[no-untyped-def]
-    result = conn.execute(text(
-        "SELECT 1 FROM information_schema.columns "
-        "WHERE table_schema = 'public' AND table_name = :table AND column_name = :column"
-    ), {"table": table, "column": column})
+    result = conn.execute(
+        text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = :table AND column_name = :column"
+        ),
+        {"table": table, "column": column},
+    )
     return result.scalar() is not None
 
 
@@ -31,26 +34,31 @@ def upgrade() -> None:
     conn = op.get_bind()
 
     # These indexes may already exist from the table creation migration
-    conn.execute(text(
-        "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read "
-        "ON notifications (user_id, is_read)"
-    ))
-    conn.execute(text(
-        "CREATE INDEX IF NOT EXISTS ix_notifications_user_id "
-        "ON notifications (user_id)"
-    ))
+    conn.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read "
+            "ON notifications (user_id, is_read)"
+        )
+    )
+    conn.execute(
+        text("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications (user_id)")
+    )
 
     # These columns may not exist yet if added by a later migration
     if _column_exists(conn, "notifications", "push_queued"):
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_notifications_push_queued "
-            "ON notifications (push_queued)"
-        ))
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_notifications_push_queued "
+                "ON notifications (push_queued)"
+            )
+        )
     if _column_exists(conn, "notifications", "email_queued"):
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_notifications_email_queued "
-            "ON notifications (email_queued)"
-        ))
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_notifications_email_queued "
+                "ON notifications (email_queued)"
+            )
+        )
 
 
 def downgrade() -> None:

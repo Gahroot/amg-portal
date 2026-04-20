@@ -193,7 +193,9 @@ async def outlook_calendar_callback(
         settings.MICROSOFT_CALENDAR_REDIRECT_URI
         or f"{settings.FRONTEND_URL}/settings/calendar/callback/outlook"
     )
-    token_url = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/oauth2/v2.0/token"
+    token_url = (
+        f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/oauth2/v2.0/token"
+    )
 
     async with httpx.AsyncClient() as client:
         # Exchange code for tokens

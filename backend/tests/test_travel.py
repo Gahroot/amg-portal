@@ -517,9 +517,7 @@ class TestDeleteTravelBooking:
         db_session.add(booking)
         await db_session.commit()
 
-        resp = await coordinator_client.delete(
-            f"{BASE}/{test_program.id}/travel/{booking.id}"
-        )
+        resp = await coordinator_client.delete(f"{BASE}/{test_program.id}/travel/{booking.id}")
         assert resp.status_code == 204
 
     async def test_rm_can_delete_booking(
@@ -541,9 +539,7 @@ class TestDeleteTravelBooking:
         db_session.add(booking)
         await db_session.commit()
 
-        resp = await rm_client.delete(
-            f"{BASE}/{test_program.id}/travel/{booking.id}"
-        )
+        resp = await rm_client.delete(f"{BASE}/{test_program.id}/travel/{booking.id}")
         assert resp.status_code == 204
 
     async def test_md_can_delete_booking(
@@ -565,9 +561,7 @@ class TestDeleteTravelBooking:
         db_session.add(booking)
         await db_session.commit()
 
-        resp = await md_client.delete(
-            f"{BASE}/{test_program.id}/travel/{booking.id}"
-        )
+        resp = await md_client.delete(f"{BASE}/{test_program.id}/travel/{booking.id}")
         assert resp.status_code == 204
 
     async def test_client_user_cannot_delete_booking(
@@ -600,9 +594,7 @@ class TestDeleteTravelBooking:
         test_program: Program,
     ) -> None:
         """Deleting nonexistent booking returns 404."""
-        resp = await coordinator_client.delete(
-            f"{BASE}/{test_program.id}/travel/{uuid.uuid4()}"
-        )
+        resp = await coordinator_client.delete(f"{BASE}/{test_program.id}/travel/{uuid.uuid4()}")
         assert resp.status_code == 404
 
     async def test_delete_booking_wrong_program_returns_404(
@@ -803,9 +795,7 @@ class TestTravelWebhook:
             from sqlalchemy import select
 
             result = await db_session.execute(
-                select(TravelBooking).where(
-                    TravelBooking.booking_ref == "WEBHOOK-SOURCE-CHECK"
-                )
+                select(TravelBooking).where(TravelBooking.booking_ref == "WEBHOOK-SOURCE-CHECK")
             )
             booking = result.scalar_one_or_none()
             assert booking is not None
@@ -841,9 +831,7 @@ class TestTravelWebhook:
             from sqlalchemy import select
 
             result = await db_session.execute(
-                select(TravelBooking).where(
-                    TravelBooking.booking_ref == "WEBHOOK-RAW-DATA"
-                )
+                select(TravelBooking).where(TravelBooking.booking_ref == "WEBHOOK-RAW-DATA")
             )
             booking = result.scalar_one_or_none()
             assert booking is not None

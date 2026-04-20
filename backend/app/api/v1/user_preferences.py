@@ -50,9 +50,7 @@ async def update_user_preferences(
     match the server's version, a conflict will be returned with the current
     server state.
     """
-    return await sync_service.update_user_preferences(
-        db, current_user.id, update_data, device_id
-    )
+    return await sync_service.update_user_preferences(db, current_user.id, update_data, device_id)
 
 
 @router.post("/preferences/sync", response_model=SyncPullResponse)
@@ -96,9 +94,7 @@ async def pull_changes(
     since_version: int | None = None,
 ) -> SyncPullResponse:
     """Pull changes from server to client only."""
-    return await sync_service.pull_changes(
-        db, current_user.id, device_id, since_version
-    )
+    return await sync_service.pull_changes(db, current_user.id, device_id, since_version)
 
 
 @router.get("/preferences/status", response_model=SyncStatusResponse)
@@ -141,9 +137,7 @@ async def batch_update_read_status(
     db: DB,
 ) -> list[ReadStatusResponse]:
     """Batch update read statuses for multiple entities."""
-    return await sync_service.batch_update_read_status(
-        db, current_user.id, updates.updates
-    )
+    return await sync_service.batch_update_read_status(db, current_user.id, updates.updates)
 
 
 @router.get("/read-status/{entity_type}/{entity_id}", response_model=ReadStatusResponse)

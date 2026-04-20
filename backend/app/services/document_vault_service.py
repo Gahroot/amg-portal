@@ -43,12 +43,14 @@ async def deliver_document(
 
     # Update chain of custody
     custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
-    custody.append({
-        "action": "delivered",
-        "user_id": str(delivered_by) if delivered_by else "system",
-        "timestamp": now.isoformat(),
-        "details": f"Delivered via {method} to {len(recipient_ids)} recipient(s)",
-    })
+    custody.append(
+        {
+            "action": "delivered",
+            "user_id": str(delivered_by) if delivered_by else "system",
+            "timestamp": now.isoformat(),
+            "details": f"Delivered via {method} to {len(recipient_ids)} recipient(s)",
+        }
+    )
     doc.chain_of_custody = custody
 
     await db.commit()
@@ -86,15 +88,17 @@ async def generate_secure_link(
 
     # Update chain of custody
     custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
-    custody.append({
-        "action": "secure_link_generated",
-        "user_id": str(issued_by) if issued_by else "system",
-        "timestamp": now.isoformat(),
-        "details": (
-            f"Secure link generated for recipient {recipient_id},"
-            f" expires {expires_at.isoformat()}"
-        ),
-    })
+    custody.append(
+        {
+            "action": "secure_link_generated",
+            "user_id": str(issued_by) if issued_by else "system",
+            "timestamp": now.isoformat(),
+            "details": (
+                f"Secure link generated for recipient {recipient_id},"
+                f" expires {expires_at.isoformat()}"
+            ),
+        }
+    )
     doc.chain_of_custody = custody
 
     await db.commit()
@@ -126,12 +130,14 @@ async def seal_document(
 
     # Update chain of custody
     custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
-    custody.append({
-        "action": "sealed",
-        "user_id": str(user_id),
-        "timestamp": now.isoformat(),
-        "details": f"Document sealed for compliance. Retention: {retention_policy or 'not set'}",
-    })
+    custody.append(
+        {
+            "action": "sealed",
+            "user_id": str(user_id),
+            "timestamp": now.isoformat(),
+            "details": f"Document sealed for compliance. Retention: {retention_policy or 'not set'}",
+        }
+    )
     doc.chain_of_custody = custody
 
     await db.commit()
@@ -320,9 +326,7 @@ async def resolve_secure_link(
         raise ValueError("Secure link has expired")
 
     # Get the document
-    doc_result = await db.execute(
-        select(Document).where(Document.id == delivery.document_id)
-    )
+    doc_result = await db.execute(select(Document).where(Document.id == delivery.document_id))
     doc = doc_result.scalar_one_or_none()
     if not doc:
         raise ValueError("Document not found")
@@ -332,12 +336,14 @@ async def resolve_secure_link(
         delivery.viewed_at = now
         # Update custody chain
         custody: list[dict[str, object]] = list(doc.chain_of_custody or [])
-        custody.append({
-            "action": "viewed_via_secure_link",
-            "user_id": str(delivery.recipient_id),
-            "timestamp": now.isoformat(),
-            "details": "Document viewed via secure link",
-        })
+        custody.append(
+            {
+                "action": "viewed_via_secure_link",
+                "user_id": str(delivery.recipient_id),
+                "timestamp": now.isoformat(),
+                "details": "Document viewed via secure link",
+            }
+        )
         doc.chain_of_custody = custody
         await db.commit()
         await db.refresh(delivery)

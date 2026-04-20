@@ -15,9 +15,7 @@ class FamilyMember(Base, TimestampMixin):
 
     __tablename__ = "family_members"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     client_profile_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("client_profiles.id", ondelete="CASCADE"),
@@ -26,14 +24,10 @@ class FamilyMember(Base, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     relationship_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    date_of_birth: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    date_of_birth: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     occupation: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_primary_contact: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    is_primary_contact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     client_profile = relationship("ClientProfile", back_populates="family_members")
@@ -52,8 +46,7 @@ class FamilyMember(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return (
-            f"<FamilyMember(id={self.id}, name={self.name}, "
-            f"relationship={self.relationship_type})>"
+            f"<FamilyMember(id={self.id}, name={self.name}, relationship={self.relationship_type})>"
         )
 
 
@@ -62,9 +55,7 @@ class FamilyRelationship(Base):
 
     __tablename__ = "family_relationships"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     from_member_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("family_members.id", ondelete="CASCADE"),

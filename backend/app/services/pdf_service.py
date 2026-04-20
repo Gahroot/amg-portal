@@ -25,9 +25,7 @@ class PDFService:
             # - top-level templates (e.g. brief.html) are found directly
             # - sub-templates that extend "base.html" still resolve it from reports/
             self._env = Environment(
-                loader=FileSystemLoader(
-                    [str(TEMPLATE_DIR), str(TEMPLATE_DIR / "reports")]
-                ),
+                loader=FileSystemLoader([str(TEMPLATE_DIR), str(TEMPLATE_DIR / "reports")]),
                 autoescape=True,
             )
         return self._env

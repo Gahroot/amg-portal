@@ -42,10 +42,7 @@ class PerformanceNotice(Base, TimestampMixin):
 
     # "open" | "acknowledged"
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
-    acknowledged_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     partner = relationship("PartnerProfile", foreign_keys=[partner_id])
     program = relationship("Program", foreign_keys=[program_id])

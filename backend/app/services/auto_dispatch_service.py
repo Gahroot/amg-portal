@@ -304,9 +304,7 @@ async def on_assignment_accepted(
     partner_firm_name = partner.firm_name if partner else "Unknown"
 
     accepted_at = (
-        assignment.accepted_at.strftime("%Y-%m-%d %H:%M UTC")
-        if assignment.accepted_at
-        else "now"
+        assignment.accepted_at.strftime("%Y-%m-%d %H:%M UTC") if assignment.accepted_at else "now"
     )
 
     await dispatch_template_message(
@@ -532,8 +530,7 @@ async def on_deliverable_reviewed(
                 notification_type="assignment_update",
                 title="Deliverable Rejected",
                 body=(
-                    f'Your deliverable "{deliverable.title}" has been rejected. '
-                    f"Reason: {reason}"
+                    f'Your deliverable "{deliverable.title}" has been rejected. Reason: {reason}'
                 ),
                 entity_type="deliverable",
                 entity_id=deliverable_id,
@@ -684,9 +681,7 @@ async def on_client_provisioned(
     client_name = client_profile.display_name or client_profile.legal_name
 
     # Ensure client-RM conversation exists for Messages page
-    await _ensure_client_rm_conversation(
-        db, client_profile, client_user_id, rm_user.id
-    )
+    await _ensure_client_rm_conversation(db, client_profile, client_user_id, rm_user.id)
 
     # Dispatch welcome template message
     await dispatch_template_message(

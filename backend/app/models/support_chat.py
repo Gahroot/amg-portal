@@ -16,9 +16,7 @@ class SupportConversation(Base, TimestampMixin):
 
     __tablename__ = "support_conversations"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -32,13 +30,9 @@ class SupportConversation(Base, TimestampMixin):
     assigned_agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    last_message_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_message_preview: Mapped[str | None] = mapped_column(Text, nullable=True)
-    closed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -63,9 +57,7 @@ class SupportMessage(Base, TimestampMixin):
 
     __tablename__ = "support_messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("support_conversations.id", ondelete="CASCADE"),
@@ -74,20 +66,14 @@ class SupportMessage(Base, TimestampMixin):
     sender_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    sender_type: Mapped[str] = mapped_column(
-        String(50), nullable=False
-    )  # user, agent, system
+    sender_type: Mapped[str] = mapped_column(String(50), nullable=False)  # user, agent, system
     body: Mapped[str] = mapped_column(Text, nullable=False)
     attachment_ids: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     is_internal: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )  # Internal notes not visible to user
-    read_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    read_by_user_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_by_user_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     read_by_agent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -105,9 +91,7 @@ class SupportAgentStatus(Base, TimestampMixin):
 
     __tablename__ = "support_agent_statuses"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
@@ -117,9 +101,7 @@ class SupportAgentStatus(Base, TimestampMixin):
     )  # online, away, busy, offline
     active_conversations: Mapped[int] = mapped_column(nullable=False, default=0)
     max_conversations: Mapped[int] = mapped_column(nullable=False, default=5)
-    last_seen_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
@@ -133,9 +115,7 @@ class SupportOfflineMessage(Base, TimestampMixin):
 
     __tablename__ = "support_offline_messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -144,9 +124,7 @@ class SupportOfflineMessage(Base, TimestampMixin):
     subject: Mapped[str | None] = mapped_column(String(500), nullable=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     processed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     processed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

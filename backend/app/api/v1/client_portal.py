@@ -83,6 +83,7 @@ def _build_portal_document_response(doc: Document) -> DocumentResponse:
             data["download_url"] = storage_service.get_presigned_url(str(doc.file_path))
     return DocumentResponse.model_validate(data)
 
+
 router = APIRouter()
 
 
@@ -295,9 +296,7 @@ async def _resolve_client_program_ids(
 
     program_ids: list[_uuid.UUID] = []
     if client:
-        programs_result = await db.execute(
-            select(Program.id).where(Program.client_id == client.id)
-        )
+        programs_result = await db.execute(select(Program.id).where(Program.client_id == client.id))
         program_ids = list(programs_result.scalars().all())
 
     return profile.id, program_ids
@@ -331,11 +330,7 @@ async def get_my_documents(
             (Document.entity_type == "program") & (Document.entity_id.in_(program_ids))
         )
 
-    query = (
-        select(Document)
-        .where(or_(*conditions))
-        .order_by(Document.created_at.desc())
-    )
+    query = select(Document).where(or_(*conditions)).order_by(Document.created_at.desc())
     result = await db.execute(query)
     documents = list(result.scalars().all())
 
@@ -374,9 +369,7 @@ async def get_my_document(
             (Document.entity_type == "program") & (Document.entity_id.in_(program_ids))
         )
 
-    result = await db.execute(
-        select(Document).where(Document.id == doc_uuid, or_(*conditions))
-    )
+    result = await db.execute(select(Document).where(Document.id == doc_uuid, or_(*conditions)))
     doc = result.scalar_one_or_none()
     if not doc:
         raise NotFoundException("Document not found")
@@ -415,9 +408,7 @@ async def acknowledge_document(
             (Document.entity_type == "program") & (Document.entity_id.in_(program_ids))
         )
 
-    doc_result = await db.execute(
-        select(Document).where(Document.id == doc_uuid, or_(*conditions))
-    )
+    doc_result = await db.execute(select(Document).where(Document.id == doc_uuid, or_(*conditions)))
     doc = doc_result.scalar_one_or_none()
     if not doc:
         raise NotFoundException("Document not found")
@@ -548,9 +539,7 @@ async def get_my_program_statuses(
         return []
 
     programs_result = await db.execute(
-        select(Program.id)
-        .where(Program.client_id == client.id)
-        .order_by(Program.created_at.desc())
+        select(Program.id).where(Program.client_id == client.id).order_by(Program.created_at.desc())
     )
     program_ids = list(programs_result.scalars().all())
 
@@ -698,9 +687,7 @@ async def fulfill_my_document_request(
     db.add(doc)
     await db.flush()  # get doc.id without committing
 
-    fulfilled = await document_request_service.fulfill_document_request(
-        db, req_uuid, doc.id
-    )
+    fulfilled = await document_request_service.fulfill_document_request(db, req_uuid, doc.id)
     if not fulfilled:
         raise NotFoundException("Document request not found")
     return DocumentRequestResponse.model_validate(fulfilled)
@@ -785,9 +772,7 @@ async def add_note_to_my_request(
     except ValueError as exc:
         raise BadRequestException("Invalid request ID") from exc
 
-    req = await document_request_service.add_client_note(
-        db, req_uuid, current_user.id, body.note
-    )
+    req = await document_request_service.add_client_note(db, req_uuid, current_user.id, body.note)
     if req is None:
         raise NotFoundException("Document request not found")
     return DocumentRequestResponse.model_validate(req)
@@ -933,9 +918,7 @@ def _build_decision_history_query(
     history_only: bool = True,
 ) -> Select[tuple[DecisionRequestModel]]:
     """Build a filtered select query for decision history."""
-    q = select(DecisionRequestModel).where(
-        DecisionRequestModel.client_id == profile_id
-    )
+    q = select(DecisionRequestModel).where(DecisionRequestModel.client_id == profile_id)
 
     if history_only:
         q = q.where(DecisionRequestModel.status != "pending")
@@ -1111,12 +1094,7 @@ def _decision_csv_response(
 
 def _escape_xml(value: object) -> str:
     s = "" if value is None else str(value)
-    return (
-        s.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def _decision_xlsx_response(
@@ -1142,9 +1120,7 @@ def _decision_xlsx_response(
         "  </Styles>\n"
         '  <Worksheet ss:Name="Decision History">\n'
         "    <Table>\n"
-        f"      {header_row}\n"
-        + "".join(f"      {r}\n" for r in data_rows)
-        + "    </Table>\n"
+        f"      {header_row}\n" + "".join(f"      {r}\n" for r in data_rows) + "    </Table>\n"
         "  </Worksheet>\n"
         "</Workbook>"
     )

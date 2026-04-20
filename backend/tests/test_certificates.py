@@ -93,9 +93,7 @@ async def draft_certificate(
 
 
 class TestCertificateTemplates:
-    async def test_compliance_creates_template(
-        self, compliance_client: AsyncClient
-    ) -> None:
+    async def test_compliance_creates_template(self, compliance_client: AsyncClient) -> None:
         resp = await compliance_client.post(
             f"{BASE}/templates",
             json={
@@ -125,16 +123,12 @@ class TestCertificateTemplates:
         compliance_client: AsyncClient,
         cert_template: CertificateTemplate,
     ) -> None:
-        resp = await compliance_client.get(
-            f"{BASE}/templates/{cert_template.id}"
-        )
+        resp = await compliance_client.get(f"{BASE}/templates/{cert_template.id}")
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == str(cert_template.id)
 
-    async def test_rm_cannot_create_template(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_rm_cannot_create_template(self, rm_client: AsyncClient) -> None:
         resp = await rm_client.post(
             f"{BASE}/templates",
             json={
@@ -146,9 +140,7 @@ class TestCertificateTemplates:
         )
         assert resp.status_code == 403
 
-    async def test_client_cannot_create(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_cannot_create(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.post(
             f"{BASE}/templates",
             json={
@@ -229,9 +221,7 @@ class TestCertificateOperations:
         compliance_client: AsyncClient,
         draft_certificate: ClearanceCertificate,
     ) -> None:
-        resp = await compliance_client.get(
-            f"{BASE}/{draft_certificate.id}"
-        )
+        resp = await compliance_client.get(f"{BASE}/{draft_certificate.id}")
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == str(draft_certificate.id)
@@ -254,9 +244,7 @@ class TestCertificateOperations:
         compliance_client: AsyncClient,
         draft_certificate: ClearanceCertificate,
     ) -> None:
-        resp = await compliance_client.delete(
-            f"{BASE}/{draft_certificate.id}"
-        )
+        resp = await compliance_client.delete(f"{BASE}/{draft_certificate.id}")
         assert resp.status_code == 204
 
 

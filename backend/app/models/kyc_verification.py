@@ -16,9 +16,7 @@ class KYCVerification(Base):
     __tablename__ = "kyc_verifications"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(
-        UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True
-    )
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
     status = Column(String(20), nullable=False, default="draft", index=True)
     verification_type = Column(String(20), nullable=False, default="standard")
     risk_level = Column(String(20), nullable=True)
@@ -41,9 +39,7 @@ class KYCVerification(Base):
     client = relationship("Client", foreign_keys=[client_id])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
     creator = relationship("User", foreign_keys=[created_by])
-    checks = relationship(
-        "KYCCheck", back_populates="verification", cascade="all, delete-orphan"
-    )
+    checks = relationship("KYCCheck", back_populates="verification", cascade="all, delete-orphan")
 
 
 class KYCCheck(Base):
@@ -86,15 +82,9 @@ class KYCAlert(Base):
     __tablename__ = "kyc_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(
-        UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True
-    )
-    verification_id = Column(
-        UUID(as_uuid=True), ForeignKey("kyc_verifications.id"), nullable=True
-    )
-    kyc_document_id = Column(
-        UUID(as_uuid=True), ForeignKey("kyc_documents.id"), nullable=True
-    )
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False, index=True)
+    verification_id = Column(UUID(as_uuid=True), ForeignKey("kyc_verifications.id"), nullable=True)
+    kyc_document_id = Column(UUID(as_uuid=True), ForeignKey("kyc_documents.id"), nullable=True)
     alert_type = Column(String(30), nullable=False)
     severity = Column(String(20), nullable=False, default="warning")
     title = Column(String(255), nullable=False)
@@ -120,12 +110,8 @@ class KYCReport(Base):
     __tablename__ = "kyc_reports"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id = Column(
-        UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True, index=True
-    )
-    verification_id = Column(
-        UUID(as_uuid=True), ForeignKey("kyc_verifications.id"), nullable=True
-    )
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True, index=True)
+    verification_id = Column(UUID(as_uuid=True), ForeignKey("kyc_verifications.id"), nullable=True)
     report_type = Column(String(30), nullable=False)
     title = Column(String(255), nullable=False)
     period_start = Column(Date, nullable=True)

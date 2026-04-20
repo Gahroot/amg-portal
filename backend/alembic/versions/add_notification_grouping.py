@@ -8,6 +8,7 @@ Adds:
 - group_key column to notifications table for grouping related notifications
 - grouping_mode column to notification_preferences table for user preference
 """
+
 import sqlalchemy as sa
 
 from alembic import op

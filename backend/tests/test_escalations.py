@@ -128,9 +128,7 @@ class TestCreateEscalation:
         )
         assert resp.status_code == 403
 
-    async def test_partner_cannot_create_escalation(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_partner_cannot_create_escalation(self, partner_http: AsyncClient) -> None:
         resp = await partner_http.post(
             BASE + "/",
             json={
@@ -142,9 +140,7 @@ class TestCreateEscalation:
         )
         assert resp.status_code == 403
 
-    async def test_unauthenticated_cannot_create(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_cannot_create(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.post(
             BASE + "/",
             json={
@@ -190,9 +186,7 @@ class TestListEscalations:
         for e in resp.json()["escalations"]:
             assert e["status"] == "open"
 
-    async def test_client_user_cannot_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_list(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 
@@ -269,17 +263,13 @@ class TestEscalationStatusFlow:
     async def test_client_cannot_acknowledge(
         self, client_user_http: AsyncClient, open_escalation: Escalation
     ) -> None:
-        resp = await client_user_http.post(
-            f"{BASE}/{open_escalation.id}/acknowledge"
-        )
+        resp = await client_user_http.post(f"{BASE}/{open_escalation.id}/acknowledge")
         assert resp.status_code == 403
 
     async def test_partner_cannot_resolve(
         self, partner_http: AsyncClient, acknowledged_escalation: Escalation
     ) -> None:
-        resp = await partner_http.post(
-            f"{BASE}/{acknowledged_escalation.id}/resolve"
-        )
+        resp = await partner_http.post(f"{BASE}/{acknowledged_escalation.id}/resolve")
         assert resp.status_code == 403
 
 

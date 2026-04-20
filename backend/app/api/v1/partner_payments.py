@@ -180,9 +180,7 @@ async def get_my_payment_summary(
     total_ytd: Decimal = ytd_row[0] or Decimal("0.00")
     payment_count_ytd: int = ytd_row[1] or 0
 
-    avg_amount: Decimal | None = (
-        (total_all_time / payment_count) if payment_count > 0 else None
-    )
+    avg_amount: Decimal | None = (total_all_time / payment_count) if payment_count > 0 else None
 
     return PaymentSummary(
         total_all_time=total_all_time,
@@ -222,25 +220,29 @@ async def export_my_payments_csv(
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "Payment Date",
-        "Amount",
-        "Currency",
-        "Payment Method",
-        "Reference",
-        "Assignment",
-        "Notes",
-    ])
+    writer.writerow(
+        [
+            "Payment Date",
+            "Amount",
+            "Currency",
+            "Payment Method",
+            "Reference",
+            "Assignment",
+            "Notes",
+        ]
+    )
     for p in payments:
-        writer.writerow([
-            p.payment_date.isoformat(),
-            str(p.amount),
-            p.currency,
-            p.payment_method,
-            p.reference or "",
-            p.assignment.title if p.assignment else "",
-            p.notes or "",
-        ])
+        writer.writerow(
+            [
+                p.payment_date.isoformat(),
+                str(p.amount),
+                p.currency,
+                p.payment_method,
+                p.reference or "",
+                p.assignment.title if p.assignment else "",
+                p.notes or "",
+            ]
+        )
 
     output.seek(0)
     filename = f"payments_{partner.firm_name.replace(' ', '_')}_{date.today().isoformat()}.csv"

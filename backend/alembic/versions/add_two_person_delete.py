@@ -52,9 +52,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(20), nullable=False, server_default="pending"),
         sa.Column("executed_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index(
-        "ix_deletion_requests_status", "deletion_requests", ["status"]
-    )
+    op.create_index("ix_deletion_requests_status", "deletion_requests", ["status"])
     op.create_index(
         "ix_deletion_requests_entity",
         "deletion_requests",

@@ -16,9 +16,7 @@ class PartnerPayment(Base, TimestampMixin):
 
     __tablename__ = "partner_payments"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     partner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("partner_profiles.id", ondelete="CASCADE"),
@@ -33,9 +31,7 @@ class PartnerPayment(Base, TimestampMixin):
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
-    payment_method: Mapped[str] = mapped_column(
-        String(50), nullable=False, default="bank_transfer"
-    )
+    payment_method: Mapped[str] = mapped_column(String(50), nullable=False, default="bank_transfer")
     reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payment_date: Mapped[date] = mapped_column(Date, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -49,7 +45,4 @@ class PartnerPayment(Base, TimestampMixin):
     recorder = relationship("User", foreign_keys=[recorded_by])
 
     def __repr__(self) -> str:
-        return (
-            f"<PartnerPayment(id={self.id}, partner_id={self.partner_id}, "
-            f"amount={self.amount})>"
-        )
+        return f"<PartnerPayment(id={self.id}, partner_id={self.partner_id}, amount={self.amount})>"

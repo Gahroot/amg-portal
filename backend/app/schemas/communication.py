@@ -93,17 +93,20 @@ class SendFromTemplateRequest(BaseModel):
 
 class CommunicationSubmitForReview(BaseModel):
     """Request to submit a communication for review. No extra fields needed."""
+
     pass
 
 
 class CommunicationReviewAction(BaseModel):
     """Request to approve or reject a communication."""
+
     action: str  # "approve" or "reject"
     notes: str | None = None
 
 
 class AudioUploadResponse(BaseModel):
     """Response after uploading a voice message audio file."""
+
     object_path: str
     url: str
     file_size: int

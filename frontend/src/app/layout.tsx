@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Plus_Jakarta_Sans, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
 import { ThemeProvider } from "next-themes";
@@ -38,11 +39,22 @@ export const metadata: Metadata = {
     "Anchor Mill Group — Client & Partner Portal",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the per-request CSP nonce forwarded by middleware.ts on the `x-nonce`
+  // request header. Awaiting `headers()` opts this layout into dynamic
+  // rendering so Next.js 16 can propagate the nonce to its injected framework
+  // scripts (required for `script-src 'nonce-...' 'strict-dynamic'` to work).
+  // The value is intentionally unused below — it just needs to be read.
+  // When explicit <Script> tags are added, pass `nonce={nonce}` to them.
+  // Pattern source: github.com/builderz-labs/mission-control/src/app/layout.tsx
+  // and github.com/JustAJobApp/jobseeker-analytics/frontend/app/layout.tsx.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  void nonce;
+
   return (
     <ViewTransitions>
       <html lang="en" suppressHydrationWarning>

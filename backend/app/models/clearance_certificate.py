@@ -104,9 +104,7 @@ class ClearanceCertificateHistory(Base):
     """History log for certificate status changes."""
 
     __tablename__ = "clearance_certificate_history"
-    __table_args__ = (
-        Index("ix_certificate_history_certificate", "certificate_id"),
-    )
+    __table_args__ = (Index("ix_certificate_history_certificate", "certificate_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     certificate_id: Mapped[uuid.UUID] = mapped_column(

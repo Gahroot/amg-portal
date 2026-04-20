@@ -63,12 +63,8 @@ class NPSSurvey(Base, TimestampMixin):
 
     # Relationships
     creator = relationship("User", foreign_keys=[created_by])
-    responses = relationship(
-        "NPSResponse", back_populates="survey", cascade="all, delete-orphan"
-    )
-    follow_ups = relationship(
-        "NPSFollowUp", back_populates="survey", cascade="all, delete-orphan"
-    )
+    responses = relationship("NPSResponse", back_populates="survey", cascade="all, delete-orphan")
+    follow_ups = relationship("NPSFollowUp", back_populates="survey", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<NPSSurvey(id={self.id}, name={self.name}, Q{self.quarter}/{self.year})>"

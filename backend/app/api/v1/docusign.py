@@ -42,9 +42,7 @@ async def create_envelope(
     user: CurrentUser,
 ) -> EnvelopeResponse:
     """Create a DocuSign envelope for a document."""
-    result = await db.execute(
-        select(Document).where(Document.id == body.document_id)
-    )
+    result = await db.execute(select(Document).where(Document.id == body.document_id))
     doc = result.scalar_one_or_none()
     if not doc:
         raise NotFoundException("Document not found")
@@ -66,9 +64,7 @@ async def create_envelope(
             signer_name=body.signer_name,
         )
     except ApiException as exc:
-        raise AppException(
-            "DocuSign service is temporarily unavailable", status_code=503
-        ) from exc
+        raise AppException("DocuSign service is temporarily unavailable", status_code=503) from exc
 
     doc.envelope_id = envelope_id
     doc.docusign_status = "sent"
@@ -96,9 +92,7 @@ async def get_signing_url(
     return_url: str = Query(...),
 ) -> SigningUrlResponse:
     """Get an embedded DocuSign signing URL."""
-    result = await db.execute(
-        select(Document).where(Document.id == document_id)
-    )
+    result = await db.execute(select(Document).where(Document.id == document_id))
     doc = result.scalar_one_or_none()
     if not doc:
         raise NotFoundException("Document not found")
@@ -113,9 +107,7 @@ async def get_signing_url(
             return_url=return_url,
         )
     except ApiException as exc:
-        raise AppException(
-            "DocuSign service is temporarily unavailable", status_code=503
-        ) from exc
+        raise AppException("DocuSign service is temporarily unavailable", status_code=503) from exc
 
     return SigningUrlResponse(
         signing_url=signing_url,

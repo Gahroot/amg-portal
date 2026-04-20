@@ -120,16 +120,15 @@ class CreateNotificationRequest(BaseModel):
     # Optional override for group key; if not provided, will be auto-generated
     group_key: str | None = None
 
-
     # Snooze preset option
     snooze_duration_minutes: int | None = None
-
 
     snooze_until: datetime | None = None
 
 
 class SnoozeRequest(BaseModel):
     """Request to snooze a notification."""
+
     snooze_duration_minutes: int | None = None
     snooze_until: datetime | None = None
 

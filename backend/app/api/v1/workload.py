@@ -107,9 +107,7 @@ async def get_workload_overview(db: DB) -> WorkloadResponse:
         pending_tasks = 0
         pending_approvals = 0
 
-        workload_score = _calculate_workload_score(
-            active_programs, pending_tasks, open_escalations
-        )
+        workload_score = _calculate_workload_score(active_programs, pending_tasks, open_escalations)
         capacity_status = _get_capacity_status(workload_score)
 
         if capacity_status == "available":

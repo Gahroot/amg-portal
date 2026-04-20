@@ -1,4 +1,5 @@
 """Family member management endpoints."""
+
 import uuid
 from typing import Any
 
@@ -34,9 +35,7 @@ async def list_family_members(
 ) -> Any:
     """List all family members for a client profile."""
     # Verify client profile exists
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     if not result.scalar_one_or_none():
         raise NotFoundException("Client profile not found")
 
@@ -52,8 +51,7 @@ async def list_family_members(
 
     # Get total count
     count_result = await db.execute(
-        select(FamilyMember)
-        .where(FamilyMember.client_profile_id == profile_id)
+        select(FamilyMember).where(FamilyMember.client_profile_id == profile_id)
     )
     total = len(count_result.scalars().all())
 
@@ -73,9 +71,7 @@ async def create_family_member(
 ) -> Any:
     """Create a new family member for a client profile."""
     # Verify client profile exists
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.id == profile_id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.id == profile_id))
     if not result.scalar_one_or_none():
         raise NotFoundException("Client profile not found")
 
@@ -100,9 +96,7 @@ async def update_family_member(
     db: DB,
 ) -> Any:
     """Update a family member."""
-    result = await db.execute(
-        select(FamilyMember).where(FamilyMember.id == member_id)
-    )
+    result = await db.execute(select(FamilyMember).where(FamilyMember.id == member_id))
     member = result.scalar_one_or_none()
     if not member:
         raise NotFoundException("Family member not found")
@@ -127,9 +121,7 @@ async def delete_family_member(
     db: DB,
 ) -> None:
     """Delete a family member."""
-    result = await db.execute(
-        select(FamilyMember).where(FamilyMember.id == member_id)
-    )
+    result = await db.execute(select(FamilyMember).where(FamilyMember.id == member_id))
     member = result.scalar_one_or_none()
     if not member:
         raise NotFoundException("Family member not found")
@@ -151,17 +143,13 @@ async def create_relationship(
 ) -> Any:
     """Create a relationship between two family members."""
     # Verify from_member exists
-    result = await db.execute(
-        select(FamilyMember).where(FamilyMember.id == from_member_id)
-    )
+    result = await db.execute(select(FamilyMember).where(FamilyMember.id == from_member_id))
     from_member = result.scalar_one_or_none()
     if not from_member:
         raise NotFoundException("Source family member not found")
 
     # Verify to_member exists
-    result = await db.execute(
-        select(FamilyMember).where(FamilyMember.id == data.to_member_id)
-    )
+    result = await db.execute(select(FamilyMember).where(FamilyMember.id == data.to_member_id))
     to_member = result.scalar_one_or_none()
     if not to_member:
         raise NotFoundException("Target family member not found")

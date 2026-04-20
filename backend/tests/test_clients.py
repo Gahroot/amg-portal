@@ -42,18 +42,14 @@ class TestCreateClientProfile:
         )
         assert resp.status_code == 201
 
-    async def test_coordinator_cannot_create(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_coordinator_cannot_create(self, coordinator_client: AsyncClient) -> None:
         resp = await coordinator_client.post(
             BASE + "/",
             json={"legal_name": "Blocked", "primary_email": "blocked@example.com"},
         )
         assert resp.status_code == 403
 
-    async def test_client_user_cannot_create(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_create(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.post(
             BASE + "/",
             json={"legal_name": "Blocked", "primary_email": "blocked2@example.com"},
@@ -67,9 +63,7 @@ class TestCreateClientProfile:
         )
         assert resp.status_code == 403
 
-    async def test_unauthenticated_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_unauthenticated_returns_401(self, anon_client: AsyncClient) -> None:
         resp = await anon_client.post(
             BASE + "/",
             json={"legal_name": "Blocked", "primary_email": "blocked4@example.com"},
@@ -151,9 +145,7 @@ class TestListClientProfiles:
         assert "alpha@example.com" in emails
         assert "beta@example.com" in emails
 
-    async def test_client_user_cannot_list(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_client_user_cannot_list(self, client_user_http: AsyncClient) -> None:
         resp = await client_user_http.get(BASE + "/")
         assert resp.status_code == 403
 
@@ -206,9 +198,7 @@ class TestGetClientProfile:
         resp = await md_client.get(f"{BASE}/{db_client_profile.id}")
         assert resp.status_code == 200
 
-    async def test_nonexistent_profile_returns_404(
-        self, md_client: AsyncClient
-    ) -> None:
+    async def test_nonexistent_profile_returns_404(self, md_client: AsyncClient) -> None:
         resp = await md_client.get(f"{BASE}/{uuid.uuid4()}")
         assert resp.status_code == 404
 

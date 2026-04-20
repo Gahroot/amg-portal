@@ -123,9 +123,7 @@ async def get_my_schedule(
     end: datetime = Query(...),
 ) -> ScheduledEventListResponse:
     """Get current user's events within a date range."""
-    events = await scheduling_service.get_user_schedule(
-        db, current_user.id, start, end
-    )
+    events = await scheduling_service.get_user_schedule(db, current_user.id, start, end)
     return ScheduledEventListResponse(
         events=[ScheduledEventResponse.model_validate(e) for e in events],
         total=len(events),
@@ -143,14 +141,10 @@ async def check_conflicts(
     end: datetime = Query(...),
 ) -> ConflictCheckResponse:
     """Check for scheduling conflicts for the current user."""
-    conflicts = await scheduling_service.check_conflicts(
-        db, current_user.id, start, end
-    )
+    conflicts = await scheduling_service.check_conflicts(db, current_user.id, start, end)
     return ConflictCheckResponse(
         has_conflicts=len(conflicts) > 0,
-        conflicts=[
-            ScheduledEventResponse.model_validate(c) for c in conflicts
-        ],
+        conflicts=[ScheduledEventResponse.model_validate(c) for c in conflicts],
     )
 
 
@@ -164,9 +158,7 @@ async def confirm_event(
     current_user: CurrentUser,
 ) -> ScheduledEventResponse:
     """Confirm a scheduled event."""
-    event = await scheduling_service.update_event_status(
-        db, event_id, "confirmed", current_user.id
-    )
+    event = await scheduling_service.update_event_status(db, event_id, "confirmed", current_user.id)
     if not event:
         raise NotFoundException("Event not found")
     return ScheduledEventResponse.model_validate(event)
@@ -182,9 +174,7 @@ async def cancel_event(
     current_user: CurrentUser,
 ) -> ScheduledEventResponse:
     """Cancel a scheduled event."""
-    event = await scheduling_service.update_event_status(
-        db, event_id, "cancelled", current_user.id
-    )
+    event = await scheduling_service.update_event_status(db, event_id, "cancelled", current_user.id)
     if not event:
         raise NotFoundException("Event not found")
     return ScheduledEventResponse.model_validate(event)

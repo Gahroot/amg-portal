@@ -1,4 +1,5 @@
 """NPS Survey API endpoints."""
+
 import uuid
 from typing import Any
 
@@ -259,17 +260,13 @@ async def submit_nps_response(
     # Get client profile for current user
     from app.models.client_profile import ClientProfile
 
-    result = await db.execute(
-        select(ClientProfile).where(ClientProfile.user_id == current_user.id)
-    )
+    result = await db.execute(select(ClientProfile).where(ClientProfile.user_id == current_user.id))
     client_profile = result.scalar_one_or_none()
     if not client_profile:
         raise ForbiddenException("Client profile not found")
 
     # Check for existing response
-    existing = await nps_response_service.check_existing_response(
-        db, survey_id, client_profile.id
-    )
+    existing = await nps_response_service.check_existing_response(db, survey_id, client_profile.id)
     if existing:
         raise BadRequestException("You have already responded to this survey")
 

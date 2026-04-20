@@ -75,9 +75,7 @@ async def _collect_notification_recipients(
     recipients: list[uuid.UUID] = [program.created_by]
 
     # Add the client's assigned RM if different from the program creator
-    client_result = await db.execute(
-        select(Client).where(Client.id == program.client_id)
-    )
+    client_result = await db.execute(select(Client).where(Client.id == program.client_id))
     client = client_result.scalar_one_or_none()
     if client and client.rm_id and client.rm_id not in recipients:
         recipients.append(client.rm_id)
@@ -155,7 +153,8 @@ async def _handle_milestone_completed(
     all_milestones = list(all_milestones_result.scalars().all())
 
     non_terminal = [
-        m for m in all_milestones
+        m
+        for m in all_milestones
         if m.status not in (MilestoneStatus.completed, MilestoneStatus.cancelled)
     ]
     if not non_terminal:
@@ -229,9 +228,7 @@ async def on_task_status_change(
 
     milestone = task.milestone
     if milestone is None:
-        logger.warning(
-            "on_task_status_change: task %s has no milestone — skipping.", task_id
-        )
+        logger.warning("on_task_status_change: task %s has no milestone — skipping.", task_id)
         return
 
     program = milestone.program
@@ -355,7 +352,9 @@ async def on_task_created(
                     await db.execute(
                         select(Milestone).where(Milestone.program_id == milestone.program_id)
                     )
-                ).scalars().all()
+                )
+                .scalars()
+                .all()
             )
         )
         logger.info(

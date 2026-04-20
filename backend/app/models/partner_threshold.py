@@ -17,9 +17,7 @@ class PartnerThreshold(Base, TimestampMixin):
     """
 
     __tablename__ = "partner_thresholds"
-    __table_args__ = (
-        UniqueConstraint("partner_id", name="uq_partner_threshold_partner_id"),
-    )
+    __table_args__ = (UniqueConstraint("partner_id", name="uq_partner_threshold_partner_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
@@ -33,19 +31,27 @@ class PartnerThreshold(Base, TimestampMixin):
 
     # Thresholds
     sla_compliance_threshold: Mapped[float] = mapped_column(
-        Float, nullable=False, default=90.0,
+        Float,
+        nullable=False,
+        default=90.0,
         comment="Minimum SLA compliance % before alert fires (0–100)",
     )
     quality_score_threshold: Mapped[float] = mapped_column(
-        Float, nullable=False, default=3.0,
+        Float,
+        nullable=False,
+        default=3.0,
         comment="Minimum average quality score before alert fires (1–5)",
     )
     overall_score_threshold: Mapped[float] = mapped_column(
-        Float, nullable=False, default=3.0,
+        Float,
+        nullable=False,
+        default=3.0,
         comment="Minimum average overall score before alert fires (1–5)",
     )
     trend_window_weeks: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=4,
+        Integer,
+        nullable=False,
+        default=4,
         comment="Number of consecutive declining weeks that trigger a trend alert",
     )
 

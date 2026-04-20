@@ -14,9 +14,7 @@ from app.models.enums import CommunicationLogChannel, CommunicationLogDirection
 class CommunicationLog(Base, TimestampMixin):
     __tablename__ = "communication_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     channel: Mapped[CommunicationLogChannel] = mapped_column(String(50), nullable=False)
     direction: Mapped[CommunicationLogDirection] = mapped_column(String(20), nullable=False)
     subject: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -45,12 +43,9 @@ class CommunicationLog(Base, TimestampMixin):
 
     contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     contact_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    occurred_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     attachments: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
-
 
     # Relationships
     client = relationship("ClientProfile", foreign_keys=[client_id])

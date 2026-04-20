@@ -50,14 +50,10 @@ class TestUnauthenticatedAccess:
     async def test_programs_list_returns_401(self, anon_client: AsyncClient) -> None:
         await _check(anon_client, "get", "/api/v1/programs/", 401)
 
-    async def test_deliverables_list_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_deliverables_list_returns_401(self, anon_client: AsyncClient) -> None:
         await _check(anon_client, "get", "/api/v1/deliverables/", 401)
 
-    async def test_escalations_list_returns_401(
-        self, anon_client: AsyncClient
-    ) -> None:
+    async def test_escalations_list_returns_401(self, anon_client: AsyncClient) -> None:
         await _check(anon_client, "get", "/api/v1/escalations/", 401)
 
     async def test_users_list_returns_401(self, anon_client: AsyncClient) -> None:
@@ -101,9 +97,7 @@ class TestRelationshipManager:
     async def test_can_list_deliverables(self, rm_client: AsyncClient) -> None:
         await _check(rm_client, "get", "/api/v1/deliverables/", 200)
 
-    async def test_cannot_access_admin_endpoints(
-        self, rm_client: AsyncClient
-    ) -> None:
+    async def test_cannot_access_admin_endpoints(self, rm_client: AsyncClient) -> None:
         """RMs may not perform MD-only operations (e.g. approving clients)."""
         await _check(
             rm_client,
@@ -147,9 +141,7 @@ class TestCoordinator:
     async def test_can_list_programs(self, coordinator_client: AsyncClient) -> None:
         await _check(coordinator_client, "get", "/api/v1/programs/", 200)
 
-    async def test_cannot_create_client_profile(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_cannot_create_client_profile(self, coordinator_client: AsyncClient) -> None:
         await _check(
             coordinator_client,
             "post",
@@ -161,9 +153,7 @@ class TestCoordinator:
             },
         )
 
-    async def test_cannot_perform_md_approval(
-        self, coordinator_client: AsyncClient
-    ) -> None:
+    async def test_cannot_perform_md_approval(self, coordinator_client: AsyncClient) -> None:
         await _check(
             coordinator_client,
             "post",
@@ -182,9 +172,7 @@ class TestFinanceCompliance:
     async def test_can_list_clients(self, compliance_client: AsyncClient) -> None:
         await _check(compliance_client, "get", "/api/v1/clients/", 200)
 
-    async def test_cannot_create_client_profile(
-        self, compliance_client: AsyncClient
-    ) -> None:
+    async def test_cannot_create_client_profile(self, compliance_client: AsyncClient) -> None:
         await _check(
             compliance_client,
             "post",
@@ -203,19 +191,13 @@ class TestFinanceCompliance:
 
 
 class TestClientRole:
-    async def test_cannot_list_internal_clients(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_cannot_list_internal_clients(self, client_user_http: AsyncClient) -> None:
         await _check(client_user_http, "get", "/api/v1/clients/", 403)
 
-    async def test_cannot_list_programs_internal(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_cannot_list_programs_internal(self, client_user_http: AsyncClient) -> None:
         await _check(client_user_http, "get", "/api/v1/programs/", 403)
 
-    async def test_cannot_list_escalations(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_cannot_list_escalations(self, client_user_http: AsyncClient) -> None:
         await _check(client_user_http, "get", "/api/v1/escalations/", 403)
 
     async def test_cannot_create_programs(
@@ -233,9 +215,7 @@ class TestClientRole:
             },
         )
 
-    async def test_cannot_access_users_endpoint(
-        self, client_user_http: AsyncClient
-    ) -> None:
+    async def test_cannot_access_users_endpoint(self, client_user_http: AsyncClient) -> None:
         await _check(client_user_http, "get", "/api/v1/users/", 403)
 
 
@@ -245,9 +225,7 @@ class TestClientRole:
 
 
 class TestPartnerRole:
-    async def test_cannot_list_internal_clients(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_cannot_list_internal_clients(self, partner_http: AsyncClient) -> None:
         await _check(partner_http, "get", "/api/v1/clients/", 403)
 
     async def test_cannot_list_programs(self, partner_http: AsyncClient) -> None:
@@ -273,9 +251,7 @@ class TestPartnerRole:
             },
         )
 
-    async def test_cannot_access_users_endpoint(
-        self, partner_http: AsyncClient
-    ) -> None:
+    async def test_cannot_access_users_endpoint(self, partner_http: AsyncClient) -> None:
         await _check(partner_http, "get", "/api/v1/users/", 403)
 
 

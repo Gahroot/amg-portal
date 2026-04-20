@@ -197,9 +197,7 @@ async def progress_escalation_chain(
         raise ValueError(f"Unknown escalation level: {current_level}") from err
 
     if current_idx >= len(LEVEL_PROGRESSION) - 1:
-        raise ValueError(
-            f"Escalation is already at the highest level ({current_level.value})"
-        )
+        raise ValueError(f"Escalation is already at the highest level ({current_level.value})")
 
     next_level = LEVEL_PROGRESSION[current_idx + 1]
 

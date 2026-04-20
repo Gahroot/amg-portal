@@ -1,6 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   compareDocumentVersions,
   listDocuments,
@@ -86,21 +85,17 @@ export function useDocumentDeliveries(documentId: string, enabled = false) {
 }
 
 export function useSealDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (params: { documentId: string; retentionPolicy?: string }) =>
       sealDocument(params.documentId, { retention_policy: params.retentionPolicy }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.documents.all });
-      toast.success("Document sealed successfully");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to seal document"),
+    invalidateKeys: [queryKeys.documents.all],
+    successMessage: "Document sealed successfully",
+    errorMessage: "Failed to seal document",
   });
 }
 
 export function useDeliverDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useCrudMutation({
     mutationFn: (params: {
       documentId: string;
       recipientIds: string[];
@@ -112,11 +107,9 @@ export function useDeliverDocument() {
         delivery_method: params.method,
         notes: params.notes,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.documents.all });
-      toast.success("Document delivered successfully");
-    },
-    onError: (error: Error) => toast.error(error.message || "Failed to deliver document"),
+    invalidateKeys: [queryKeys.documents.all],
+    successMessage: "Document delivered successfully",
+    errorMessage: "Failed to deliver document",
   });
 }
 

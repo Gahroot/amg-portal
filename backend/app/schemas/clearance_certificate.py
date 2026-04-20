@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # Certificate Template Schemas
 # ============================================================================
 
+
 class CertificateTemplateCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = None
@@ -51,6 +52,7 @@ class CertificateTemplateListResponse(BaseModel):
 # ============================================================================
 # Clearance Certificate Schemas
 # ============================================================================
+
 
 class ClearanceCertificateCreate(BaseModel):
     template_id: UUID | None = None
@@ -138,8 +140,10 @@ class ClearanceCertificateDetailResponse(ClearanceCertificateResponse):
 # Auto-populate Schemas
 # ============================================================================
 
+
 class ProgramDataForCertificate(BaseModel):
     """Data extracted from program for certificate auto-population."""
+
     program_id: UUID
     program_title: str
     program_status: str
@@ -161,6 +165,7 @@ class ProgramDataForCertificate(BaseModel):
 
 class CertificatePreviewRequest(BaseModel):
     """Request to preview certificate with auto-populated data."""
+
     template_id: UUID | None = None
     program_id: UUID | None = None
     client_id: UUID
@@ -171,6 +176,7 @@ class CertificatePreviewRequest(BaseModel):
 
 class CertificatePreviewResponse(BaseModel):
     """Preview of certificate content before generation."""
+
     title: str
     content: str
     populated_data: dict[str, Any]

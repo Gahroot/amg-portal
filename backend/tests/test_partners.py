@@ -591,7 +591,7 @@ class TestUploadComplianceDoc:
 
             resp = await rm_client.post(
                 f"{BASE}/{test_partner.id}/compliance-doc",
-                files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+                files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
             )
             assert resp.status_code == 200
             data = resp.json()
@@ -610,7 +610,7 @@ class TestUploadComplianceDoc:
 
             resp = await md_client.post(
                 f"{BASE}/{test_partner.id}/compliance-doc",
-                files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+                files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
             )
             assert resp.status_code == 200
 
@@ -621,7 +621,7 @@ class TestUploadComplianceDoc:
     ) -> None:
         resp = await coordinator_client.post(
             f"{BASE}/{test_partner.id}/compliance-doc",
-            files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+            files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 
@@ -631,7 +631,7 @@ class TestUploadComplianceDoc:
     ) -> None:
         resp = await rm_client.post(
             f"{BASE}/{uuid.uuid4()}/compliance-doc",
-            files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+            files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 404
 
@@ -642,7 +642,7 @@ class TestUploadComplianceDoc:
     ) -> None:
         resp = await client_user_http.post(
             f"{BASE}/{test_partner.id}/compliance-doc",
-            files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+            files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 403
 
@@ -653,6 +653,6 @@ class TestUploadComplianceDoc:
     ) -> None:
         resp = await anon_client.post(
             f"{BASE}/{test_partner.id}/compliance-doc",
-            files={"file": ("compliance.pdf", b"fake pdf content", "application/pdf")},
+            files={"file": ("compliance.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
         )
         assert resp.status_code == 401

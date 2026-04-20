@@ -162,8 +162,9 @@ async def calculate_milestone_risk_score(  # noqa: PLR0912, PLR0915
         # Get average timeliness scores from partner ratings
         if partner_ids:
             rating_result = await db.execute(
-                select(func.avg(PartnerRating.timeliness_score))
-                .where(PartnerRating.partner_id.in_(partner_ids))
+                select(func.avg(PartnerRating.timeliness_score)).where(
+                    PartnerRating.partner_id.in_(partner_ids)
+                )
             )
             avg_timeliness = rating_result.scalar_one_or_none()
 
@@ -183,8 +184,7 @@ async def calculate_milestone_risk_score(  # noqa: PLR0912, PLR0915
     # === Factor 3: Past SLA breach rate for program (20 points max) ===
     # Check SLA breaches related to this program
     sla_result = await db.execute(
-        select(func.count(SLATracker.id))
-        .where(
+        select(func.count(SLATracker.id)).where(
             SLATracker.entity_id == str(program.id),
             SLATracker.breach_status == "breached",
         )
@@ -193,8 +193,7 @@ async def calculate_milestone_risk_score(  # noqa: PLR0912, PLR0915
 
     # Also check escalations for this program
     esc_result = await db.execute(
-        select(func.count(Escalation.id))
-        .where(
+        select(func.count(Escalation.id)).where(
             Escalation.program_id == program.id,
             Escalation.status.in_(["open", "acknowledged", "investigating"]),
         )
@@ -209,7 +208,8 @@ async def calculate_milestone_risk_score(  # noqa: PLR0912, PLR0915
     # === Factor 4: Blocked/overdue tasks (15 points max) ===
     blocked_tasks = sum(1 for t in tasks if t.status == "blocked")
     overdue_tasks = sum(
-        1 for t in tasks
+        1
+        for t in tasks
         if t.due_date and t.due_date < today and t.status not in ("done", "cancelled")
     )
 
@@ -324,13 +324,15 @@ async def get_at_risk_programs(
             }
 
         programs_map[risk.program_id]["at_risk_milestone_count"] += 1
-        programs_map[risk.program_id]["at_risk_milestones"].append({
-            "milestone_id": str(risk.milestone_id),
-            "milestone_title": risk.milestone_title,
-            "risk_score": risk.risk_score,
-            "days_remaining": risk.days_remaining,
-            "task_completion_rate": risk.task_completion_rate,
-        })
+        programs_map[risk.program_id]["at_risk_milestones"].append(
+            {
+                "milestone_id": str(risk.milestone_id),
+                "milestone_title": risk.milestone_title,
+                "risk_score": risk.risk_score,
+                "days_remaining": risk.days_remaining,
+                "task_completion_rate": risk.task_completion_rate,
+            }
+        )
 
         current_best = programs_map[risk.program_id]["highest_risk_score"]
         programs_map[risk.program_id]["highest_risk_score"] = max(current_best, risk.risk_score)
@@ -402,8 +404,7 @@ async def get_capacity_forecast(
 
         # Estimate hours
         estimated_hours = (
-            milestone_count * MILESTONE_HOURS_ESTIMATE +
-            task_count * TASK_HOURS_ESTIMATE
+            milestone_count * MILESTONE_HOURS_ESTIMATE + task_count * TASK_HOURS_ESTIMATE
         )
 
         # Calculate utilization
@@ -421,17 +422,19 @@ async def get_capacity_forecast(
             status = "overloaded"
             overload_weeks.append(week_num)
 
-        weekly_forecasts.append(CapacityForecastWeek(
-            week_start=week_start,
-            week_end=week_end,
-            week_number=week_num,
-            projected_tasks=task_count,
-            projected_milestones=milestone_count,
-            estimated_hours=estimated_hours,
-            capacity_hours=capacity_hours,
-            utilization_percent=utilization,
-            status=status,
-        ))
+        weekly_forecasts.append(
+            CapacityForecastWeek(
+                week_start=week_start,
+                week_end=week_end,
+                week_number=week_num,
+                projected_tasks=task_count,
+                projected_milestones=milestone_count,
+                estimated_hours=estimated_hours,
+                capacity_hours=capacity_hours,
+                utilization_percent=utilization,
+                status=status,
+            )
+        )
 
         total_projected_hours += estimated_hours
 

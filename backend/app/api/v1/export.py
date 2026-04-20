@@ -41,19 +41,12 @@ _SUPPORTED = {
 
 def _escape_xml(value: object) -> str:
     s = "" if value is None else str(value)
-    return (
-        s.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def _build_xlsx(headers: list[str], rows: list[list[object]]) -> str:
     def cell(v: object) -> str:
-        return (
-            f'<Cell><Data ss:Type="String">{_escape_xml(v)}</Data></Cell>'
-        )
+        return f'<Cell><Data ss:Type="String">{_escape_xml(v)}</Data></Cell>'
 
     def make_row(cells: list[str], style: str = "") -> str:
         attr = f' ss:StyleID="{style}"' if style else ""
@@ -72,19 +65,15 @@ def _build_xlsx(headers: list[str], rows: list[list[object]]) -> str:
         "  </Styles>\n"
         '  <Worksheet ss:Name="Export">\n'
         "    <Table>\n"
-        f"      {header_row}\n"
-        + "".join(f"      {r}\n" for r in data_rows)
-        + "    </Table>\n"
+        f"      {header_row}\n" + "".join(f"      {r}\n" for r in data_rows) + "    </Table>\n"
         "  </Worksheet>\n"
         "</Workbook>"
     )
 
 
-def _csv_response(
-    headers: list[str], rows: list[list[object]], filename: str
-) -> StreamingResponse:
+def _csv_response(headers: list[str], rows: list[list[object]], filename: str) -> StreamingResponse:
     buf = io.StringIO()
-    buf.write("\uFEFF")  # BOM for Excel UTF-8
+    buf.write("\ufeff")  # BOM for Excel UTF-8
     writer = csv.writer(buf)
     writer.writerow(headers)
     writer.writerows(rows)
@@ -122,13 +111,17 @@ async def _export_programs(
         query = query.where(Program.client_id == client_id)
     if search:
         query = query.where(Program.title.ilike(f"%{search}%"))
-    result = await db.execute(
-        query.order_by(Program.created_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Program.created_at.desc()).limit(limit))
     programs = result.scalars().unique().all()
     headers = [
-        "Title", "Client", "Status", "RAG Status",
-        "Start Date", "End Date", "Budget", "Created",
+        "Title",
+        "Client",
+        "Status",
+        "RAG Status",
+        "Start Date",
+        "End Date",
+        "Budget",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -157,18 +150,21 @@ async def _export_clients(
     if search:
         pattern = f"%{search}%"
         query = query.where(
-            ClientProfile.legal_name.ilike(pattern)
-            | ClientProfile.primary_email.ilike(pattern)
+            ClientProfile.legal_name.ilike(pattern) | ClientProfile.primary_email.ilike(pattern)
         )
     if status:
         query = query.where(ClientProfile.compliance_status == status)
-    result = await db.execute(
-        query.order_by(ClientProfile.created_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(ClientProfile.created_at.desc()).limit(limit))
     profiles = result.scalars().all()
     headers = [
-        "Legal Name", "Display Name", "Entity Type", "Jurisdiction",
-        "Primary Email", "Compliance Status", "Approval Status", "Created",
+        "Legal Name",
+        "Display Name",
+        "Entity Type",
+        "Jurisdiction",
+        "Primary Email",
+        "Compliance Status",
+        "Approval Status",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -204,14 +200,19 @@ async def _export_partners(
             PartnerProfile.firm_name.ilike(f"%{search}%")
             | PartnerProfile.contact_name.ilike(f"%{search}%")
         )
-    result = await db.execute(
-        query.order_by(PartnerProfile.firm_name).limit(limit)
-    )
+    result = await db.execute(query.order_by(PartnerProfile.firm_name).limit(limit))
     partners = result.scalars().all()
     headers = [
-        "Firm Name", "Contact Name", "Contact Email", "Status",
-        "Availability", "Capabilities", "Geographies",
-        "Rating", "Total Assignments", "Created",
+        "Firm Name",
+        "Contact Name",
+        "Contact Email",
+        "Status",
+        "Availability",
+        "Capabilities",
+        "Geographies",
+        "Rating",
+        "Total Assignments",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -257,13 +258,17 @@ async def _export_tasks(
         query = query.where(Task.assigned_to == assignee_id)
     if program_id:
         query = query.where(Program.id == program_id)
-    result = await db.execute(
-        query.order_by(Task.due_date.asc().nullsfirst()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Task.due_date.asc().nullsfirst()).limit(limit))
     tasks = result.scalars().unique().all()
     headers = [
-        "Title", "Status", "Priority", "Due Date",
-        "Assigned To", "Program", "Milestone", "Created",
+        "Title",
+        "Status",
+        "Priority",
+        "Due Date",
+        "Assigned To",
+        "Program",
+        "Milestone",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -272,10 +277,7 @@ async def _export_tasks(
             t.priority,
             str(t.due_date) if t.due_date else "",
             t.assignee.full_name if t.assignee else "",
-            (
-                t.milestone.program.title
-                if t.milestone and t.milestone.program else ""
-            ),
+            (t.milestone.program.title if t.milestone and t.milestone.program else ""),
             t.milestone.title if t.milestone else "",
             t.created_at.strftime("%Y-%m-%d") if t.created_at else "",
         ]
@@ -307,14 +309,20 @@ async def _export_communication_logs(
             CommunicationLog.subject.ilike(f"%{search}%")
             | CommunicationLog.contact_name.ilike(f"%{search}%")
         )
-    result = await db.execute(
-        query.order_by(CommunicationLog.occurred_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(CommunicationLog.occurred_at.desc()).limit(limit))
     logs = result.scalars().all()
     headers = [
-        "Date", "Channel", "Direction", "Subject",
-        "Contact Name", "Contact Email",
-        "Client", "Partner", "Program", "Logged By", "Tags",
+        "Date",
+        "Channel",
+        "Direction",
+        "Subject",
+        "Contact Name",
+        "Contact Email",
+        "Client",
+        "Partner",
+        "Program",
+        "Logged By",
+        "Tags",
     ]
     rows: list[list[object]] = [
         [
@@ -350,14 +358,18 @@ async def _export_documents(
         query = query.where(Document.entity_id == entity_id)
     if category:
         query = query.where(Document.category == category)
-    result = await db.execute(
-        query.order_by(Document.created_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Document.created_at.desc()).limit(limit))
     documents = result.scalars().all()
     headers = [
-        "File Name", "Content Type", "Size (bytes)",
-        "Category", "Version", "Entity Type", "Entity ID",
-        "Description", "Uploaded",
+        "File Name",
+        "Content Type",
+        "Size (bytes)",
+        "Category",
+        "Version",
+        "Entity Type",
+        "Entity ID",
+        "Description",
+        "Uploaded",
     ]
     rows: list[list[object]] = [
         [
@@ -395,13 +407,18 @@ async def _export_communications(
         query = query.where(Communication.channel == channel)
     if search:
         query = query.where(Communication.subject.ilike(f"%{search}%"))
-    result = await db.execute(
-        query.order_by(Communication.created_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Communication.created_at.desc()).limit(limit))
     comms = result.scalars().unique().all()
     headers = [
-        "Subject", "Channel", "Status", "Approval Status",
-        "Sender", "Client", "Program", "Sent At", "Created",
+        "Subject",
+        "Channel",
+        "Status",
+        "Approval Status",
+        "Sender",
+        "Client",
+        "Program",
+        "Sent At",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -438,14 +455,19 @@ async def _export_deliverables(
         query = query.where(Deliverable.status == status)
     if search:
         query = query.where(Deliverable.title.ilike(f"%{search}%"))
-    result = await db.execute(
-        query.order_by(Deliverable.created_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Deliverable.created_at.desc()).limit(limit))
     deliverables = result.scalars().unique().all()
     headers = [
-        "Title", "Type", "Status", "Due Date",
-        "Submitted By", "Submitted At", "Reviewed By",
-        "Partner", "Client Visible", "Created",
+        "Title",
+        "Type",
+        "Status",
+        "Due Date",
+        "Submitted By",
+        "Submitted At",
+        "Reviewed By",
+        "Partner",
+        "Client Visible",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -456,10 +478,7 @@ async def _export_deliverables(
             d.submitter.full_name if d.submitter else "",
             d.submitted_at.strftime("%Y-%m-%d %H:%M") if d.submitted_at else "",
             d.reviewer.full_name if d.reviewer else "",
-            (
-                d.assignment.partner.firm_name
-                if d.assignment and d.assignment.partner else ""
-            ),
+            (d.assignment.partner.firm_name if d.assignment and d.assignment.partner else ""),
             "Yes" if d.client_visible else "No",
             d.created_at.strftime("%Y-%m-%d") if d.created_at else "",
         ]
@@ -477,9 +496,8 @@ async def _export_escalations(
     limit: int,
 ) -> tuple[list[str], list[list[object]]]:
     owner_alias = User.__table__.alias("owner_user")
-    query = (
-        select(Escalation, owner_alias.c.full_name.label("owner_name"))
-        .outerjoin(owner_alias, Escalation.owner_id == owner_alias.c.id)
+    query = select(Escalation, owner_alias.c.full_name.label("owner_name")).outerjoin(
+        owner_alias, Escalation.owner_id == owner_alias.c.id
     )
     if status:
         query = query.where(Escalation.status == status)
@@ -487,14 +505,18 @@ async def _export_escalations(
         query = query.where(Escalation.level == level)
     if search:
         query = query.where(Escalation.title.ilike(f"%{search}%"))
-    result = await db.execute(
-        query.order_by(Escalation.triggered_at.desc()).limit(limit)
-    )
+    result = await db.execute(query.order_by(Escalation.triggered_at.desc()).limit(limit))
     rows_data = result.all()
     headers = [
-        "Title", "Level", "Status", "Entity Type",
-        "Owner", "Triggered At", "Acknowledged At",
-        "Resolved At", "Created",
+        "Title",
+        "Level",
+        "Status",
+        "Entity Type",
+        "Owner",
+        "Triggered At",
+        "Acknowledged At",
+        "Resolved At",
+        "Created",
     ]
     rows: list[list[object]] = [
         [
@@ -545,9 +567,7 @@ async def export_resource(
             db, status=status, client_id=client_id, search=search, limit=limit
         )
     elif resource == "clients":
-        headers, rows = await _export_clients(
-            db, status=status, search=search, limit=limit
-        )
+        headers, rows = await _export_clients(db, status=status, search=search, limit=limit)
     elif resource == "partners":
         headers, rows = await _export_partners(
             db,

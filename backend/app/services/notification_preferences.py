@@ -144,9 +144,7 @@ async def snooze_notification(
         raise NotFoundException("Notification not found")
 
     if notification.snooze_count >= MAX_SNOOZE_COUNT:
-        raise ValueError(
-            f"Notification has been snoozed the maximum of {MAX_SNOOZE_COUNT} times"
-        )
+        raise ValueError(f"Notification has been snoozed the maximum of {MAX_SNOOZE_COUNT} times")
 
     snooze_until_dt = calculate_snooze_until(
         snooze_duration_minutes=snooze_request.snooze_duration_minutes,

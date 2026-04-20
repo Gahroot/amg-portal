@@ -39,9 +39,7 @@ class TaxDocument(Base, TimestampMixin):
     partner = relationship("PartnerProfile", foreign_keys=[partner_id])
     generator = relationship("User", foreign_keys=[generated_by])
 
-    __table_args__ = (
-        Index("ix_tax_documents_partner_year", "partner_id", "tax_year"),
-    )
+    __table_args__ = (Index("ix_tax_documents_partner_year", "partner_id", "tax_year"),)
 
     def __repr__(self) -> str:
         return (

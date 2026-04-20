@@ -38,7 +38,6 @@ async def _resolve_share(token: str, db: DB) -> SharedReport:
         expires_at = share.expires_at
         # Make timezone-aware if needed
         if hasattr(expires_at, "tzinfo") and expires_at.tzinfo is None:
-
             expires_at = expires_at.replace(tzinfo=UTC)
         if expires_at < datetime.now(UTC):
             raise GoneException("This shared report has expired")

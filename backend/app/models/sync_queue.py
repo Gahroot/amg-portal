@@ -21,9 +21,7 @@ class SyncQueueItem(Base, TimestampMixin):
 
     __tablename__ = "sync_queue"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -35,23 +33,15 @@ class SyncQueueItem(Base, TimestampMixin):
     # Type of entity being synced: preference, read_status, etc.
     entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
     # Entity ID (nullable for global preferences)
-    entity_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True
-    )
+    entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     # Action: mark_read, update_preference, etc.
     action: Mapped[str] = mapped_column(String(50), nullable=False)
     # Payload data for the action
-    payload: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
-    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     # When this item was created on the client
-    client_timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    client_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # When this item was successfully synced (null if pending)
-    synced_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Error message if sync failed
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Number of sync attempts

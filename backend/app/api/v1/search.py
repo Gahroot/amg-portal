@@ -373,12 +373,7 @@ async def search_suggestions(  # noqa: PLR0912, PLR0915
         doc_prefix_rows,
         doc_contains_rows,
     ) = await asyncio.gather(
-        db.execute(
-            select(Client.name)
-            .where(Client.name.ilike(f"{query}%"))
-            .distinct()
-            .limit(5)
-        ),
+        db.execute(select(Client.name).where(Client.name.ilike(f"{query}%")).distinct().limit(5)),
         db.execute(
             select(Client.name)
             .where(Client.name.ilike(f"%{query}%"))
@@ -387,10 +382,7 @@ async def search_suggestions(  # noqa: PLR0912, PLR0915
             .limit(limit)
         ),
         db.execute(
-            select(Program.title)
-            .where(Program.title.ilike(f"{query}%"))
-            .distinct()
-            .limit(5)
+            select(Program.title).where(Program.title.ilike(f"{query}%")).distinct().limit(5)
         ),
         db.execute(
             select(Program.title)

@@ -43,9 +43,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id", "name", "entity_type", name="uq_saved_filter"),
     )
-    op.create_index(
-        "ix_saved_filters_user_entity", "saved_filters", ["user_id", "entity_type"]
-    )
+    op.create_index("ix_saved_filters_user_entity", "saved_filters", ["user_id", "entity_type"])
 
 
 def downgrade() -> None:

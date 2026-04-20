@@ -1,4 +1,5 @@
 """Client profile management endpoints."""
+
 import uuid
 from datetime import datetime
 from typing import Any
@@ -193,9 +194,7 @@ async def list_upcoming_dates(
     if current_user.role == UserRole.relationship_manager:
         rm_id = current_user.id
 
-    items: list[UpcomingDateItem] = await get_upcoming_dates(
-        db, days_ahead=days_ahead, rm_id=rm_id
-    )
+    items: list[UpcomingDateItem] = await get_upcoming_dates(db, days_ahead=days_ahead, rm_id=rm_id)
     return [
         UpcomingDateItemResponse(
             client_id=item.client_id,

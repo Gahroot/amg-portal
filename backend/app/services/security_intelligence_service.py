@@ -111,9 +111,7 @@ class SecurityIntelligenceService:
     # Stub / offline implementations
     # ------------------------------------------------------------------
 
-    def _stub_threat_summary(
-        self, client_id: str, error: str | None = None
-    ) -> ThreatSummary:
+    def _stub_threat_summary(self, client_id: str, error: str | None = None) -> ThreatSummary:
         return {
             "client_id": client_id,
             "threat_level": "unknown",
@@ -136,9 +134,7 @@ class SecurityIntelligenceService:
                 "risk_level": "unknown",
                 "feed_status": "offline" if not error else "error",
                 "feed_error": error,
-                "summary": (
-                    "Travel advisory data unavailable — security feed not configured."
-                ),
+                "summary": ("Travel advisory data unavailable — security feed not configured."),
                 "last_updated": None,
             }
             for dest in destinations
@@ -162,9 +158,7 @@ class SecurityIntelligenceService:
             "Implement _fetch_threat_summary() in security_intelligence_service.py."
         )
 
-    async def _fetch_travel_advisories(
-        self, destinations: list[str]
-    ) -> list[TravelAdvisory]:
+    async def _fetch_travel_advisories(self, destinations: list[str]) -> list[TravelAdvisory]:
         """Fetch live travel advisories from the configured provider."""
         raise NotImplementedError(
             f"Live feed fetch not yet implemented for provider "

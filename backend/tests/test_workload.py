@@ -350,9 +350,7 @@ class TestWorkloadSummary:
         data = resp.json()
 
         # Find the MD user in the workload list
-        md_item = next(
-            (s for s in data["staff"] if s["role"] == "managing_director"), None
-        )
+        md_item = next((s for s in data["staff"] if s["role"] == "managing_director"), None)
         if md_item:
             # MD with minimal assignments should have low workload
             assert md_item["workload_score"] < 50
@@ -389,9 +387,7 @@ class TestWorkloadByRole:
         assert resp.status_code == 200
         data = resp.json()
 
-        rm_item = next(
-            (s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None
-        )
+        rm_item = next((s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None)
         assert rm_item is not None
         assert rm_item["active_programs"] >= len(programs_rm)
 
@@ -407,9 +403,7 @@ class TestWorkloadByRole:
         assert resp.status_code == 200
         data = resp.json()
 
-        rm_item = next(
-            (s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None
-        )
+        rm_item = next((s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None)
         assert rm_item is not None
         assert rm_item["open_escalations"] >= len(escalations_rm)
 
@@ -426,12 +420,8 @@ class TestWorkloadByRole:
         assert resp.status_code == 200
         data = resp.json()
 
-        rm_a_item = next(
-            (s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None
-        )
-        rm_b_item = next(
-            (s for s in data["staff"] if s["user_id"] == str(rm_user_b.id)), None
-        )
+        rm_a_item = next((s for s in data["staff"] if s["user_id"] == str(rm_user.id)), None)
+        rm_b_item = next((s for s in data["staff"] if s["user_id"] == str(rm_user_b.id)), None)
 
         if rm_a_item and rm_b_item:
             # rm_user has more programs and escalations, so should have higher score

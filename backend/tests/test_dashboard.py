@@ -137,12 +137,22 @@ async def test_task_overdue(
     dashboard_program: Program,
 ) -> Task:
     """An overdue task for alert testing."""
+    milestone = Milestone(
+        id=uuid.uuid4(),
+        program_id=dashboard_program.id,
+        title="Milestone for overdue task",
+        status="pending",
+        due_date=date.today() + timedelta(days=30),
+        position=1,
+    )
+    db_session.add(milestone)
+    await db_session.flush()
     task = Task(
         id=uuid.uuid4(),
         title="Overdue Task",
         status="todo",
         due_date=date.today() - timedelta(days=3),
-        milestone_id=None,
+        milestone_id=milestone.id,
     )
     db_session.add(task)
     await db_session.commit()
@@ -491,9 +501,7 @@ class TestActivityFeed:
         assert resp.status_code == 200
         data = resp.json()
         # Activity feed should include the escalation
-        escalation_activities = [
-            i for i in data["items"] if i["activity_type"] == "escalation"
-        ]
+        escalation_activities = [i for i in data["items"] if i["activity_type"] == "escalation"]
         assert len(escalation_activities) >= 1
 
     async def test_activity_feed_item_structure(
