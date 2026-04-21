@@ -1,5 +1,5 @@
 import { Tabs, router } from 'expo-router';
-import { LayoutDashboard, BookOpen, User } from 'lucide-react-native';
+import { LayoutDashboard, BookOpen, User, Users, CheckSquare, Handshake, MoreHorizontal } from 'lucide-react-native';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { INTERNAL_ROLES } from '@/types/user';
@@ -31,6 +31,13 @@ export default function InternalLayout() {
         }}
       />
       <Tabs.Screen
+        name="clients"
+        options={{
+          title: 'Clients',
+          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="programs"
         options={{
           title: 'Programs',
@@ -39,16 +46,27 @@ export default function InternalLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="tasks"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          title: 'Tasks',
+          tabBarIcon: ({ color, size }) => <CheckSquare color={color} size={size} />,
         }}
       />
-      <Tabs.Screen name="clients" options={{ href: null }} />
-      <Tabs.Screen name="tasks" options={{ href: null }} />
-      <Tabs.Screen name="partners" options={{ href: null }} />
-      <Tabs.Screen name="more" options={{ href: null }} />
+      <Tabs.Screen
+        name="partners"
+        options={{
+          title: 'Partners',
+          tabBarIcon: ({ color, size }) => <Handshake color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color, size }) => <MoreHorizontal color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen name="profile" options={{ href: null, title: 'Profile', tabBarIcon: ({ color, size }) => <User color={color} size={size} /> }} />
     </Tabs>
   );
 }

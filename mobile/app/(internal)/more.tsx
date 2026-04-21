@@ -1,15 +1,21 @@
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { BarChart3, AlertTriangle, Shield, Settings } from 'lucide-react-native';
+import { useRouter, type Href } from 'expo-router';
+import { Bell, User as UserIcon, Shield, ChevronRight } from 'lucide-react-native';
 
 import { useAuthStore } from '@/lib/auth-store';
 
-const MENU_ITEMS = [
-  { label: 'Reports', icon: BarChart3, description: 'Program and portfolio reports' },
-  { label: 'Escalations', icon: AlertTriangle, description: 'Active escalations and alerts' },
-  { label: 'Compliance', icon: Shield, description: 'KYC documents and compliance reviews' },
-  { label: 'Settings', icon: Settings, description: 'Account and notification preferences' },
+type MenuItem = {
+  label: string;
+  icon: typeof Shield;
+  description: string;
+  href: Href;
+};
+
+const MENU_ITEMS: readonly MenuItem[] = [
+  { label: 'Profile', icon: UserIcon, description: 'View your AMG account', href: '/(internal)/profile' },
+  { label: 'Notifications', icon: Bell, description: 'Notification preferences', href: '/settings/notifications' },
+  { label: 'Security', icon: Shield, description: 'Biometrics, sessions, MFA', href: '/settings/security' },
 ] as const;
 
 export default function InternalMoreScreen() {
@@ -34,6 +40,7 @@ export default function InternalMoreScreen() {
         {MENU_ITEMS.map((item) => (
           <Pressable
             key={item.label}
+            onPress={() => router.push(item.href)}
             className="mb-2 flex-row items-center rounded-lg bg-card p-4"
           >
             <item.icon color="#64748b" size={22} />
@@ -41,6 +48,7 @@ export default function InternalMoreScreen() {
               <Text className="text-base font-medium text-foreground">{item.label}</Text>
               <Text className="text-sm text-muted-foreground">{item.description}</Text>
             </View>
+            <ChevronRight color="#64748b" size={18} />
           </Pressable>
         ))}
 

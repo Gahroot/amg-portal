@@ -86,26 +86,32 @@ export function VoiceInput({
 
   // Pulse animation while recording
   useEffect(() => {
-    if (isListening) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
+    if (!isListening) {
       pulseAnim.setValue(1);
+      return;
     }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.2,
+          duration: 500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      pulseAnim.setValue(1);
+    };
   }, [isListening, pulseAnim]);
 
   // Volume indicator animation
@@ -401,26 +407,32 @@ export function VoiceInputButton({
 
   // Pulse animation
   useEffect(() => {
-    if (isListening) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 400,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
+    if (!isListening) {
       pulseAnim.setValue(1);
+      return;
     }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      pulseAnim.setValue(1);
+    };
   }, [isListening, pulseAnim]);
 
   // Handle transcript

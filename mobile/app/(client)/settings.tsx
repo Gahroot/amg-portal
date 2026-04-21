@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Shield, ChevronRight, Bell, HelpCircle, LogOut } from 'lucide-react-native';
+import { Shield, ChevronRight, Bell, LogOut } from 'lucide-react-native';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { useBiometrics } from '@/hooks/use-biometrics';
@@ -49,24 +49,12 @@ export default function ClientSettingsScreen() {
 
           {/* Notifications */}
           <Pressable
-            onPress={() => {}}
+            onPress={() => router.push('/settings/notifications')}
             className="flex-row items-center justify-between px-4 py-4 border-b border-border"
           >
             <View className="flex-row items-center gap-3">
               <Bell size={20} color="#6366f1" />
               <Text className="text-base text-foreground">Notifications</Text>
-            </View>
-            <ChevronRight size={18} color="#64748b" />
-          </Pressable>
-
-          {/* Help */}
-          <Pressable
-            onPress={() => {}}
-            className="flex-row items-center justify-between px-4 py-4"
-          >
-            <View className="flex-row items-center gap-3">
-              <HelpCircle size={20} color="#6366f1" />
-              <Text className="text-base text-foreground">Help & Support</Text>
             </View>
             <ChevronRight size={18} color="#64748b" />
           </Pressable>

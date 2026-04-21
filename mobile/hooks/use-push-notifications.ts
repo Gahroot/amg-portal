@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { router } from 'expo-router';
 
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useNotificationStore } from '@/lib/notification-store';
-import { parseDeepLink, getRouteFromDeepLink, createDeepLinkFromEntity } from '@/utils/deepLinks';
+import { getRouteFromDeepLink, createDeepLinkFromEntity } from '@/utils/deepLinks';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -51,15 +52,24 @@ export function usePushNotifications() {
       return null;
     }
 
+    // SDK 49+ requires an explicit EAS projectId; reading it from
+    // expoConfig.extra.eas.projectId works in dev (Expo Go), classic builds,
+    // and EAS builds.
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      (Constants as unknown as { easConfig?: { projectId?: string } }).easConfig?.projectId;
+
     try {
-      const tokenResult = await Notifications.getExpoPushTokenAsync();
+      const tokenResult = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined,
+      );
       const tokenString = tokenResult.data;
       if (tokenString) {
         setLocalPushToken(tokenString);
         return tokenString;
       }
     } catch {
-    return null;
+      return null;
     }
     return null;
   }, [permissionStatus]);
@@ -70,10 +80,14 @@ export function usePushNotifications() {
       return false;
     }
 
+    // Backend validates platform ∈ {ios, android, web}; map RN's broader set.
+    const platform: 'ios' | 'android' | 'web' =
+      Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+
     try {
-      await api.post('/push-tokens', {
+      await api.post('/push-tokens/', {
         token: tokenString,
-        platform: 'mobile', // Could detect iOS/Android
+        platform,
       });
       await setStorePushToken(tokenString);
       return true;
