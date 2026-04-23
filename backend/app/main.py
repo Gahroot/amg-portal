@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import router as v1_router
 from app.api.websocket import ws_router as websocket_router
 from app.core import audit_listener as _audit_listener  # noqa: F401
-from app.core.config import settings
+from app.core.config import settings, validate_settings_on_startup
 from app.core.exceptions import (
     AppException,
     app_exception_handler,
@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from app.services.template_seeder import (
         seed_default_templates,
     )
+
+    # Fail fast when required env vars are missing or contain placeholder values.
+    # No-op in DEBUG mode (local dev derives safe defaults automatically).
+    validate_settings_on_startup()
 
     # Pooled httpx clients — opened once per process, shared across handlers
     # and APScheduler jobs.  Closed in the teardown branch.
