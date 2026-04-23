@@ -11,6 +11,7 @@ import {
 import { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { login, getMe } from '@/lib/api/auth';
@@ -30,6 +31,14 @@ export default function LoginScreen() {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [showSetupPrompt, setShowSetupPrompt] = useState(false);
   const [setupCredentials, setSetupCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyError = useCallback(async () => {
+    if (!error) return;
+    await Clipboard.setStringAsync(error);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [error]);
 
   const { status: biometricStatus, authenticate, refreshStatus } = useBiometrics();
 
@@ -193,9 +202,26 @@ export default function LoginScreen() {
                 borderRadius: 10,
                 padding: 12,
                 marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 8,
               }}
             >
-              <Text style={{ fontSize: 14, color: '#fca5a5' }}>{error}</Text>
+              <Text selectable style={{ flex: 1, fontSize: 14, color: '#fca5a5' }}>{error}</Text>
+              <Pressable
+                onPress={handleCopyError}
+                hitSlop={8}
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 6,
+                  backgroundColor: '#991b1b',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#fecaca' }}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Text>
+              </Pressable>
             </View>
           ) : null}
 

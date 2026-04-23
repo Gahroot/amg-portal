@@ -64,9 +64,23 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Extract backend error message for all errors
-    if (error.response?.data?.detail) {
-      error.message = error.response.data.detail;
+    // Extract backend error message for all errors. FastAPI validation errors
+    // return `detail` as an array of {msg, loc, ...} objects — coerce to a
+    // string so `err.message` stays a string for UI rendering.
+    const detail = error.response?.data?.detail;
+    if (typeof detail === 'string') {
+      error.message = detail;
+    } else if (Array.isArray(detail)) {
+      error.message = detail
+        .map((d) => (typeof d === 'string' ? d : d?.msg ?? JSON.stringify(d)))
+        .join('; ');
+    }
+
+    // If the request never reached the network (thrown request interceptor,
+    // some CORS/network failures) axios rejects without a `config` — bail out
+    // before touching any `originalRequest.*` fields.
+    if (!originalRequest) {
+      return Promise.reject(error);
     }
 
     // Skip interceptor for the refresh endpoint itself to avoid deadlocks
