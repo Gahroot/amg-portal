@@ -55,6 +55,16 @@ export const familyMemberSchema = z.object({
   is_primary_contact: z.boolean().optional(),
 });
 
+// Family member dialog schema (uses string for relationship_type to accept any value)
+export const familyMemberFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  relationship_type: z.string().min(1, "Relationship is required"),
+  date_of_birth: z.string().optional(),
+  occupation: z.string().optional(),
+  notes: z.string().optional(),
+  is_primary_contact: z.boolean().optional(),
+});
+
 // Full intake form schema
 export const intakeFormSchema = clientIdentitySchema
   .merge(clientContactSchema)
@@ -78,3 +88,4 @@ export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
 export type IntakeFormData = z.infer<typeof intakeFormSchema>;
 export type ClientCreateFormData = z.infer<typeof clientCreateSchema>;
 export type ClientUpdateFormData = z.infer<typeof clientUpdateSchema>;
+export type FamilyMemberFormValues = z.infer<typeof familyMemberFormSchema>;

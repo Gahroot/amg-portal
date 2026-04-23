@@ -4,6 +4,7 @@ export * from "./client";
 export * from "./communication";
 export * from "./escalation";
 export * from "./event";
+export * from "./lead";
 export * from "./partner";
 export * from "./program";
 export * from "./task";

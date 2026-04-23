@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 import {
   Dialog,
@@ -32,37 +31,7 @@ import type {
   LeadSource,
   LeadStatus,
 } from "@/types/crm";
-
-const schema = z.object({
-  full_name: z.string().min(1, "Name is required").max(255),
-  email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().max(50).optional(),
-  company: z.string().max(255).optional(),
-  status: z.enum([
-    "new",
-    "contacting",
-    "qualifying",
-    "qualified",
-    "disqualified",
-    "converted",
-  ] as const),
-  source: z.enum([
-    "referral_partner",
-    "existing_client",
-    "inbound_web",
-    "outbound",
-    "event",
-    "other",
-  ] as const),
-  source_details: z.string().max(500).optional(),
-  estimated_value: z.string().optional(),
-  estimated_client_type: z
-    .enum(["uhnw_individual", "family_office", "global_executive"] as const)
-    .optional(),
-  notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
+import { leadSchema, type LeadFormValues } from "@/lib/validations/lead";
 
 interface LeadDialogProps {
   open: boolean;
@@ -77,8 +46,8 @@ export function LeadDialog({
   lead,
   onSubmit,
 }: LeadDialogProps) {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<LeadFormValues>({
+    resolver: zodResolver(leadSchema),
     defaultValues: {
       full_name: "",
       email: "",

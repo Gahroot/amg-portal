@@ -40,6 +40,17 @@ export const taskFilterSchema = z.object({
   search: z.string().optional(),
 });
 
+// Quick task dialog schema (includes program_id for program selection)
+export const quickTaskSchema = z.object({
+  title: z.string().min(1, "Title is required").max(255, "Title must be 255 characters or less"),
+  description: z.string().max(2000, "Description must be 2000 characters or less").optional(),
+  program_id: z.string().min(1, "Program is required"),
+  milestone_id: z.string().min(1, "Milestone is required"),
+  due_date: z.string().optional(),
+  assigned_to: z.string().optional().nullable(),
+  priority: taskPrioritySchema.default("medium"),
+});
+
 // Type exports
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
@@ -47,3 +58,4 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 export type TaskCreateFormData = z.infer<typeof taskCreateSchema>;
 export type TaskUpdateFormData = z.infer<typeof taskUpdateSchema>;
 export type TaskFilterFormData = z.infer<typeof taskFilterSchema>;
+export type QuickTaskFormData = z.infer<typeof quickTaskSchema>;

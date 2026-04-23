@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
 import {
   Dialog,
   DialogContent,
@@ -25,17 +24,7 @@ import {
 } from "@/components/ui/select";
 import { FAMILY_RELATIONSHIP_TYPES } from "@/types/intake-form";
 import type { FamilyMemberCreate, FamilyRelationshipType } from "@/types/family-member";
-
-const familyMemberSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  relationship_type: z.string().min(1, "Relationship is required"),
-  date_of_birth: z.string().optional(),
-  occupation: z.string().optional(),
-  notes: z.string().optional(),
-  is_primary_contact: z.boolean().optional(),
-});
-
-type FormData = z.infer<typeof familyMemberSchema>;
+import { familyMemberFormSchema, type FamilyMemberFormValues } from "@/lib/validations/client";
 
 interface FamilyMemberDialogProps {
   open: boolean;
@@ -59,8 +48,8 @@ export function FamilyMemberDialog({
     watch,
     reset,
     formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(familyMemberSchema),
+  } = useForm<FamilyMemberFormValues>({
+    resolver: zodResolver(familyMemberFormSchema),
     defaultValues: {
       name: initialData?.name ?? "",
       relationship_type: initialData?.relationship_type ?? "",
@@ -87,7 +76,7 @@ export function FamilyMemberDialog({
 
   const isPrimaryContact = watch("is_primary_contact");
 
-  const handleFormSubmit = (data: FormData) => {
+  const handleFormSubmit = (data: FamilyMemberFormValues) => {
     onSubmit({
       name: data.name,
       relationship_type: data.relationship_type as FamilyRelationshipType,
@@ -108,7 +97,7 @@ export function FamilyMemberDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit as (data: FormData) => void)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">
