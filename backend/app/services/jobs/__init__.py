@@ -19,10 +19,14 @@ from app.services.jobs._escalation_jobs import (
     _check_escalation_triggers_job,
 )
 from app.services.jobs._misc_jobs import (
+    _alert_audit_chain_break,
     _check_partner_performance_trend_alerts_job,
     _cleanup_expired_refresh_tokens_job,
+    _encrypted_backup_job,
     _process_recurring_tasks_job,
     _run_predictive_alerts_job,
+    _sign_audit_chain_job,
+    _verify_audit_chain_job,
 )
 from app.services.jobs._notification_jobs import (
     _check_client_dates_job,
@@ -74,4 +78,9 @@ __all__ = [
     "_check_partner_performance_trend_alerts_job",
     "_process_recurring_tasks_job",
     "_cleanup_expired_refresh_tokens_job",
+    # Audit chain
+    "_sign_audit_chain_job",
+    "_verify_audit_chain_job",
+    "_alert_audit_chain_break",
+    "_encrypted_backup_job",
 ]
