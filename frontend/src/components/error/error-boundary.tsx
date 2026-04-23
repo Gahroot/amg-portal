@@ -34,6 +34,11 @@ export class ErrorBoundary extends Component<
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
 
+    // Raw fetch is intentional here: `/api/error-log` is a Next.js Route
+    // Handler (same-origin), not the FastAPI backend. The shared axios client
+    // targets the FastAPI baseURL and its 401 interceptor would call logout()
+    // when the user is unauthenticated — both wrong behaviours for a crash
+    // reporter that must fire even when the session has expired.
     fetch("/api/error-log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
