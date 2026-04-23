@@ -7,9 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/providers/auth-provider";
 import {
   useNPSSurveys,
-  useNPSSurveyStats,
   useNPSTrendAnalysis,
-  useNPSResponses,
   useNPSFollowUps,
   useMyNPSFollowUps,
   useCreateNPSSurvey,
@@ -20,7 +18,6 @@ import {
 } from "@/hooks/use-nps-surveys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -52,14 +49,15 @@ import type {
   NPSSurveyStatus,
   NPSFollowUpStatus,
   NPSFollowUpPriority,
-  NPSScoreCategory,
   NPSSurveyCreateData,
 } from "@/types/nps-survey";
 import {
   isNPSFollowUpPriority,
   isNPSFollowUpStatus,
-  isNPSScoreCategory,
 } from "@/lib/type-guards";
+import { NPSChart } from "./_components/nps-chart";
+import { SentimentAnalysis } from "./_components/sentiment-analysis";
+import { SurveyComments } from "./_components/survey-comments";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -97,34 +95,7 @@ const PRIORITY_VARIANT: Record<
   urgent: "destructive",
 };
 
-const SCORE_CATEGORY_VARIANT: Record<
-  NPSScoreCategory,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  promoter: "default",
-  passive: "secondary",
-  detractor: "destructive",
-};
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function getNPSColor(score: number): string {
-  if (score >= 70) return "text-green-600 dark:text-green-400";
-  if (score >= 50) return "text-amber-600 dark:text-amber-400";
-  return "text-red-600 dark:text-red-400";
-}
-
-function getTrendIcon(direction: "up" | "down" | "stable"): string {
-  if (direction === "up") return "↑";
-  if (direction === "down") return "↓";
-  return "→";
-}
-
-function getTrendColor(direction: "up" | "down" | "stable"): string {
-  if (direction === "up") return "text-green-600 dark:text-green-400";
-  if (direction === "down") return "text-red-600 dark:text-red-400";
-  return "text-muted-foreground";
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -141,35 +112,6 @@ function truncateId(id: string): string {
 
 function getCurrentQuarter(): number {
   return Math.floor(new Date().getMonth() / 3) + 1;
-}
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function ScoreBar({
-  label,
-  percent,
-  colorClass,
-}: {
-  label: string;
-  percent: number;
-  colorClass: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className={`font-medium ${colorClass}`}>
-          {percent.toFixed(0)}%
-        </span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={`h-full rounded-full ${colorClass.replace("text-", "bg-")}`}
-          style={{ width: `${Math.min(100, percent)}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 // ─── Create Survey Dialog ─────────────────────────────────────────────────────
@@ -423,89 +365,6 @@ function CompleteFollowUpDialog({
   );
 }
 
-// ─── Survey Stats Panel ───────────────────────────────────────────────────────
-
-function SurveyStatsPanel({ surveyId }: { surveyId: string }) {
-  const { data: stats, isLoading } = useNPSSurveyStats(surveyId);
-
-  if (isLoading) {
-    return (
-      <p className="py-4 text-sm text-muted-foreground">Loading stats…</p>
-    );
-  }
-  if (!stats) return null;
-
-  return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            NPS Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className={`text-3xl font-bold ${getNPSColor(stats.nps_score)}`}>
-            {stats.nps_score}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Responses
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-bold">{stats.total_responses}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {stats.response_rate.toFixed(0)}% response rate
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Score Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <ScoreBar
-            label="Promoters"
-            percent={stats.promoters_percent}
-            colorClass="text-green-600 dark:text-green-400"
-          />
-          <ScoreBar
-            label="Passives"
-            percent={stats.passives_percent}
-            colorClass="text-amber-600 dark:text-amber-400"
-          />
-          <ScoreBar
-            label="Detractors"
-            percent={stats.detractors_percent}
-            colorClass="text-red-600 dark:text-red-400"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Follow-Ups
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-bold">{stats.follow_ups_pending}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {stats.follow_ups_completed} completed
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // ─── Surveys Tab ──────────────────────────────────────────────────────────────
 
 interface SurveysTabProps {
@@ -632,144 +491,7 @@ function SurveysTab({
       {selectedSurveyId && (
         <div className="space-y-3">
           <h3 className="font-serif text-lg font-semibold">Survey Stats</h3>
-          <SurveyStatsPanel surveyId={selectedSurveyId} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Responses Tab ────────────────────────────────────────────────────────────
-
-interface ResponsesTabProps {
-  surveys: NPSSurvey[];
-  selectedSurveyId: string | null;
-  onSelectSurvey: (id: string) => void;
-}
-
-function ResponsesTab({
-  surveys,
-  selectedSurveyId,
-  onSelectSurvey,
-}: ResponsesTabProps) {
-  const { data, isLoading } = useNPSResponses(selectedSurveyId ?? "");
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <h2 className="font-serif text-xl font-semibold">Responses</h2>
-        <div className="w-72">
-          <Select
-            value={selectedSurveyId ?? ""}
-            onValueChange={onSelectSurvey}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a survey…" />
-            </SelectTrigger>
-            <SelectContent>
-              {surveys.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name} (Q{s.quarter} {s.year})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {!selectedSurveyId ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Select a survey to view its responses.
-        </p>
-      ) : isLoading ? (
-        <p className="py-4 text-sm text-muted-foreground">
-          Loading responses…
-        </p>
-      ) : !data || data.responses.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          No responses yet for this survey.
-        </p>
-      ) : (
-        <div className="rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client ID</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Feedback</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead>Responded</TableHead>
-                <TableHead>Follow-Up</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.responses.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell
-                    className="font-mono text-xs text-muted-foreground"
-                    title={r.client_profile_id}
-                  >
-                    {truncateId(r.client_profile_id)}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`text-lg font-bold ${
-                        r.score >= 9
-                          ? "text-green-600 dark:text-green-400"
-                          : r.score >= 7
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-red-600 dark:text-red-400"
-                      }`}
-                    >
-                      {r.score}
-                    </span>
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      /10
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        isNPSScoreCategory(r.score_category)
-                          ? SCORE_CATEGORY_VARIANT[r.score_category]
-                          : "secondary"
-                      }
-                    >
-                      {r.score_category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="max-w-xs truncate text-sm"
-                    title={r.comment ?? ""}
-                  >
-                    {r.comment ?? (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm capitalize text-muted-foreground">
-                    {r.response_channel}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(r.responded_at)}
-                  </TableCell>
-                  <TableCell>
-                    {r.follow_up_required ? (
-                      <Badge
-                        variant={
-                          r.follow_up_completed ? "outline" : "destructive"
-                        }
-                      >
-                        {r.follow_up_completed ? "done" : "pending"}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <SentimentAnalysis surveyId={selectedSurveyId} />
         </div>
       )}
     </div>
@@ -1025,137 +747,18 @@ export default function NPSSurveysPage() {
           </div>
         </div>
 
-        {/* Global NPS Overview Cards */}
+        {/* Global NPS Overview + Trend History */}
         {trendsLoading ? (
           <p className="text-sm text-muted-foreground">
             Loading NPS overview…
           </p>
         ) : trends ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Current NPS
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className={`text-3xl font-bold ${getNPSColor(trends.current_nps)}`}
-                >
-                  {trends.current_nps}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Target: 70+
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Trend
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className={`text-3xl font-bold ${getTrendColor(trends.trend_direction as "up" | "down" | "stable")}`}
-                >
-                  {getTrendIcon(trends.trend_direction as "up" | "down" | "stable")}{" "}
-                  {trends.change !== null
-                    ? `${trends.change > 0 ? "+" : ""}${trends.change}`
-                    : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  vs previous period
-                  {trends.previous_nps !== null
-                    ? ` (${trends.previous_nps})`
-                    : ""}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Surveys
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{surveys.length}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {surveys.filter((s) => s.status === "active").length} active
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Data Points
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">
-                  {trends.trends.length}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  quarters tracked
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <NPSChart
+            trends={trends}
+            totalSurveys={surveys.length}
+            activeSurveys={surveys.filter((s) => s.status === "active").length}
+          />
         ) : null}
-
-        {/* NPS Trend Table */}
-        {trends && trends.trends.length > 0 && (
-          <div>
-            <h2 className="mb-3 font-serif text-xl font-semibold">
-              NPS Trend History
-            </h2>
-            <div className="rounded-md border bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Period</TableHead>
-                    <TableHead className="text-right">NPS Score</TableHead>
-                    <TableHead className="text-right">Responses</TableHead>
-                    <TableHead className="text-right">Promoters %</TableHead>
-                    <TableHead className="text-right">Passives %</TableHead>
-                    <TableHead className="text-right">Detractors %</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {trends.trends.map((t) => (
-                    <TableRow key={t.period}>
-                      <TableCell className="font-medium">
-                        {t.period}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className={`font-bold ${getNPSColor(t.nps_score)}`}
-                        >
-                          {t.nps_score}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {t.response_count}
-                      </TableCell>
-                      <TableCell className="text-right text-green-600 dark:text-green-400">
-                        {t.promoters_percent.toFixed(0)}%
-                      </TableCell>
-                      <TableCell className="text-right text-amber-600 dark:text-amber-400">
-                        {t.passives_percent.toFixed(0)}%
-                      </TableCell>
-                      <TableCell className="text-right text-red-600 dark:text-red-400">
-                        {t.detractors_percent.toFixed(0)}%
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1176,7 +779,7 @@ export default function NPSSurveysPage() {
           </TabsContent>
 
           <TabsContent value="responses" className="mt-4">
-            <ResponsesTab
+            <SurveyComments
               surveys={surveys}
               selectedSurveyId={selectedSurveyId}
               onSelectSurvey={setSelectedSurveyId}
