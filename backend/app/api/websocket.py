@@ -20,6 +20,7 @@ from app.models.conversation import Conversation
 from app.models.device_session import DeviceSession
 from app.models.read_status import ReadStatus
 from app.models.user_preferences import UserPreferences
+from app.schemas.ws_messages import WSMessageType
 
 ws_router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ async def _reauth_loop(
                 with contextlib.suppress(Exception):
                     await websocket.send_text(
                         json.dumps(
-                            {"type": "auth_error", "message": "Session expired"}
+                            {"type": WSMessageType.AUTH_ERROR, "message": "Session expired"}
                         )
                     )
                 with contextlib.suppress(Exception):
@@ -116,7 +117,9 @@ async def handle_subscribe(
     channels = message.get("channels", [])
     for channel in channels:
         subscriptions.add(channel)
-    await websocket.send_text(json.dumps({"type": "subscribed", "channels": list(subscriptions)}))
+    await websocket.send_text(
+        json.dumps({"type": WSMessageType.SUBSCRIBED, "channels": list(subscriptions)})
+    )
 
 
 async def handle_unsubscribe(
@@ -128,7 +131,9 @@ async def handle_unsubscribe(
     channels = message.get("channels", [])
     for channel in channels:
         subscriptions.discard(channel)
-    await websocket.send_text(json.dumps({"type": "unsubscribed", "channels": channels}))
+    await websocket.send_text(
+        json.dumps({"type": WSMessageType.UNSUBSCRIBED, "channels": channels})
+    )
 
 
 async def handle_typing(
@@ -156,11 +161,11 @@ async def handle_typing(
             )
 
         await websocket.send_text(
-            json.dumps({"type": "typing_ack", "conversation_id": conversation_id_str})
+            json.dumps({"type": WSMessageType.TYPING_ACK, "conversation_id": conversation_id_str})
         )
     except ValueError:
         await websocket.send_text(
-            json.dumps({"type": "error", "message": "Invalid conversation_id"})
+            json.dumps({"type": WSMessageType.ERROR, "message": "Invalid conversation_id"})
         )
 
 
@@ -175,7 +180,9 @@ async def handle_device_register(
     device_name = message.get("device_name")
 
     if not device_id:
-        await websocket.send_text(json.dumps({"type": "error", "message": "device_id required"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.ERROR, "message": "device_id required"})
+        )
         return
 
     try:
@@ -211,7 +218,7 @@ async def handle_device_register(
         await websocket.send_text(
             json.dumps(
                 {
-                    "type": "device_registered",
+                    "type": WSMessageType.DEVICE_REGISTERED,
                     "device_id": device_id,
                 }
             )
@@ -219,7 +226,7 @@ async def handle_device_register(
     except Exception as e:
         logger.exception(f"Failed to register device: {e}")
         await websocket.send_text(
-            json.dumps({"type": "error", "message": "Failed to register device"})
+            json.dumps({"type": WSMessageType.ERROR, "message": "Failed to register device"})
         )
 
 
@@ -237,7 +244,9 @@ async def handle_preference_sync(
     client_version = message.get("version", 1)
 
     if not device_id:
-        await websocket.send_text(json.dumps({"type": "error", "message": "device_id required"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.ERROR, "message": "device_id required"})
+        )
         return
 
     try:
@@ -263,7 +272,7 @@ async def handle_preference_sync(
                     await websocket.send_text(
                         json.dumps(
                             {
-                                "type": "preference_conflict",
+                                "type": WSMessageType.PREFERENCE_CONFLICT,
                                 "server_version": user_prefs.version,
                                 "client_version": client_version,
                                 "preferences": user_prefs.ui_preferences,
@@ -292,7 +301,7 @@ async def handle_preference_sync(
         await websocket.send_text(
             json.dumps(
                 {
-                    "type": "preference_sync_ack",
+                    "type": WSMessageType.PREFERENCE_SYNC_ACK,
                     "version": new_version,
                     "synced_at": datetime.now(UTC).isoformat(),
                 }
@@ -301,7 +310,7 @@ async def handle_preference_sync(
     except Exception as e:
         logger.exception(f"Failed to sync preferences: {e}")
         await websocket.send_text(
-            json.dumps({"type": "error", "message": "Failed to sync preferences"})
+            json.dumps({"type": WSMessageType.ERROR, "message": "Failed to sync preferences"})
         )
 
 
@@ -323,7 +332,7 @@ async def handle_read_status_sync(
         await websocket.send_text(
             json.dumps(
                 {
-                    "type": "error",
+                    "type": WSMessageType.ERROR,
                     "message": "device_id, entity_type, and entity_id required",
                 }
             )
@@ -378,7 +387,7 @@ async def handle_read_status_sync(
         await websocket.send_text(
             json.dumps(
                 {
-                    "type": "read_status_sync_ack",
+                    "type": WSMessageType.READ_STATUS_SYNC_ACK,
                     "entity_type": entity_type_str,
                     "entity_id": str(entity_id),
                     "is_read": is_read,
@@ -387,11 +396,13 @@ async def handle_read_status_sync(
             )
         )
     except ValueError:
-        await websocket.send_text(json.dumps({"type": "error", "message": "Invalid entity_id"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.ERROR, "message": "Invalid entity_id"})
+        )
     except Exception as e:
         logger.exception(f"Failed to sync read status: {e}")
         await websocket.send_text(
-            json.dumps({"type": "error", "message": "Failed to sync read status"})
+            json.dumps({"type": WSMessageType.ERROR, "message": "Failed to sync read status"})
         )
 
 
@@ -406,27 +417,29 @@ async def handle_message(
         message: dict[str, Any] = json.loads(data)
         msg_type = message.get("type")
 
-        if msg_type == "subscribe":
+        if msg_type == WSMessageType.SUBSCRIBE:
             await handle_subscribe(websocket, message, subscriptions)
-        elif msg_type == "unsubscribe":
+        elif msg_type == WSMessageType.UNSUBSCRIBE:
             await handle_unsubscribe(websocket, message, subscriptions)
-        elif msg_type == "ping":
-            await websocket.send_text(json.dumps({"type": "pong"}))
-        elif msg_type == "typing":
+        elif msg_type == WSMessageType.PING:
+            await websocket.send_text(json.dumps({"type": WSMessageType.PONG}))
+        elif msg_type == WSMessageType.TYPING:
             await handle_typing(websocket, message, user_id)
-        elif msg_type == "device_register":
+        elif msg_type == WSMessageType.DEVICE_REGISTER:
             await handle_device_register(websocket, message, user_id)
-        elif msg_type == "preference_sync":
+        elif msg_type == WSMessageType.PREFERENCE_SYNC:
             await handle_preference_sync(websocket, message, user_id)
-        elif msg_type == "read_status_sync":
+        elif msg_type == WSMessageType.READ_STATUS_SYNC:
             await handle_read_status_sync(websocket, message, user_id)
-        elif msg_type == "auth":
+        elif msg_type == WSMessageType.AUTH:
             # Auth messages should only be sent before connection is established
             await websocket.send_text(
-                json.dumps({"type": "auth_error", "message": "Already authenticated"})
+                json.dumps({"type": WSMessageType.AUTH_ERROR, "message": "Already authenticated"})
             )
     except json.JSONDecodeError:
-        await websocket.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.ERROR, "message": "Invalid JSON"})
+        )
 
 
 @ws_router.websocket("/ws")
@@ -454,9 +467,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         data = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
         message: dict[str, Any] = json.loads(data)
 
-        if message.get("type") != "auth":
+        if message.get("type") != WSMessageType.AUTH:
             await websocket.send_text(
-                json.dumps({"type": "auth_error", "message": "First message must be auth"})
+                json.dumps(
+                    {"type": WSMessageType.AUTH_ERROR, "message": "First message must be auth"}
+                )
             )
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
@@ -471,7 +486,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         )
         if not token:
             await websocket.send_text(
-                json.dumps({"type": "auth_error", "message": "Token required"})
+                json.dumps({"type": WSMessageType.AUTH_ERROR, "message": "Token required"})
             )
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
@@ -479,19 +494,23 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         user_id = await get_ws_user(token)
         if not user_id:
             await websocket.send_text(
-                json.dumps({"type": "auth_error", "message": "Invalid token"})
+                json.dumps({"type": WSMessageType.AUTH_ERROR, "message": "Invalid token"})
             )
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        await websocket.send_text(json.dumps({"type": "auth_success"}))
+        await websocket.send_text(json.dumps({"type": WSMessageType.AUTH_SUCCESS}))
 
     except TimeoutError:
-        await websocket.send_text(json.dumps({"type": "auth_error", "message": "Auth timeout"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.AUTH_ERROR, "message": "Auth timeout"})
+        )
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     except json.JSONDecodeError:
-        await websocket.send_text(json.dumps({"type": "auth_error", "message": "Invalid JSON"}))
+        await websocket.send_text(
+            json.dumps({"type": WSMessageType.AUTH_ERROR, "message": "Invalid JSON"})
+        )
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
