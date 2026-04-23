@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { forgotPassword } from "@/lib/api/auth";
 import Link from "next/link";
-
-const forgotPasswordSchema = z.object({
-  email: z.email("Please enter a valid email address"),
-});
-
-type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+import { forgotPasswordSchema, type ForgotPasswordFormData } from "@/lib/validations/auth";
 
 export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);

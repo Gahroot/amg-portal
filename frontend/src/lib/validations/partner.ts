@@ -57,6 +57,16 @@ export const partnerOnboardingSchema = z.object({
   capabilities: z.array(partnerCapabilitySchema).optional(),
 });
 
+// Create partner schema (new partner onboarding form)
+export const createPartnerSchema = z.object({
+  firm_name: z.string().min(1, "Firm name is required"),
+  contact_name: z.string().min(1, "Contact name is required"),
+  contact_email: z.email("Please enter a valid email address"),
+  contact_phone: z.string().optional(),
+  geographies: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 // Type exports
 export type GovernanceActionType = z.infer<typeof governanceActionTypeSchema>;
 export type GovernanceActionFormData = z.infer<typeof governanceActionSchema>;
@@ -64,3 +74,4 @@ export type PartnerCertificationFormData = z.infer<typeof partnerCertificationSc
 export type PartnerCapabilityFormData = z.infer<typeof partnerCapabilitySchema>;
 export type PerformanceNoticeFormData = z.infer<typeof performanceNoticeSchema>;
 export type PartnerOnboardingFormData = z.infer<typeof partnerOnboardingSchema>;
+export type CreatePartnerFormData = z.infer<typeof createPartnerSchema>;

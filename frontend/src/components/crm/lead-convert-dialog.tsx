@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 import {
   Dialog,
@@ -26,20 +25,7 @@ import {
 } from "@/components/ui/select";
 import { CLIENT_TYPES } from "@/types/crm";
 import type { ClientType, Lead, LeadConvertRequest } from "@/types/crm";
-
-const schema = z.object({
-  legal_name: z.string().min(1, "Legal name is required"),
-  primary_email: z.string().email("Valid email required"),
-  entity_type: z.enum([
-    "uhnw_individual",
-    "family_office",
-    "global_executive",
-  ] as const),
-  phone: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
+import { leadConvertSchema, type LeadConvertFormValues } from "@/lib/validations/lead";
 
 interface LeadConvertDialogProps {
   open: boolean;
@@ -54,8 +40,8 @@ export function LeadConvertDialog({
   lead,
   onSubmit,
 }: LeadConvertDialogProps) {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<LeadConvertFormValues>({
+    resolver: zodResolver(leadConvertSchema),
     defaultValues: {
       legal_name: lead.company || lead.full_name,
       primary_email: lead.email ?? "",

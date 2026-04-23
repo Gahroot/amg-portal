@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/providers/auth-provider";
 import { checkPartnerDuplicates } from "@/lib/api/partners";
@@ -19,6 +18,7 @@ import {
   DuplicateWarningDialog,
   type PartnerDuplicateMatch as DialogPartnerMatch,
 } from "@/components/common/duplicate-warning-dialog";
+import { createPartnerSchema, type CreatePartnerFormData } from "@/lib/validations/partner";
 
 const CAPABILITY_OPTIONS = [
   "Strategy",
@@ -32,17 +32,6 @@ const CAPABILITY_OPTIONS = [
   "Compliance",
   "Tax",
 ];
-
-const createPartnerSchema = z.object({
-  firm_name: z.string().min(1, "Firm name is required"),
-  contact_name: z.string().min(1, "Contact name is required"),
-  contact_email: z.email("Please enter a valid email address"),
-  contact_phone: z.string().optional(),
-  geographies: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type CreatePartnerFormData = z.infer<typeof createPartnerSchema>;
 
 export default function NewPartnerPage() {
   const { user } = useAuth();

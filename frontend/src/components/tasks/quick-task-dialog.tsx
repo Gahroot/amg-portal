@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -41,18 +40,7 @@ import {
 } from "@/hooks/use-tasks";
 import { createTask } from "@/lib/api/tasks";
 import { useAuth } from "@/providers/auth-provider";
-
-const quickTaskSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255, "Title must be 255 characters or less"),
-  description: z.string().max(2000).optional(),
-  program_id: z.string().min(1, "Program is required"),
-  milestone_id: z.string().min(1, "Milestone is required"),
-  due_date: z.string().optional(),
-  assigned_to: z.string().optional().nullable(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
-});
-
-type QuickTaskFormData = z.infer<typeof quickTaskSchema>;
+import { quickTaskSchema, type QuickTaskFormData } from "@/lib/validations/task";
 
 interface QuickTaskDialogProps {
   open: boolean;
