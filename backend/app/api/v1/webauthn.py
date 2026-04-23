@@ -24,7 +24,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentUser
-from app.api.v1.auth import _issue_refresh_token, _set_auth_cookies
+from app.api.v1.auth_core import _issue_refresh_token, _set_auth_cookies
 from app.core.exceptions import NotFoundException
 from app.core.security import create_access_token
 from app.models.user import User
