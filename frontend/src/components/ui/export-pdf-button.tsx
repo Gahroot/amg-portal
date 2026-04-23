@@ -264,19 +264,15 @@ export function ExportPDFButton({
       const separator = exportUrl.includes("?") ? "&" : "?";
       const fullUrl = `${exportUrl}${separator}${params.toString()}`;
 
-      const response = await fetch(fullUrl, {
-        credentials: "include",
+      const response = await api.get<Blob>(fullUrl, {
+        responseType: "blob",
       });
 
-      if (!response.ok) {
-        throw new Error(`Export failed: ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
+      const blob = response.data;
       const objectUrl = URL.createObjectURL(blob);
 
       // Extract filename from Content-Disposition header or generate one
-      const contentDisposition = response.headers.get("Content-Disposition");
+      const contentDisposition = response.headers["content-disposition"] as string | undefined;
       let filename = `${title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
