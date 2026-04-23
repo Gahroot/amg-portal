@@ -4,8 +4,15 @@ import os
 import secrets
 from datetime import date
 from typing import Any
+from urllib.parse import urlparse
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Dev-mode defaults — referenced both as field defaults and in the startup
+# validator so the same string is never repeated.
+_DEV_DATABASE_URL = "postgresql+asyncpg://postgres@localhost:5432/amg_portal"
+_DEV_REDIS_URL = "redis://localhost:6380/0"
 
 
 class Settings(BaseSettings):
@@ -19,10 +26,37 @@ class Settings(BaseSettings):
 
     # Database — no password in default; set DATABASE_URL via env var or .env file.
     # Local dev: docker-compose.yml and backend/.env provide the full connection string.
-    DATABASE_URL: str = "postgresql+asyncpg://postgres@localhost:5432/amg_portal"
+    DATABASE_URL: str = _DEV_DATABASE_URL
 
     # Redis
-    REDIS_URL: str = "redis://localhost:6380/0"
+    REDIS_URL: str = _DEV_REDIS_URL
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """Reject empty strings and non-postgres URLs."""
+        if not v.strip():
+            raise ValueError("DATABASE_URL must not be empty.")
+        parsed = urlparse(v)
+        if parsed.scheme not in (
+            "postgresql",
+            "postgresql+asyncpg",
+            "postgres",
+            "postgres+asyncpg",
+        ):
+            raise ValueError(
+                f"DATABASE_URL must be a PostgreSQL URL (got scheme '{parsed.scheme}'). "
+                "Expected format: postgresql+asyncpg://user:password@host:port/db"
+            )
+        return v
+
+    @field_validator("REDIS_URL")
+    @classmethod
+    def validate_redis_url(cls, v: str) -> str:
+        """Reject empty strings."""
+        if not v.strip():
+            raise ValueError("REDIS_URL must not be empty.")
+        return v
 
     # JWT
     SECRET_KEY: str = ""
@@ -389,3 +423,49 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def validate_settings_on_startup() -> None:
+    """Run a fast-fail check for required production settings.
+
+    Call this at application startup (e.g. inside the FastAPI lifespan) so the
+    process refuses to serve traffic rather than failing mid-request when a
+    required environment variable is missing or insecure.
+
+    In DEBUG mode the check is skipped because many prod-only vars are derived
+    automatically from SECRET_KEY for developer convenience.
+
+    Raises
+    ------
+    RuntimeError
+        When one or more required settings are missing or contain placeholder
+        values in a non-DEBUG environment.  The error message lists every
+        failed variable so operators can fix them all in one deploy cycle.
+    """
+    if settings.DEBUG:
+        return
+
+    errors: list[str] = []
+
+    # DATABASE_URL — must not still be the local-dev default; that container
+    # is unreachable in production.
+    if settings.DATABASE_URL == _DEV_DATABASE_URL:
+        errors.append(
+            "DATABASE_URL: still set to local-dev default "
+            f"({_DEV_DATABASE_URL!r}). Set a real production connection string."
+        )
+
+    # REDIS_URL — same: local-dev default is unreachable in production.
+    if settings.REDIS_URL == _DEV_REDIS_URL:
+        errors.append(
+            "REDIS_URL: still set to local-dev default "
+            f"({_DEV_REDIS_URL!r}). Set the production Redis connection string."
+        )
+
+    if errors:
+        bullet_list = "\n  - ".join(errors)
+        raise RuntimeError(
+            f"Application startup aborted — {len(errors)} required env var(s) "
+            f"are missing or unsafe:\n  - {bullet_list}\n\n"
+            "Fix the above before deploying to production."
+        )
