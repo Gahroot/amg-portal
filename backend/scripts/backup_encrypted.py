@@ -28,6 +28,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -104,6 +105,45 @@ def _db_host(db_url: str) -> str:
     return urlparse(_normalised_pg_dsn(db_url)).hostname or "unknown"
 
 
+def _pg_connection_flags(db_url: str) -> tuple[list[str], dict[str, str]]:
+    """Split a DSN into discrete flags + a ``PGPASSWORD`` env overlay.
+
+    Passing the password on argv leaks it through ``/proc/<pid>/cmdline`` to
+    anything running as the same user.  pg_dump reads ``PGPASSWORD`` from env
+    instead, so we hand it over that channel and keep argv password-free.
+    """
+    parsed = urlparse(_normalised_pg_dsn(db_url))
+    flags: list[str] = []
+    if parsed.hostname:
+        flags += ["-h", parsed.hostname]
+    if parsed.port:
+        flags += ["-p", str(parsed.port)]
+    if parsed.username:
+        flags += ["-U", parsed.username]
+    dbname = (parsed.path or "").lstrip("/")
+    if dbname:
+        flags += ["-d", dbname]
+    env_overlay: dict[str, str] = {}
+    if parsed.password:
+        env_overlay["PGPASSWORD"] = parsed.password
+    # Force C locale so error parsing (future enhancement) isn't locale-dependent.
+    env_overlay["LC_MESSAGES"] = "C"
+    return flags, env_overlay
+
+
+_DSN_CRED_RE: re.Pattern[str] = re.compile(r"(postgres(?:ql)?(?:\+\w+)?://)[^@\s]+@")
+
+
+def _scrub_dsn(text: str) -> str:
+    """Redact ``user:password@`` from any DSN-shaped substring in *text*.
+
+    pg_dump's stderr can echo the connection string on failure; this keeps
+    the credentials out of the re-raised ``RuntimeError`` message and the
+    downstream audit row.
+    """
+    return _DSN_CRED_RE.sub(r"\1[REDACTED]@", text)
+
+
 def _pg_dump_version() -> str:
     try:
         out = subprocess.check_output(["pg_dump", "--version"], text=True)
@@ -160,13 +200,15 @@ _RETENTION_KEEP: dict[str, int] = {
 def _run_dump_and_encrypt(cfg: BackupConfig, output_path: Path) -> tuple[int, str]:
     """Stream ``pg_dump | age`` into ``output_path``; return (bytes, sha256)."""
     _require_binaries()
+    conn_flags, env_overlay = _pg_connection_flags(cfg.db_url)
     pg_cmd = [
         "pg_dump",
         "--format=custom",
         "--no-owner",
         "--no-acl",
-        _normalised_pg_dsn(cfg.db_url),
+        *conn_flags,
     ]
+    pg_env = {**os.environ, **env_overlay}
     age_cmd = ["age"]
     for r in cfg.age_recipients:
         age_cmd += ["-r", r]
@@ -174,10 +216,16 @@ def _run_dump_and_encrypt(cfg: BackupConfig, output_path: Path) -> tuple[int, st
 
     logger.info(
         "backup: starting %s | %s",
-        " ".join(shlex.quote(p) for p in pg_cmd[:4]),  # never log the DSN
+        # Safe to log the full argv — password is in PGPASSWORD env, not argv.
+        " ".join(shlex.quote(p) for p in pg_cmd),
         " ".join(shlex.quote(p) for p in age_cmd),
     )
-    pg = subprocess.Popen(pg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pg = subprocess.Popen(
+        pg_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=pg_env,
+    )
     assert pg.stdout is not None
     try:
         age = subprocess.Popen(age_cmd, stdin=pg.stdout, stderr=subprocess.PIPE)
@@ -187,10 +235,10 @@ def _run_dump_and_encrypt(cfg: BackupConfig, output_path: Path) -> tuple[int, st
     pg_err = pg.stderr.read() if pg.stderr else b""
     pg.wait()
     if pg.returncode != 0:
-        msg = pg_err.decode(errors="replace")[:500]
+        msg = _scrub_dsn(pg_err.decode(errors="replace"))[:500]
         raise RuntimeError(f"pg_dump failed (code {pg.returncode}): {msg}")
     if age.returncode != 0:
-        msg = age_err.decode(errors="replace")[:500]
+        msg = _scrub_dsn(age_err.decode(errors="replace"))[:500]
         raise RuntimeError(f"age failed (code {age.returncode}): {msg}")
 
     digest = hashlib.sha256()

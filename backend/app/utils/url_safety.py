@@ -13,18 +13,43 @@ _BLOCKED_HOSTNAMES = {
     "ip6-loopback",
     "metadata.google.internal",
     "metadata",
+    # AWS EC2 alt names for 169.254.169.254 (both IPv4 and the IMDSv2 IP cover
+    # the same host; the hostname variant is what hits internal split-horizon
+    # resolvers).
+    "instance-data",
+    "instance-data.ec2.internal",
+    # Azure IMDS (resolves to 169.254.169.254 but flagged by hostname in case
+    # a misconfigured resolver returns a public IP).
+    "metadata.azure.internal",
 }
+
+# Ranges Python's ``ipaddress.is_*`` flags do NOT cover — must be added
+# explicitly.  Patterns cross-checked against OWASP SSRF Prevention Cheat
+# Sheet and real-world implementations (AutoGPT, Quay, langflow, hermes-agent).
+_EXTRA_BLOCKED_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
+    # RFC 6598 Shared Address Space — used for CGNAT, Tailscale/WireGuard
+    # defaults, and some cloud VPC ranges (notably Alibaba IMDS 100.100.100.200).
+    # ``IPv4Address.is_private`` returns False for this range.
+    ipaddress.ip_network("100.64.0.0/10"),
+    # RFC 2544 benchmarking range — occasionally reachable on lab networks.
+    ipaddress.ip_network("198.18.0.0/15"),
+    # IPv4-mapped IPv6 — an attacker can encode a private IPv4 as ``::ffff:a.b.c.d``
+    # and dodge IPv4-only checks.
+    ipaddress.ip_network("::ffff:0:0/96"),
+]
 
 
 def _is_blocked_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    return (
+    if (
         ip.is_private
         or ip.is_loopback
         or ip.is_link_local
         or ip.is_multicast
         or ip.is_unspecified
         or ip.is_reserved
-    )
+    ):
+        return True
+    return any(ip in net for net in _EXTRA_BLOCKED_NETWORKS)
 
 
 def validate_safe_webhook_url(url: str) -> str:

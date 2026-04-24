@@ -33,6 +33,8 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 # Health probe + browser-emitted security reports must continue to work even
@@ -46,12 +48,24 @@ _BYPASS_PATHS: Final[frozenset[str]] = frozenset(
     }
 )
 
+# Module-level snapshot of enforcement state so ``/health`` can report it
+# without holding a reference to the middleware instance.  Set on construction.
+_enforcement_enabled: bool = False
+
+
+def is_enforcement_enabled() -> bool:
+    """Return ``True`` when the middleware is actively enforcing origin auth."""
+    return _enforcement_enabled
+
 
 class CloudflareOriginAuthMiddleware(BaseHTTPMiddleware):
     """Reject requests that didn't transit Cloudflare's edge.
 
     Active only when ``CF_ORIGIN_AUTH_HEADER`` and ``CF_ORIGIN_AUTH_TOKEN``
-    are both set in the environment.
+    are both set in the environment.  In production (``DEBUG=False``) a
+    missing pair is logged at ERROR so ops alerts fire on regression — the
+    middleware still installs as a no-op rather than blocking boot, since
+    the backend remains behind Cloudflare WAF regardless.
     """
 
     def __init__(self, app: object) -> None:
@@ -59,8 +73,20 @@ class CloudflareOriginAuthMiddleware(BaseHTTPMiddleware):
         self._header = os.environ.get("CF_ORIGIN_AUTH_HEADER", "").strip()
         self._token = os.environ.get("CF_ORIGIN_AUTH_TOKEN", "").strip()
         self._enabled = bool(self._header and self._token)
+        global _enforcement_enabled  # noqa: PLW0603
+        _enforcement_enabled = self._enabled
         if self._enabled:
             logger.info("cloudflare_origin: enforcement enabled via %s header", self._header)
+        elif not settings.DEBUG:
+            # Production boot with AOP disabled — ops should be alerted via the
+            # ``cloudflare_origin.disabled_in_production`` event and via the
+            # ``/health`` endpoint's ``cloudflare_origin_auth`` dimension.
+            logger.error(
+                "cloudflare_origin: ENFORCEMENT DISABLED in production "
+                "(CF_ORIGIN_AUTH_HEADER and/or CF_ORIGIN_AUTH_TOKEN unset) — "
+                "backend is reachable directly without Cloudflare edge auth",
+                extra={"event": "cloudflare_origin.disabled_in_production"},
+            )
 
     async def dispatch(
         self,

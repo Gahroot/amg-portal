@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from content_size_limit_asgi import ContentSizeLimitMiddleware
 from fastapi import FastAPI, HTTPException
@@ -145,5 +146,12 @@ app.include_router(websocket_router)
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    return {"status": "healthy"}
+async def health_check() -> dict[str, Any]:
+    from app.middleware.cloudflare_origin import is_enforcement_enabled
+
+    return {
+        "status": "healthy",
+        # Surfaces whether the Cloudflare-AOP compensating control is active.
+        # Production alerting should page on this flipping to ``false``.
+        "cloudflare_origin_auth": "enforced" if is_enforcement_enabled() else "disabled",
+    }

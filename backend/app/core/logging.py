@@ -251,10 +251,14 @@ class JsonFormatter(logging.Formatter):
             if key.startswith("_"):
                 continue
             payload[key] = value
+        # Exception + stack text is materialised HERE (after PIIRedactingFilter
+        # has already run on record.__dict__), so any bearer tokens / JWTs
+        # embedded in exception messages or traceback frames would otherwise
+        # land in logs unredacted.  Run them through the same scrubber.
         if record.exc_info:
-            payload["exc_info"] = self.formatException(record.exc_info)
+            payload["exc_info"] = _scrub_string(self.formatException(record.exc_info))
         if record.stack_info:
-            payload["stack_info"] = self.formatStack(record.stack_info)
+            payload["stack_info"] = _scrub_string(self.formatStack(record.stack_info))
         return json.dumps(payload, default=str, ensure_ascii=False)
 
 

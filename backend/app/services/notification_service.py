@@ -484,25 +484,14 @@ class NotificationService(CRUDBase[Notification, CreateNotificationRequest, dict
     ) -> None:
         """Send an immediate email for a single notification."""
         from app.services.email_service import send_email
+        from app.services.notification_delivery import render_notification_email_html
 
         user_result = await db.execute(select(User).where(User.id == notification.user_id))
         user = user_result.scalar_one_or_none()
         if not user:
             return
 
-        action_html = ""
-        if notification.action_url:
-            label = notification.action_label or "View in portal"
-            url = f"{settings.FRONTEND_URL}{notification.action_url}"
-            action_html = f'<p><a href="{url}">{label}</a></p>'
-
-        body_html = (
-            "<html><body>"
-            f"<h2>{notification.title}</h2>"
-            f"<p>{notification.body}</p>"
-            f"{action_html}"
-            "</body></html>"
-        )
+        body_html = render_notification_email_html(notification)
 
         try:
             await send_email(

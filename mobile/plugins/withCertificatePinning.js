@@ -55,9 +55,14 @@ const withCertificatePinning = (config) => {
  * `REPLACE_WITH_*` would silently disable pinning in production.
  *
  * Skipped in dev / preview profiles so day-to-day work isn't blocked.
+ *
+ * Only `EAS_BUILD_PROFILE` is honoured — EAS sets it reliably. Prior versions
+ * also accepted `AMG_BUILD_PROFILE`, but that escape hatch let anyone with
+ * shell access to the build environment skip the guard by exporting a stub
+ * value; removed.
  */
 function enforceProductionGuard(pins) {
-  const profile = process.env.EAS_BUILD_PROFILE || process.env.AMG_BUILD_PROFILE || '';
+  const profile = process.env.EAS_BUILD_PROFILE || '';
   if (profile.toLowerCase() !== 'production') return;
 
   const violations = [];
