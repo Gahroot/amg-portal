@@ -1,30 +1,26 @@
-export type TimelineEventType =
-  | "communication"
-  | "document"
-  | "milestone"
-  | "program_status"
-  | "approval"
-  | "compliance"
-  | "note";
+/**
+ * Client timeline types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (query params) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/client_timeline.py
+ */
+import type { components } from "./generated";
 
-export interface TimelineEvent {
-  id: string;
-  event_type: TimelineEventType;
-  title: string;
-  description: string | null;
-  occurred_at: string;
-  metadata: Record<string, unknown>;
-  entity_id: string | null;
-  entity_type: string | null;
-  actor_name: string | null;
-  actor_id: string | null;
-}
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export interface TimelineListResponse {
-  items: TimelineEvent[];
-  total: number;
-  has_more: boolean;
-}
+export type TimelineEventType = components["schemas"]["TimelineEventType"];
+export type TimelineEvent = components["schemas"]["TimelineEventResponse"];
+export type TimelineListResponse = components["schemas"]["TimelineListResponse"];
+
+// ---------------------------------------------------------------------------
+// Frontend-only types — query params
+// ---------------------------------------------------------------------------
 
 export interface TimelineFilters {
   event_types?: TimelineEventType[];

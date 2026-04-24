@@ -85,7 +85,7 @@ cd frontend && npm run build                  # Production build
 cd backend && pytest                          # Backend tests
 cd frontend && npm run test                   # Frontend tests (vitest)
 
-cd frontend && npm run generate:types         # Regenerate TS types from OpenAPI (backend must be running)
+cd frontend && npm run generate:types         # Regenerate TS types from OpenAPI (no DB/server needed — dumps schema via backend/scripts/dump_openapi.py)
 
 cd mobile && npm run start                    # Expo dev server
 cd mobile && npm run android                  # Android dev
@@ -101,7 +101,7 @@ Frontend types in `frontend/src/types/` are being migrated to auto-generated typ
   - Use: `type User = components["schemas"]["User"];`
 - **Manual**: `user.ts`, `program.ts`, etc. — gradually migrate to re-export from `generated.ts`; keep frontend-only UI state/computed fields here
 
-**When backend schemas change:** update Pydantic schema → restart backend → `npm run generate:types` → update frontend usages.
+**When backend schemas change:** update Pydantic schema → `npm run generate:types` → update frontend usages.
 
 ## Railway Deployment
 

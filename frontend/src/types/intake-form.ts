@@ -1,73 +1,29 @@
-import type { FamilyMember, FamilyMemberCreate } from "./family-member";
+/**
+ * Client intake form types — re-exported from generated OpenAPI types where possible.
+ *
+ * API types are sourced from generated.ts (auto-generated from FastAPI OpenAPI schema).
+ * Frontend-only types (wizard option lists) remain manual.
+ *
+ * To refresh: npm run generate:types (requires backend at localhost:8000)
+ *
+ * @see backend/app/schemas/intake_form.py
+ *
+ * Note: the wizard's form-state type (`IntakeFormData`) is Zod-inferred from
+ * `src/lib/validations/client.ts`, not re-exported here.
+ */
+import type { components } from "./generated";
 
-export interface IntakeStep1Identity {
-  legal_name: string;
-  display_name?: string;
-  entity_type?: string;
-  jurisdiction?: string;
-  tax_id?: string;
-}
+// ---------------------------------------------------------------------------
+// API types — re-exported from generated OpenAPI schema
+// ---------------------------------------------------------------------------
 
-export interface IntakeStep2Contact {
-  primary_email: string;
-  secondary_email?: string;
-  phone?: string;
-  address?: string;
-}
+export type IntakeDraftData = components["schemas"]["IntakeDraftData"];
+export type IntakeFormResponse = components["schemas"]["IntakeFormResponse"];
+export type IntakeStep4Lifestyle = components["schemas"]["IntakeStep4Lifestyle"];
 
-export interface IntakeStep3Preferences {
-  communication_preference?: string;
-  sensitivities?: string;
-  special_instructions?: string;
-}
-
-export interface IntakeStep4Lifestyle {
-  travel_preferences?: string;
-  dietary_restrictions?: string;
-  interests?: string;
-  preferred_destinations?: string[];
-  language_preference?: string;
-}
-
-export interface IntakeFormData
-  extends IntakeStep1Identity,
-    IntakeStep2Contact,
-    IntakeStep3Preferences {
-  // Step 4
-  travel_preferences?: string;
-  dietary_restrictions?: string;
-  interests?: string;
-  preferred_destinations?: string[];
-  language_preference?: string;
-
-  // Step 5
-  family_members?: FamilyMemberCreate[];
-}
-
-export type IntakeDraftData = Partial<IntakeFormData>;
-
-export interface IntakeFormResponse {
-  id: string;
-  legal_name: string;
-  display_name: string | null;
-  entity_type: string | null;
-  jurisdiction: string | null;
-  tax_id: string | null;
-  primary_email: string;
-  secondary_email: string | null;
-  phone: string | null;
-  address: string | null;
-  communication_preference: string | null;
-  sensitivities: string | null;
-  special_instructions: string | null;
-  compliance_status: string;
-  approval_status: string;
-  intelligence_file: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-  family_members: FamilyMember[];
-  lifestyle: IntakeStep4Lifestyle | null;
-}
+// ---------------------------------------------------------------------------
+// Frontend-only types — wizard option lists
+// ---------------------------------------------------------------------------
 
 export const ENTITY_TYPES = [
   { value: "individual", label: "Individual" },

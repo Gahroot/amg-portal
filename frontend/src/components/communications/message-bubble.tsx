@@ -138,6 +138,10 @@ export function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
               />
             ))}
           </div>
+        ) : message.body == null ? (
+          <p className="break-words text-sm italic leading-relaxed opacity-60">
+            Message content unavailable
+          </p>
         ) : (
           /* Message body with markdown rendering */
           <div
