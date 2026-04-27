@@ -243,9 +243,7 @@ async def break_glass_list(
 
 
 @router.post("/erasure/request", status_code=status.HTTP_201_CREATED)
-async def erasure_request(
-    data: ErasureCreate, current_user: CurrentUser, db: DB
-) -> dict[str, Any]:
+async def erasure_request(data: ErasureCreate, current_user: CurrentUser, db: DB) -> dict[str, Any]:
     """Submit a crypto-shred erasure request.  Two-person approval required."""
     now = datetime.now(UTC)
     req = ErasureRequest(
@@ -396,9 +394,7 @@ async def consent_grant(
 
 
 @router.post("/consent/revoke")
-async def consent_revoke(
-    data: ConsentRevoke, current_user: CurrentUser, db: DB
-) -> dict[str, Any]:
+async def consent_revoke(data: ConsentRevoke, current_user: CurrentUser, db: DB) -> dict[str, Any]:
     now = datetime.now(UTC)
     row = ConsentLog(
         user_id=current_user.id,
@@ -425,12 +421,16 @@ async def consent_revoke(
 @router.get("/consent/history")
 async def consent_history(current_user: CurrentUser, db: DB) -> list[dict[str, Any]]:
     rows = (
-        await db.execute(
-            select(ConsentLog)
-            .where(ConsentLog.user_id == current_user.id)
-            .order_by(ConsentLog.effective_at.desc())
+        (
+            await db.execute(
+                select(ConsentLog)
+                .where(ConsentLog.user_id == current_user.id)
+                .order_by(ConsentLog.effective_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": str(r.id),
@@ -455,28 +455,26 @@ async def consent_history(current_user: CurrentUser, db: DB) -> list[dict[str, A
 async def export_my_data(current_user: CurrentUser, db: DB) -> dict[str, Any]:
     """Bundle the caller's own data in JSON.  Step-up required."""
     profile = (
-        await db.execute(
-            select(ClientProfile).where(ClientProfile.user_id == current_user.id)
-        )
+        await db.execute(select(ClientProfile).where(ClientProfile.user_id == current_user.id))
     ).scalar_one_or_none()
 
     my_messages = (
-        await db.execute(
-            select(Communication).where(Communication.sender_id == current_user.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(Communication).where(Communication.sender_id == current_user.id)))
+        .scalars()
+        .all()
+    )
 
     my_documents = (
-        await db.execute(
-            select(Document).where(Document.uploaded_by == current_user.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(Document).where(Document.uploaded_by == current_user.id)))
+        .scalars()
+        .all()
+    )
 
     my_consents = (
-        await db.execute(
-            select(ConsentLog).where(ConsentLog.user_id == current_user.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(ConsentLog).where(ConsentLog.user_id == current_user.id)))
+        .scalars()
+        .all()
+    )
 
     bundle: dict[str, Any] = {
         "exported_at": datetime.now(UTC).isoformat(),

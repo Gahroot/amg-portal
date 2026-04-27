@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 
 import { INTERNAL_ROLES, type UserRole } from '@/types/user';
+import { queryClient } from '@/lib/query-client';
 
 export interface AuthUser {
   id: string;
@@ -66,6 +67,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     set({ token: null, refreshToken: null, user: null, mfaPending: null, pendingCredentials: null });
+    // Purge cached queries so the next user never sees the previous user's data
+    queryClient.clear();
   },
 
   hydrate: async () => {

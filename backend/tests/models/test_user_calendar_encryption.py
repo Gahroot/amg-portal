@@ -115,10 +115,7 @@ async def test_null_token_stays_null(db_session: AsyncSession) -> None:
 
     row = (
         await db_session.execute(
-            text(
-                "SELECT google_calendar_token, outlook_calendar_token "
-                "FROM users WHERE id = :id"
-            ),
+            text("SELECT google_calendar_token, outlook_calendar_token FROM users WHERE id = :id"),
             {"id": user.id},
         )
     ).first()

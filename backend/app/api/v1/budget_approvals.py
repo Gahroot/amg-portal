@@ -437,9 +437,7 @@ async def add_chain_step(
     return await _build_chain_step_response(step)
 
 
-@router.delete(
-    "/chains/{chain_id}/steps/{step_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/chains/{chain_id}/steps/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_chain_step(
     chain_id: uuid.UUID,
     step_id: uuid.UUID,
@@ -643,9 +641,7 @@ async def decide_step(
 # === History Endpoints ===
 
 
-@router.get(
-    "/requests/{request_id}/history", response_model=list[BudgetApprovalHistoryResponse]
-)
+@router.get("/requests/{request_id}/history", response_model=list[BudgetApprovalHistoryResponse])
 async def get_request_history(
     request_id: uuid.UUID,
     service: BudgetApprovalServiceDep,

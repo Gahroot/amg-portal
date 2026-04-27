@@ -6,6 +6,9 @@ import { INTERNAL_ROLES } from '@/types/user';
 
 export default function InternalLayout() {
   const user = useAuthStore((state) => state.user);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  if (!isHydrated) return null;
 
   if (!user || !INTERNAL_ROLES.includes(user.role)) {
     router.replace('/');

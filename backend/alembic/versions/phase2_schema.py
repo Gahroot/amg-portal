@@ -76,9 +76,7 @@ def upgrade() -> None:
         "documents",
         sa.Column("object_lock_retain_until", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index(
-        "ix_documents_subject_id", "documents", ["subject_id"], unique=False
-    )
+    op.create_index("ix_documents_subject_id", "documents", ["subject_id"], unique=False)
 
     # 2.7 — per-conversation DEK
     op.add_column(
@@ -216,9 +214,7 @@ def upgrade() -> None:
         sa.Column("destroyed_by", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint(
-            "subject_type", "subject_id", "version", name="uq_subject_kek_version"
-        ),
+        sa.UniqueConstraint("subject_type", "subject_id", "version", name="uq_subject_kek_version"),
     )
     op.create_index(
         "ix_subject_kek_versions_subject",

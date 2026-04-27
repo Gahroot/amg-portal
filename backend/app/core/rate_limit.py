@@ -242,9 +242,7 @@ class RateLimiter:
         # An explicit limit of 0 means "forbidden for this tier" — usually
         # applied to anon on endpoints that require authentication.
         if limit <= 0:
-            logger.warning(
-                "Rate limit denies tier=%s on action=%s (limit=0)", tier, self.action
-            )
+            logger.warning("Rate limit denies tier=%s on action=%s (limit=0)", tier, self.action)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many requests. Please try again later.",
@@ -309,9 +307,5 @@ rate_limit_mfa_disable = RateLimiter("mfa_disable", **_tier_kwargs("mfa_disable"
 # ── Heavy-cost endpoints (cost=5) ──────────────────────────────────
 # These define the dependencies; individual route handlers are wired
 # separately by the agent owning those routes.
-rate_limit_export_pdf = RateLimiter(
-    "export_pdf", cost=5, **_tier_kwargs("export_pdf")
-)
-rate_limit_bulk_email = RateLimiter(
-    "bulk_email", cost=5, **_tier_kwargs("bulk_email")
-)
+rate_limit_export_pdf = RateLimiter("export_pdf", cost=5, **_tier_kwargs("export_pdf"))
+rate_limit_bulk_email = RateLimiter("bulk_email", cost=5, **_tier_kwargs("bulk_email"))

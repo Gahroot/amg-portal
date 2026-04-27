@@ -226,9 +226,7 @@ class TestChainLinkage:
         await db_session.close()
 
         # Re-read and recompute; stored row_hash should no longer match.
-        result = await db_session.execute(
-            select(AuditLog).where(AuditLog.id == entry.id)
-        )
+        result = await db_session.execute(select(AuditLog).where(AuditLog.id == entry.id))
         tampered = result.scalar_one()
         payload = ac._canonical_json(tampered) + (
             bytes(tampered.prev_hash) if tampered.prev_hash is not None else b"\x00" * 32
@@ -262,9 +260,7 @@ class TestConcurrency:
         from tests.conftest import _make_engine
 
         engine = _make_engine()
-        session_factory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         async def _insert_one(idx: int) -> None:
             token = audit_context_var.set(
@@ -307,9 +303,7 @@ class TestConcurrency:
             for i in range(1, len(entries)):
                 # Every row's prev_hash matches the preceding row's row_hash
                 # — no fork, no gap.
-                assert entries[i].prev_hash == entries[i - 1].row_hash, (
-                    f"chain fork at index {i}"
-                )
+                assert entries[i].prev_hash == entries[i - 1].row_hash, f"chain fork at index {i}"
         finally:
             await engine.dispose()
 
@@ -358,9 +352,7 @@ async def _seed_audit_rows(db_session: AsyncSession, n: int = 3) -> date:
 
 class TestSignVerify:
     @pytest.mark.asyncio
-    async def test_sign_then_verify_roundtrip(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_sign_then_verify_roundtrip(self, db_session: AsyncSession) -> None:
         day = await _seed_audit_rows(db_session, 3)
 
         # FreeTSA is network-gated in tests; stub it.
@@ -384,9 +376,7 @@ class TestSignVerify:
         assert ok, reason
 
     @pytest.mark.asyncio
-    async def test_sign_day_no_rows_returns_none(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_sign_day_no_rows_returns_none(self, db_session: AsyncSession) -> None:
         # Far-future day with no rows → None.
         far_future = date(2099, 12, 31)
         with patch(
@@ -397,9 +387,7 @@ class TestSignVerify:
         assert out is None
 
     @pytest.mark.asyncio
-    async def test_verify_day_catches_tampered_checkpoint(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_verify_day_catches_tampered_checkpoint(self, db_session: AsyncSession) -> None:
         day = await _seed_audit_rows(db_session, 2)
         with patch(
             "app.core.audit_chain._freetsa_timestamp",
@@ -409,9 +397,7 @@ class TestSignVerify:
 
         # Corrupt the stored Merkle root.
         checkpoint = (
-            await db_session.execute(
-                select(AuditCheckpoint).where(AuditCheckpoint.day == day)
-            )
+            await db_session.execute(select(AuditCheckpoint).where(AuditCheckpoint.day == day))
         ).scalar_one()
         checkpoint.merkle_root = b"\x00" * 32
         await db_session.commit()
@@ -422,9 +408,7 @@ class TestSignVerify:
         assert "merkle" in reason.lower() or "signature" in reason.lower()
 
     @pytest.mark.asyncio
-    async def test_verify_day_catches_tampered_row(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_verify_day_catches_tampered_row(self, db_session: AsyncSession) -> None:
         day = await _seed_audit_rows(db_session, 2)
         with patch(
             "app.core.audit_chain._freetsa_timestamp",
@@ -502,7 +486,9 @@ class TestFreeTsa:
 class TestHmacAlignment:
     @pytest.mark.asyncio
     async def test_hmac_matches_recompute(
-        self, db_session: AsyncSession, _set_audit_ctx: None  # noqa: ARG002
+        self,
+        db_session: AsyncSession,
+        _set_audit_ctx: None,  # noqa: ARG002
     ) -> None:
         from app.core.security import hash_password
         from app.models.user import User
@@ -520,9 +506,7 @@ class TestHmacAlignment:
         await db_session.commit()
 
         entry = (
-            await db_session.execute(
-                select(AuditLog).order_by(AuditLog.created_at.desc()).limit(1)
-            )
+            await db_session.execute(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(1))
         ).scalar_one()
         key = ac._daily_hmac_key(entry.day_bucket)
         expected = _hmac.new(key, bytes(entry.row_hash), hashlib.sha256).digest()

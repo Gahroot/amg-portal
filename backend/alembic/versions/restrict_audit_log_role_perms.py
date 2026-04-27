@@ -81,9 +81,7 @@ def downgrade() -> None:
         """
     )
     op.execute(
-        "REVOKE UPDATE, DELETE "
-        "ON TABLE audit_logs, audit_checkpoints "
-        "FROM amg_audit_maintainer;"
+        "REVOKE UPDATE, DELETE ON TABLE audit_logs, audit_checkpoints FROM amg_audit_maintainer;"
     )
     # Leave the role in place — dropping it can fail if other objects depend
     # on it.  Operators can drop it manually if really desired.

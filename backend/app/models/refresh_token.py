@@ -30,9 +30,7 @@ class RefreshToken(Base, TimestampMixin):
     # Sliding idle timeout (Phase 2.12).  Updated on every refresh; if
     # ``now - last_active_at`` exceeds ``REFRESH_TOKEN_IDLE_TIMEOUT_MINUTES``
     # the refresh handler rejects and the family is revoked.
-    last_active_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (Index("ix_refresh_tokens_family_revoked", "family_id", "is_revoked"),)
 

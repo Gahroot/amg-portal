@@ -52,11 +52,22 @@ const processQueue = (error: Error | null = null) => {
   failedQueue = [];
 };
 
+let isLoggingOut = false;
+
 export async function logout(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-  await SecureStore.deleteItemAsync('amg_auth_user');
-  router.replace('/(auth)/login');
+  if (isLoggingOut) return;
+  isLoggingOut = true;
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync('amg_auth_user');
+    router.replace('/(auth)/login');
+  } finally {
+    // Reset after navigation so subsequent sessions can log out again
+    setTimeout(() => {
+      isLoggingOut = false;
+    }, 2000);
+  }
 }
 
 api.interceptors.response.use(

@@ -149,11 +149,7 @@ def create_break_glass_token(
     ttl_minutes: int | None = None,
 ) -> str:
     to_encode = data.copy()
-    minutes = (
-        ttl_minutes
-        if ttl_minutes is not None
-        else settings.BREAK_GLASS_TOKEN_EXPIRE_MINUTES
-    )
+    minutes = ttl_minutes if ttl_minutes is not None else settings.BREAK_GLASS_TOKEN_EXPIRE_MINUTES
     expire = datetime.now(UTC) + timedelta(minutes=minutes)
     to_encode.update(
         {

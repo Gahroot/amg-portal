@@ -5,6 +5,9 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function PartnerLayout() {
   const user = useAuthStore((state) => state.user);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  if (!isHydrated) return null;
 
   if (!user || user.role !== 'partner') {
     router.replace('/');

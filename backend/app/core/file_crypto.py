@@ -113,9 +113,7 @@ def encrypt_bytes(
             segments.append(len(ct).to_bytes(4, "big") + ct)
 
         header = (
-            bytes([VERSION_BYTE, key_id, 0x00])
-            + segment_count.to_bytes(2, "big")
-            + nonce_prefix
+            bytes([VERSION_BYTE, key_id, 0x00]) + segment_count.to_bytes(2, "big") + nonce_prefix
         )
         blob = header + b"".join(segments)
         metadata = EnvelopeMetadata(
@@ -211,9 +209,7 @@ def decrypt_stream(
                 raise ValueError("Envelope blob truncated (segment body)")
             final = i == segment_count - 1
             nonce = nonce_prefix[:8] + i.to_bytes(4, "big")
-            yield aesgcm.decrypt(
-                nonce, ct, _aad(file_uuid, i, final=final)
-            )
+            yield aesgcm.decrypt(nonce, ct, _aad(file_uuid, i, final=final))
     finally:
         _zeroise(dek)
 

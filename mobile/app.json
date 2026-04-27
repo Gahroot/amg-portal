@@ -16,8 +16,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.amg.portal",
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Allow AMG Portal to use speech recognition for voice-to-text dictation in messages and notes.",
-        "NSMicrophoneUsageDescription": "Allow AMG Portal to access the microphone for voice-to-text dictation."
+        "NSSpeechRecognitionUsageDescription": "Allow AMG Portal to use speech recognition for dictating messages and notes.",
+        "NSMicrophoneUsageDescription": "Allow AMG Portal to access your microphone for voice-to-text dictation."
       }
     },
     "android": {
@@ -28,7 +28,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.amg.portal",
-      "permissions": ["NOTIFICATIONS", "android.permission.RECORD_AUDIO", "android.permission.INTERNET"]
+      "permissions": [
+        "NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -41,6 +45,27 @@
           "backup": "REPLACE_WITH_BACKUP_SPKI_SHA256",
           "expiration": "2027-01-01"
         }
+      },
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.amg.portal.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.amg.portal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "2fb4a728-ee67-42af-aba8-aeebbf905f66"
       }
     },
     "plugins": [
@@ -80,11 +105,18 @@
               "name": "TasksWidget",
               "displayName": "AMG Tasks",
               "description": "View pending approvals and tasks at a glance",
-              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge", "accessoryCircular", "accessoryRectangular"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge",
+                "accessoryCircular",
+                "accessoryRectangular"
+              ]
             }
           ]
         }
       ]
-    ]
+    ],
+    "owner": "gahroot"
   }
 }

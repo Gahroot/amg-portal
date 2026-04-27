@@ -265,9 +265,7 @@ def before_flush(
     if session.info.get("skip_audit"):
         return
     direct_audits = [
-        obj
-        for obj in list(session.new)
-        if isinstance(obj, AuditLog) and obj.row_hash is None
+        obj for obj in list(session.new) if isinstance(obj, AuditLog) and obj.row_hash is None
     ]
     if not direct_audits:
         return
@@ -277,8 +275,7 @@ def before_flush(
         # Same policy as the after_flush path: chain break never fails a
         # write; the daily verify cron catches it.
         logger.exception(
-            "Audit: chain finalisation failed for direct-added rows; "
-            "inserting without chain hashes"
+            "Audit: chain finalisation failed for direct-added rows; inserting without chain hashes"
         )
 
 
@@ -311,9 +308,7 @@ def after_flush(session: Session, flush_context: object) -> None:
         except Exception:
             # Chain finalisation must never make a write fail — the daily
             # verify cron will flag any gap/corruption out-of-band.
-            logger.exception(
-                "Audit: chain finalisation failed; inserting without chain hashes"
-            )
+            logger.exception("Audit: chain finalisation failed; inserting without chain hashes")
 
     for entry in audit_entries:
         session.add(entry)

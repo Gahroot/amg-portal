@@ -5,6 +5,11 @@ import { useAuthStore } from '@/lib/auth-store';
 
 export default function ClientLayout() {
   const user = useAuthStore((state) => state.user);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  // Wait for SecureStore to finish loading — redirecting before hydration causes
+  // a redirect loop because user is null during the async read.
+  if (!isHydrated) return null;
 
   if (!user || user.role !== 'client') {
     router.replace('/');

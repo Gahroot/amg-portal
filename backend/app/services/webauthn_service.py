@@ -74,13 +74,11 @@ async def begin_registration(
 ) -> dict[str, Any]:
     """Emit the registration options JSON for the browser."""
     existing = (
-        await db.execute(
-            select(WebAuthnCredential).where(WebAuthnCredential.user_id == user.id)
-        )
-    ).scalars().all()
-    exclude = [
-        PublicKeyCredentialDescriptor(id=c.credential_id) for c in existing
-    ]
+        (await db.execute(select(WebAuthnCredential).where(WebAuthnCredential.user_id == user.id)))
+        .scalars()
+        .all()
+    )
+    exclude = [PublicKeyCredentialDescriptor(id=c.credential_id) for c in existing]
     options = generate_registration_options(
         rp_id=settings.WEBAUTHN_RP_ID,
         rp_name=settings.WEBAUTHN_RP_NAME,
@@ -156,22 +154,18 @@ async def complete_registration(
     return cred
 
 
-async def begin_authentication(
-    db: AsyncSession, user: User
-) -> dict[str, Any]:
+async def begin_authentication(db: AsyncSession, user: User) -> dict[str, Any]:
     creds = (
-        await db.execute(
-            select(WebAuthnCredential).where(WebAuthnCredential.user_id == user.id)
-        )
-    ).scalars().all()
+        (await db.execute(select(WebAuthnCredential).where(WebAuthnCredential.user_id == user.id)))
+        .scalars()
+        .all()
+    )
     if not creds:
         raise NotFoundException("No passkeys registered for this user")
 
     options = generate_authentication_options(
         rp_id=settings.WEBAUTHN_RP_ID,
-        allow_credentials=[
-            PublicKeyCredentialDescriptor(id=c.credential_id) for c in creds
-        ],
+        allow_credentials=[PublicKeyCredentialDescriptor(id=c.credential_id) for c in creds],
         user_verification=UserVerificationRequirement.REQUIRED,
     )
     challenge_b64 = base64.urlsafe_b64encode(options.challenge).decode("ascii")
@@ -225,22 +219,22 @@ async def complete_authentication(
     return cred
 
 
-async def list_credentials(
-    db: AsyncSession, user: User
-) -> list[WebAuthnCredential]:
+async def list_credentials(db: AsyncSession, user: User) -> list[WebAuthnCredential]:
     rows = (
-        await db.execute(
-            select(WebAuthnCredential)
-            .where(WebAuthnCredential.user_id == user.id)
-            .order_by(WebAuthnCredential.created_at.desc())
+        (
+            await db.execute(
+                select(WebAuthnCredential)
+                .where(WebAuthnCredential.user_id == user.id)
+                .order_by(WebAuthnCredential.created_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return list(rows)
 
 
-async def delete_credential(
-    db: AsyncSession, user: User, credential_id: uuid.UUID
-) -> None:
+async def delete_credential(db: AsyncSession, user: User, credential_id: uuid.UUID) -> None:
     cred = (
         await db.execute(
             select(WebAuthnCredential).where(

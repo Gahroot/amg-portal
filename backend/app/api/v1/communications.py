@@ -188,9 +188,7 @@ async def send_from_template(
     body = rendered["body"]
 
     # Build recipients map
-    recipients_json: dict[str, Any] = {
-        str(uid): {"role": "to"} for uid in data.recipient_user_ids
-    }
+    recipients_json: dict[str, Any] = {str(uid): {"role": "to"} for uid in data.recipient_user_ids}
 
     # Persist Communication record with template provenance
     comm = Communication(
@@ -259,9 +257,7 @@ async def get_pending_reviews(
     limit: int = Query(50, ge=1, le=100),
 ) -> Any:
     """Get all communications pending review."""
-    messages, total = await communication_service.get_pending_reviews(
-        db, skip=skip, limit=limit
-    )
+    messages, total = await communication_service.get_pending_reviews(db, skip=skip, limit=limit)
     return CommunicationListResponse(communications=messages, total=total)  # type: ignore[arg-type]
 
 

@@ -75,9 +75,7 @@ class TestHKDFDetermination:
     def test_different_column_different_dek(self, tenant_id: UUID) -> None:
         kek = _rand_key()
         p = EnvKeyCryptoProvider(keys={1: kek}, current=1)
-        assert p.derive_dek(kek, tenant_id, "tax_id") != p.derive_dek(
-            kek, tenant_id, "passport"
-        )
+        assert p.derive_dek(kek, tenant_id, "tax_id") != p.derive_dek(kek, tenant_id, "passport")
 
     def test_different_kek_different_dek(self, tenant_id: UUID) -> None:
         p1 = EnvKeyCryptoProvider(keys={1: _rand_key()}, current=1)
@@ -91,9 +89,7 @@ class TestRotation:
     def test_v1_roundtrip_then_v2_writes_use_v2(self, tenant_id: UUID, monkeypatch) -> None:
         k1, k2 = _rand_key(), _rand_key()
 
-        monkeypatch.setattr(
-            crypto_mod.settings, "AMG_KEK_KEYS", {1: _b64(k1)}, raising=False
-        )
+        monkeypatch.setattr(crypto_mod.settings, "AMG_KEK_KEYS", {1: _b64(k1)}, raising=False)
         monkeypatch.setattr(crypto_mod.settings, "CURRENT_KEK_ID", 1, raising=False)
         reset_crypto_for_testing()
 
@@ -207,9 +203,7 @@ class TestEncryptedBytesTypeDecorator:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="raw", value=b"super secret"))
-            raw = conn.exec_driver_sql(
-                "SELECT value FROM secrets WHERE label='raw'"
-            ).scalar_one()
+            raw = conn.exec_driver_sql("SELECT value FROM secrets WHERE label='raw'").scalar_one()
         assert raw[0] == VERSION_BYTE
         assert raw[1] == 1
         assert len(raw) > HEADER_LEN + 16
@@ -219,14 +213,10 @@ class TestEncryptedBytesTypeDecorator:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="t", value=b"hello"))
-            raw = conn.exec_driver_sql(
-                "SELECT value FROM secrets WHERE label='t'"
-            ).scalar_one()
+            raw = conn.exec_driver_sql("SELECT value FROM secrets WHERE label='t'").scalar_one()
             flipped = bytearray(raw)
             flipped[-1] ^= 0x01
-            conn.exec_driver_sql(
-                "UPDATE secrets SET value=? WHERE label='t'", (bytes(flipped),)
-            )
+            conn.exec_driver_sql("UPDATE secrets SET value=? WHERE label='t'", (bytes(flipped),))
         with (
             engine.begin() as conn,
             pytest.raises(Exception),  # noqa: PT011,B017
@@ -237,9 +227,7 @@ class TestEncryptedBytesTypeDecorator:
         engine, secrets = engine_and_table
         fake = bytes([0x02, 1]) + os.urandom(12 + 17)
         with engine.begin() as conn:
-            conn.exec_driver_sql(
-                "INSERT INTO secrets (label, value) VALUES (?, ?)", ("bad", fake)
-            )
+            conn.exec_driver_sql("INSERT INTO secrets (label, value) VALUES (?, ?)", ("bad", fake))
         with (
             engine.begin() as conn,
             pytest.raises(ValueError, match="unsupported ciphertext version"),
@@ -254,12 +242,8 @@ class TestEncryptedBytesTypeDecorator:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="k", value=b"data"))
-            raw = conn.exec_driver_sql(
-                "SELECT value FROM secrets WHERE label='k'"
-            ).scalar_one()
+            raw = conn.exec_driver_sql("SELECT value FROM secrets WHERE label='k'").scalar_one()
             mutated = bytes([raw[0], 99]) + raw[2:]
-            conn.exec_driver_sql(
-                "UPDATE secrets SET value=? WHERE label='k'", (mutated,)
-            )
+            conn.exec_driver_sql("UPDATE secrets SET value=? WHERE label='k'", (mutated,))
         with engine.begin() as conn, pytest.raises(UnknownKeyVersion):
             conn.execute(select(secrets.c.value).where(secrets.c.label == "k")).one()

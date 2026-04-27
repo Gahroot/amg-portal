@@ -3,9 +3,8 @@
  * Integrates with TanStack Query's online manager
  */
 
-import { onlineManager } from '@tanstack/react-query';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
@@ -34,6 +33,9 @@ async function ensureFreshToken(): Promise<boolean> {
     return false;
   }
 }
+
+// onlineManager is owned by query-client.ts via setEventListener — do not call
+// setOnline() here or you will create competing writers with no cleanup.
 
 export interface OfflineState {
   isOnline: boolean;
@@ -68,12 +70,6 @@ export function useOffline(): OfflineState & OfflineActions {
 
   const previousState = useRef<boolean | null>(null);
 
-  /**
-   * Update online state in TanStack Query
-   */
-  const updateOnlineManager = useCallback((isOnline: boolean) => {
-    onlineManager.setOnline(isOnline);
-  }, []);
 
   /**
    * Handle network state changes
@@ -109,12 +105,9 @@ export function useOffline(): OfflineState & OfflineActions {
         wasOffline: wasOffline || prev.wasOffline,
       }));
 
-      // Update TanStack Query's online manager
-      updateOnlineManager(isOnline);
-
       previousState.current = isOnline;
     },
-    [updateOnlineManager]
+    []
   );
 
   /**
@@ -150,9 +143,6 @@ export function useOffline(): OfflineState & OfflineActions {
 
     // Fetch initial state
     NetInfo.fetch().then(handleNetworkChange);
-
-    // Initialize cache
-    dataCache.initialize();
 
     return () => {
       unsubscribe();

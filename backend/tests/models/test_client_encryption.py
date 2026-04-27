@@ -20,9 +20,7 @@ from app.models.user import User
 
 
 @pytest.mark.asyncio
-async def test_tax_id_round_trips_as_str(
-    db_session: AsyncSession, rm_user: User
-) -> None:
+async def test_tax_id_round_trips_as_str(db_session: AsyncSession, rm_user: User) -> None:
     """Writing a str sets tax_id_enc + tax_id_bidx; reading gives the original str."""
     profile = ClientProfile(
         id=uuid.uuid4(),
@@ -79,9 +77,7 @@ async def test_raw_storage_is_ciphertext_not_plaintext(
 
 
 @pytest.mark.asyncio
-async def test_blind_index_equality_lookup(
-    db_session: AsyncSession, rm_user: User
-) -> None:
+async def test_blind_index_equality_lookup(db_session: AsyncSession, rm_user: User) -> None:
     """bidx lookup finds the exact row, not a prefix / wrong-case row."""
     p1 = ClientProfile(
         id=uuid.uuid4(),
@@ -109,9 +105,7 @@ async def test_blind_index_equality_lookup(
     # Exact match
     hit = (
         await db_session.execute(
-            select(ClientProfile).where(
-                ClientProfile.tax_id_bidx == blind_index("111-11-1111")
-            )
+            select(ClientProfile).where(ClientProfile.tax_id_bidx == blind_index("111-11-1111"))
         )
     ).scalar_one()
     assert hit.id == p1.id
@@ -119,18 +113,14 @@ async def test_blind_index_equality_lookup(
     # Prefix does NOT leak — blind index is equality-only
     miss = (
         await db_session.execute(
-            select(ClientProfile).where(
-                ClientProfile.tax_id_bidx == blind_index("111-11")
-            )
+            select(ClientProfile).where(ClientProfile.tax_id_bidx == blind_index("111-11"))
         )
     ).scalar_one_or_none()
     assert miss is None
 
 
 @pytest.mark.asyncio
-async def test_different_tax_id_different_bidx(
-    db_session: AsyncSession, rm_user: User
-) -> None:
+async def test_different_tax_id_different_bidx(db_session: AsyncSession, rm_user: User) -> None:
     p1 = ClientProfile(
         id=uuid.uuid4(),
         legal_name="Diff A",
@@ -179,18 +169,14 @@ async def test_normalisation_same_bidx_for_whitespace_and_case(
 
     hit = (
         await db_session.execute(
-            select(ClientProfile).where(
-                ClientProfile.tax_id_bidx == blind_index("  123-45-6789  ")
-            )
+            select(ClientProfile).where(ClientProfile.tax_id_bidx == blind_index("  123-45-6789  "))
         )
     ).scalar_one()
     assert hit.id == p.id
 
 
 @pytest.mark.asyncio
-async def test_null_tax_id_clears_both_columns(
-    db_session: AsyncSession, rm_user: User
-) -> None:
+async def test_null_tax_id_clears_both_columns(db_session: AsyncSession, rm_user: User) -> None:
     p = ClientProfile(
         id=uuid.uuid4(),
         legal_name="Null Co",

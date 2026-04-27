@@ -39,9 +39,7 @@ class Conversation(Base, TimestampMixin):
     # ``dek_key_id`` is populated on first message; ``dek_rotated_at`` is
     # bumped when membership changes or an operator schedules rotation.
     dek_key_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    dek_rotated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    dek_rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     client = relationship("ClientProfile", foreign_keys=[client_id])

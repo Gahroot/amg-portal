@@ -112,9 +112,7 @@ def downgrade() -> None:
             import json as _json
 
             conn.execute(
-                sa.text(
-                    f"UPDATE users SET {col}_plain = CAST(:js AS json) WHERE id = :uid"
-                ),
+                sa.text(f"UPDATE users SET {col}_plain = CAST(:js AS json) WHERE id = :uid"),
                 {"js": _json.dumps(plaintext), "uid": user_id},
             )
 

@@ -22,6 +22,7 @@ export default function MfaVerifyScreen() {
   const { verifyMfa, isLoading, error, setError } = useAuth();
   const mfaPending = useAuthStore((s) => s.mfaPending);
   const clearMfaPending = useAuthStore((s) => s.clearMfaPending);
+  const setPendingCredentials = useAuthStore((s) => s.setPendingCredentials);
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -101,6 +102,7 @@ export default function MfaVerifyScreen() {
 
   const handleBack = () => {
     clearMfaPending();
+    setPendingCredentials(null);
     router.back();
   };
 

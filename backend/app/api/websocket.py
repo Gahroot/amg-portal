@@ -86,9 +86,7 @@ async def _reauth_loop(
                 )
                 with contextlib.suppress(Exception):
                     await websocket.send_text(
-                        json.dumps(
-                            {"type": "auth_error", "message": "Session expired"}
-                        )
+                        json.dumps({"type": "auth_error", "message": "Session expired"})
                     )
                 with contextlib.suppress(Exception):
                     await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -441,9 +439,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     # WebSocket connections; a missing or non-allowlisted value is rejected.
     origin = websocket.headers.get("origin")
     if not _is_origin_allowed(origin):
-        logger.warning(
-            "Rejecting WebSocket connection from disallowed origin: %r", origin
-        )
+        logger.warning("Rejecting WebSocket connection from disallowed origin: %r", origin)
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

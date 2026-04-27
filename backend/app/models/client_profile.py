@@ -34,9 +34,7 @@ class ClientProfile(Base, TimestampMixin):
         nullable=True,
         key="tax_id_enc",
     )
-    tax_id_bidx: Mapped[bytes | None] = mapped_column(
-        LargeBinary(16), nullable=True, index=True
-    )
+    tax_id_bidx: Mapped[bytes | None] = mapped_column(LargeBinary(16), nullable=True, index=True)
 
     # Contact
     primary_email: Mapped[str] = mapped_column(String(255), nullable=False)

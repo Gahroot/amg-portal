@@ -31,8 +31,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # here as defence-in-depth: it denies all resource loads and
         # forbids framing, so an attacker who somehow coerces the browser
         # to treat an API response as a document still gets nothing.
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'none'; frame-ancestors 'none'"
-        )
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
 
         return response

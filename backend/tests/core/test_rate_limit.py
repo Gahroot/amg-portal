@@ -352,5 +352,3 @@ async def test_redis_path_cost_weight_smoke() -> None:
     await limiter(req)  # 4/4
     with pytest.raises(HTTPException):
         await limiter(req)
-
-

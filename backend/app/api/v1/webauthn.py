@@ -96,9 +96,7 @@ async def list_own_credentials(current_user: CurrentUser, db: DB) -> list[dict[s
 
 
 @router.delete("/credentials/{credential_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_own_credential(
-    credential_id: Str50, current_user: CurrentUser, db: DB
-) -> None:
+async def delete_own_credential(credential_id: Str50, current_user: CurrentUser, db: DB) -> None:
     import uuid
 
     await delete_credential(db, current_user, uuid.UUID(credential_id))
@@ -107,9 +105,7 @@ async def delete_own_credential(
 
 @router.post("/authenticate/begin")
 async def authenticate_begin(data: _BeginAuth, db: DB) -> dict[str, Any]:
-    user = (
-        await db.execute(select(User).where(User.email == data.email))
-    ).scalar_one_or_none()
+    user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     # Canonicalise failure modes — do not leak whether the email exists.
     if user is None:
         raise NotFoundException("No passkeys registered for this user")
@@ -117,12 +113,8 @@ async def authenticate_begin(data: _BeginAuth, db: DB) -> dict[str, Any]:
 
 
 @router.post("/authenticate/complete", response_model=Token)
-async def authenticate_complete(
-    data: _CompleteAuth, response: Response, db: DB
-) -> Any:
-    user = (
-        await db.execute(select(User).where(User.email == data.email))
-    ).scalar_one_or_none()
+async def authenticate_complete(data: _CompleteAuth, response: Response, db: DB) -> Any:
+    user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if user is None:
         raise NotFoundException("No passkeys registered for this user")
     await complete_authentication(db, user, data.credential)

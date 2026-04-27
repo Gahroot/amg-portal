@@ -39,6 +39,22 @@ export function usePushNotifications() {
   const setStorePushToken = useNotificationStore((s) => s.setPushToken);
   const navigationHandledRef = useRef(false);
 
+  // Android 8+ requires a notification channel before any notification can appear.
+  // Without one the system silently drops all notifications.
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      void Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#eab308',
+        sound: 'default',
+        enableVibrate: true,
+        showBadge: true,
+      });
+    }
+  }, []);
+
   // Request permissions
   const requestPermissions = useCallback(async () => {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -52,17 +68,22 @@ export function usePushNotifications() {
       return null;
     }
 
-    // SDK 49+ requires an explicit EAS projectId; reading it from
-    // expoConfig.extra.eas.projectId works in dev (Expo Go), classic builds,
-    // and EAS builds.
+    // SDK 49+ requires an explicit EAS projectId.
+    // Priority: app.json extra.eas.projectId → EAS build-injected easConfig.projectId
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
       (Constants as unknown as { easConfig?: { projectId?: string } }).easConfig?.projectId;
 
-    try {
-      const tokenResult = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined,
+    if (!projectId) {
+      console.warn(
+        '[PushToken] No EAS projectId found. Add extra.eas.projectId to app.json ' +
+        'or run `eas init` to link this project. Push tokens will not be registered.',
       );
+      return null;
+    }
+
+    try {
+      const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
       const tokenString = tokenResult.data;
       if (tokenString) {
         setLocalPushToken(tokenString);
@@ -91,7 +112,8 @@ export function usePushNotifications() {
       });
       await setStorePushToken(tokenString);
       return true;
-    } catch {
+    } catch (err) {
+      console.warn('[PushToken] Failed to register token with backend:', err);
       return false;
     }
   }, [token, setStorePushToken]);
@@ -106,7 +128,8 @@ export function usePushNotifications() {
       await api.delete(`/push-tokens/${encodeURIComponent(tokenString)}`);
       await setStorePushToken(null);
       return true;
-    } catch {
+    } catch (err) {
+      console.warn('[PushToken] Failed to unregister token from backend:', err);
       return false;
     }
   }, [token, setStorePushToken]);

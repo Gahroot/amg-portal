@@ -86,9 +86,7 @@ class EncryptedBytes(TypeDecorator[bytes]):
             return None
         raw = bytes(value)
         if len(raw) < HEADER_LEN + 16:
-            raise ValueError(
-                f"EncryptedBytes({self._table}.{self._column}): ciphertext too short"
-            )
+            raise ValueError(f"EncryptedBytes({self._table}.{self._column}): ciphertext too short")
         version = raw[0]
         if version != VERSION_BYTE:
             raise ValueError(

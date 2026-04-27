@@ -160,4 +160,3 @@ class StepUpTokenRequest(BaseModel):
     password: Str255 | None = None
     totp_code: Str10 | None = None
     action_scope: list[Str50] = Field(default_factory=list, max_length=10)
-

@@ -335,9 +335,7 @@ class StorageService:
         prefix = f"{entity_type}s/{entity_id}"
         if subfolder:
             prefix = f"{prefix}/{subfolder}"
-        return await self.upload_file(
-            file, prefix, max_size=max_size, allowed_types=allowed_types
-        )
+        return await self.upload_file(file, prefix, max_size=max_size, allowed_types=allowed_types)
 
     async def delete_file(self, object_name: str) -> None:
         """Delete a file from MinIO."""
@@ -366,9 +364,7 @@ class StorageService:
         ciphertext is opaque.  Original content type lives on the document row.
         """
         await self._ensure_bucket()
-        blob, meta = encrypt_bytes(
-            plaintext, file_uuid=file_uuid, subject_id=subject_id
-        )
+        blob, meta = encrypt_bytes(plaintext, file_uuid=file_uuid, subject_id=subject_id)
 
         metadata: dict[str, str | list[str] | tuple[str]] = {
             "x-amz-meta-kek-version": str(meta.kek_version),
@@ -379,9 +375,7 @@ class StorageService:
             metadata["x-amz-meta-original-content-type"] = content_type
         lock: Retention | None = None
         if retention is not None:
-            lock = Retention(
-                mode=COMPLIANCE, retain_until_date=retention.retain_until_date
-            )
+            lock = Retention(mode=COMPLIANCE, retain_until_date=retention.retain_until_date)
 
         def _put() -> None:
             self.client.put_object(
@@ -408,9 +402,7 @@ class StorageService:
         from app.core.file_crypto import decrypt_blob
 
         ciphertext = await self.download_file(object_name)
-        return decrypt_blob(
-            ciphertext, file_uuid=file_uuid, subject_id=subject_id
-        )
+        return decrypt_blob(ciphertext, file_uuid=file_uuid, subject_id=subject_id)
 
     async def fetch_ciphertext(self, object_name: str) -> bytes:
         """Fetch the raw ciphertext blob from MinIO into memory."""
@@ -440,9 +432,7 @@ class StorageService:
         ``decrypt_stream`` across an async boundary — deferred to when files
         exceed memory headroom.
         """
-        yield from decrypt_stream(
-            BytesIO(ciphertext), file_uuid=file_uuid, subject_id=subject_id
-        )
+        yield from decrypt_stream(BytesIO(ciphertext), file_uuid=file_uuid, subject_id=subject_id)
 
 
 storage_service = StorageService()

@@ -89,9 +89,7 @@ async def _build_thread(
 
     # Fetch all unique authors in one pass
     author_ids = {c.author_id for c in comments}
-    author_rows = (
-        await db.execute(select(User).where(User.id.in_(author_ids)))
-    ).scalars().all()
+    author_rows = (await db.execute(select(User).where(User.id.in_(author_ids)))).scalars().all()
     author_map: dict[uuid.UUID, str] = {u.id: u.full_name for u in author_rows}
 
     # Index comments
@@ -107,8 +105,7 @@ async def _build_thread(
 
     def _build(c: ApprovalComment) -> ApprovalCommentResponse:
         reply_responses = [
-            _build(child)
-            for child in sorted(children.get(c.id, []), key=lambda x: x.created_at)
+            _build(child) for child in sorted(children.get(c.id, []), key=lambda x: x.created_at)
         ]
         return _build_comment_response(c, author_map.get(c.author_id, "Unknown"), reply_responses)
 
@@ -168,9 +165,7 @@ async def list_pending_approvals(
     response_model=list[ApprovalResponse],
     dependencies=[Depends(require_internal)],
 )
-async def get_program_approvals(
-    program_id: uuid.UUID, db: DB
-) -> list[dict[str, Any]]:
+async def get_program_approvals(program_id: uuid.UUID, db: DB) -> list[dict[str, Any]]:
     result = await db.execute(
         select(ProgramApproval)
         .where(ProgramApproval.program_id == program_id)
@@ -268,8 +263,7 @@ async def _gather_notify_ids(
         ).scalar_one_or_none()
         if pa:
             ids.update(
-                uid for uid in (pa.requested_by, pa.approved_by)
-                if uid and uid != commenter_id
+                uid for uid in (pa.requested_by, pa.approved_by) if uid and uid != commenter_id
             )
 
     for uid_str in mention_ids:
@@ -352,9 +346,7 @@ async def add_comment(
 
     # Resolve @mentions from content
     extracted_ids = _extract_mentions(data.content)
-    all_mention_ids = list(
-        {str(u) for u in data.mentioned_user_ids} | set(extracted_ids)
-    )
+    all_mention_ids = list({str(u) for u in data.mentioned_user_ids} | set(extracted_ids))
 
     comment = ApprovalComment(
         entity_type=entity_type,
@@ -410,9 +402,7 @@ async def delete_comment(
     entity_type: str = Query("program_approval"),
 ) -> None:
     """Delete a comment. Authors can delete their own; MDs can delete any."""
-    result = await db.execute(
-        select(ApprovalComment).where(ApprovalComment.id == comment_id)
-    )
+    result = await db.execute(select(ApprovalComment).where(ApprovalComment.id == comment_id))
     comment = result.scalar_one_or_none()
     if not comment:
         raise NotFoundException("Comment not found")

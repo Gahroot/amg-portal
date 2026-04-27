@@ -164,13 +164,10 @@ def _daily_hmac_key(day: date) -> bytes:
         seed = seed_raw.encode("utf-8")
     if len(seed) < 32:
         raise RuntimeError(
-            "AUDIT_HMAC_SEED_V1 must decode to at least 32 bytes; "
-            f"got {len(seed)}.",
+            f"AUDIT_HMAC_SEED_V1 must decode to at least 32 bytes; got {len(seed)}.",
         )
     info = f"amg|audit|hmac|{day.isoformat()}".encode()
-    return HKDF(
-        algorithm=hashes.SHA256(), length=32, salt=None, info=info
-    ).derive(seed[:32])
+    return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=info).derive(seed[:32])
 
 
 # ---------------------------------------------------------------------------
@@ -185,10 +182,7 @@ def _last_row_hash(session: Session) -> bytes | None:
     against concurrent writers.
     """
     row = session.execute(
-        text(
-            "SELECT row_hash FROM audit_logs "
-            "ORDER BY created_at DESC, id DESC LIMIT 1"
-        )
+        text("SELECT row_hash FROM audit_logs ORDER BY created_at DESC, id DESC LIMIT 1")
     ).first()
     if row is None:
         return None
@@ -271,10 +265,7 @@ def _merkle_root(leaves: list[bytes]) -> bytes:
     while len(level) > 1:
         if len(level) % 2 == 1:
             level.append(level[-1])
-        level = [
-            hashlib.sha256(level[i] + level[i + 1]).digest()
-            for i in range(0, len(level), 2)
-        ]
+        level = [hashlib.sha256(level[i] + level[i + 1]).digest() for i in range(0, len(level), 2)]
     return level[0]
 
 
@@ -361,9 +352,7 @@ async def sign_day(target_day: date, db: AsyncSession) -> AuditCheckpoint | None
     daily sign job as at-least-once-safe.
     """
     existing = (
-        await db.execute(
-            select(AuditCheckpoint).where(AuditCheckpoint.day == target_day)
-        )
+        await db.execute(select(AuditCheckpoint).where(AuditCheckpoint.day == target_day))
     ).scalar_one_or_none()
     if existing is not None:
         return existing
@@ -465,17 +454,14 @@ async def verify_day(  # noqa: PLR0911 PLR0912 — short-circuit structure is in
     # using the stored row_hashes above would just check "stored == stored").
     leaves = [
         hashlib.sha256(
-            _canonical_json(r)
-            + (bytes(r.prev_hash) if r.prev_hash is not None else b"\x00" * 32)
+            _canonical_json(r) + (bytes(r.prev_hash) if r.prev_hash is not None else b"\x00" * 32)
         ).digest()
         for r in rows
     ]
     recomputed_root = _merkle_root(leaves)
 
     checkpoint = (
-        await db.execute(
-            select(AuditCheckpoint).where(AuditCheckpoint.day == target_day)
-        )
+        await db.execute(select(AuditCheckpoint).where(AuditCheckpoint.day == target_day))
     ).scalar_one_or_none()
     if checkpoint is None:
         return False, f"no checkpoint for {target_day}"

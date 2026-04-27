@@ -116,6 +116,7 @@ def blind_index(value: str) -> bytes:
 
 # ── Subject-scoped DEK derivation for crypto-shred (Phase 2.6 / 2.14) ─
 
+
 def derive_subject_dek(subject_id: UUID, subject_version: int, column: str) -> tuple[bytes, int]:
     """HKDF a DEK bound to ``(subject_id, subject_version, column)``.
 
@@ -127,8 +128,6 @@ def derive_subject_dek(subject_id: UUID, subject_version: int, column: str) -> t
     crypto = get_crypto()
     key_id = crypto.current_kek_id
     kek = crypto.unwrap_kek(key_id)
-    info = (
-        f"amg|subject|{subject_id}|v{subject_version}|col|{column}"
-    ).encode()
+    info = (f"amg|subject|{subject_id}|v{subject_version}|col|{column}").encode()
     hkdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=info)
     return hkdf.derive(kek), key_id

@@ -1,4 +1,5 @@
 """Partner directory management endpoints (internal views)."""
+
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -154,9 +155,7 @@ async def get_global_threshold(
     _: None = Depends(require_internal),
 ) -> PartnerThresholdResponse:
     """Return the global default partner alert threshold (partner_id IS NULL)."""
-    result = await db.execute(
-        select(PartnerThreshold).where(PartnerThreshold.partner_id.is_(None))
-    )
+    result = await db.execute(select(PartnerThreshold).where(PartnerThreshold.partner_id.is_(None)))
     threshold = result.scalar_one_or_none()
     if threshold is None:
         raise NotFoundException("Global threshold not configured")
@@ -175,9 +174,7 @@ async def upsert_global_threshold(
     _: None = Depends(require_internal),
 ) -> PartnerThresholdResponse:
     """Create or update the global default partner alert threshold."""
-    result = await db.execute(
-        select(PartnerThreshold).where(PartnerThreshold.partner_id.is_(None))
-    )
+    result = await db.execute(select(PartnerThreshold).where(PartnerThreshold.partner_id.is_(None)))
     threshold = result.scalar_one_or_none()
 
     if threshold is None:
@@ -514,9 +511,7 @@ async def get_partner_capacity_heatmap(
     if not heatmap:
         raise NotFoundException("Partner not found")
 
-    days = {
-        iso_date: CapacityDayEntry(**entry) for iso_date, entry in heatmap.items()
-    }
+    days = {iso_date: CapacityDayEntry(**entry) for iso_date, entry in heatmap.items()}
     return PartnerCapacityHeatmapResponse(
         partner_id=partner_id,
         start_date=start_date,
@@ -550,9 +545,7 @@ async def list_blocked_dates(
         filters.append(PartnerBlockedDate.blocked_date <= end_date)
 
     result = await db.execute(
-        select(PartnerBlockedDate)
-        .where(and_(*filters))
-        .order_by(PartnerBlockedDate.blocked_date)
+        select(PartnerBlockedDate).where(and_(*filters)).order_by(PartnerBlockedDate.blocked_date)
     )
     rows = result.scalars().all()
     return [BlockedDateResponse.model_validate(r) for r in rows]
@@ -579,9 +572,7 @@ async def add_blocked_date(
             raise NotFoundException("Partner not found")
     else:
         # Internal staff — verify partner exists
-        result = await db.execute(
-            select(PartnerProfile).where(PartnerProfile.id == partner_id)
-        )
+        result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
         if result.scalar_one_or_none() is None:
             raise NotFoundException("Partner not found")
 
@@ -653,9 +644,7 @@ async def get_partner_threshold(
 ) -> PartnerThresholdResponse:
     """Return the partner-specific threshold override, or fall back to the global default."""
     # Check partner exists
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     if partner_result.scalar_one_or_none() is None:
         raise NotFoundException("Partner not found")
 
@@ -688,9 +677,7 @@ async def upsert_partner_threshold(
 ) -> PartnerThresholdResponse:
     """Create or update a partner-specific threshold override."""
     # Check partner exists
-    partner_result = await db.execute(
-        select(PartnerProfile).where(PartnerProfile.id == partner_id)
-    )
+    partner_result = await db.execute(select(PartnerProfile).where(PartnerProfile.id == partner_id))
     if partner_result.scalar_one_or_none() is None:
         raise NotFoundException("Partner not found")
 

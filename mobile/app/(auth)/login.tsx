@@ -16,6 +16,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/lib/auth-store';
 import { login, getMe } from '@/lib/api/auth';
 import { useBiometrics } from '@/hooks/use-biometrics';
+import { useBiometricReauth } from '@/hooks/use-session';
 import {
   BiometricLoginButton,
   BiometricSetupPrompt,
@@ -32,6 +33,17 @@ export default function LoginScreen() {
   const [showSetupPrompt, setShowSetupPrompt] = useState(false);
   const [setupCredentials, setSetupCredentials] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const { checkReauthRequired } = useBiometricReauth();
+
+  // Clear the amg_needs_reauth flag set by session timeout and surface a message
+  // explaining why the user was logged out.
+  useEffect(() => {
+    checkReauthRequired().then((needed) => {
+      if (needed) setSessionExpired(true);
+    });
+  }, [checkReauthRequired]);
 
   const handleCopyError = useCallback(async () => {
     if (!error) return;
@@ -193,6 +205,22 @@ export default function LoginScreen() {
               Sign in to your account
             </Text>
           </View>
+
+          {/* Session expired notice */}
+          {sessionExpired && !error ? (
+            <View
+              style={{
+                backgroundColor: '#1e3a5f',
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 16,
+              }}
+            >
+              <Text style={{ fontSize: 14, color: '#93c5fd', textAlign: 'center' }}>
+                Your session expired. Please sign in again.
+              </Text>
+            </View>
+          ) : null}
 
           {/* Error Banner */}
           {error ? (

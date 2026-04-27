@@ -97,6 +97,9 @@ export function useAuth() {
           role: me.role,
           status: me.status,
         });
+        // Clean up sensitive in-memory state now that auth is complete
+        useAuthStore.getState().clearMfaPending();
+        useAuthStore.getState().setPendingCredentials(null);
         router.replace(getRouteForRole(me.role));
       } catch (err) {
         setError(getApiErrorMessage(err, 'MFA verification failed.'));

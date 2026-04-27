@@ -275,9 +275,9 @@ class Settings(BaseSettings):
                     "from cryptography.hazmat.primitives.serialization import "
                     "Encoding, PrivateFormat, PublicFormat, NoEncryption; "
                     "sk=Ed25519PrivateKey.generate(); "
-                    'print(\"private:\", base64.b64encode(sk.private_bytes('
+                    'print("private:", base64.b64encode(sk.private_bytes('
                     "Encoding.Raw, PrivateFormat.Raw, NoEncryption())).decode()); "
-                    'print(\"public:\", base64.b64encode(sk.public_key().public_bytes('
+                    'print("public:", base64.b64encode(sk.public_key().public_bytes('
                     "Encoding.Raw, PublicFormat.Raw)).decode())'"
                 )
             # DEBUG: derive a deterministic keypair from SECRET_KEY so restarts
@@ -318,7 +318,7 @@ class Settings(BaseSettings):
             if not self.DEBUG:
                 raise ValueError(
                     "AMG_KEK_KEYS must be set in production (JSON dict of "
-                    "id->32-byte key, e.g. '{\"1\": \"<urlsafe-b64>\"}')."
+                    'id->32-byte key, e.g. \'{"1": "<urlsafe-b64>"}\').'
                 )
             from cryptography.hazmat.primitives import hashes as _h
             from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF
@@ -333,9 +333,7 @@ class Settings(BaseSettings):
             self.CURRENT_KEK_ID = 1
         if not self.AMG_BIDX_KEY_V1:
             if not self.DEBUG:
-                raise ValueError(
-                    "AMG_BIDX_KEY_V1 must be set in production. 32 bytes urlsafe-b64."
-                )
+                raise ValueError("AMG_BIDX_KEY_V1 must be set in production. 32 bytes urlsafe-b64.")
             from cryptography.hazmat.primitives import hashes as _h2
             from cryptography.hazmat.primitives.kdf.hkdf import HKDF as _HKDF2
 

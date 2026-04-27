@@ -1,48 +1,29 @@
 import '../global.css';
 
-import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import NetInfo from '@react-native-community/netinfo';
 
 import { DeviceIntegrityGate } from '@/components/DeviceIntegrityGate';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { useWebSocket } from '@/hooks/use-websocket';
 import { useAuthStore } from '@/lib/auth-store';
 import { queryClient } from '@/lib/query-client';
 import { dataCache } from '@/services/DataCache';
 import { useWidgetIntegration } from '@/widgets';
 
-/**
- * Setup network monitoring for TanStack Query
- */
-function useNetworkManager() {
-  useEffect(() => {
-    // React Query supports auto-refetch on reconnect for web
-    // For native, we need to manually integrate with NetInfo
-    if (Platform.OS !== 'web') {
-      const unsubscribe = NetInfo.addEventListener((state) => {
-        const isOnline =
-          state.isConnected != null &&
-          state.isConnected &&
-          Boolean(state.isInternetReachable);
-        onlineManager.setOnline(isOnline);
-      });
-
-      return () => unsubscribe();
-    }
-  }, []);
-
-  // Handle app state changes
+// onlineManager is wired to NetInfo once in query-client.ts via setEventListener.
+// This hook handles only the app-lifecycle side-effect (cache eviction on foreground).
+function useAppLifecycle() {
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        // Clear expired cache when app becomes active
         await dataCache.clearExpired();
       }
     };
@@ -50,6 +31,14 @@ function useNetworkManager() {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
   }, []);
+}
+
+// Manages the single shared WebSocket connection for real-time notifications.
+// Must be inside QueryClientProvider (uses Zustand stores, not TQ — but keeping
+// it co-located with other connection managers makes lifecycle obvious).
+function ConnectionManager() {
+  useWebSocket();
+  return null;
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -90,8 +79,8 @@ export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const [isReady, setIsReady] = useState(false);
 
-  // Initialize network manager
-  useNetworkManager();
+  // App lifecycle (cache eviction on foreground)
+  useAppLifecycle();
 
   // Initialize push notifications with deep link handling
   usePushNotifications();
@@ -122,6 +111,7 @@ export default function RootLayout() {
           <AuthGate>
             <DeviceIntegrityGate>
               <WidgetManager />
+              <ConnectionManager />
               <StatusBar style="auto" />
               <OfflineIndicator position="top" showOnlineToast={true} />
               <Stack screenOptions={{ headerShown: false }}>

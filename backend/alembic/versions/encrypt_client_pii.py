@@ -55,9 +55,7 @@ def upgrade() -> None:
         bidx = blind_index(plaintext)
         conn.execute(
             sa.text(
-                "UPDATE client_profiles "
-                "SET tax_id_enc = :ct, tax_id_bidx = :bidx "
-                "WHERE id = :pid"
+                "UPDATE client_profiles SET tax_id_enc = :ct, tax_id_bidx = :bidx WHERE id = :pid"
             ),
             {"ct": ciphertext, "bidx": bidx, "pid": profile_id},
         )
@@ -97,9 +95,7 @@ def downgrade() -> None:
         if plaintext is None:
             continue
         conn.execute(
-            sa.text(
-                "UPDATE client_profiles SET tax_id_plain = :pt WHERE id = :pid"
-            ),
+            sa.text("UPDATE client_profiles SET tax_id_plain = :pt WHERE id = :pid"),
             {"pt": plaintext.decode("utf-8"), "pid": profile_id},
         )
 
