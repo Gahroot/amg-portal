@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/lib/secure-storage';
 import { router } from 'expo-router';
 
 import { API_V1_URL } from '@/lib/config';

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import * as SecureStore from '@/lib/secure-storage';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { refreshToken as refreshTokenApi } from '@/lib/api/auth';

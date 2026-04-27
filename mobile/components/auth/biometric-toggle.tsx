@@ -2,7 +2,7 @@ import { View, Text, Switch, ActivityIndicator } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
 import { Fingerprint, ScanFace } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '@/lib/secure-storage';
 
 import { useBiometrics, type BiometricType } from '@/hooks/use-biometrics';
 

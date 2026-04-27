@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import * as SecureStore from '@/lib/secure-storage';
 
 import { useAuthStore } from '@/lib/auth-store';
 import { getMe } from '@/lib/api/auth';

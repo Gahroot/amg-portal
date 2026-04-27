@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
+import * as SecureStore from '@/lib/secure-storage';
 
 import { INTERNAL_ROLES, type UserRole } from '@/types/user';
 import { queryClient } from '@/lib/query-client';
