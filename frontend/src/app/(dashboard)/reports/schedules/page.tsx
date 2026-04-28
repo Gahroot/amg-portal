@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ScheduleReportDialog } from "@/components/reports/schedule-report-dialog";
 import { ScheduledReportsList } from "@/components/reports/scheduled-reports-list";
 import {
@@ -92,6 +93,8 @@ export default function ReportSchedulesPage() {
   // ── Dialog state ───────────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] =
+    useState<ReportSchedule | null>(null);
+  const [pendingDeleteSchedule, setPendingDeleteSchedule] =
     useState<ReportSchedule | null>(null);
 
   function openCreate() {
@@ -192,15 +195,7 @@ export default function ReportSchedulesPage() {
             })
           }
           onEdit={openEdit}
-          onDelete={(schedule) => {
-            if (
-              window.confirm(
-                `Delete the "${schedule.report_type.replace(/_/g, " ")}" schedule? This cannot be undone.`,
-              )
-            ) {
-              deleteMutation.mutate(schedule.id);
-            }
-          }}
+          onDelete={(schedule) => setPendingDeleteSchedule(schedule)}
           onExecute={(schedule) => executeMutation.mutate(schedule.id)}
           executingId={executeMutation.isPending ? (executeMutation.variables ?? null) : null}
           togglingId={
@@ -217,6 +212,20 @@ export default function ReportSchedulesPage() {
         schedule={editingSchedule}
         onSubmit={handleSubmit}
         isPending={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteSchedule !== null}
+        onOpenChange={(open) => !open && setPendingDeleteSchedule(null)}
+        title="Delete schedule?"
+        description={`Delete the "${(pendingDeleteSchedule?.report_type ?? "").replace(/_/g, " ")}" schedule? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (pendingDeleteSchedule) {
+            deleteMutation.mutate(pendingDeleteSchedule.id);
+            setPendingDeleteSchedule(null);
+          }
+        }}
       />
     </div>
   );

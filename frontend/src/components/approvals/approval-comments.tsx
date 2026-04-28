@@ -16,6 +16,7 @@ import type { ApprovalComment, ApprovalCommentCreate } from "@/types/approval";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -69,6 +70,7 @@ function CommentItem({
   currentUserRole,
 }: CommentItemProps) {
   const queryClient = useQueryClient();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: () =>
@@ -133,11 +135,7 @@ function CommentItem({
             )}
             {canDelete && (
               <button
-                onClick={() => {
-                  if (confirm("Delete this comment?")) {
-                    deleteMutation.mutate();
-                  }
-                }}
+                onClick={() => setDeleteOpen(true)}
                 className="flex items-center gap-1 text-xs text-destructive/70 hover:text-destructive transition-colors"
                 disabled={deleteMutation.isPending}
               >
@@ -166,6 +164,15 @@ function CommentItem({
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete comment?"
+        description="This will permanently delete the comment and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => deleteMutation.mutate()}
+      />
     </div>
   );
 }

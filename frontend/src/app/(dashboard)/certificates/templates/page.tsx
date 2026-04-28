@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Table,
   TableBody,
@@ -27,6 +28,7 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTemplates() {
@@ -44,12 +46,17 @@ export default function TemplatesPage() {
     loadTemplates();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
     try {
-      await deleteTemplate(id);
-      setTemplates(templates.filter((t) => t.id !== id));
+      await deleteTemplate(pendingDeleteId);
+      setTemplates(templates.filter((t) => t.id !== pendingDeleteId));
       setTotal(total - 1);
+      setPendingDeleteId(null);
     } catch {
       toast.error("Failed to delete template");
     }
@@ -149,6 +156,15 @@ export default function TemplatesPage() {
           {total} template{total !== 1 ? "s" : ""} total
         </p>
       )}
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete template?"
+        description="This will permanently delete the template and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   ListChecks,
   ChevronRight,
   Mail,
+  ArrowLeft,
 } from "lucide-react";
 import {
   Sheet,
@@ -20,6 +21,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,7 +39,9 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 import { useHelpContext } from "@/hooks/use-help-context";
+import { submitFeedback } from "@/lib/api/feedback";
 import {
   getHelpContent,
   searchHelpContent,
@@ -47,6 +57,7 @@ interface HelpPanelProps {
 export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showContactForm, setShowContactForm] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
   const helpContext = useHelpContext();
   const helpContent = useMemo(
     () => getHelpContent(helpContext.pageType),
@@ -59,10 +70,11 @@ export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
   }, [searchQuery]);
 
   const handleArticleClick = (article: HelpArticle) => {
-    // For now, just log - in production this would open the article
-    console.log("Opening article:", article.id);
-    // If it's a video, could open a modal
-    // If it's external, open in new tab
+    if (article.url) {
+      window.open(article.url, "_blank", "noopener,noreferrer");
+    } else {
+      setSelectedArticle(article);
+    }
   };
 
   const handleContactSupport = () => {
@@ -70,12 +82,12 @@ export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
   };
 
   const handleViewDocs = () => {
-    if (helpContent.docsUrl) {
-      window.open(helpContent.docsUrl, "_blank", "noopener,noreferrer");
-    }
+    // Point to FastAPI Swagger UI as the live API reference
+    window.open("/api/v1/docs", "_blank", "noopener,noreferrer");
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
@@ -164,12 +176,19 @@ export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
               onClick={handleViewDocs}
             >
               <ExternalLink className="mr-2 h-4 w-4" />
-              Full Docs
+              API Docs
             </Button>
           </div>
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Article viewer dialog */}
+    <ArticleDialog
+      article={selectedArticle}
+      onOpenChange={(open) => !open && setSelectedArticle(null)}
+    />
+    </>
   );
 }
 
@@ -348,12 +367,18 @@ function ContactSupportForm({ onBack }: ContactSupportFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    setSubmitting(false);
-    setSubmitted(true);
+    try {
+      await submitFeedback({
+        feedback_type: "support_request",
+        description: `Subject: ${subject}\n\n${message}`,
+        page_url: typeof window !== "undefined" ? window.location.href : undefined,
+      });
+      setSubmitted(true);
+    } catch {
+      toast.error("Failed to send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -381,7 +406,7 @@ function ContactSupportForm({ onBack }: ContactSupportFormProps) {
         onClick={onBack}
         className="mb-2"
       >
-        <ChevronRight className="mr-1 h-4 w-4 rotate-180" />
+        <ArrowLeft className="mr-1 h-4 w-4" />
         Back
       </Button>
 
@@ -423,6 +448,66 @@ function ContactSupportForm({ onBack }: ContactSupportFormProps) {
         </Button>
       </form>
     </div>
+  );
+}
+
+interface ArticleDialogProps {
+  article: HelpArticle | null;
+  onOpenChange: (open: boolean) => void;
+}
+
+function ArticleDialog({ article, onOpenChange }: ArticleDialogProps) {
+  if (!article) return null;
+
+  const isVideo = article.type === "video";
+
+  return (
+    <Dialog open={article !== null} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {isVideo ? (
+              <PlayCircle className="h-5 w-5 text-primary" />
+            ) : (
+              <FileText className="h-5 w-5 text-primary" />
+            )}
+            {article.title}
+          </DialogTitle>
+          {article.description && (
+            <DialogDescription>{article.description}</DialogDescription>
+          )}
+        </DialogHeader>
+        <div className="space-y-4">
+          {isVideo ? (
+            <div className="rounded-md border bg-muted/30 p-6 text-center">
+              <PlayCircle className="mx-auto mb-3 h-12 w-12 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Video tutorial{article.duration ? ` · ${article.duration}` : ""}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Contact your administrator for access to video training materials.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border bg-muted/30 p-4">
+              <p className="text-sm text-muted-foreground">
+                {article.description ??
+                  "Refer to your team documentation or contact support for detailed guidance on this topic."}
+              </p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button onClick={() => { onOpenChange(false); }}>
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Ask Support
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

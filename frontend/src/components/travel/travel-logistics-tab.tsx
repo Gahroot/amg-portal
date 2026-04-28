@@ -6,6 +6,7 @@ import { Plane, Building2, Car, MapPin, Plus, Pencil, Trash2, Calendar, Users } 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -196,6 +197,7 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<TravelBooking | null>(null);
+  const [pendingDeleteBooking, setPendingDeleteBooking] = useState<TravelBooking | null>(null);
   const [formData, setFormData] = useState<TravelBookingCreate>({
     booking_ref: "",
     vendor: "",
@@ -262,9 +264,7 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
   }
 
   function handleDelete(booking: TravelBooking) {
-    if (confirm(`Delete booking ${booking.booking_ref}?`)) {
-      deleteMutation.mutate(booking.id);
-    }
+    setPendingDeleteBooking(booking);
   }
 
   if (isLoading) {
@@ -428,6 +428,20 @@ export function TravelLogisticsTab({ programId }: TravelLogisticsTabProps) {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDeleteBooking !== null}
+        onOpenChange={(open) => !open && setPendingDeleteBooking(null)}
+        title="Delete booking?"
+        description={`Delete booking ${pendingDeleteBooking?.booking_ref ?? ""}? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (pendingDeleteBooking) {
+            deleteMutation.mutate(pendingDeleteBooking.id);
+            setPendingDeleteBooking(null);
+          }
+        }}
+      />
     </div>
   );
 }

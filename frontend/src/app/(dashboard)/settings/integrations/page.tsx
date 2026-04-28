@@ -251,9 +251,9 @@ export default function IntegrationsPage() {
               </CardContent>
               <CardFooter>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/docs/integrations#zapier-integration" target="_blank">
+                  <Link href="/api/v1/docs" target="_blank">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Setup Guide
+                    API Reference
                   </Link>
                 </Button>
               </CardFooter>
@@ -285,9 +285,9 @@ export default function IntegrationsPage() {
               </CardContent>
               <CardFooter>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/docs/integrations#make-integromat-integration" target="_blank">
+                  <Link href="/api/v1/docs" target="_blank">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Setup Guide
+                    API Reference
                   </Link>
                 </Button>
               </CardFooter>
@@ -525,15 +525,16 @@ export default function IntegrationsPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <a
-                  href="/docs/integrations.md"
+                  href="/api/v1/docs"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted transition-colors"
                 >
                   <FileText className="h-8 w-8 text-blue-500" />
                   <div>
-                    <p className="font-medium">Full Documentation</p>
+                    <p className="font-medium">API Documentation</p>
                     <p className="text-sm text-muted-foreground">
-                      Complete guide for all integration methods
+                      OpenAPI reference for all integration endpoints
                     </p>
                   </div>
                 </a>
@@ -556,24 +557,14 @@ export default function IntegrationsPage() {
                 <h3 className="font-medium mb-2">Quick Links</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li>
-                    <Link href="/docs/integrations#zapier-integration" className="hover:text-foreground">
-                      → Zapier Setup Guide
-                    </Link>
+                    <a href="/api/v1/docs#tag/webhooks" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      → Webhook Endpoints
+                    </a>
                   </li>
                   <li>
-                    <Link href="/docs/integrations#make-integromat-integration" className="hover:text-foreground">
-                      → Make (Integromat) Setup Guide
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/docs/integrations#webhooks" className="hover:text-foreground">
-                      → Webhook Configuration
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/docs/integrations#event-types-reference" className="hover:text-foreground">
-                      → Event Types Reference
-                    </Link>
+                    <a href="/api/v1/docs" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      → Full API Reference
+                    </a>
                   </li>
                 </ul>
               </div>

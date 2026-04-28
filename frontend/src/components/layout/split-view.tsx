@@ -416,12 +416,43 @@ function SplitPanelContent({
 }: SplitPanelPanelContentProps) {
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const entityPath = getEntityPath(panel.entityType, panel.entityId);
+  const { setRightPanel } = useSplitView();
+  const isPlaceholder = panel.entityId === "select";
+  const entityPath = isPlaceholder ? "" : getEntityPath(panel.entityType, panel.entityId);
 
   useEffect(() => {
-    setIsLoading(true);
-  }, [entityPath]);
+    if (!isPlaceholder) setIsLoading(true);
+  }, [entityPath, isPlaceholder]);
+
+  // Placeholder: user hasn't selected a right-panel entity yet
+  if (isPlaceholder) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+        <Columns2 className="h-12 w-12 text-muted-foreground/40" />
+        <div>
+          <p className="font-medium">Choose a second panel</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Open any client, program, or partner page and click
+            &ldquo;Split View&rdquo; to load it here.
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          {(["client", "program", "partner"] as const).map((type) => (
+            <Button
+              key={type}
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setRightPanel({ entityType: type, entityId: "new", title: `Browse ${type}s` })
+              }
+            >
+              Browse {getEntityLabel(type)}s
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Note: In a production app, we might want to render the actual component
   // instead of using an iframe. For now, we use an iframe for simplicity
@@ -489,10 +520,8 @@ export function SplitViewToggleButton({
       // If we have a left panel, add this as right panel
       setRightPanel(newPanel);
     } else {
-      // No panels yet, set this as left and user needs to select another for right
-      // For now, we'll just enter split view with a placeholder on the other side
-      // This could be enhanced with a selection dialog
-      enterSplitView(newPanel, { entityType: "client", entityId: "select" });
+      // No panels yet — set current entity as left, show selection prompt as right
+      enterSplitView(newPanel, { entityType: "client", entityId: "select", title: "Select panel" });
     }
   };
 
@@ -539,9 +568,8 @@ export function OpenInSplitViewItem({
       // Have left panel, enter split view
       enterSplitView(leftPanel, newPanel);
     } else {
-      // No panels, set as left and need to pick right
-      // For now just set left panel
-      enterSplitView(newPanel, { entityType: "client", entityId: "select" });
+      // No panels yet — set current entity as left, show selection prompt as right
+      enterSplitView(newPanel, { entityType: "client", entityId: "select", title: "Select panel" });
     }
 
     onSelect?.();

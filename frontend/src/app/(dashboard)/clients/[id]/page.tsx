@@ -14,6 +14,8 @@ import { useFamilyMembers } from "@/hooks/use-family-members";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Pencil } from "lucide-react";
 import { ClientProvisionDialog } from "@/components/client-provision-dialog";
 import { DocumentList } from "@/components/documents/document-list";
 import { KYCDocumentPanel } from "@/components/documents/kyc-document-panel";
@@ -33,7 +36,8 @@ import { ClientPreferencesForm } from "@/components/communications/client-prefer
 import { ClientPreferenceCard } from "@/components/clients/client-preference-card";
 import { ImportantDatesForm } from "@/components/clients/important-dates-form";
 import { BookmarkButton } from "@/components/ui/bookmark-button";
-// AuditTrailViewer available: import { AuditTrailViewer } from "@/components/communications/audit-trail-viewer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AuditTrailViewer } from "@/components/communications/audit-trail-viewer";
 import {
   useCreateFamilyMember,
   useUpdateFamilyMember,
@@ -65,7 +69,7 @@ const APPROVAL_STATUS_VARIANT: Record<
   draft: "outline",
 };
 
-type Tab = "overview" | "intelligence" | "family" | "lifestyle" | "compliance" | "provisioning" | "documents" | "kyc" | "preferences" | "security" | "dates";
+type Tab = "overview" | "intelligence" | "family" | "lifestyle" | "compliance" | "provisioning" | "documents" | "kyc" | "preferences" | "security" | "dates" | "activity";
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -77,6 +81,7 @@ export default function ClientDetailPage() {
   const [provisionOpen, setProvisionOpen] = useState(false);
   const [familyDialogOpen, setFamilyDialogOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [pendingDeleteMemberId, setPendingDeleteMemberId] = useState<string | null>(null);
 
   const isInternalSenior =
     user?.role === "managing_director" || user?.role === "relationship_manager";
@@ -117,6 +122,7 @@ export default function ClientDetailPage() {
     { key: "documents", label: "Documents" },
     { key: "kyc", label: "KYC" },
     { key: "preferences", label: "Preferences" },
+    { key: "activity", label: "Activity" },
     ...(isInternalSenior
       ? [
           { key: "dates" as Tab, label: "Important Dates" },
@@ -142,10 +148,8 @@ export default function ClientDetailPage() {
     setFamilyDialogOpen(false);
   };
 
-  const handleDeleteFamilyMember = async (memberId: string) => {
-    if (confirm("Are you sure you want to remove this family member?")) {
-      await deleteFamilyMutation.mutateAsync(memberId);
-    }
+  const handleDeleteFamilyMember = (memberId: string) => {
+    setPendingDeleteMemberId(memberId);
   };
 
   const familyMembers = familyMembersData?.family_members || [];
@@ -240,7 +244,7 @@ export default function ClientDetailPage() {
           />
         )}
         {activeTab === "lifestyle" && (
-          <LifestyleTab profile={profile} />
+          <LifestyleTab id={id} profile={profile} />
         )}
         {activeTab === "compliance" && <ComplianceTab id={id} profile={profile} />}
         {activeTab === "documents" && (
@@ -264,6 +268,12 @@ export default function ClientDetailPage() {
         {activeTab === "dates" && isInternalSenior && (
           <ImportantDatesForm clientId={id} profile={profile} />
         )}
+        {activeTab === "activity" && (
+          <AuditTrailViewer
+            title="Communications Audit Trail"
+            searchParams={{ limit: 100 }}
+          />
+        )}
         {activeTab === "security" && isInternalSenior && (
           <SecurityProfileTab
             id={id}
@@ -281,6 +291,20 @@ export default function ClientDetailPage() {
           profileId={id}
           open={provisionOpen}
           onOpenChange={setProvisionOpen}
+        />
+
+        <ConfirmDialog
+          open={pendingDeleteMemberId !== null}
+          onOpenChange={(open) => !open && setPendingDeleteMemberId(null)}
+          title="Remove family member?"
+          description="This will permanently remove the family member from the profile."
+          confirmLabel="Remove"
+          onConfirm={async () => {
+            if (pendingDeleteMemberId) {
+              await deleteFamilyMutation.mutateAsync(pendingDeleteMemberId);
+              setPendingDeleteMemberId(null);
+            }
+          }}
         />
       </div>
     </div>
@@ -484,51 +508,166 @@ function FamilyTab({
 }
 
 function LifestyleTab({
+  id,
   profile,
 }: {
+  id: string;
   profile: NonNullable<ReturnType<typeof useClientProfile>["data"]>;
 }) {
-  const lifestyle = ((profile.intelligence_file as unknown as IntelligenceFile | null)?.lifestyle_profile ?? null) as LifestyleProfile | null;
+  const intelFile = (profile.intelligence_file as unknown as IntelligenceFile | null);
+  const lifestyle = (intelFile?.lifestyle_profile ?? null) as LifestyleProfile | null;
+  const updateMutation = useUpdateIntelligenceFile(id);
 
-  const fields = [
-    { label: "Travel Preferences", value: lifestyle?.travel_preferences },
-    { label: "Dietary Restrictions", value: lifestyle?.dietary_restrictions },
-    { label: "Interests", value: lifestyle?.interests?.join(", ") },
-    { label: "Language Preference", value: lifestyle?.language_preference },
-  ];
+  const [editing, setEditing] = useState(false);
+  const [travel, setTravel] = useState(lifestyle?.travel_preferences ?? "");
+  const [dietary, setDietary] = useState(lifestyle?.dietary_restrictions ?? "");
+  const [interests, setInterests] = useState((lifestyle?.interests ?? []).join(", "));
+  const [language, setLanguage] = useState(lifestyle?.language_preference ?? "");
+  const [destinations, setDestinations] = useState((lifestyle?.preferred_destinations ?? []).join(", "));
 
-  const destinations = lifestyle?.preferred_destinations;
+  const handleEdit = () => {
+    setTravel(lifestyle?.travel_preferences ?? "");
+    setDietary(lifestyle?.dietary_restrictions ?? "");
+    setInterests((lifestyle?.interests ?? []).join(", "));
+    setLanguage(lifestyle?.language_preference ?? "");
+    setDestinations((lifestyle?.preferred_destinations ?? []).join(", "));
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    const updatedLifestyle: LifestyleProfile = {
+      travel_preferences: travel || null,
+      dietary_restrictions: dietary || null,
+      interests: interests ? interests.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      preferred_destinations: destinations ? destinations.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      language_preference: language || null,
+    };
+    const updatedFile: IntelligenceFile = {
+      objectives: intelFile?.objectives ?? [],
+      preferences: intelFile?.preferences ?? {},
+      sensitivities: intelFile?.sensitivities ?? [],
+      key_relationships: intelFile?.key_relationships ?? [],
+      lifestyle_profile: updatedLifestyle,
+    };
+    await updateMutation.mutateAsync(updatedFile);
+    setEditing(false);
+  };
+
+  const displayDestinations = lifestyle?.preferred_destinations ?? [];
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="font-serif text-xl">Lifestyle & Preferences</CardTitle>
+        {!editing && (
+          <Button variant="outline" size="sm" onClick={handleEdit}>
+            <Pencil className="mr-2 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fields.map((field) => (
-            <div key={field.label}>
-              <p className="text-sm font-medium text-muted-foreground">
-                {field.label}
-              </p>
-              <p className="text-sm">{(field.value as string) || "-"}</p>
+        {editing ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="travel">Travel Preferences</Label>
+                <Input
+                  id="travel"
+                  value={travel}
+                  onChange={(e) => setTravel(e.target.value)}
+                  placeholder="e.g. First class, no red-eye flights"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dietary">Dietary Restrictions</Label>
+                <Input
+                  id="dietary"
+                  value={dietary}
+                  onChange={(e) => setDietary(e.target.value)}
+                  placeholder="e.g. Gluten-free, vegetarian"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="language">Language Preference</Label>
+                <Input
+                  id="language"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  placeholder="e.g. English, French"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="interests">Interests</Label>
+                <Input
+                  id="interests"
+                  value={interests}
+                  onChange={(e) => setInterests(e.target.value)}
+                  placeholder="Comma-separated, e.g. Golf, Art, Music"
+                />
+              </div>
             </div>
-          ))}
-        </div>
-
-        {destinations && destinations.length > 0 && (
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Preferred Destinations
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {destinations.map((dest) => (
-                <Badge key={dest} variant="secondary">
-                  {dest}
-                </Badge>
-              ))}
+            <div className="space-y-1.5">
+              <Label htmlFor="destinations">Preferred Destinations</Label>
+              <Input
+                id="destinations"
+                value={destinations}
+                onChange={(e) => setDestinations(e.target.value)}
+                placeholder="Comma-separated, e.g. Paris, Tokyo, New York"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={handleSave}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "Saving…" : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditing(false)}
+                disabled={updateMutation.isPending}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Travel Preferences</p>
+                <p className="text-sm">{lifestyle?.travel_preferences || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Dietary Restrictions</p>
+                <p className="text-sm">{lifestyle?.dietary_restrictions || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Interests</p>
+                <p className="text-sm">{(lifestyle?.interests ?? []).join(", ") || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Language Preference</p>
+                <p className="text-sm">{lifestyle?.language_preference || "-"}</p>
+              </div>
+            </div>
+
+            {displayDestinations.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Preferred Destinations
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {displayDestinations.map((dest) => (
+                    <Badge key={dest} variant="secondary">
+                      {dest}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

@@ -8,6 +8,7 @@ import { ArrowLeft, Pencil, Trash2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LEAD_SOURCES } from "@/types/crm";
 import {
   useLead,
@@ -30,6 +31,7 @@ export default function LeadDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -90,12 +92,7 @@ export default function LeadDetailPage() {
           )}
           <Button
             variant="ghost"
-            onClick={async () => {
-              if (confirm("Delete this lead?")) {
-                await deleteMutation.mutateAsync(leadId);
-                router.push("/crm/leads");
-              }
-            }}
+            onClick={() => setDeleteOpen(true)}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -177,6 +174,18 @@ export default function LeadDetailPage() {
           if (updated.converted_client_profile_id) {
             router.push(`/clients/${updated.converted_client_profile_id}`);
           }
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete lead?"
+        description="This will permanently delete the lead and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          await deleteMutation.mutateAsync(leadId);
+          router.push("/crm/leads");
         }}
       />
     </div>

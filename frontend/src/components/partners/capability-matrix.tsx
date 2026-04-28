@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ export function CapabilityMatrix({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCapability, setEditingCapability] = useState<PartnerCapability | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Form state
   const [formState, setFormState] = useState({
@@ -128,12 +130,16 @@ export function CapabilityMatrix({
     }
   };
 
-  const handleDelete = async (capabilityId: string) => {
+  const handleDelete = (capabilityId: string) => {
     if (!onDelete) return;
-    if (!confirm("Are you sure you want to delete this capability?")) return;
+    setPendingDeleteId(capabilityId);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!onDelete || !pendingDeleteId) return;
     try {
-      await onDelete(capabilityId);
+      await onDelete(pendingDeleteId);
+      setPendingDeleteId(null);
     } catch {
       toast.error("Failed to delete capability");
     }
@@ -382,6 +388,15 @@ export function CapabilityMatrix({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete capability?"
+        description="This will permanently delete the capability and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+      />
     </Card>
   );
 }

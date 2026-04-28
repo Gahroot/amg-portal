@@ -17,8 +17,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { Trash2, Pencil } from "lucide-react";
+import { useState } from "react";
 
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
   sla_breach: "SLA Breach",
@@ -44,6 +46,7 @@ export function EscalationRuleList({ onEdit, onCreate }: EscalationRuleListProps
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = user?.role === "managing_director";
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["escalation-rules"],
@@ -60,9 +63,7 @@ export function EscalationRuleList({ onEdit, onCreate }: EscalationRuleListProps
   });
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`Delete rule "${name}"? This cannot be undone.`)) {
-      deleteMutation.mutate(id);
-    }
+    setPendingDelete({ id, name });
   };
 
   if (isLoading) {
@@ -157,6 +158,20 @@ export function EscalationRuleList({ onEdit, onCreate }: EscalationRuleListProps
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Delete rule?"
+        description={`Delete rule "${pendingDelete?.name ?? ""}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteMutation.mutate(pendingDelete.id);
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

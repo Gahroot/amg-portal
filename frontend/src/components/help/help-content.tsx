@@ -67,9 +67,9 @@ const helpContentMap: Record<string, PageHelpContent> = {
             type: "guide",
           },
           {
-            id: "dashboard-widgets",
-            title: "Customizing Widgets",
-            description: "Personalize your dashboard layout",
+            id: "dashboard-metrics",
+            title: "Reading Dashboard Metrics",
+            description: "Understand what each metric card shows",
             type: "article",
           },
         ],
@@ -96,7 +96,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         type: "article",
       },
     ],
-    docsUrl: "/docs/dashboard",
+    docsUrl: "/api/v1/docs",
   },
 
   clients: {
@@ -146,7 +146,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/clients",
+    docsUrl: "/api/v1/docs",
   },
 
   partners: {
@@ -178,7 +178,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/partners",
+    docsUrl: "/api/v1/docs",
   },
 
   programs: {
@@ -230,7 +230,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/programs",
+    docsUrl: "/api/v1/docs",
   },
 
   tasks: {
@@ -262,7 +262,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/tasks",
+    docsUrl: "/api/v1/docs",
   },
 
   approvals: {
@@ -294,7 +294,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/approvals",
+    docsUrl: "/api/v1/docs",
   },
 
   settings: {
@@ -304,7 +304,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
     quickTips: [
       "Set up two-factor authentication for added security",
       "Configure notification preferences to stay informed",
-      "Customize your dashboard layout",
+      "Review your active sessions under security settings",
     ],
     sections: [
       {
@@ -332,7 +332,7 @@ const helpContentMap: Record<string, PageHelpContent> = {
         ],
       },
     ],
-    docsUrl: "/docs/settings",
+    docsUrl: "/api/v1/docs",
   },
 };
 
@@ -362,7 +362,7 @@ const defaultHelpContent: PageHelpContent = {
       ],
     },
   ],
-  docsUrl: "/docs",
+  docsUrl: "/api/v1/docs",
 };
 
 /**

@@ -21,6 +21,7 @@ import {
   DeleteDialog,
 } from "./bulk-task-actions";
 import { TASK_STATUSES } from "@/types/task";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const TASKS_ROUTE_KEY = "/tasks";
 
@@ -172,6 +173,15 @@ export function TaskBoard() {
         defaultStatus={board.defaultStatus}
         allTasks={allTasks}
         onSubmit={board.handleSubmit}
+      />
+
+      <ConfirmDialog
+        open={board.pendingDeleteId !== null}
+        onOpenChange={(open) => !open && board.setPendingDeleteId(null)}
+        title="Delete task?"
+        description="This will permanently delete the task and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={board.handleConfirmDeleteTask}
       />
     </div>
   );

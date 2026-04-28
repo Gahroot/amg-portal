@@ -133,9 +133,24 @@ api.interceptors.response.use(
       return api(originalRequest);
     }
 
-    // Skip interceptor for the refresh endpoint itself to avoid deadlocks
-    const isRefreshRequest = originalRequest.url?.includes("/auth/refresh");
-    if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest) {
+    // Skip the refresh-on-401 retry for endpoints that don't represent an
+    // authenticated request — a 401 there is a real auth failure (e.g. wrong
+    // password on /login), not an expired access token. Without this guard,
+    // a wrong-password 401 would trigger /auth/refresh, which then returns
+    // "Missing refresh token", and that error bubbles up to the user instead
+    // of "Invalid email or password".
+    const url = originalRequest.url ?? "";
+    const isUnauthenticatedAuthEndpoint =
+      url.includes("/auth/login") ||
+      url.includes("/auth/refresh") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password");
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isUnauthenticatedAuthEndpoint
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

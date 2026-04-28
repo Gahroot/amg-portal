@@ -48,6 +48,7 @@ export function useTaskBoard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskBoard | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<TaskStatus>("todo");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Drag state
   const [activeTask, setActiveTask] = useState<TaskBoard | null>(null);
@@ -231,9 +232,14 @@ export function useTaskBoard() {
     setDialogOpen(true);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      deleteMutation.mutate(taskId);
+  const handleDeleteTask = (taskId: string) => {
+    setPendingDeleteId(taskId);
+  };
+
+  const handleConfirmDeleteTask = () => {
+    if (pendingDeleteId) {
+      deleteMutation.mutate(pendingDeleteId);
+      setPendingDeleteId(null);
     }
   };
 
@@ -379,6 +385,9 @@ export function useTaskBoard() {
     handleAddTask,
     handleEditTask,
     handleDeleteTask,
+    pendingDeleteId,
+    setPendingDeleteId,
+    handleConfirmDeleteTask,
     handleViewDependencies,
 
     // Selection

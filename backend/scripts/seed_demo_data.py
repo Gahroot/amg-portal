@@ -251,6 +251,29 @@ async def seed_users(db: AsyncSession, pw_hash: str) -> None:
             email=email,
         )
 
+    # ── Demo accounts (used by CLAUDE.md docs + MFA_EXEMPT_EMAILS) ─────
+    demo_accounts = [
+        ("md@anchormillgroup.com", "Alexandra Whitmore", "managing_director"),
+        ("rm@anchormillgroup.com", "James Harrington", "relationship_manager"),
+        ("coordinator@anchormillgroup.com", "Sofia Nakamura", "coordinator"),
+        ("finance@anchormillgroup.com", "Marcus Chen", "finance_compliance"),
+        ("client@anchormillgroup.com", "Lord Edward Pemberton", "client"),
+        ("partner@anchormillgroup.com", "Isabella Rossi", "partner"),
+    ]
+    for email, name, role in demo_accounts:
+        await get_or_create(
+            db,
+            User,
+            defaults={
+                "hashed_password": pw_hash,
+                "full_name": name,
+                "role": role,
+                "status": "active",
+                "mfa_enabled": False,
+            },
+            email=email,
+        )
+
 
 async def seed_clients(db: AsyncSession) -> None:
     """Seed 3 clients."""
@@ -2983,7 +3006,7 @@ async def seed_phase2_scheduled_events(db: AsyncSession) -> None:
 
 async def seed() -> None:  # noqa: PLR0915
     """Run all seeders in FK dependency order."""
-    pw_hash = hash_password("Demo2026!")
+    pw_hash = hash_password("Demo1234!")
 
     async with AsyncSessionLocal() as db:
         # 1. Communication templates

@@ -31,6 +31,7 @@ import { TASK_STATUSES } from "@/types/task";
 import { TaskColumn } from "@/components/tasks/task-column";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Plus } from "lucide-react";
 
 export default function ProgramBoardPage() {
@@ -43,6 +44,7 @@ export default function ProgramBoardPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskBoard | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<TaskStatus>("todo");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Drag state
   const [activeTask, setActiveTask] = useState<TaskBoard | null>(null);
@@ -187,9 +189,7 @@ export default function ProgramBoardPage() {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      deleteMutation.mutate(taskId);
-    }
+    setPendingDeleteId(taskId);
   };
 
   const handleSubmit = async (data: {
@@ -309,6 +309,20 @@ export default function ProgramBoardPage() {
         assignees={assignees}
         defaultStatus={defaultStatus}
         onSubmit={handleSubmit}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete task?"
+        description="This will permanently delete the task and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (pendingDeleteId) {
+            deleteMutation.mutate(pendingDeleteId);
+            setPendingDeleteId(null);
+          }
+        }}
       />
     </div>
   );

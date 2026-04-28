@@ -16,6 +16,7 @@ import {
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { OPPORTUNITY_STAGES } from "@/types/crm";
 import type { Opportunity, OpportunityStage } from "@/types/crm";
 import {
@@ -40,6 +41,7 @@ export default function PipelinePage() {
   const [activeOpportunity, setActiveOpportunity] = useState<Opportunity | null>(
     null,
   );
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -132,9 +134,7 @@ export default function PipelinePage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Delete this opportunity?")) {
-      deleteMutation.mutate(id);
-    }
+    setPendingDeleteId(id);
   };
 
   return (
@@ -199,6 +199,20 @@ export default function PipelinePage() {
             await updateOpportunity(editing.id, payload);
           } else {
             await createMutation.mutateAsync(payload);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete opportunity?"
+        description="This will permanently delete the opportunity and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (pendingDeleteId) {
+            deleteMutation.mutate(pendingDeleteId);
+            setPendingDeleteId(null);
           }
         }}
       />
