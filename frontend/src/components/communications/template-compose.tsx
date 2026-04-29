@@ -106,7 +106,7 @@ export function TemplateCompose({
   };
 
   const requiredVarNames = selectedTemplate?.variable_definitions
-    ? Object.keys(selectedTemplate.variable_definitions)
+    ? [...new Set(Object.keys(selectedTemplate.variable_definitions))]
     : [];
 
   const allRequiredFilled = requiredVarNames.every((name) => {

@@ -271,7 +271,7 @@ export default function WorkloadPage() {
           open={!!selectedStaffId}
           onOpenChange={(open) => !open && setSelectedStaffId(null)}
         >
-          <DialogContent className="max-w-5xl">
+          <DialogContent className="max-w-7xl">
             <DialogHeader>
               <DialogTitle>
                 Assignments - {selectedStaff?.user_name || "Staff Member"}
@@ -286,7 +286,7 @@ export default function WorkloadPage() {
                 No active assignments.
               </p>
             ) : (
-              <div className="rounded-md border">
+              <div className="overflow-x-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>

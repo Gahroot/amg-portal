@@ -26,14 +26,28 @@ import {
 import { FAMILY_RELATIONSHIP_TYPES } from "@/types/intake-form";
 import type { FamilyMemberCreate, FamilyRelationshipType } from "@/types/family-member";
 
-const familyMemberSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  relationship_type: z.string().min(1, "Relationship is required"),
-  date_of_birth: z.string().optional(),
-  occupation: z.string().optional(),
-  notes: z.string().optional(),
-  is_primary_contact: z.boolean().optional(),
-});
+const familyMemberSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    relationship_type: z.string().min(1, "Relationship is required"),
+    custom_relationship: z.string().trim().max(100).optional(),
+    date_of_birth: z.string().optional(),
+    occupation: z.string().optional(),
+    notes: z.string().optional(),
+    is_primary_contact: z.boolean().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (
+      val.relationship_type === "other" &&
+      (!val.custom_relationship || val.custom_relationship.trim() === "")
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["custom_relationship"],
+        message: "Please describe the relationship",
+      });
+    }
+  });
 
 type FormData = z.infer<typeof familyMemberSchema>;
 
@@ -64,6 +78,7 @@ export function FamilyMemberDialog({
     defaultValues: {
       name: initialData?.name ?? "",
       relationship_type: initialData?.relationship_type ?? "",
+      custom_relationship: undefined,
       date_of_birth: initialData?.date_of_birth ?? undefined,
       occupation: initialData?.occupation ?? undefined,
       notes: initialData?.notes ?? undefined,
@@ -77,6 +92,7 @@ export function FamilyMemberDialog({
       reset({
         name: initialData?.name || "",
         relationship_type: initialData?.relationship_type || "",
+        custom_relationship: undefined,
         date_of_birth: initialData?.date_of_birth || "",
         occupation: initialData?.occupation || "",
         notes: initialData?.notes || "",
@@ -86,16 +102,20 @@ export function FamilyMemberDialog({
   }, [open, initialData, reset]);
 
   const isPrimaryContact = watch("is_primary_contact");
+  const relationshipType = watch("relationship_type");
 
   const handleFormSubmit = (data: FormData) => {
     onSubmit({
       name: data.name,
       relationship_type: data.relationship_type as FamilyRelationshipType,
+      ...(data.relationship_type === "other" && data.custom_relationship
+        ? { custom_relationship: data.custom_relationship }
+        : {}),
       date_of_birth: data.date_of_birth,
       occupation: data.occupation,
       notes: data.notes,
       is_primary_contact: data.is_primary_contact ?? false,
-    });
+    } as FamilyMemberCreate);
     reset();
   };
 
@@ -130,7 +150,12 @@ export function FamilyMemberDialog({
               </Label>
               <Select
                 value={watch("relationship_type")}
-                onValueChange={(value) => setValue("relationship_type", value)}
+                onValueChange={(value) => {
+                  setValue("relationship_type", value);
+                  if (value !== "other") {
+                    setValue("custom_relationship", undefined);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select relationship" />
@@ -150,6 +175,24 @@ export function FamilyMemberDialog({
               )}
             </div>
           </div>
+
+          {relationshipType === "other" && (
+            <div className="space-y-2">
+              <Label htmlFor="custom_relationship">
+                Describe Relationship <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="custom_relationship"
+                {...register("custom_relationship")}
+                placeholder="e.g. Step-parent, Guardian, Trustee..."
+              />
+              {errors.custom_relationship && (
+                <p className="text-sm text-destructive">
+                  {errors.custom_relationship.message}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

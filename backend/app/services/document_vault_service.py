@@ -262,21 +262,17 @@ async def get_vault_documents(
     filters = []
     if vault_status:
         filters.append(Document.vault_status == vault_status)
-    else:
-        # By default show sealed and archived (not plain active)
-        filters.append(Document.vault_status.in_(["sealed", "archived"]))
+    # When vault_status is None/empty, no filter is applied — return all statuses.
 
-    count_query = select(func.count()).select_from(Document).where(*filters)
+    count_query = select(func.count()).select_from(Document)
+    if filters:
+        count_query = count_query.where(*filters)
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
-    query = (
-        select(Document)
-        .where(*filters)
-        .order_by(Document.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    query = select(Document).order_by(Document.created_at.desc()).offset(skip).limit(limit)
+    if filters:
+        query = query.where(*filters)
     result = await db.execute(query)
     docs = list(result.scalars().all())
     return docs, total

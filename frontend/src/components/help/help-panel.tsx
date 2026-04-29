@@ -42,6 +42,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useHelpContext } from "@/hooks/use-help-context";
 import { submitFeedback } from "@/lib/api/feedback";
+import { API_BASE_URL } from "@/lib/config";
 import {
   getHelpContent,
   searchHelpContent,
@@ -82,8 +83,8 @@ export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
   };
 
   const handleViewDocs = () => {
-    // Point to FastAPI Swagger UI as the live API reference
-    window.open("/api/v1/docs", "_blank", "noopener,noreferrer");
+    // Point to FastAPI Swagger UI on the backend subdomain
+    window.open(`${API_BASE_URL}/api/v1/docs`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -163,20 +164,20 @@ export function HelpPanel({ open, onOpenChange }: HelpPanelProps) {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="min-w-0 flex-1"
               onClick={handleContactSupport}
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Contact Support
+              <MessageCircle className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">Contact Support</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="min-w-0 flex-1"
               onClick={handleViewDocs}
             >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              API Docs
+              <ExternalLink className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">API Docs</span>
             </Button>
           </div>
         </div>

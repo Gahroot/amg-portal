@@ -7,6 +7,8 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
+  isWithinInterval,
+  parseISO,
   format,
   isSameDay,
   isSameMonth,
@@ -47,8 +49,8 @@ export function EventCalendar({ onEventClick }: EventCalendarProps) {
       };
     }
     return {
-      start: startOfMonth(currentDate),
-      end: endOfMonth(currentDate),
+      start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+      end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 }),
     };
   }, [currentDate, viewMode]);
 
@@ -65,7 +67,15 @@ export function EventCalendar({ onEventClick }: EventCalendarProps) {
   });
 
   const getEventsForDay = (day: Date) =>
-    events.filter((e) => isSameDay(new Date(e.start_time), day));
+    events.filter((e) => {
+      const start = parseISO(e.start_time);
+      const end = parseISO(e.end_time);
+      return (
+        isSameDay(start, day) ||
+        isSameDay(end, day) ||
+        isWithinInterval(day, { start, end })
+      );
+    });
 
   const navigateForward = () => {
     if (viewMode === "week") {

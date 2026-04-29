@@ -211,7 +211,6 @@ export const dashboardNavConfig: PortalNavConfig = {
           tooltip: "KYC Verification",
           roles: [MD, FIN, RM],
           subItems: [
-            { title: "Dashboard", href: "/kyc" },
             { title: "Verifications", href: "/kyc/verifications" },
             { title: "Alerts", href: "/kyc/alerts" },
             { title: "Reports", href: "/kyc/reports" },

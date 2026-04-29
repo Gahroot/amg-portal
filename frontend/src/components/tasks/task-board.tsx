@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -22,10 +23,17 @@ import {
 } from "./bulk-task-actions";
 import { TASK_STATUSES } from "@/types/task";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { MutableRefObject } from "react";
 
 const TASKS_ROUTE_KEY = "/tasks";
 
-export function TaskBoard() {
+interface TaskBoardProps {
+  /** Optional ref that will be wired to the "add task" handler so a parent
+   *  page header button can trigger the dialog without internal state sharing. */
+  addTaskRef?: MutableRefObject<(() => void) | null>;
+}
+
+export function TaskBoard({ addTaskRef }: TaskBoardProps = {}) {
   const _pathname = usePathname();
 
   const { hasPendingRestore } = useNavigationState({
@@ -44,6 +52,18 @@ export function TaskBoard() {
   useScrollRestore(TASKS_ROUTE_KEY, hasPendingRestore);
 
   const board = useTaskBoard();
+
+  // Expose the "add todo task" handler via the optional ref so the page
+  // header button can trigger the dialog without internal state sharing.
+  const { handleAddTask } = board;
+  useEffect(() => {
+    if (addTaskRef) {
+      addTaskRef.current = () => handleAddTask("todo");
+    }
+    return () => {
+      if (addTaskRef) addTaskRef.current = null;
+    };
+  }, [addTaskRef, handleAddTask]);
 
   if (board.tasksLoading) {
     return (

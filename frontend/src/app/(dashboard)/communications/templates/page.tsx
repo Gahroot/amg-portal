@@ -352,7 +352,7 @@ function PreviewDialog({ template, onClose }: PreviewDialogProps) {
   if (!template) return null;
 
   const allVars = template.variable_definitions
-    ? Object.keys(template.variable_definitions)
+    ? [...new Set(Object.keys(template.variable_definitions))]
     : extractVariables((template.subject ?? "") + " " + template.body);
 
   return (

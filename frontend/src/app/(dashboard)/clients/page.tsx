@@ -420,23 +420,25 @@ function ClientsPageContent() {
                         aria-label={`Select ${profile.display_name || profile.legal_name}`}
                       />
                     </TableCell>
-                    <TableCell
-                      className="py-0 px-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <BookmarkButton
-                        entityType="client"
-                        entityId={profile.id}
-                        entityTitle={profile.display_name || profile.legal_name}
-                        size="sm"
-                      />
-                    </TableCell>
                     <TableCell className="font-medium">
-                      <ClientPreferencePopoverCell
-                        clientId={profile.id}
-                        name={profile.display_name || profile.legal_name}
-                        onClick={() => handleNavigateToDetail(profile.id)}
-                      />
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="py-0 px-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <BookmarkButton
+                            entityType="client"
+                            entityId={profile.id}
+                            entityTitle={profile.display_name || profile.legal_name}
+                            size="sm"
+                          />
+                        </span>
+                        <ClientPreferencePopoverCell
+                          clientId={profile.id}
+                          name={profile.display_name || profile.legal_name}
+                          onClick={() => handleNavigateToDetail(profile.id)}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell
                       onClick={() => handleNavigateToDetail(profile.id)}
@@ -477,7 +479,7 @@ function ClientsPageContent() {
                 {sortedProfiles.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={6}
                       className="text-center text-muted-foreground"
                     >
                       No clients found.
