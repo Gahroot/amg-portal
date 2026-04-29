@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     SQL_ECHO: bool = False
     API_V1_PREFIX: str = "/api/v1"
+    # Demo deployments (e.g. the staged client-preview environment) need to
+    # opt into otherwise-prod-forbidden conveniences like MFA_EXEMPT_EMAILS.
+    # Real production deployments must leave this False so the safety guards
+    # below stay armed.  Remove once the KYC/MFA replacement provider is wired.
+    DEMO_MODE: bool = False
 
     # Database — no password in default; set DATABASE_URL via env var or .env file.
     # Local dev: docker-compose.yml and backend/.env provide the full connection string.
@@ -213,6 +218,10 @@ class Settings(BaseSettings):
     CURRENT_KEK_ID: int = 1
     AMG_BIDX_KEY_V1: str = ""
 
+    # Pixel Error Tracking
+    PIXEL_PROJECT_KEY: str = ""  # Leave empty to disable
+    PIXEL_INGEST_URL: str = "https://ez-pixel-server.buzzbeamaustralia.workers.dev/ingest"
+
     def __init__(self, **kwargs: Any) -> None:  # noqa: PLR0912,PLR0915 — linear config validation chain
         super().__init__(**kwargs)
         # --- SECRET_KEY ---
@@ -243,13 +252,23 @@ class Settings(BaseSettings):
                 f"Unsupported JWT algorithm: {self.ALGORITHM}. Use HS256, HS384, or HS512."
             )
         # MFA_EXEMPT_EMAILS is a demo-only bypass that MUST never be populated
-        # in a production deployment.  Fail closed: refuse to boot rather than
-        # silently emptying the list, so a misconfigured deploy is visible.
-        if not self.DEBUG and self.MFA_EXEMPT_EMAILS:
+        # in a real production deployment.  Fail closed unless DEMO_MODE is
+        # explicitly enabled, so a misconfigured deploy is visible instead of
+        # silently downgrading auth.
+        if not self.DEBUG and not self.DEMO_MODE and self.MFA_EXEMPT_EMAILS:
             raise ValueError(
                 "MFA_EXEMPT_EMAILS must be empty in production. "
                 "This list is a demo-only bypass of the MFA requirement and "
-                "must not be set when DEBUG=False."
+                "must not be set when DEBUG=False. Set DEMO_MODE=true to "
+                "explicitly opt in to the bypass for staged demo deployments."
+            )
+        if not self.DEBUG and self.DEMO_MODE:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "DEMO_MODE=True in a non-debug deployment: MFA bypass is "
+                "active for %d account(s). Disable before serving real users.",
+                len(self.MFA_EXEMPT_EMAILS),
             )
         # Derive MFA encryption key from SECRET_KEY when not explicitly set
         if not self.MFA_ENCRYPTION_KEY:
