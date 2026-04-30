@@ -12,8 +12,10 @@ export async function register() {
   }
 
   const { initPixel } = await import("@prestyj/pixel");
+  // Node entrypoint types require `sink:`; sink takes the URL verbatim
+  // (no auto-append), so we explicitly suffix `/ingest` to the base.
   initPixel({
     projectKey,
-    sink: { kind: "http", ingestUrl },
+    sink: { kind: "http", ingestUrl: `${ingestUrl.replace(/\/+$/, "")}/ingest` },
   });
 }
