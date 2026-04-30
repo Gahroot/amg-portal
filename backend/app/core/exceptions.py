@@ -184,6 +184,21 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     # Log the full error for debugging, but don't expose internal details to the client
     logger.error(f"Unexpected error: {exc}", exc_info=True)
 
+    # Report to pixel error tracking
+    try:
+        from app.core.pixel import _initialized
+
+        if _initialized:
+            import ez_pixel
+
+            ez_pixel.report_pixel(
+                message=f"Unexpected error: {exc}",
+                error=exc,
+                level="error",
+            )
+    except Exception:
+        pass
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"message": "An internal error occurred. Please try again later.", "details": {}},

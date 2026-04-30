@@ -220,7 +220,7 @@ class Settings(BaseSettings):
 
     # Pixel Error Tracking
     PIXEL_PROJECT_KEY: str = ""  # Leave empty to disable
-    PIXEL_INGEST_URL: str = "https://ez-pixel-server.buzzbeamaustralia.workers.dev/ingest"
+    PIXEL_INGEST_URL: str = "https://pixel-server.ngrout70.workers.dev/ingest"
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: PLR0912,PLR0915 — linear config validation chain
         super().__init__(**kwargs)

@@ -9,6 +9,7 @@ import { ErrorLoggerProvider } from "@/providers/error-logger-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/navigation/command-palette";
 import "./globals.css";
+import GGPixelClient from "../../ez-pixel.client";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default async function RootLayout({
               <ErrorLoggerProvider>
                 <Providers>
                   <CommandPalette />
+                  <GGPixelClient />
                   {children}
                 </Providers>
               </ErrorLoggerProvider>

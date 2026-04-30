@@ -28,6 +28,10 @@ from app.middleware.security import SecurityHeadersMiddleware
 
 configure_logging()
 
+from app.core.pixel import init_pixel  # noqa: E402
+
+init_pixel()
+
 import logging  # noqa: E402  — must run after configure_logging() to honour root config
 
 logger = logging.getLogger(__name__)

@@ -32,6 +32,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@prestyj/pixel"],
   output: "standalone",
   reactStrictMode: true,
   env: {

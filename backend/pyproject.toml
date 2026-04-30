@@ -64,6 +64,7 @@ dependencies = [
     # S3-compatible upload for the encrypted off-platform backup (Phase 3.12).
     # Boto3 talks to AWS S3, Cloudflare R2 and Backblaze B2 via endpoint_url.
     "boto3>=1.36.0",
+    "ez-pixel>=0.1.0",
 ]
 
 [project.optional-dependencies]
