@@ -18,11 +18,11 @@ from app.core import http_client as hc
 @pytest.fixture(autouse=True)
 def _isolate_clients() -> Iterator[None]:
     """Ensure no leftover singleton from another test affects this one."""
-    hc._internal_client = None  # type: ignore[attr-defined]
-    hc._external_client = None  # type: ignore[attr-defined]
+    hc._internal_client = None
+    hc._external_client = None
     yield
-    hc._internal_client = None  # type: ignore[attr-defined]
-    hc._external_client = None  # type: ignore[attr-defined]
+    hc._internal_client = None
+    hc._external_client = None
 
 
 @pytest.mark.parametrize(
@@ -104,8 +104,8 @@ async def test_get_internal_client_follows_redirects() -> None:
 async def test_lifecycle_roundtrip() -> None:
     """startup creates singletons; shutdown closes and clears them."""
     await hc.startup_http_clients()
-    assert hc._internal_client is not None  # type: ignore[attr-defined]
-    assert hc._external_client is not None  # type: ignore[attr-defined]
+    assert hc._internal_client is not None
+    assert hc._external_client is not None
     await hc.shutdown_http_clients()
-    assert hc._internal_client is None  # type: ignore[attr-defined]
-    assert hc._external_client is None  # type: ignore[attr-defined]
+    assert hc._internal_client is None
+    assert hc._external_client is None

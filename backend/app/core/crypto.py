@@ -20,6 +20,17 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from app.core.config import settings
 
+__all__ = [
+    "CryptoProvider",
+    "EnvKeyCryptoProvider",
+    "UnknownKeyVersion",
+    "blind_index",
+    "derive_subject_dek",
+    "get_crypto",
+    "reset_crypto_for_testing",
+    "settings",
+]
+
 
 class UnknownKeyVersion(Exception):  # noqa: N818 — downstream API contract, not "…Error"
     """Raised when a ciphertext header references a KEK id that isn't configured."""

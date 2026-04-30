@@ -13,6 +13,7 @@ import io
 import json
 import logging
 import uuid
+from typing import Any
 
 import pytest
 
@@ -43,10 +44,10 @@ def isolated_logger() -> tuple[logging.Logger, io.StringIO]:
     return logger, stream
 
 
-def _read_record(stream: io.StringIO) -> dict[str, object]:
+def _read_record(stream: io.StringIO) -> dict[str, Any]:
     raw = stream.getvalue().strip().splitlines()
     assert raw, "no record emitted"
-    return json.loads(raw[-1])
+    return json.loads(raw[-1])  # type: ignore[no-any-return]
 
 
 def test_json_formatter_emits_required_fields(

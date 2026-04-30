@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -86,7 +87,7 @@ class TestHKDFDetermination:
 
 
 class TestRotation:
-    def test_v1_roundtrip_then_v2_writes_use_v2(self, tenant_id: UUID, monkeypatch) -> None:
+    def test_v1_roundtrip_then_v2_writes_use_v2(self, tenant_id: UUID, monkeypatch: pytest.MonkeyPatch) -> None:
         k1, k2 = _rand_key(), _rand_key()
 
         monkeypatch.setattr(crypto_mod.settings, "AMG_KEK_KEYS", {1: _b64(k1)}, raising=False)
@@ -122,7 +123,7 @@ class TestRotation:
         new_ct = AESGCM(dek_new).encrypt(new_nonce, b"SSN-2", aad)
         assert AESGCM(dek_new).decrypt(new_nonce, new_ct, aad) == b"SSN-2"
 
-    def test_missing_kek_version_raises(self, tenant_id: UUID, monkeypatch) -> None:
+    def test_missing_kek_version_raises(self, tenant_id: UUID, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             crypto_mod.settings, "AMG_KEK_KEYS", {1: _b64(_rand_key())}, raising=False
         )
@@ -133,14 +134,14 @@ class TestRotation:
 
 
 class TestBlindIndex:
-    def test_determinism(self, monkeypatch) -> None:
+    def test_determinism(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             crypto_mod.settings, "AMG_BIDX_KEY_V1", _b64(_rand_key()), raising=False
         )
         assert blind_index("123-45-6789") == blind_index("123-45-6789")
         assert len(blind_index("x")) == 16
 
-    def test_normalisation(self, monkeypatch) -> None:
+    def test_normalisation(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             crypto_mod.settings, "AMG_BIDX_KEY_V1", _b64(_rand_key()), raising=False
         )
@@ -150,7 +151,7 @@ class TestBlindIndex:
         # NFKC folds full-width variants
         assert blind_index("ＡＢＣ-123") == base
 
-    def test_key_dependence(self, monkeypatch) -> None:
+    def test_key_dependence(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             crypto_mod.settings, "AMG_BIDX_KEY_V1", _b64(_rand_key()), raising=False
         )
@@ -164,7 +165,7 @@ class TestBlindIndex:
 
 class TestEncryptedBytesTypeDecorator:
     @pytest.fixture
-    def engine_and_table(self, monkeypatch):
+    def engine_and_table(self, monkeypatch: pytest.MonkeyPatch) -> Any:
         monkeypatch.setattr(
             crypto_mod.settings,
             "AMG_KEK_KEYS",
@@ -185,21 +186,21 @@ class TestEncryptedBytesTypeDecorator:
         meta.create_all(engine)
         return engine, secrets
 
-    def test_roundtrip_bytes(self, engine_and_table) -> None:
+    def test_roundtrip_bytes(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="a", value=b"plaintext-token"))
             row = conn.execute(select(secrets.c.value).where(secrets.c.label == "a")).one()
         assert row.value == b"plaintext-token"
 
-    def test_null_stays_null(self, engine_and_table) -> None:
+    def test_null_stays_null(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="n", value=None))
             row = conn.execute(select(secrets.c.value).where(secrets.c.label == "n")).one()
         assert row.value is None
 
-    def test_storage_is_ciphertext(self, engine_and_table) -> None:
+    def test_storage_is_ciphertext(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="raw", value=b"super secret"))
@@ -209,7 +210,7 @@ class TestEncryptedBytesTypeDecorator:
         assert len(raw) > HEADER_LEN + 16
         assert b"super secret" not in raw
 
-    def test_tamper_detected(self, engine_and_table) -> None:
+    def test_tamper_detected(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="t", value=b"hello"))
@@ -223,7 +224,7 @@ class TestEncryptedBytesTypeDecorator:
         ):
             conn.execute(select(secrets.c.value).where(secrets.c.label == "t")).one()
 
-    def test_wrong_version_rejected(self, engine_and_table) -> None:
+    def test_wrong_version_rejected(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         fake = bytes([0x02, 1]) + os.urandom(12 + 17)
         with engine.begin() as conn:
@@ -238,7 +239,7 @@ class TestEncryptedBytesTypeDecorator:
         col_type = EncryptedBytes(table="t", column="c")
         assert col_type.cache_ok is True
 
-    def test_unknown_key_version_in_header(self, engine_and_table) -> None:
+    def test_unknown_key_version_in_header(self, engine_and_table: Any) -> None:
         engine, secrets = engine_and_table
         with engine.begin() as conn:
             conn.execute(insert(secrets).values(label="k", value=b"data"))
